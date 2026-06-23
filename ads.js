@@ -21,7 +21,8 @@ let currentAd   = null;
  * Preloads a rewarded ad so it's ready when the user taps the button.
  */
 export function preloadRewardedAd() {
-  if (!window.adsbygoogle) return;
+  // AdSense disabled until a real publisher ID is configured
+  if (!window.adsbygoogle || AD_CLIENT.includes('XXXX')) return;
 
   window.adsbygoogle = window.adsbygoogle || [];
 
