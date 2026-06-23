@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <meta name="description" content="Free team-building coach for new Raid: Shadow Legends players. Upload your roster screenshot and get your next best move." />
+  <title>RSL Roster Coach</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- AdSense — replace ca-pub-XXXXXXXXXXXXXXXX with your publisher ID -->
+  <!-- Remove this script tag entirely until you have an AdSense account approved -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+
+  <header class="app-header">
+    <h1>RSL Roster Coach</h1>
+    <p class="tagline">What should I do next?</p>
+  </header>
+
+  <!-- ── SCREEN 1: Upload ── -->
+  <main id="screen-upload" class="screen active">
+    <div class="card">
+      <p class="instruction">
+        Take a screenshot of your <strong>champion roster screen</strong> in-game,
+        then upload it below.
+      </p>
+
+      <label class="upload-area" id="upload-label" for="file-input">
+        <span class="upload-icon">📷</span>
+        <span class="upload-text">Tap to choose screenshot</span>
+        <input type="file" id="file-input" accept="image/*" capture="environment" />
+      </label>
+
+      <div id="preview-wrap" class="hidden">
+        <img id="preview-img" alt="Your roster screenshot" />
+        <button class="btn-secondary" id="btn-change">Change photo</button>
+      </div>
+
+      <div class="content-picker">
+        <label for="content-select">What do you want help with?</label>
+        <select id="content-select">
+          <option value="">— choose —</option>
+          <option value="campaign">Campaign progression</option>
+          <option value="spider">Spider's Den</option>
+          <option value="clan_boss">Clan Boss</option>
+        </select>
+      </div>
+
+      <button class="btn-primary" id="btn-analyse" disabled>Analyse my roster</button>
+
+      <p class="disclaimer">
+        Unofficial fan tool — not affiliated with Plarium.<br />
+        Your first recommendation of the day is free.
+      </p>
+    </div>
+  </main>
+
+  <!-- ── SCREEN 2: Loading ── -->
+  <main id="screen-loading" class="screen hidden">
+    <div class="card center">
+      <div class="spinner"></div>
+      <p id="loading-msg">Reading your roster…</p>
+    </div>
+  </main>
+
+  <!-- ── SCREEN 3: Results ── -->
+  <main id="screen-results" class="screen hidden">
+    <div class="card">
+      <h2 id="result-heading">Your team for <span id="result-content-name"></span></h2>
+
+      <section class="team-section">
+        <h3>Recommended team</h3>
+        <ul id="team-list" class="champion-list"></ul>
+      </section>
+
+      <section class="explanation-section">
+        <h3>Why this team?</h3>
+        <p id="explanation-text"></p>
+      </section>
+
+      <section id="gaps-section" class="gaps-section hidden">
+        <h3>Gaps in your roster</h3>
+        <ul id="gaps-list"></ul>
+      </section>
+
+      <!-- "Go deeper" is gated behind a rewarded ad -->
+      <button class="btn-secondary" id="btn-deeper">
+        Go deeper — what to level up next
+      </button>
+
+      <button class="btn-text" id="btn-restart">Analyse a different roster</button>
+    </div>
+  </main>
+
+  <!-- ── SCREEN 4: Ad gate ── -->
+  <main id="screen-ad" class="screen hidden">
+    <div class="card center">
+      <p>Watch a short video to unlock the deeper analysis.</p>
+      <button class="btn-primary" id="btn-watch-ad">Watch ad</button>
+      <button class="btn-text" id="btn-skip-ad">No thanks</button>
+    </div>
+  </main>
+
+  <!-- ── SCREEN 5: Error ── -->
+  <main id="screen-error" class="screen hidden">
+    <div class="card center">
+      <p class="error-icon">⚠️</p>
+      <p id="error-msg">Something went wrong. Please try again.</p>
+      <button class="btn-primary" id="btn-error-retry">Try again</button>
+    </div>
+  </main>
+
+  <footer>
+    <a href="privacy.html">Privacy policy</a> · <a href="terms.html">Terms of service</a>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
