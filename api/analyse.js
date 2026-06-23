@@ -74,8 +74,11 @@ export default async function handler(req, res) {
     const mimeType = screenshot.mimeType;
     parsedChampions = await parseRosterScreenshot(b64, mimeType);
   } catch (e) {
+    console.error('parse-roster error', e.message);
     return json(res, 422, { error: e.message });
   }
+
+  console.log('parsed champions:', JSON.stringify(parsedChampions.slice(0, 5)));
 
   if (!parsedChampions.length) {
     return json(res, 422, { error: 'No champions found in screenshot. Please upload your roster screen.' });
