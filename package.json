@@ -5,7 +5,8 @@
   "type": "module",
   "engines": { "node": "22.x" },
   "scripts": {
-    "dev": "vercel dev"
+    "dev": "vercel dev",
+    "tag-agent": "node tools/tag-agent.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.0",

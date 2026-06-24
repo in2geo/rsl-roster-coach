@@ -1,1 +1,4 @@
 .vercel
+.env
+tools/output/
+node_modules/
