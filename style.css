@@ -269,32 +269,52 @@ footer a { color: var(--muted); text-decoration: underline; }
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  max-height: 400px;
+  gap: 0.35rem;
+  max-height: 420px;
   overflow-y: auto;
 }
 
 .confirm-list li {
   background: var(--bg);
   border-radius: 8px;
-  padding: 0.5rem 0.75rem;
+  padding: 0.45rem 0.6rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
-.confirm-list li input {
+/* Name dropdown */
+.confirm-list li select.champ-select {
   flex: 1;
   background: transparent;
   border: none;
+  border-bottom: 1px solid transparent;
   color: var(--text);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  padding: 0.1rem 0;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.confirm-list li select.champ-select:focus {
+  outline: none;
+  border-bottom-color: var(--accent);
+}
+
+/* Fallback text input */
+.confirm-list li input[type="text"] {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  color: var(--text);
+  font-size: 0.9rem;
   outline: none;
   min-width: 0;
 }
 
-.confirm-list li input:focus {
-  border-bottom: 1px solid var(--accent);
+.confirm-list li input[type="text"]:focus {
+  border-bottom-color: var(--accent);
 }
 
 .confirm-list li .remove-btn {
@@ -302,9 +322,10 @@ footer a { color: var(--muted); text-decoration: underline; }
   border: none;
   color: var(--muted);
   cursor: pointer;
-  font-size: 1rem;
-  padding: 0 0.25rem;
+  font-size: 0.95rem;
+  padding: 0 0.2rem;
   flex-shrink: 0;
+  line-height: 1;
 }
 
 .confirm-list li .remove-btn:hover { color: var(--accent); }

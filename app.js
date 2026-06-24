@@ -51,6 +51,19 @@ function updateAnalyseBtn() {
   btnAnalyse.disabled = !(selectedFile && contentSelect.value);
 }
 
+// ── Champion list (loaded once, used for dropdowns) ────────────────────────
+let championsByRarity = {};  // { Legendary: ['Arbiter', ...], Epic: [...], ... }
+
+async function loadChampionList() {
+  if (Object.keys(championsByRarity).length) return;  // already loaded
+  try {
+    const res = await fetch('/api/champions');
+    if (!res.ok) return;
+    const body = await res.json();
+    championsByRarity = body.byRarity || {};
+  } catch { /* non-fatal — dropdowns fall back to text inputs */ }
+}
+
 // ── Step 1: Parse screenshot ───────────────────────────────────────────────
 btnAnalyse.addEventListener('click', runParseStep);
 
@@ -61,9 +74,15 @@ async function runParseStep() {
   try {
     const form = new FormData();
     form.append('screenshot', selectedFile);
-    const res = await fetch('/api/parse', { method: 'POST', body: form });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(body.error || `Server error ${res.status}`);
+
+    // Fetch champion list and parse screenshot in parallel
+    const [, parseRes] = await Promise.all([
+      loadChampionList(),
+      fetch('/api/parse', { method: 'POST', body: form }),
+    ]);
+
+    const body = await parseRes.json().catch(() => ({}));
+    if (!parseRes.ok) throw new Error(body.error || `Server error ${parseRes.status}`);
 
     parsedChampions = body.champions || [];
     renderConfirmScreen(parsedChampions);
@@ -76,21 +95,92 @@ async function runParseStep() {
 }
 
 // ── Confirm screen ─────────────────────────────────────────────────────────
-function renderConfirmScreen(champions) {
-  const list = document.getElementById('confirm-list');
-  list.innerHTML = '';
-  champions.forEach((champ, i) => {
-    const li = document.createElement('li');
+const RARITIES = ['Mythical', 'Legendary', 'Epic', 'Rare', 'Uncommon', 'Common'];
+
+function rarityColor(r) {
+  return { Common:'#aaa', Uncommon:'#4caf50', Rare:'#2196f3',
+           Epic:'#9c27b0', Legendary:'#ff9800', Mythical:'#e94560' }[r] ?? '#aaa';
+}
+
+function buildNameDropdown(champ, index) {
+  const rarity  = champ.rarity || '';
+  const options = championsByRarity[rarity] || [];
+
+  if (!options.length) {
+    // Fallback to text input if champion list didn't load or unknown rarity
     const input = document.createElement('input');
     input.type = 'text';
     input.value = champ.name || '';
     input.placeholder = 'Champion name';
-    input.addEventListener('change', e => { parsedChampions[i].name = e.target.value.trim(); });
+    input.addEventListener('change', e => { parsedChampions[index].name = e.target.value.trim(); });
+    return input;
+  }
 
+  const sel = document.createElement('select');
+  sel.className = 'champ-select';
+
+  // Blank option first (in case AI name doesn't match)
+  const blank = document.createElement('option');
+  blank.value = '';
+  blank.textContent = '— pick a name —';
+  sel.appendChild(blank);
+
+  for (const name of options) {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    if (name === champ.name) opt.selected = true;
+    sel.appendChild(opt);
+  }
+
+  sel.addEventListener('change', e => { parsedChampions[index].name = e.target.value; });
+  return sel;
+}
+
+function renderConfirmScreen(champions) {
+  const list = document.getElementById('confirm-list');
+  list.innerHTML = '';
+
+  champions.forEach((champ, i) => {
+    const li = document.createElement('li');
+
+    // Rarity badge
+    const badge = document.createElement('span');
+    badge.className = 'rarity-badge';
+    badge.textContent = (champ.rarity || '?')[0];  // first letter: L, E, R, etc.
+    badge.title = champ.rarity || 'Unknown rarity';
+    badge.style.cssText = `background:${rarityColor(champ.rarity)};color:#fff;
+      border-radius:4px;padding:1px 5px;font-size:0.7rem;font-weight:700;flex-shrink:0`;
+    li.appendChild(badge);
+
+    // Rarity selector (small)
+    const rarSel = document.createElement('select');
+    rarSel.className = 'rarity-select';
+    rarSel.title = 'Change rarity';
+    rarSel.style.cssText = 'background:var(--bg);color:var(--muted);border:none;font-size:0.75rem;width:82px;flex-shrink:0';
+    for (const r of RARITIES) {
+      const o = document.createElement('option');
+      o.value = r;
+      o.textContent = r;
+      if (r === champ.rarity) o.selected = true;
+      rarSel.appendChild(o);
+    }
+    rarSel.addEventListener('change', e => {
+      parsedChampions[i].rarity = e.target.value;
+      renderConfirmScreen(parsedChampions);  // re-render so name dropdown updates
+    });
+    li.appendChild(rarSel);
+
+    // Name dropdown
+    li.appendChild(buildNameDropdown(champ, i));
+
+    // Level/stars meta
     const meta = document.createElement('span');
-    meta.style.cssText = 'font-size:0.8rem;color:var(--muted);flex-shrink:0';
-    meta.textContent = `Lv${champ.level} ★${champ.stars}`;
+    meta.style.cssText = 'font-size:0.75rem;color:var(--muted);flex-shrink:0';
+    meta.textContent = `${champ.level}·★${champ.stars}`;
+    li.appendChild(meta);
 
+    // Remove button
     const removeBtn = document.createElement('button');
     removeBtn.className = 'remove-btn';
     removeBtn.textContent = '✕';
@@ -98,20 +188,17 @@ function renderConfirmScreen(champions) {
       parsedChampions.splice(i, 1);
       renderConfirmScreen(parsedChampions);
     });
-
-    li.appendChild(input);
-    li.appendChild(meta);
     li.appendChild(removeBtn);
+
     list.appendChild(li);
   });
 }
 
 document.getElementById('btn-add-champion').addEventListener('click', () => {
-  parsedChampions.push({ name: '', level: 60, stars: 6 });
+  parsedChampions.push({ name: '', rarity: 'Rare', level: 1, stars: 1 });
   renderConfirmScreen(parsedChampions);
-  // Focus the new input
-  const inputs = document.querySelectorAll('#confirm-list input');
-  inputs[inputs.length - 1]?.focus();
+  const sels = document.querySelectorAll('#confirm-list select.champ-select');
+  sels[sels.length - 1]?.focus();
 });
 
 document.getElementById('btn-confirm-back').addEventListener('click', resetToUpload);
