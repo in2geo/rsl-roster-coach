@@ -45,11 +45,25 @@ btnChange.addEventListener('click', () => {
   updateAnalyseBtn();
 });
 
+const btnManual = document.getElementById('btn-manual-entry');
+
 contentSelect.addEventListener('change', updateAnalyseBtn);
 
 function updateAnalyseBtn() {
   btnAnalyse.disabled = !(selectedFile && contentSelect.value);
+  btnManual.disabled  = !contentSelect.value;
 }
+
+btnManual.addEventListener('click', async () => {
+  btnManual.disabled = true;
+  btnManual.textContent = 'Loading champion list…';
+  await loadChampionList();
+  btnManual.disabled = false;
+  btnManual.textContent = 'Or enter my roster manually →';
+  parsedChampions = [];
+  renderConfirmScreen([]);
+  showScreen('confirm');
+});
 
 // ── Champion list (loaded once, used for dropdowns) ────────────────────────
 let championsByRarity = {};  // { Legendary: ['Arbiter', ...], Epic: [...], ... }
