@@ -3,6 +3,7 @@ import { preloadRewardedAd, showRewardedAd } from './ads.js';
 // ── Screen navigation ──────────────────────────────────────────────────────
 const screens = {
   upload:  document.getElementById('screen-upload'),
+  confirm: document.getElementById('screen-confirm'),
   loading: document.getElementById('screen-loading'),
   results: document.getElementById('screen-results'),
   ad:      document.getElementById('screen-ad'),
@@ -23,7 +24,8 @@ const btnChange     = document.getElementById('btn-change');
 const contentSelect = document.getElementById('content-select');
 const btnAnalyse    = document.getElementById('btn-analyse');
 
-let selectedFile = null;
+let selectedFile    = null;
+let parsedChampions = [];  // set after vision step, used in confirm + match step
 
 fileInput.addEventListener('change', e => {
   const file = e.target.files[0];
@@ -49,32 +51,112 @@ function updateAnalyseBtn() {
   btnAnalyse.disabled = !(selectedFile && contentSelect.value);
 }
 
-// ── Analyse ────────────────────────────────────────────────────────────────
-btnAnalyse.addEventListener('click', runAnalysis);
+// ── Step 1: Parse screenshot ───────────────────────────────────────────────
+btnAnalyse.addEventListener('click', runParseStep);
 
-const loadingMessages = [
-  'Reading your roster…',
-  'Matching champions to dungeon goals…',
-  'Writing your recommendation…',
-];
-let loadingTimer;
+async function runParseStep() {
+  showScreen('loading');
+  document.getElementById('loading-msg').textContent = 'Reading your roster…';
 
-async function runAnalysis() {
+  try {
+    const form = new FormData();
+    form.append('screenshot', selectedFile);
+    const res = await fetch('/api/parse', { method: 'POST', body: form });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || `Server error ${res.status}`);
+
+    parsedChampions = body.champions || [];
+    renderConfirmScreen(parsedChampions);
+    showScreen('confirm');
+  } catch (err) {
+    document.getElementById('error-msg').textContent =
+      err.message || 'Could not read screenshot. Please try again.';
+    showScreen('error');
+  }
+}
+
+// ── Confirm screen ─────────────────────────────────────────────────────────
+function renderConfirmScreen(champions) {
+  const list = document.getElementById('confirm-list');
+  list.innerHTML = '';
+  champions.forEach((champ, i) => {
+    const li = document.createElement('li');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = champ.name || '';
+    input.placeholder = 'Champion name';
+    input.addEventListener('change', e => { parsedChampions[i].name = e.target.value.trim(); });
+
+    const meta = document.createElement('span');
+    meta.style.cssText = 'font-size:0.8rem;color:var(--muted);flex-shrink:0';
+    meta.textContent = `Lv${champ.level} ★${champ.stars}`;
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-btn';
+    removeBtn.textContent = '✕';
+    removeBtn.addEventListener('click', () => {
+      parsedChampions.splice(i, 1);
+      renderConfirmScreen(parsedChampions);
+    });
+
+    li.appendChild(input);
+    li.appendChild(meta);
+    li.appendChild(removeBtn);
+    list.appendChild(li);
+  });
+}
+
+document.getElementById('btn-add-champion').addEventListener('click', () => {
+  parsedChampions.push({ name: '', level: 60, stars: 6 });
+  renderConfirmScreen(parsedChampions);
+  // Focus the new input
+  const inputs = document.querySelectorAll('#confirm-list input');
+  inputs[inputs.length - 1]?.focus();
+});
+
+document.getElementById('btn-confirm-back').addEventListener('click', resetToUpload);
+
+document.getElementById('btn-confirm-roster').addEventListener('click', runMatchStep);
+
+// ── Step 2: Match + explain ────────────────────────────────────────────────
+async function runMatchStep() {
+  // Filter out empty names
+  const roster = parsedChampions.filter(c => c.name?.trim());
+  if (!roster.length) {
+    alert('Please add at least one champion name.');
+    return;
+  }
+
   showScreen('loading');
   cycleLoadingMessage();
 
   try {
-    const result = await callAnalyseAPI(selectedFile, contentSelect.value);
-    clearInterval(loadingTimer);
-    renderResults(result);
+    const res = await fetch('/api/match', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ champions: roster, content: contentSelect.value }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || `Server error ${res.status}`);
+
+    clearLoadingTimer();
+    renderResults(body);
     showScreen('results');
   } catch (err) {
-    clearInterval(loadingTimer);
+    clearLoadingTimer();
     document.getElementById('error-msg').textContent =
       err.message || 'Something went wrong. Please try again.';
     showScreen('error');
   }
 }
+
+// ── Loading messages ───────────────────────────────────────────────────────
+const loadingMessages = [
+  'Matching champions to dungeon goals…',
+  'Checking your roster against requirements…',
+  'Writing your recommendation…',
+];
+let loadingTimer;
 
 function cycleLoadingMessage() {
   let i = 0;
@@ -86,40 +168,11 @@ function cycleLoadingMessage() {
   }, 2000);
 }
 
-// ── API call ───────────────────────────────────────────────────────────────
-// Replace '/api/analyse' with your actual Vercel serverless function URL.
-async function callAnalyseAPI(imageFile, contentKey) {
-  const form = new FormData();
-  form.append('screenshot', imageFile);
-  form.append('content', contentKey);
-
-  const res = await fetch('/api/analyse', { method: 'POST', body: form });
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `Server error ${res.status}`);
-  }
-
-  return res.json();
-}
+function clearLoadingTimer() { clearInterval(loadingTimer); }
 
 // ── Render results ─────────────────────────────────────────────────────────
-// Expected API response shape:
-// {
-//   content_label: "Spider's Den",
-//   team: [{ name, rarity, stars, level }],
-//   explanation: "string",
-//   gaps: ["string", ...]   // may be empty
-// }
 function renderResults(data) {
-  const contentNames = {
-    campaign:   "Campaign",
-    spider:     "Spider's Den",
-    clan_boss:  "Clan Boss",
-  };
-
-  document.getElementById('result-content-name').textContent =
-    data.content_label || contentNames[contentSelect.value] || '';
+  document.getElementById('result-content-name').textContent = data.content_label || '';
 
   const teamList = document.getElementById('team-list');
   teamList.innerHTML = '';
@@ -150,38 +203,26 @@ function renderResults(data) {
 }
 
 // ── Results buttons ────────────────────────────────────────────────────────
-document.getElementById('btn-deeper').addEventListener('click', () => {
-  showScreen('ad');
-});
-
+document.getElementById('btn-deeper').addEventListener('click', () => showScreen('ad'));
 document.getElementById('btn-restart').addEventListener('click', resetToUpload);
 
 document.getElementById('btn-watch-ad').addEventListener('click', async () => {
   const btn = document.getElementById('btn-watch-ad');
   btn.disabled = true;
   btn.textContent = 'Loading ad…';
-
   const earned = await showRewardedAd();
-
   btn.disabled = false;
   btn.textContent = 'Watch ad';
-
-  if (earned) {
-    showDeepAnalysis();
-  } else {
-    // Ad wasn't available or was dismissed — return to results without reward
-    showScreen('results');
-  }
+  if (earned) showDeepAnalysis();
+  else showScreen('results');
 });
 
-document.getElementById('btn-skip-ad').addEventListener('click', () => {
-  showScreen('results');
-});
-
+document.getElementById('btn-skip-ad').addEventListener('click', () => showScreen('results'));
 document.getElementById('btn-error-retry').addEventListener('click', resetToUpload);
 
 function resetToUpload() {
   selectedFile = null;
+  parsedChampions = [];
   fileInput.value = '';
   previewWrap.classList.add('hidden');
   uploadLabel.classList.remove('hidden');
@@ -190,9 +231,6 @@ function resetToUpload() {
   showScreen('upload');
 }
 
-// ── Deep analysis (unlocked after rewarded ad) ─────────────────────────────
-// Extend this with a second API call (e.g. POST /api/deeper) that returns
-// level-up priorities, next farming targets, etc.
 function showDeepAnalysis() {
   const el = document.getElementById('explanation-text');
   el.insertAdjacentHTML('afterend', `
@@ -207,14 +245,11 @@ function showDeepAnalysis() {
     </section>
   `);
   showScreen('results');
-
-  // TODO: call /api/deeper with the current matchResult to populate #deep-text
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
 preloadRewardedAd();
 
-// ── PWA service worker ─────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(console.error);
 }

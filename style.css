@@ -264,4 +264,49 @@ footer {
 
 footer a { color: var(--muted); text-decoration: underline; }
 
+/* ── Confirm roster screen ── */
+.confirm-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.confirm-list li {
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.confirm-list li input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 0.95rem;
+  outline: none;
+  min-width: 0;
+}
+
+.confirm-list li input:focus {
+  border-bottom: 1px solid var(--accent);
+}
+
+.confirm-list li .remove-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0 0.25rem;
+  flex-shrink: 0;
+}
+
+.confirm-list li .remove-btn:hover { color: var(--accent); }
+
 .hidden { display: none !important; }
