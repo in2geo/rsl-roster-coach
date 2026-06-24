@@ -188,11 +188,25 @@ function renderConfirmScreen(champions) {
     // Name dropdown
     li.appendChild(buildNameDropdown(champ, i));
 
-    // Level/stars meta
-    const meta = document.createElement('span');
-    meta.style.cssText = 'font-size:0.75rem;color:var(--muted);flex-shrink:0';
-    meta.textContent = `${champ.level}·★${champ.stars}`;
-    li.appendChild(meta);
+    // Level input
+    const lvlInput = document.createElement('input');
+    lvlInput.type = 'number';
+    lvlInput.min = 1; lvlInput.max = 60;
+    lvlInput.value = champ.level || 1;
+    lvlInput.title = 'Level';
+    lvlInput.style.cssText = 'width:38px;background:transparent;border:none;border-bottom:1px solid var(--muted);color:var(--muted);font-size:0.75rem;text-align:center;flex-shrink:0';
+    lvlInput.addEventListener('change', e => { parsedChampions[i].level = parseInt(e.target.value) || 1; });
+    li.appendChild(lvlInput);
+
+    // Stars input
+    const starInput = document.createElement('input');
+    starInput.type = 'number';
+    starInput.min = 1; starInput.max = 6;
+    starInput.value = champ.stars || 1;
+    starInput.title = 'Stars';
+    starInput.style.cssText = 'width:28px;background:transparent;border:none;border-bottom:1px solid var(--muted);color:var(--muted);font-size:0.75rem;text-align:center;flex-shrink:0';
+    starInput.addEventListener('change', e => { parsedChampions[i].stars = parseInt(e.target.value) || 1; });
+    li.appendChild(starInput);
 
     // Remove button
     const removeBtn = document.createElement('button');
