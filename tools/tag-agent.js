@@ -17,23 +17,13 @@
 
 import Anthropic                    from '@anthropic-ai/sdk';
 import { createClient }             from '@supabase/supabase-js';
-import { writeFileSync, mkdirSync, readFileSync } from 'fs';
+import { writeFileSync, mkdirSync } from 'fs';
 import { parseArgs }                from 'util';
-
-// Load .env file if present
-try {
-  const env = readFileSync('.env', 'utf8');
-  for (const line of env.split('\n')) {
-    const m = line.match(/^([^#=]+)=(.*)$/);
-    if (m) process.env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, '');
-  }
-} catch { /* no .env file, env vars must be set externally */ }
 
 // ── Config ─────────────────────────────────────────────────────────────────
 
-const WIKI_BASE   = 'https://raid.fandom.com/wiki';
-const DELAY_MS    = 1200;   // be polite to the wiki
-const BATCH_SIZE  = 5;      // champions per Claude call
+const DELAY_MS    = 500;    // pause between batches
+const BATCH_SIZE  = 10;     // champions per Claude call (no wiki fetching needed)
 
 // ── CLI args ───────────────────────────────────────────────────────────────
 
@@ -85,92 +75,46 @@ async function getAllTags() {
   return data;
 }
 
-// ── Fandom wiki scraper ────────────────────────────────────────────────────
+// ── Claude tagger (uses built-in RSL knowledge, no wiki fetching) ──────────
 
-async function fetchWikiPage(championName) {
-  const slug = championName.replace(/ /g, '_');
-  const url  = `${WIKI_BASE}/${encodeURIComponent(slug)}`;
+async function tagChampions(champions, allTags) {
+  const tagList   = allTags.map(t => `- "${t.name}": ${t.description}`).join('\n');
+  const nameList  = champions.map(c => `${c.name} (${c.rarity})`).join('\n');
 
-  let res;
-  try {
-    res = await fetch(url, {
-      headers: { 'User-Agent': 'RSLRosterCoach-TagAgent/1.0 (educational fan tool; contact b52surfer@gmail.com)' },
-    });
-  } catch (e) {
-    return { url, text: null, error: e.message };
-  }
+  const prompt = `You are building a tag database for Raid: Shadow Legends champions.
 
-  if (!res.ok) return { url, text: null, error: `HTTP ${res.status}` };
-
-  const html = await res.text();
-
-  // Extract skill descriptions from the wiki HTML.
-  // Fandom RSL pages have skill data in <div class="skill-description"> blocks
-  // and/or <td> cells with ability text. We grab all readable text sections.
-  const text = extractReadableText(html, championName);
-  return { url, text, error: null };
-}
-
-function extractReadableText(html, championName) {
-  // Remove scripts, styles, navbars
-  let clean = html
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<nav[\s\S]*?<\/nav>/gi, '')
-    .replace(/<header[\s\S]*?<\/header>/gi, '')
-    .replace(/<footer[\s\S]*?<\/footer>/gi, '');
-
-  // Extract text between tags
-  clean = clean.replace(/<[^>]+>/g, ' ').replace(/\s{2,}/g, ' ').trim();
-
-  // Find the section that mentions the champion name and skills
-  // Take a 6000-char window around first mention of the champion name
-  const idx = clean.toLowerCase().indexOf(championName.toLowerCase().split(' ')[0].toLowerCase());
-  if (idx === -1) return clean.slice(0, 6000);
-
-  const start = Math.max(0, idx - 200);
-  return clean.slice(start, start + 6000);
-}
-
-// ── Claude tagger ──────────────────────────────────────────────────────────
-
-async function tagChampions(batch, allTags) {
-  const tagList = allTags.map(t => `- "${t.name}": ${t.description}`).join('\n');
-
-  const championsText = batch.map(({ champion, wikiText }) => {
-    const text = wikiText || '(no wiki data found)';
-    return `CHAMPION: ${champion.name} (${champion.rarity})\nWIKI TEXT:\n${text}`;
-  }).join('\n\n---\n\n');
-
-  const prompt = `You are tagging Raid: Shadow Legends champions for a database.
-
-AVAILABLE TAGS (use ONLY these exact names):
+AVAILABLE TAGS (use ONLY these exact names — do not invent new ones):
 ${tagList}
 
-For each champion below, list only the tags that clearly apply based on their abilities described in the wiki text.
-Be conservative — only tag what is explicitly stated. Do not infer or guess.
-A champion that places [Decrease ATK] gets the "Decrease Attack" tag.
-A champion with a [HP Burn] skill gets the "HP Burn" tag.
-Ignore passive effects that are conditional or very situational.
+For each champion listed below, use your knowledge of their abilities to assign the correct tags.
+Only assign a tag if the champion has a skill that clearly applies it.
+Be conservative — if unsure, leave it out. All results are marked "proposed" and will be reviewed by a human.
 
-${championsText}
+CHAMPIONS TO TAG:
+${nameList}
 
-Respond with a JSON array, one entry per champion:
+Respond with a JSON array:
 [
   {
     "name": "Champion Name",
     "tags": ["Tag Name 1", "Tag Name 2"],
-    "notes": "brief reason for each tag choice"
+    "notes": "one line explaining which skill(s) justify the tags"
   }
 ]
 
 Respond with ONLY the JSON array, no other text.`;
 
-  const response = await anthropic.messages.create({
-    model:      'claude-sonnet-4-6',
-    max_tokens: 2048,
-    messages:   [{ role: 'user', content: prompt }],
-  });
+  let response;
+  try {
+    response = await anthropic.messages.create({
+      model:      'claude-sonnet-4-6',
+      max_tokens: 4096,
+      messages:   [{ role: 'user', content: prompt }],
+    });
+  } catch (e) {
+    console.error('  ❌ Claude API error:', e.message);
+    return [];
+  }
 
   const text = response.content.find(b => b.type === 'text')?.text ?? '[]';
 
@@ -178,7 +122,7 @@ Respond with ONLY the JSON array, no other text.`;
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     return JSON.parse(jsonMatch?.[0] ?? '[]');
   } catch {
-    console.error('  ⚠ Could not parse Claude response:', text.slice(0, 200));
+    console.error('  ⚠ Could not parse Claude response:', text.slice(0, 300));
     return [];
   }
 }
@@ -195,13 +139,13 @@ function buildSQL(results, allTags) {
   lines.push('--   UPDATE champion_tags SET status=\'approved\' WHERE status=\'proposed\' AND id IN (...)');
   lines.push('');
 
-  for (const { championId, championName, rarity, tags, notes, wikiUrl } of results) {
+  for (const { championId, championName, rarity, tags, notes } of results) {
     if (!tags.length) {
       lines.push(`-- ${championName} (${rarity}): no tags identified`);
       continue;
     }
 
-    lines.push(`-- ${championName} (${rarity}) — ${wikiUrl}`);
+    lines.push(`-- ${championName} (${rarity})`);
     if (notes) lines.push(`-- Notes: ${notes}`);
 
     for (const tagName of tags) {
@@ -211,8 +155,8 @@ function buildSQL(results, allTags) {
         continue;
       }
       lines.push(
-        `INSERT INTO champion_tags (champion_id, tag_id, status) ` +
-        `VALUES ('${championId}', '${tagId}', 'proposed') ON CONFLICT DO NOTHING;`
+        `INSERT INTO champion_tags (champion_id, tag_id, status, source_type) ` +
+        `VALUES ('${championId}', '${tagId}', 'proposed', 'human_observation') ON CONFLICT DO NOTHING;`
       );
     }
     lines.push('');
@@ -242,24 +186,11 @@ async function main() {
     const chunk = champions.slice(i, i + BATCH_SIZE);
     console.log(`\nBatch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(champions.length / BATCH_SIZE)}: ${chunk.map(c => c.name).join(', ')}`);
 
-    // Fetch wiki pages
-    const wikiData = [];
-    for (const champ of chunk) {
-      process.stdout.write(`  📖 Fetching wiki: ${champ.name}… `);
-      const { url, text, error } = await fetchWikiPage(champ.name);
-      if (error) console.log(`⚠ ${error}`);
-      else       console.log('✓');
-      wikiData.push({ champion: champ, wikiText: text, wikiUrl: url });
-      await new Promise(r => setTimeout(r, DELAY_MS));
-    }
-
-    // Ask Claude to tag them
     process.stdout.write(`  🤖 Asking Claude to tag ${chunk.length} champions… `);
-    const tagged = await tagChampions(wikiData, allTags);
+    const tagged = await tagChampions(chunk, allTags);
     console.log('✓');
 
-    // Merge results
-    for (const { champion, wikiUrl } of wikiData) {
+    for (const champion of chunk) {
       const found = tagged.find(t => t.name.toLowerCase() === champion.name.toLowerCase());
       allResults.push({
         championId:   champion.id,
@@ -267,8 +198,11 @@ async function main() {
         rarity:       champion.rarity,
         tags:         found?.tags  ?? [],
         notes:        found?.notes ?? '',
-        wikiUrl,
       });
+    }
+
+    if (i + BATCH_SIZE < champions.length) {
+      await new Promise(r => setTimeout(r, DELAY_MS));
     }
   }
 
@@ -295,4 +229,4 @@ async function main() {
   console.log('  3. Spot-check proposed tags then approve the ones that look right');
 }
 
-main().catch(e => { console.error('Fatal:', e.message); process.exit(1); });
+main().catch(e => { console.error('Fatal:', e.message, e.stack); process.exit(1); });

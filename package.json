@@ -3,13 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": "22.x" },
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "vercel dev",
-    "tag-agent": "node tools/tag-agent.js"
+    "tag-agent": "node --env-file=.env tools/tag-agent.js"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.30.0",
+    "@anthropic-ai/sdk": "^0.105.0",
     "@supabase/supabase-js": "^2.50.0",
     "busboy": "^1.6.0"
   }
