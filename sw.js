@@ -1,5 +1,5 @@
 // Service worker — offline shell caching
-const CACHE = 'rsl-coach-v1';
+const CACHE = 'rsl-coach-v3';
 const SHELL = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {
