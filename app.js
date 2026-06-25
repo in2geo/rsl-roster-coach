@@ -1,5 +1,10 @@
 import { preloadRewardedAd, showRewardedAd } from './ads.js';
 
+// Unregister service worker on localhost so code changes are always fresh
+if ('serviceWorker' in navigator && location.hostname === 'localhost') {
+  navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+}
+
 // ── Screen navigation ──────────────────────────────────────────────────────
 const screens = {
   upload:  document.getElementById('screen-upload'),
@@ -422,6 +427,6 @@ function showDeepAnalysis() {
 // ── Init ───────────────────────────────────────────────────────────────────
 preloadRewardedAd();
 
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && location.hostname !== 'localhost') {
   navigator.serviceWorker.register('sw.js').catch(console.error);
 }
