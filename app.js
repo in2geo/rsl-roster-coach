@@ -116,13 +116,21 @@ async function runParseStep() {
 
   try {
     const compressed = await compressImage(selectedFile);
-    const form = new FormData();
-    form.append('screenshot', compressed);
+    const imageData = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload  = e => resolve(e.target.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(compressed);
+    });
 
     // Fetch champion list and parse screenshot in parallel
     const [, parseRes] = await Promise.all([
       loadChampionList(),
-      fetch('/api/parse', { method: 'POST', body: form }),
+      fetch('/api/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageData, mimeType: 'image/jpeg' }),
+      }),
     ]);
 
     const body = await parseRes.json().catch(() => ({}));
