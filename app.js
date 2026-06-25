@@ -83,21 +83,29 @@ btnAnalyse.addEventListener('click', runParseStep);
 
 function compressImage(file, maxWidth = 1200, quality = 0.82) {
   return new Promise(resolve => {
+    const done = (result) => { resolved || (resolved = true, resolve(result)); };
+    let resolved = false;
+
+    // Safety net — if anything hangs, fall back to original file after 4s
+    const timeout = setTimeout(() => done(file), 4000);
+
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
+      clearTimeout(timeout);
       URL.revokeObjectURL(url);
-      const scale = Math.min(1, maxWidth / img.width);
-      const canvas = document.createElement('canvas');
-      canvas.width  = Math.round(img.width  * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(blob => {
-        if (!blob) { resolve(file); return; }
-        resolve(new File([blob], 'screenshot.jpg', { type: 'image/jpeg' }));
-      }, 'image/jpeg', quality);
+      try {
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width  = Math.round(img.width  * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blob => {
+          done(blob ? new File([blob], 'screenshot.jpg', { type: 'image/jpeg' }) : file);
+        }, 'image/jpeg', quality);
+      } catch { done(file); }
     };
-    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.onerror = () => { clearTimeout(timeout); URL.revokeObjectURL(url); done(file); };
     img.src = url;
   });
 }
