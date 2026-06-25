@@ -318,18 +318,29 @@ const matchMessages = [
   'Writing your recommendation…',
 ];
 let loadingTimer;
+let timerInterval;
+let timerStart;
 
 function cycleLoadingMessage(messages) {
   let i = 0;
   const el = document.getElementById('loading-msg');
+  const timerEl = document.getElementById('loading-timer');
   el.textContent = messages[0];
+  timerStart = Date.now();
+  timerEl.textContent = '0s';
+  timerInterval = setInterval(() => {
+    timerEl.textContent = Math.floor((Date.now() - timerStart) / 1000) + 's';
+  }, 1000);
   loadingTimer = setInterval(() => {
     i = (i + 1) % messages.length;
     el.textContent = messages[i];
   }, 2500);
 }
 
-function clearLoadingTimer() { clearInterval(loadingTimer); }
+function clearLoadingTimer() {
+  clearInterval(loadingTimer);
+  clearInterval(timerInterval);
+}
 
 // ── Render results ─────────────────────────────────────────────────────────
 function renderResults(data) {
