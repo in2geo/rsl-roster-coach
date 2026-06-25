@@ -13,10 +13,12 @@ export default async function handler(req, res) {
       req.on('end', resolve);
       req.on('error', reject);
     });
-    body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    const buf = Buffer.concat(chunks);
+    console.log('raw body length:', buf.length, '| first 20 bytes:', buf.slice(0, 20).toString('hex'), '| as text:', buf.slice(0, 100).toString('utf8'));
+    body = JSON.parse(buf.toString('utf8'));
   } catch (e) {
-    console.error('body parse error:', e.message);
-    return json(res, 400, { error: 'Could not parse request body' });
+    console.error('body parse error:', e.message, '| raw:', e.message);
+    return json(res, 400, { error: 'Could not parse request body: ' + e.message });
   }
 
   const { imageData, mimeType } = body || {};
