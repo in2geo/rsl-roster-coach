@@ -92,7 +92,10 @@ function compressImage(file, maxWidth = 1200, quality = 0.82) {
       canvas.width  = Math.round(img.width  * scale);
       canvas.height = Math.round(img.height * scale);
       canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(blob => resolve(blob || file), 'image/jpeg', quality);
+      canvas.toBlob(blob => {
+        if (!blob) { resolve(file); return; }
+        resolve(new File([blob], 'screenshot.jpg', { type: 'image/jpeg' }));
+      }, 'image/jpeg', quality);
     };
     img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
     img.src = url;
@@ -106,7 +109,7 @@ async function runParseStep() {
   try {
     const compressed = await compressImage(selectedFile);
     const form = new FormData();
-    form.append('screenshot', compressed, 'screenshot.jpg');
+    form.append('screenshot', compressed);
 
     // Fetch champion list and parse screenshot in parallel
     const [, parseRes] = await Promise.all([
