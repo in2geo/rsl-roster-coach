@@ -7,7 +7,22 @@ export default async function handler(req, res) {
 
   let body;
   try {
-    body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    if (typeof req.body === 'string') {
+      body = JSON.parse(req.body);
+    } else if (Buffer.isBuffer(req.body)) {
+      body = JSON.parse(req.body.toString('utf8'));
+    } else if (req.body && typeof req.body === 'object') {
+      body = req.body;
+    } else {
+      // Stream — read manually
+      const chunks = [];
+      await new Promise((resolve, reject) => {
+        req.on('data', c => chunks.push(c));
+        req.on('end', resolve);
+        req.on('error', reject);
+      });
+      body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    }
   } catch {
     return json(res, 400, { error: 'Could not parse request body' });
   }
