@@ -7,24 +7,15 @@ export default async function handler(req, res) {
 
   let body;
   try {
-    console.log('req.body type:', typeof req.body, '| is Buffer:', Buffer.isBuffer(req.body), '| value:', typeof req.body === 'string' ? req.body.slice(0, 100) : req.body);
-    if (typeof req.body === 'string') {
-      body = JSON.parse(req.body);
-    } else if (Buffer.isBuffer(req.body)) {
-      body = JSON.parse(req.body.toString('utf8'));
-    } else if (req.body && typeof req.body === 'object') {
-      body = req.body;
-    } else {
-      // Stream — read manually
-      const chunks = [];
-      await new Promise((resolve, reject) => {
-        req.on('data', c => chunks.push(c));
-        req.on('end', resolve);
-        req.on('error', reject);
-      });
-      body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-    }
-  } catch {
+    const chunks = [];
+    await new Promise((resolve, reject) => {
+      req.on('data', c => chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c)));
+      req.on('end', resolve);
+      req.on('error', reject);
+    });
+    body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  } catch (e) {
+    console.error('body parse error:', e.message);
     return json(res, 400, { error: 'Could not parse request body' });
   }
 
