@@ -81,13 +81,32 @@ async function loadChampionList() {
 // ── Step 1: Parse screenshot ───────────────────────────────────────────────
 btnAnalyse.addEventListener('click', runParseStep);
 
+function compressImage(file, maxWidth = 1200, quality = 0.82) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxWidth / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(blob => resolve(blob || file), 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 async function runParseStep() {
   showScreen('loading');
-  document.getElementById('loading-msg').textContent = 'Reading your roster…';
+  cycleLoadingMessage(parseMessages);
 
   try {
+    const compressed = await compressImage(selectedFile);
     const form = new FormData();
-    form.append('screenshot', selectedFile);
+    form.append('screenshot', compressed, 'screenshot.jpg');
 
     // Fetch champion list and parse screenshot in parallel
     const [, parseRes] = await Promise.all([
@@ -98,10 +117,12 @@ async function runParseStep() {
     const body = await parseRes.json().catch(() => ({}));
     if (!parseRes.ok) throw new Error(body.error || `Server error ${parseRes.status}`);
 
+    clearLoadingTimer();
     parsedChampions = body.champions || [];
     renderConfirmScreen(parsedChampions);
     showScreen('confirm');
   } catch (err) {
+    clearLoadingTimer();
     document.getElementById('error-msg').textContent =
       err.message || 'Could not read screenshot. Please try again.';
     showScreen('error');
@@ -243,7 +264,7 @@ async function runMatchStep() {
   }
 
   showScreen('loading');
-  cycleLoadingMessage();
+  cycleLoadingMessage(matchMessages);
 
   try {
     const res = await fetch('/api/match', {
@@ -266,21 +287,27 @@ async function runMatchStep() {
 }
 
 // ── Loading messages ───────────────────────────────────────────────────────
-const loadingMessages = [
+const parseMessages = [
+  'Reading your roster…',
+  'Scanning champion cards…',
+  'Identifying champions…',
+  'Almost done reading…',
+];
+const matchMessages = [
   'Matching champions to dungeon goals…',
   'Checking your roster against requirements…',
   'Writing your recommendation…',
 ];
 let loadingTimer;
 
-function cycleLoadingMessage() {
+function cycleLoadingMessage(messages) {
   let i = 0;
   const el = document.getElementById('loading-msg');
-  el.textContent = loadingMessages[0];
+  el.textContent = messages[0];
   loadingTimer = setInterval(() => {
-    i = (i + 1) % loadingMessages.length;
-    el.textContent = loadingMessages[i];
-  }, 2000);
+    i = (i + 1) % messages.length;
+    el.textContent = messages[i];
+  }, 2500);
 }
 
 function clearLoadingTimer() { clearInterval(loadingTimer); }
