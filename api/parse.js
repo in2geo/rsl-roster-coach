@@ -7,6 +7,7 @@ export default async function handler(req, res) {
 
   let body;
   try {
+    console.log('req.body type:', typeof req.body, '| is Buffer:', Buffer.isBuffer(req.body), '| value:', typeof req.body === 'string' ? req.body.slice(0, 100) : req.body);
     if (typeof req.body === 'string') {
       body = JSON.parse(req.body);
     } else if (Buffer.isBuffer(req.body)) {
