@@ -489,6 +489,7 @@ async function saveChampion(champ, rarity, sheet) {
     updateCardSelected(champ.id, true);
     closeDetailSheet();
     refreshRarityScreen();
+    showRosterScreen('screen-rarity');
   } catch {
     if (addBtn) { addBtn.disabled = false; addBtn.textContent = 'Try again'; }
   }
