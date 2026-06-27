@@ -372,6 +372,7 @@ function openDetailSheet(champ, rarity) {
   // Buttons
   const addBtn = qs('#sheet-add-btn', sheet);
   if (addBtn) {
+    addBtn.disabled = false;
     addBtn.textContent = existing ? 'Save changes' : 'Add to roster';
     addBtn.onclick = () => saveChampion(champ, rarity, sheet);
   }
