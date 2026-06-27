@@ -13,16 +13,20 @@ export default async function handler(req, res) {
 
   const { data, error } = await supabase
     .from('champions')
-    .select('name, rarity')
+    .select('id, name, rarity, portrait_url')
     .order('name', { ascending: true });
 
   if (error) return json(res, 500, { error: error.message });
 
-  // Group by rarity for efficient client-side filtering
+  // Group by rarity
   const byRarity = {};
-  for (const { name, rarity } of data) {
-    if (!byRarity[rarity]) byRarity[rarity] = [];
-    byRarity[rarity].push(name);
+  for (const champ of data) {
+    if (!byRarity[champ.rarity]) byRarity[champ.rarity] = [];
+    byRarity[champ.rarity].push({
+      id:          champ.id,
+      name:        champ.name,
+      portrait_url: champ.portrait_url ?? null,
+    });
   }
 
   res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate');

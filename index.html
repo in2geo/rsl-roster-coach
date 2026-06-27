@@ -20,7 +20,7 @@
   </header>
 
   <!-- ── SCREEN 1: Upload ── -->
-  <main id="screen-upload" class="screen active">
+  <main id="screen-upload" class="screen hidden">
     <div class="card">
       <p class="instruction">
         Take a screenshot of your <strong>Champions screen</strong> in-game
@@ -79,7 +79,7 @@
     <div class="card center">
       <div class="spinner"></div>
       <p id="loading-msg">Reading your roster…</p>
-      <p id="loading-timer" style="font-size:0.85rem;color:var(--muted);margin-top:0.25rem;">0s</p>
+      <p id="loading-timer" style="font-size:1rem;color:var(--muted);margin-top:0.5rem;">0s</p>
     </div>
   </main>
 
@@ -120,6 +120,171 @@
       <button class="btn-text" id="btn-skip-ad">No thanks</button>
     </div>
   </main>
+
+  <!-- ── ROSTER FLOW: Screen R1 — Rarity Selection ── -->
+  <main id="screen-rarity" class="screen hidden">
+    <div class="card">
+      <h2 class="screen-title">Build your roster</h2>
+      <p class="instruction">Choose a rarity to add champions. You need at least 3 champions total before continuing.</p>
+
+      <div class="account-level-row">
+        <label for="roster-account-level">Account level</label>
+        <input type="number" id="roster-account-level" min="1" max="250" placeholder="e.g. 45" />
+      </div>
+
+      <div class="rarity-buttons">
+        <button class="rarity-btn" data-rarity="Mythical" style="--rc:#E53935">
+          <span class="rarity-label">Mythical</span>
+          <span class="rarity-count">0</span>
+        </button>
+        <button class="rarity-btn" data-rarity="Legendary" style="--rc:#FFB700">
+          <span class="rarity-label">Legendary</span>
+          <span class="rarity-count">0</span>
+        </button>
+        <button class="rarity-btn" data-rarity="Epic" style="--rc:#9C27B0">
+          <span class="rarity-label">Epic</span>
+          <span class="rarity-count">0</span>
+        </button>
+        <button class="rarity-btn" data-rarity="Rare" style="--rc:#2196F3">
+          <span class="rarity-label">Rare</span>
+          <span class="rarity-count">0</span>
+        </button>
+      </div>
+
+      <button class="btn-primary" id="btn-roster-done" disabled>Done — pick content →</button>
+    </div>
+  </main>
+
+  <!-- ── ROSTER FLOW: Screen R2 — Portrait Grid ── -->
+  <main id="screen-grid" class="screen hidden">
+    <div class="grid-header">
+      <button class="btn-back" id="btn-grid-back" onclick="document.getElementById('screen-grid').classList.add('hidden');document.getElementById('screen-rarity').classList.remove('hidden')">← Back</button>
+      <h2 id="grid-title" class="screen-title">Champions</h2>
+      <button class="btn-text" id="btn-grid-done">Done</button>
+    </div>
+
+    <div class="grid-search-wrap">
+      <input type="search" id="grid-search" placeholder="Search champions…" autocomplete="off" />
+      <div id="grid-suggestions" class="suggestions-list"></div>
+    </div>
+
+    <div id="portrait-grid" class="portrait-grid">
+      <div class="grid-loading">
+        <div class="spinner"></div>
+        <p>Loading champions…</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── ROSTER FLOW: Screen R4 — Content Selection ── -->
+  <main id="screen-content" class="screen hidden">
+    <div class="card">
+      <h2 class="screen-title">What are you working on?</h2>
+
+      <div class="roster-summary-row">
+        <span id="roster-summary" class="roster-summary">0 champions</span>
+        <button class="btn-text" id="btn-edit-roster">Edit roster</button>
+      </div>
+
+      <div class="content-tabs">
+        <button class="content-tab active" data-content="spider">Spider's Den</button>
+        <button class="content-tab" data-content="clan_boss">Clan Boss</button>
+      </div>
+
+      <!-- Spider section -->
+      <div id="content-spider" class="content-section">
+        <p class="section-label">Stage</p>
+        <div class="stage-toggle">
+          <button class="stage-btn active" id="spider-stage-9" data-stage="9">Stage 9</button>
+          <button class="stage-btn" id="spider-stage-10" data-stage="10">Stage 10</button>
+        </div>
+      </div>
+
+      <!-- Clan Boss section -->
+      <div id="content-clan-boss" class="content-section hidden">
+        <p class="section-label">Difficulty</p>
+        <div class="difficulty-grid">
+          <button class="difficulty-btn" data-difficulty="Easy">Easy</button>
+          <button class="difficulty-btn active" data-difficulty="Normal">Normal</button>
+          <button class="difficulty-btn" data-difficulty="Hard">Hard</button>
+          <button class="difficulty-btn" data-difficulty="Brutal">Brutal</button>
+          <button class="difficulty-btn" data-difficulty="Nightmare">Nightmare</button>
+          <button class="difficulty-btn" data-difficulty="UNM">UNM</button>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="btn-get-recommendation">Get recommendation →</button>
+
+      <p class="disclaimer">Unofficial fan tool — not affiliated with Plarium.</p>
+    </div>
+  </main>
+
+  <!-- ── Detail sheet overlay (shared across grid screens) ── -->
+  <div id="sheet-backdrop" class="sheet-backdrop hidden"></div>
+  <div id="detail-sheet" class="detail-sheet">
+    <div class="sheet-header">
+      <div id="sheet-portrait" class="sheet-portrait portrait-placeholder"></div>
+      <div class="sheet-header-text">
+        <h3 id="sheet-champion-name" class="sheet-name">Champion</h3>
+      </div>
+    </div>
+
+    <div class="sheet-body">
+      <div class="sheet-field">
+        <label>Level</label>
+        <input type="number" id="sheet-level" min="1" max="60" value="1" />
+      </div>
+
+      <div class="sheet-field">
+        <label>Stars</label>
+        <div id="sheet-stars" class="star-row"></div>
+      </div>
+
+      <div class="sheet-field">
+        <label>Gear</label>
+        <div id="sheet-gear-tier" class="pill-group">
+          <button class="pill active" data-gear="Starter">Starter</button>
+          <button class="pill" data-gear="Dungeon">Dungeon</button>
+          <button class="pill" data-gear="Strong">Strong</button>
+          <button class="pill" data-gear="God Tier">God Tier</button>
+        </div>
+      </div>
+
+      <button id="sheet-advanced-toggle" class="btn-text sheet-advanced-toggle">Advanced ▸</button>
+      <div id="sheet-advanced-panel" class="hidden">
+        <div class="sheet-field">
+          <label>Ascension</label>
+          <input type="number" id="sheet-ascension" min="0" max="6" value="0" />
+        </div>
+        <div class="sheet-field">
+          <label>Mastery</label>
+          <div id="sheet-mastery" class="pill-group">
+            <button class="pill active" data-mastery="None">None</button>
+            <button class="pill" data-mastery="Basic">Basic</button>
+            <button class="pill" data-mastery="Complete">Complete</button>
+          </div>
+        </div>
+        <div class="sheet-field" id="sheet-lore-row" style="display:none">
+          <label>
+            <input type="checkbox" id="sheet-lore" />
+            Lore of Steel equipped
+          </label>
+        </div>
+        <div class="sheet-field">
+          <label>
+            <input type="checkbox" id="sheet-booked" />
+            Booked (all skills unlocked)
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="sheet-actions">
+      <button class="btn-primary" id="sheet-add-btn">Add to roster</button>
+      <button class="btn-secondary hidden" id="sheet-remove-btn">Remove from roster</button>
+      <button class="btn-text" id="sheet-cancel-btn">Cancel</button>
+    </div>
+  </div>
 
   <!-- ── SCREEN 5: Error ── -->
   <main id="screen-error" class="screen hidden">

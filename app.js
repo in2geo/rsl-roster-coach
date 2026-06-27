@@ -1,4 +1,5 @@
 import { preloadRewardedAd, showRewardedAd } from './ads.js';
+import { initRosterFlow, showRosterScreen } from './roster.js';
 
 // Unregister service worker on localhost so code changes are always fresh
 if ('serviceWorker' in navigator && location.hostname === 'localhost') {
@@ -15,8 +16,11 @@ const screens = {
   error:   document.getElementById('screen-error'),
 };
 
+const ROSTER_SCREEN_IDS = ['screen-rarity', 'screen-grid', 'screen-content'];
+
 function showScreen(name) {
   Object.values(screens).forEach(s => s.classList.add('hidden'));
+  ROSTER_SCREEN_IDS.forEach(id => document.getElementById(id)?.classList.add('hidden'));
   screens[name].classList.remove('hidden');
 }
 
@@ -424,8 +428,47 @@ function showDeepAnalysis() {
   showScreen('results');
 }
 
+// ── Roster recommendation dispatch ────────────────────────────────────────
+// roster.js fires this event when the player taps "Get recommendation".
+// We route it through the existing loading + match flow.
+document.addEventListener('rsl:request-recommendation', async e => {
+  const { contentKey, options, deviceId } = e.detail;
+
+  // Load the player's saved roster from Supabase for the match engine
+  showScreen('loading');
+  cycleLoadingMessage(matchMessages);
+
+  try {
+    const rosterRes = await fetch(`/api/user-champions?user_id=${deviceId}`);
+    const rosterBody = await rosterRes.json().catch(() => ({}));
+    if (!rosterRes.ok) throw new Error(rosterBody.error || 'Could not load roster');
+
+    const res = await fetch('/api/match', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userChampions: rosterBody.champions ?? [],
+        content:       contentKey,
+        options:       options ?? {},
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || `Server error ${res.status}`);
+
+    clearLoadingTimer();
+    renderResults(body);
+    showScreen('results');
+  } catch (err) {
+    clearLoadingTimer();
+    document.getElementById('error-msg').textContent =
+      err.message || 'Something went wrong. Please try again.';
+    showScreen('error');
+  }
+});
+
 // ── Init ───────────────────────────────────────────────────────────────────
 preloadRewardedAd();
+initRosterFlow();
 
 if ('serviceWorker' in navigator && location.hostname !== 'localhost') {
   navigator.serviceWorker.register('sw.js').catch(console.error);
