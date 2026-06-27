@@ -4,9 +4,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from 'dotenv';
 
-config({ path: '.env.local' });
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+config({ path: path.join(__dirname, '.env.local') });
 
 const MIME = {
   '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript',
