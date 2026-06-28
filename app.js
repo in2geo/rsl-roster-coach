@@ -351,6 +351,43 @@ function clearLoadingTimer() {
   clearInterval(timerInterval);
 }
 
+// ── Outcome feedback ───────────────────────────────────────────────────────
+let pendingOutcomeId = null; // row id returned by POST /api/recommendation-outcomes
+
+async function recordOutcome(outcome, failureReason) {
+  if (!pendingOutcomeId) return;
+  const id = pendingOutcomeId;
+  pendingOutcomeId = null;
+  await fetch('/api/recommendation-outcomes', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, outcome, failure_reason: failureReason ?? null }),
+  }).catch(() => {});
+}
+
+document.getElementById('btn-cleared').addEventListener('click', async () => {
+  await recordOutcome('cleared');
+  document.getElementById('feedback-section').classList.add('hidden');
+  document.getElementById('feedback-thanks').classList.remove('hidden');
+  document.getElementById('feedback-thanks').classList.add('show-inline');
+});
+
+document.getElementById('btn-didnt-work').addEventListener('click', () => {
+  document.getElementById('failure-reason-panel').classList.remove('hidden');
+  document.getElementById('btn-cleared').classList.add('hidden');
+  document.getElementById('btn-didnt-work').classList.add('hidden');
+});
+
+document.querySelectorAll('.reason-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    await recordOutcome('failed', btn.dataset.reason);
+    document.getElementById('failure-reason-panel').classList.add('hidden');
+    document.getElementById('feedback-prompt') &&
+      (document.querySelector('#feedback-section .feedback-prompt').classList.add('hidden'));
+    document.getElementById('feedback-thanks').classList.remove('hidden');
+  });
+});
+
 // ── Render results ─────────────────────────────────────────────────────────
 function renderResults(data) {
   lastResult = data;
@@ -374,9 +411,44 @@ function renderResults(data) {
   document.getElementById('gaps-section').classList.add('hidden');
   document.getElementById('deep-section')?.remove();
 
-  // Show Gate 1 + Gate 3 buttons; hide Gate 2 prompt
+  // Show Gate 1 + Gate 3 buttons
   document.getElementById('btn-deeper').classList.remove('hidden');
   document.getElementById('btn-failure').classList.remove('hidden');
+
+  // Reset and show feedback section
+  document.getElementById('feedback-section').classList.remove('hidden');
+  document.getElementById('btn-cleared').classList.remove('hidden');
+  document.getElementById('btn-didnt-work').classList.remove('hidden');
+  document.getElementById('failure-reason-panel').classList.add('hidden');
+  document.getElementById('feedback-thanks').classList.add('hidden');
+
+  // Insert outcome row (outcome = null; updated when player responds)
+  if (lastMatchParams?.deviceId) {
+    const teamSnapshot = (data.team ?? []).map(c => ({
+      name: c.name, rarity: c.rarity, level: c.level, stars: c.stars,
+    }));
+    const rosterSnapshot = (lastMatchParams.userChampions ?? []).map(uc => ({
+      champion_id: uc.champion?.id,
+      name:        uc.champion?.name,
+      level:       uc.level,
+      stars:       uc.stars,
+      gear_tier:   uc.gear_tier,
+      mastery_tier: uc.mastery_tier,
+    }));
+    fetch('/api/recommendation-outcomes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id:          lastMatchParams.deviceId,
+        content_key:      lastMatchParams.contentKey,
+        recommended_team: teamSnapshot,
+        roster_snapshot:  rosterSnapshot,
+      }),
+    })
+      .then(r => r.json())
+      .then(b => { if (b.id) pendingOutcomeId = b.id; })
+      .catch(() => {});
+  }
 }
 
 function revealGate1() {

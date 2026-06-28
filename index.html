@@ -103,6 +103,27 @@
         <ul id="gaps-list"></ul>
       </section>
 
+      <!-- Outcome feedback — 👍 / 👎 -->
+      <section id="feedback-section" class="feedback-section hidden">
+        <p class="feedback-prompt">Did this team work?</p>
+        <div class="feedback-row">
+          <button class="feedback-btn feedback-positive" id="btn-cleared">👍 Cleared it</button>
+          <button class="feedback-btn feedback-negative" id="btn-didnt-work">👎 Didn't work</button>
+        </div>
+        <!-- Failure reason panel — shown after 👎 -->
+        <div id="failure-reason-panel" class="failure-reason-panel hidden">
+          <p class="feedback-prompt">What went wrong?</p>
+          <div class="reason-grid">
+            <button class="reason-btn" data-reason="died_too_fast">Died too fast</button>
+            <button class="reason-btn" data-reason="not_enough_damage">Not enough damage</button>
+            <button class="reason-btn" data-reason="couldnt_control_waves">Couldn't control waves</button>
+            <button class="reason-btn" data-reason="gear_too_weak">Gear too weak</button>
+            <button class="reason-btn" data-reason="other">Other</button>
+          </div>
+        </div>
+        <p id="feedback-thanks" class="feedback-thanks hidden">Thanks — that helps us improve.</p>
+      </section>
+
       <!-- Gate 1: deeper analysis (rewarded ad) -->
       <button class="btn-secondary hidden" id="btn-deeper">
         Go deeper — what to level up next

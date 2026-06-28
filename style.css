@@ -925,3 +925,86 @@ footer a { color: var(--muted); text-decoration: underline; }
   border-radius: 8px;
   padding: 0.75rem 1rem;
 }
+
+/* ── Outcome feedback ──────────────────────────────────────────────────────── */
+.feedback-section {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  text-align: center;
+}
+
+.feedback-prompt {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+.feedback-row {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.feedback-btn {
+  flex: 1;
+  max-width: 160px;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  border: 1.5px solid;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.feedback-btn:active { opacity: 0.7; }
+
+.feedback-positive {
+  background: rgba(76, 175, 80, 0.12);
+  border-color: #4caf50;
+  color: #4caf50;
+}
+
+.feedback-negative {
+  background: rgba(244, 67, 54, 0.12);
+  border-color: #f44336;
+  color: #f44336;
+}
+
+.failure-reason-panel {
+  margin-top: 1rem;
+}
+
+.reason-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.reason-btn {
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  border: 1.5px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.reason-btn:hover,
+.reason-btn:active {
+  border-color: var(--accent);
+  background: rgba(255,255,255,0.05);
+}
+
+.feedback-thanks {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.75rem;
+}
