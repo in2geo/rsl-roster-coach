@@ -825,3 +825,96 @@ footer a { color: var(--muted); text-decoration: underline; }
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* ── Ad gate modal ─────────────────────────────────────────────────────────── */
+.ad-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 1.5rem;
+}
+
+.ad-modal-overlay.hidden {
+  display: none;
+}
+
+.ad-modal-card {
+  background: var(--card-bg, #1e1e3a);
+  border-radius: 16px;
+  padding: 2rem 1.5rem;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+.ad-modal-msg {
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--text);
+  margin-bottom: 1.5rem;
+}
+
+/* ── Deep analysis section (Gate 1 reveal) ─────────────────────────────────── */
+.deep-section {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.deep-section h3 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.deep-section p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+/* ── Failure diagnosis section (Gate 3 reveal) ─────────────────────────────── */
+.failure-section {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.failure-section h3 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+.failure-question {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  color: var(--text);
+}
+
+.failure-btns {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.failure-result {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text);
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}

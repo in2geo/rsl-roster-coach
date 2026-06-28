@@ -353,6 +353,8 @@ function clearLoadingTimer() {
 
 // ── Render results ─────────────────────────────────────────────────────────
 function renderResults(data) {
+  lastResult = data;
+
   document.getElementById('result-content-name').textContent = data.content_label || '';
 
   const teamList = document.getElementById('team-list');
@@ -368,37 +370,151 @@ function renderResults(data) {
 
   document.getElementById('explanation-text').textContent = data.explanation || '';
 
-  const gapsSection = document.getElementById('gaps-section');
-  const gapsList    = document.getElementById('gaps-list');
-  gapsList.innerHTML = '';
-  if (data.gaps && data.gaps.length) {
-    data.gaps.forEach(g => {
-      const li = document.createElement('li');
-      li.textContent = g;
-      gapsList.appendChild(li);
-    });
-    gapsSection.classList.remove('hidden');
-  } else {
-    gapsSection.classList.add('hidden');
-  }
+  // Gaps hidden behind Gate 1 — revealed after "Go deeper" ad
+  document.getElementById('gaps-section').classList.add('hidden');
+  document.getElementById('deep-section')?.remove();
+
+  // Show Gate 1 + Gate 3 buttons; hide Gate 2 prompt
+  document.getElementById('btn-deeper').classList.remove('hidden');
+  document.getElementById('btn-failure').classList.remove('hidden');
 }
 
-// ── Results buttons ────────────────────────────────────────────────────────
-document.getElementById('btn-deeper').addEventListener('click', () => showScreen('ad'));
-document.getElementById('btn-restart').addEventListener('click', resetToUpload);
+function revealGate1() {
+  if (!lastResult) return;
 
-document.getElementById('btn-watch-ad').addEventListener('click', async () => {
-  const btn = document.getElementById('btn-watch-ad');
+  const gapsList = document.getElementById('gaps-list');
+  const gapsSection = document.getElementById('gaps-section');
+  gapsList.innerHTML = '';
+  (lastResult.gaps || []).forEach(g => {
+    const li = document.createElement('li');
+    li.textContent = g;
+    gapsList.appendChild(li);
+  });
+  if (lastResult.gaps?.length) {
+    gapsSection.classList.remove('hidden');
+  }
+
+  document.getElementById('deep-section')?.remove();
+  document.getElementById('explanation-text').insertAdjacentHTML('afterend', `
+    <section id="deep-section" class="deep-section">
+      <h3>What to level up next</h3>
+      <p>Focus on the gaps above in order — each one is blocking your team from clearing the next stage. Start with the first gap and work down the list.</p>
+    </section>
+  `);
+
+  // Hide "Go deeper" once revealed
+  document.getElementById('btn-deeper').classList.add('hidden');
+}
+
+function showFailureDiagnosis() {
+  document.getElementById('failure-section')?.remove();
+  document.getElementById('btn-failure').insertAdjacentHTML('beforebegin', `
+    <section id="failure-section" class="failure-section">
+      <h3>Failure diagnosis</h3>
+      <p class="failure-question">Did your team survive past the first wave?</p>
+      <div class="failure-btns">
+        <button class="btn-secondary failure-yes" data-q="1">Yes</button>
+        <button class="btn-secondary failure-no" data-q="1">No</button>
+      </div>
+      <p id="failure-result" class="failure-result hidden"></p>
+    </section>
+  `);
+
+  document.querySelectorAll('.failure-yes, .failure-no').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const survived = e.target.classList.contains('failure-yes');
+      const result = document.getElementById('failure-result');
+      result.textContent = survived
+        ? 'Your champions are surviving but not dealing enough damage. Try improving gear tier or adding a champion with an ATK debuff.'
+        : 'Your team is dying too fast. Focus on RES gear so your debuffs land, or add a healer/shield champion to survive the opener.';
+      result.classList.remove('hidden');
+      document.querySelector('.failure-question').classList.add('hidden');
+      document.querySelector('.failure-btns').classList.add('hidden');
+    });
+  });
+
+  // Hide "This team failed" once diagnosis is shown
+  document.getElementById('btn-failure').classList.add('hidden');
+}
+
+// ── Ad gate modal ──────────────────────────────────────────────────────────
+// pendingAction: what to do after the player watches the ad
+// type: 'match' (Gate 2 — second content piece) | 'deeper' (Gate 1) | 'failure' (Gate 3)
+let pendingAction = null;
+let lastMatchParams = null; // { contentKey, options, deviceId, userChampions }
+let lastResult = null;      // stored after every successful match for gate reveals
+
+const adModal    = document.getElementById('ad-modal');
+const adModalMsg = document.getElementById('ad-modal-msg');
+
+function showAdModal(message, action) {
+  pendingAction = action;
+  adModalMsg.textContent = message;
+  adModal.classList.remove('hidden');
+}
+
+function hideAdModal() {
+  adModal.classList.add('hidden');
+  pendingAction = null;
+}
+
+document.getElementById('btn-modal-cancel').addEventListener('click', hideAdModal);
+
+document.getElementById('btn-modal-watch').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-modal-watch');
   btn.disabled = true;
   btn.textContent = 'Loading ad…';
-  const earned = await showRewardedAd();
+
+  // Placeholder — real AdMob SDK replaces this block
+  await new Promise(r => setTimeout(r, 800));
+  const verified = true;
+
   btn.disabled = false;
   btn.textContent = 'Watch ad';
-  if (earned) showDeepAnalysis();
-  else showScreen('results');
+
+  if (!verified) { hideAdModal(); return; }
+
+  // Record the view server-side
+  if (lastMatchParams?.deviceId) {
+    await fetch('/api/verify-ad', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: lastMatchParams.deviceId }),
+    }).catch(() => {});
+  }
+
+  hideAdModal();
+  const action = pendingAction;
+  pendingAction = null;
+
+  if (action?.type === 'match') {
+    // Retry the match that was gated
+    await runRosterMatch(action.params);
+  } else if (action?.type === 'deeper') {
+    revealGate1();
+    showScreen('results');
+  } else if (action?.type === 'failure') {
+    showFailureDiagnosis();
+    showScreen('results');
+  }
 });
 
-document.getElementById('btn-skip-ad').addEventListener('click', () => showScreen('results'));
+// ── Results buttons ────────────────────────────────────────────────────────
+document.getElementById('btn-deeper').addEventListener('click', () => {
+  showAdModal(
+    'Watch a short video to unlock deeper analysis — gap list, farming locations, and AI settings.',
+    { type: 'deeper' }
+  );
+});
+
+document.getElementById('btn-failure').addEventListener('click', () => {
+  showAdModal(
+    'Watch a short video to get your failure diagnosis — we\'ll identify exactly what went wrong.',
+    { type: 'failure' }
+  );
+});
+
+document.getElementById('btn-restart').addEventListener('click', resetToUpload);
 document.getElementById('btn-error-retry').addEventListener('click', resetToUpload);
 
 function resetToUpload() {
@@ -430,11 +546,8 @@ function showDeepAnalysis() {
 
 // ── Roster recommendation dispatch ────────────────────────────────────────
 // roster.js fires this event when the player taps "Get recommendation".
-// We route it through the existing loading + match flow.
 document.addEventListener('rsl:request-recommendation', async e => {
   const { contentKey, options, deviceId } = e.detail;
-
-  // Load the player's saved roster from Supabase for the match engine
   showScreen('loading');
   cycleLoadingMessage(matchMessages);
 
@@ -443,21 +556,14 @@ document.addEventListener('rsl:request-recommendation', async e => {
     const rosterBody = await rosterRes.json().catch(() => ({}));
     if (!rosterRes.ok) throw new Error(rosterBody.error || 'Could not load roster');
 
-    const res = await fetch('/api/match', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userChampions: rosterBody.champions ?? [],
-        content:       contentKey,
-        options:       options ?? {},
-      }),
-    });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(body.error || `Server error ${res.status}`);
-
-    clearLoadingTimer();
-    renderResults(body);
-    showScreen('results');
+    const params = {
+      contentKey,
+      options: options ?? {},
+      deviceId,
+      userChampions: rosterBody.champions ?? [],
+    };
+    lastMatchParams = params;
+    await runRosterMatch(params);
   } catch (err) {
     clearLoadingTimer();
     document.getElementById('error-msg').textContent =
@@ -465,6 +571,39 @@ document.addEventListener('rsl:request-recommendation', async e => {
     showScreen('error');
   }
 });
+
+async function runRosterMatch(params) {
+  const { contentKey, options, deviceId, userChampions } = params;
+
+  const res = await fetch('/api/match', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      userChampions,
+      content: contentKey,
+      options,
+      user_id: deviceId,
+    }),
+  });
+  const body = await res.json().catch(() => ({}));
+
+  clearLoadingTimer();
+
+  // Gate hit — show ad modal over content screen
+  if (body.requiresAd) {
+    showRosterScreen('screen-content');
+    showAdModal(body.message || 'Watch a short video to unlock this recommendation.', {
+      type: 'match',
+      params,
+    });
+    return;
+  }
+
+  if (!res.ok) throw new Error(body.error || `Server error ${res.status}`);
+
+  renderResults(body);
+  showScreen('results');
+}
 
 // ── Init ───────────────────────────────────────────────────────────────────
 preloadRewardedAd();

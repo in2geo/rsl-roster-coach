@@ -103,12 +103,17 @@
         <ul id="gaps-list"></ul>
       </section>
 
-      <!-- "Go deeper" is gated behind a rewarded ad -->
-      <button class="btn-secondary" id="btn-deeper">
+      <!-- Gate 1: deeper analysis (rewarded ad) -->
+      <button class="btn-secondary hidden" id="btn-deeper">
         Go deeper — what to level up next
       </button>
 
-      <button class="btn-text" id="btn-restart">Analyse a different roster</button>
+      <!-- Gate 3: failure diagnosis (rewarded ad) -->
+      <button class="btn-text hidden" id="btn-failure">
+        This team failed — help me figure out why
+      </button>
+
+      <button class="btn-text" id="btn-restart">Try a different content piece</button>
     </div>
   </main>
 
@@ -250,32 +255,29 @@
         </div>
       </div>
 
-      <button id="sheet-advanced-toggle" class="btn-text sheet-advanced-toggle">Advanced ▸</button>
-      <div id="sheet-advanced-panel" class="hidden">
-        <div class="sheet-field">
-          <label>Ascension</label>
-          <input type="number" id="sheet-ascension" min="0" max="6" value="0" />
+      <div class="sheet-field">
+        <label>Ascension</label>
+        <input type="number" id="sheet-ascension" min="0" max="6" value="0" />
+      </div>
+      <div class="sheet-field">
+        <label>Mastery</label>
+        <div id="sheet-mastery" class="pill-group">
+          <button class="pill active" data-mastery="None">None</button>
+          <button class="pill" data-mastery="Basic">Basic</button>
+          <button class="pill" data-mastery="Complete">Complete</button>
         </div>
-        <div class="sheet-field">
-          <label>Mastery</label>
-          <div id="sheet-mastery" class="pill-group">
-            <button class="pill active" data-mastery="None">None</button>
-            <button class="pill" data-mastery="Basic">Basic</button>
-            <button class="pill" data-mastery="Complete">Complete</button>
-          </div>
-        </div>
-        <div class="sheet-field" id="sheet-lore-row" style="display:none">
-          <label>
-            <input type="checkbox" id="sheet-lore" />
-            Lore of Steel equipped
-          </label>
-        </div>
-        <div class="sheet-field">
-          <label>
-            <input type="checkbox" id="sheet-booked" />
-            Booked (all skills unlocked)
-          </label>
-        </div>
+      </div>
+      <div class="sheet-field" id="sheet-lore-row" style="display:none">
+        <label>
+          <input type="checkbox" id="sheet-lore" />
+          Lore of Steel equipped
+        </label>
+      </div>
+      <div class="sheet-field">
+        <label>
+          <input type="checkbox" id="sheet-booked" />
+          Booked (all skills unlocked)
+        </label>
       </div>
     </div>
 
@@ -298,6 +300,15 @@
   <footer>
     <a href="privacy.html">Privacy policy</a> · <a href="terms.html">Terms of service</a>
   </footer>
+
+  <!-- ── Ad Gate Modal (overlays any screen) ── -->
+  <div id="ad-modal" class="ad-modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="ad-modal-card">
+      <p id="ad-modal-msg" class="ad-modal-msg">Watch a short video to continue.</p>
+      <button class="btn-primary" id="btn-modal-watch">Watch ad</button>
+      <button class="btn-text" id="btn-modal-cancel">Maybe later</button>
+    </div>
+  </div>
 
   <script type="module" src="app.js"></script>
 </body>
