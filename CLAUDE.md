@@ -25,8 +25,12 @@ rosters — that segment is already served by other tools.
   boss exceptions, explanation style notes
 - Champion solo profiles — Dragon, Spider, Ice Golem, Fire Knight across
   Normal and Hard stages
+- Fire Knight's Castle stages 15-20 — goals, solutions, stat thresholds,
+  boss exceptions, explanation style notes
+- Ice Golem's Peak stages 15-20 — goals, solutions, stat thresholds,
+  boss exceptions, explanation style notes
 - Champion AI notes — Elder Skarg, Fayne, Mavara, Folan, Sabrael, Fimo,
-  Nson, Jorad, Polar Fireheart
+  Nson, Jorad, Polar Fireheart, Underpriest Brogni (Ice Golem warning)
 - Champions table — priority starter-pack champions plus recent meta
   champions with base stats from raid.guide
 - Schema migrations applied — role, mastery_tier, ascension_level,
@@ -81,6 +85,11 @@ rosters — that segment is already served by other tools.
   known solo carry for the requested content, surface it first.
 - Clan Boss is NOT solo-able content. Never add Clan Boss rows to
   champion_solo_profiles.
+- `bypasses_accuracy_check = true` on a tag means that solution satisfies
+  its goal regardless of the player's ACC stat. Currently applies to
+  Block Revive only (Ice Golem minion management goal). When evaluating
+  goal solutions, check this flag before applying ACC threshold gates —
+  do not require ACC floor for bypassing solutions.
 
 ## Champion selection UI spec (ready to build)
 - Screen 1: Four large rarity buttons (Mythical=red #E53935,
