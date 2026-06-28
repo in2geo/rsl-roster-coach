@@ -97,8 +97,22 @@ rosters — that segment is already served by other tools.
   "Fayne can cover Decrease ATK but needs 3-star ascension first."
   This is enforced in the matching engine (not just documented in notes)
   because missing a tag is a guaranteed failure, unlike booking which
-  only affects reliability. Schema migration: `add-ascension-required.sql`.
-  Known values: Fayne Decrease ATK = ascension_required 3.
+  only affects reliability. Known values: Fayne Decrease ATK = 3.
+- `ascension_required` on `champion_solo_profiles` gates solo carry
+  recommendations. If a champion's solo mechanism depends on a passive
+  (crit prevention, self-revive, Perfect Veil, Taunt), the passive may
+  be ascension-locked. Do not surface the solo carry recommendation if
+  `ascension_required > user_champions.ascension_level` — show it as a
+  near-term goal instead: "Tholin can solo Spider's Den stage 20 once he
+  reaches 3-star ascension — he's currently at 2-star."
+  Schema migration: `add-ascension-required.sql`.
+- **Research backlog — passive ascension unlock levels**: the following
+  solo carry profiles depend on passives whose ascension unlock level has
+  NOT been confirmed from the in-game Index. Do not approve these rows
+  until confirmed: Tholin Foulbeard (crit prevention), Pelops (Taunt +
+  HP Burn), Torturehelm (self-revive), Xenomorph (Perfect Veil). Verify
+  from the in-game Index/Compendium — literal skill text, same standard
+  as champion tags.
 
 ## Champion selection UI spec (ready to build)
 - Screen 1: Four large rarity buttons (Mythical=red #E53935,
