@@ -827,8 +827,9 @@ footer a { color: var(--muted); text-decoration: underline; }
 }
 
 .stage-btn.active {
+  background: var(--accent);
   border-color: var(--accent);
-  color: var(--accent);
+  color: #fff;
 }
 
 .difficulty-grid {
@@ -851,8 +852,9 @@ footer a { color: var(--muted); text-decoration: underline; }
 }
 
 .difficulty-btn.active {
+  background: var(--accent);
   border-color: var(--accent);
-  color: var(--accent);
+  color: #fff;
 }
 
 .spider-hard-desc {
