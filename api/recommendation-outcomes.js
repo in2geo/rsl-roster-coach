@@ -11,17 +11,18 @@ function json(res, status, body) { res.status(status).json(body); }
 export default async function handler(req, res) {
   // POST — insert a new outcome row (outcome = null, player hasn't responded yet)
   if (req.method === 'POST') {
-    const { user_id, content_key, recommended_team, roster_snapshot } = req.body ?? {};
-    if (!user_id || !content_key) {
-      return json(res, 400, { error: 'user_id and content_key required' });
+    const { user_id, dungeon_stage_id, verdict, recommended_team, roster_snapshot } = req.body ?? {};
+    if (!user_id) {
+      return json(res, 400, { error: 'user_id required' });
     }
 
     const { data, error } = await supabase
       .from('recommendation_outcomes')
       .insert({
         user_id,
-        game_id: 'raid_shadow_legends',
-        content_key,
+        game_id:          'raid_shadow_legends',
+        dungeon_stage_id: dungeon_stage_id ?? null,
+        verdict:          verdict ?? null,
         recommended_team: recommended_team ?? null,
         roster_snapshot:  roster_snapshot  ?? null,
       })
@@ -41,8 +42,8 @@ export default async function handler(req, res) {
       .from('recommendation_outcomes')
       .update({
         outcome,
-        failure_reason: failure_reason ?? null,
-        responded_at:   new Date().toISOString(),
+        failure_reason:      failure_reason ?? null,
+        outcome_recorded_at: new Date().toISOString(),
       })
       .eq('id', id);
 

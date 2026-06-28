@@ -440,7 +440,8 @@ function renderResults(data) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         user_id:          lastMatchParams.deviceId,
-        content_key:      lastMatchParams.contentKey,
+        dungeon_stage_id: data.dungeon_stage_id ?? null,
+        verdict:          data.verdict ?? null,
         recommended_team: teamSnapshot,
         roster_snapshot:  rosterSnapshot,
       }),

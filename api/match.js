@@ -95,6 +95,8 @@ export default async function handler(req, res) {
 
     return json(res, 200, {
       content_label:     matchResult.content_label,
+      dungeon_stage_id:  matchResult.dungeon_stage_id,
+      verdict:           matchResult.verdict,
       solo_carries:      matchResult.solo_carries,
       team:              matchResult.team,
       stun_matrix:       matchResult.stun_matrix,
