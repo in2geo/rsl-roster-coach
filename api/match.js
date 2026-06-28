@@ -10,7 +10,7 @@ const supabase = createClient(
 
 function json(res, status, body) { res.status(status).json(body); }
 
-const VALID_CONTENT = ['campaign', 'spider', 'spider_beginner', 'spider_hard', 'clan_boss'];
+const VALID_CONTENT = ['campaign', 'spider', 'spider_beginner', 'spider_hard', 'clan_boss', 'event_dungeon'];
 
 // ── Daily session helpers ─────────────────────────────────────────────────────
 
@@ -93,12 +93,17 @@ export default async function handler(req, res) {
       await markFreeUsed(user_id, contentKey);
     }
 
+    const event_fallback_note = matchResult.event_fallback
+      ? "We don't have specific data for this event yet — this recommendation uses general event dungeon strategy."
+      : null;
+
     return json(res, 200, {
-      content_label:     matchResult.content_label,
-      dungeon_stage_id:  matchResult.dungeon_stage_id,
-      verdict:           matchResult.verdict,
-      verdict_band:      matchResult.verdict_band,
-      confidence_pct:    matchResult.confidence_pct,
+      content_label:      matchResult.content_label,
+      dungeon_stage_id:   matchResult.dungeon_stage_id,
+      verdict:            matchResult.verdict,
+      verdict_band:       matchResult.verdict_band,
+      confidence_pct:     matchResult.confidence_pct,
+      event_fallback_note,
       solo_carries:      matchResult.solo_carries,
       team:              matchResult.team,
       stun_matrix:       matchResult.stun_matrix,

@@ -414,7 +414,14 @@ function renderResults(data) {
     confDisplay.classList.add('hidden');
   }
 
-  document.getElementById('explanation-text').textContent = data.explanation || '';
+  const explanationEl = document.getElementById('explanation-text');
+  explanationEl.textContent = data.explanation || '';
+  if (data.event_fallback_note) {
+    explanationEl.insertAdjacentHTML('afterend',
+      `<p class="event-fallback-note">${data.event_fallback_note}</p>`);
+  } else {
+    document.querySelector('.event-fallback-note')?.remove();
+  }
 
   // Gaps hidden behind Gate 1 — revealed after "Go deeper" ad
   document.getElementById('gaps-section').classList.add('hidden');

@@ -121,6 +121,51 @@ rosters — that segment is already served by other tools.
 6. base_crit_rate / base_crit_dmg migration — RESOLVED. Both columns
    confirmed present in live DB (June 27 2026). Safe to run full stats
    scraper.
+## Event dungeon architecture
+
+Event dungeons rotate in and out — they are not static content like
+Spider's Den. The `dungeons` table has three new columns:
+- `is_event boolean` — true for all event dungeons
+- `active_from date` — when the event starts (nullable = always available)
+- `active_until date` — when the event ends (nullable = permanent fallback)
+
+### Matching engine query
+When the player selects "Event Dungeon", the engine runs:
+```sql
+select id, name from dungeons
+where game_id = 'raid_shadow_legends'
+  and is_event = true
+  and (active_until is null or active_until >= current_date)
+order by active_until desc nulls last;
+```
+Returns specific live event first (has `active_until` date), generic
+fallback last (`active_until is null`). If no specific event is live,
+only the generic template row returns.
+
+### Generic fallback behaviour
+If the only result is `'Event Dungeon (Generic)'`, the matching engine
+sets `event_fallback = true` in its return value and the API adds this
+note to the recommendation output:
+> "We don't have specific data for this event yet — this recommendation
+> uses general event dungeon strategy."
+
+### How to seed a new event dungeon (~30 min per event)
+1. Confirm from in-game or patch notes: name, dates, wave/boss phases,
+   ACC/SPD thresholds for the stages players will farm
+2. Insert a row into `dungeons` with `is_event = true`,
+   `active_from`, `active_until`
+3. Insert `dungeon_stages` for the relevant stage range only
+   (typically stages 20-26 for an endgame event)
+4. Insert `phases`, `goals`, `goal_solutions`, `stat_threshold_checks`
+   using the same seed pattern as Spider's Den
+5. When `active_until` passes the event retires automatically —
+   no cleanup needed, expired rows stay for historical reference
+
+### Content key
+`event_dungeon` — add to VALID_CONTENT and CONTENT_MAP is bypassed;
+the engine queries the DB dynamically and uses the highest-numbered
+seeded stage as the target.
+
 ## Champion-specific matching engine notes (future content)
 
 These are build notes for when the relevant content is added — do not

@@ -895,6 +895,18 @@ footer a { color: var(--muted); text-decoration: underline; }
   margin-bottom: 1.5rem;
 }
 
+/* ── Event fallback note ── */
+.event-fallback-note {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-left: 3px solid var(--accent2);
+  background: rgba(245, 166, 35, 0.06);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
 /* ── Deep analysis section (Gate 1 reveal) ─────────────────────────────────── */
 .deep-section {
   margin-top: 1.5rem;
