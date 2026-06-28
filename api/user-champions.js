@@ -9,7 +9,7 @@ const supabase = createClient(
 function json(res, status, body) { res.status(status).json(body); }
 
 export default async function handler(req, res) {
-  const { user_id } = req.method === 'GET' ? req.query : (req.body ?? {});
+  const { user_id } = req.method === 'GET' ? (req.query ?? {}) : (req.body ?? {});
   if (!user_id) return json(res, 400, { error: 'user_id required' });
 
   // ── GET: return saved roster for this device ──────────────────────────────
