@@ -10,7 +10,7 @@ const supabase = createClient(
 
 function json(res, status, body) { res.status(status).json(body); }
 
-const VALID_CONTENT = ['campaign', 'spider', 'spider_beginner', 'clan_boss'];
+const VALID_CONTENT = ['campaign', 'spider', 'spider_beginner', 'spider_hard', 'clan_boss'];
 
 // ── Daily session helpers ─────────────────────────────────────────────────────
 
