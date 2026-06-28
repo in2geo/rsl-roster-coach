@@ -190,6 +190,35 @@ select:focus { outline: 2px solid var(--accent); }
 
 #loading-msg { color: var(--muted); font-size: 0.95rem; }
 
+/* ── Confidence display ── */
+.confidence-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 1rem 0 1.5rem;
+  padding: 1.25rem;
+  background: rgba(233, 69, 96, 0.08);
+  border: 1px solid rgba(233, 69, 96, 0.25);
+  border-radius: var(--radius);
+}
+
+.confidence-pct {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent);
+  letter-spacing: -1px;
+}
+
+.confidence-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
 /* ── Results ── */
 .team-section h3,
 .explanation-section h3,

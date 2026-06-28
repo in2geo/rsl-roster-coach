@@ -405,6 +405,15 @@ function renderResults(data) {
     teamList.appendChild(li);
   });
 
+  const confDisplay = document.getElementById('confidence-display');
+  const confValue   = document.getElementById('confidence-pct-value');
+  if (data.confidence_pct != null) {
+    confValue.textContent = `${data.confidence_pct}%`;
+    confDisplay.classList.remove('hidden');
+  } else {
+    confDisplay.classList.add('hidden');
+  }
+
   document.getElementById('explanation-text').textContent = data.explanation || '';
 
   // Gaps hidden behind Gate 1 — revealed after "Go deeper" ad
@@ -469,11 +478,14 @@ function revealGate1() {
     gapsSection.classList.remove('hidden');
   }
 
+  const pct    = lastResult.confidence_pct;
+  const pctRef = pct != null ? `That ${pct}% reflects` : 'Your result reflects';
+
   document.getElementById('deep-section')?.remove();
   document.getElementById('explanation-text').insertAdjacentHTML('afterend', `
     <section id="deep-section" class="deep-section">
       <h3>What to level up next</h3>
-      <p>Focus on the gaps above in order — each one is blocking your team from clearing the next stage. Start with the first gap and work down the list.</p>
+      <p>${pctRef} the gaps below. Focus on them in order — each one is blocking your team from clearing the next stage. Start with the first gap and work down the list.</p>
     </section>
   `);
 
