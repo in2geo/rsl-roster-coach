@@ -337,22 +337,9 @@ function openDetailSheet(champ, rarity) {
   const gearVal = existing?.gear_tier ?? 'Starter';
   renderGearTier(sheet, gearVal);
 
-  // Advanced fields (collapsed by default)
-  const advToggle = qs('#sheet-advanced-toggle', sheet);
-  const advPanel  = qs('#sheet-advanced-panel', sheet);
-  if (advToggle && advPanel) {
-    advPanel.classList.add('hidden');
-    advToggle.textContent = 'Advanced ▸';
-    advToggle.onclick = () => {
-      const open = !advPanel.classList.contains('hidden');
-      advPanel.classList.toggle('hidden', open);
-      advToggle.textContent = open ? 'Advanced ▸' : 'Advanced ▾';
-    };
-  }
-
-  // Ascension level (0–6, defaults to stars − 1)
+  // Ascension level (0–6, defaults to 0)
   const ascInput = qs('#sheet-ascension', sheet);
-  if (ascInput) ascInput.value = existing?.ascension_level ?? Math.max(0, starsVal - 1);
+  if (ascInput) ascInput.value = existing?.ascension_level ?? 0;
 
   // Mastery tier
   const masteryVal = existing?.mastery_tier ?? 'None';
@@ -598,7 +585,8 @@ async function requestRecommendation(screen) {
   } else {
     const diffBtn = qs('[data-difficulty].active', screen);
     contentKey = 'clan_boss';
-    options.boss_affinity = null; // player hasn't specified today's affinity
+    options.difficulty = diffBtn?.dataset.difficulty ?? 'Normal';
+    options.boss_affinity = null;
   }
 
   // Dispatch to existing match flow in app.js via a custom event
