@@ -514,8 +514,18 @@ document.getElementById('btn-failure').addEventListener('click', () => {
   );
 });
 
-document.getElementById('btn-restart').addEventListener('click', resetToUpload);
-document.getElementById('btn-error-retry').addEventListener('click', resetToUpload);
+document.getElementById('btn-restart').addEventListener('click', returnToContentScreen);
+document.getElementById('btn-error-retry').addEventListener('click', returnToContentScreen);
+
+function returnToContentScreen() {
+  // If the player came from the roster flow, send them back to content selection.
+  // Fall back to the legacy upload screen only if no roster flow was active.
+  if (lastMatchParams) {
+    showRosterScreen('screen-content');
+  } else {
+    resetToUpload();
+  }
+}
 
 function resetToUpload() {
   selectedFile = null;
