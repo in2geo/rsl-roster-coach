@@ -114,57 +114,67 @@ rosters — that segment is already served by other tools.
    real rule. Verify via literal skill text, not category assumption.
 3. Spider's Den ACC formula — stage x 10 (Plarium source). Treat as
    floor-with-margin, not exact target.
-4. Spider's Den RES threshold — ~300 rule of thumb (AyumiLove). 
+4. Spider's Den RES threshold — ~300 rule of thumb (AyumiLove).
    Directional only.
 5. Gear tier stat multipliers — all placeholder. Must calibrate before
    shipping.
-6. base_crit_rate / base_crit_dmg migration — RESOLVED. Both columns
-   confirmed present in live DB (June 27 2026). Safe to run full stats
-   scraper.
+6. base_crit_rate / base_crit_dmg migration — confirm applied to live DB
+   before running full stats scraper.
+
 ## Event dungeon architecture
 
-Event dungeons rotate in and out — they are not static content like
-Spider's Den. The `dungeons` table has three new columns:
-- `is_event boolean` — true for all event dungeons
-- `active_from date` — when the event starts (nullable = always available)
-- `active_until date` — when the event ends (nullable = permanent fallback)
+Event dungeons rotate — they are NOT static content like Spider's Den.
+The dungeon name, affinity rotation, stage count, and stat thresholds
+all change with each event. Do not treat them as static rows.
 
-### Matching engine query
-When the player selects "Event Dungeon", the engine runs:
+### Schema
+`dungeons` table has three event-specific columns:
+- `is_event boolean` — true for all event dungeons
+- `active_from date` — when the event starts (null = always available)
+- `active_until date` — when the event expires (null = never expires)
+
+### Matching engine query for event content
+When a player selects "Event Dungeon," query:
 ```sql
-select id, name from dungeons
+select * from dungeons
 where game_id = 'raid_shadow_legends'
   and is_event = true
   and (active_until is null or active_until >= current_date)
 order by active_until desc nulls last;
 ```
-Returns specific live event first (has `active_until` date), generic
-fallback last (`active_until is null`). If no specific event is live,
-only the generic template row returns.
+Returns the specific live event first (has `active_until` date), then
+the generic fallback template (`active_until is null`). When no specific
+event is live, only the generic template returns.
 
-### Generic fallback behaviour
-If the only result is `'Event Dungeon (Generic)'`, the matching engine
-sets `event_fallback = true` in its return value and the API adds this
-note to the recommendation output:
-> "We don't have specific data for this event yet — this recommendation
-> uses general event dungeon strategy."
+### Two-tier approach
+**Option A — Specific event seeded:** a specific event dungeon row exists
+with known stage thresholds, seeded within the first day or two of the
+event going live. The matching engine uses stage-specific thresholds.
+This is the preferred path.
 
-### How to seed a new event dungeon (~30 min per event)
-1. Confirm from in-game or patch notes: name, dates, wave/boss phases,
-   ACC/SPD thresholds for the stages players will farm
-2. Insert a row into `dungeons` with `is_event = true`,
-   `active_from`, `active_until`
-3. Insert `dungeon_stages` for the relevant stage range only
-   (typically stages 20-26 for an endgame event)
-4. Insert `phases`, `goals`, `goal_solutions`, `stat_threshold_checks`
-   using the same seed pattern as Spider's Den
-5. When `active_until` passes the event retires automatically —
-   no cleanup needed, expired rows stay for historical reference
+**Option B — Generic fallback:** no specific event has been seeded yet
+(e.g. brand new event, thresholds not yet confirmed). The matching engine
+falls back to the generic "Event Dungeon (Generic)" template, which
+applies Spider's Den-style advice: bring your best debuffers and
+poisoners. The app tells the player: "We don't have specific data for
+this event yet — here's the best team from your roster using general
+event dungeon strategy."
 
-### Content key
-`event_dungeon` — add to VALID_CONTENT and CONTENT_MAP is bypassed;
-the engine queries the DB dynamically and uses the highest-numbered
-seeded stage as the target.
+### Seeding a new event (30-minute task)
+Requires in-game observation or patch notes:
+1. Dungeon name and affinity rotation
+2. Wave + boss phase structure (yes/no)
+3. Stage range to seed (typically only the farmable stages)
+4. ACC/SPD thresholds per stage
+
+Set `active_until` to the event end date. When it passes, the event
+stops appearing automatically — no cleanup needed.
+
+### What NOT to do
+- Do not hardcode event dungeon names in the matching engine
+- Do not leave expired event rows appearing to players
+- Do not seed an event without confirmed thresholds — use the generic
+  fallback until thresholds are researched and verified
 
 ## Champion-specific matching engine notes (future content)
 
