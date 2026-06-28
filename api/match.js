@@ -109,6 +109,7 @@ export default async function handler(req, res) {
       stun_matrix:       matchResult.stun_matrix,
       gaps:              matchResult.gaps,
       threshold_results: matchResult.threshold_results,
+      ascension_gaps:    matchResult.ascension_gaps,
       data_warning:      matchResult.data_warning,
       explanation,
     });

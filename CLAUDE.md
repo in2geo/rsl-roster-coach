@@ -90,6 +90,15 @@ rosters — that segment is already served by other tools.
   Block Revive only (Ice Golem minion management goal). When evaluating
   goal solutions, check this flag before applying ACC threshold gates —
   do not require ACC floor for bypassing solutions.
+- `ascension_required` on `champion_tags` gates tag existence, not just
+  reliability. If `ascension_required > user_champions.ascension_level`,
+  the tag does NOT count toward any goal solution — treat the champion as
+  if they don't have the tag, and surface an explicit gap message:
+  "Fayne can cover Decrease ATK but needs 3-star ascension first."
+  This is enforced in the matching engine (not just documented in notes)
+  because missing a tag is a guaranteed failure, unlike booking which
+  only affects reliability. Schema migration: `add-ascension-required.sql`.
+  Known values: Fayne Decrease ATK = ascension_required 3.
 
 ## Champion selection UI spec (ready to build)
 - Screen 1: Four large rarity buttons (Mythical=red #E53935,
