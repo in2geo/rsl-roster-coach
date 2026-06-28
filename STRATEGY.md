@@ -176,3 +176,142 @@ Research source when ready to build: Ragash Arena video documentation
 human_observation sources — synthesize, never transcribe.
 Target tier scope: Bronze through Gold only. Platinum+ is out of
 scope for this app's target audience.
+---
+## Product design principles — recommendation output
+### Confidence rating over binary verdict
+Never use binary success/failure language. Use a confidence rating
+that acknowledges gear, masteries, and stats as variables:
+| Rating | Stars | Meaning |
+|---|---|---|
+| Very likely to succeed | ⭐⭐⭐⭐⭐ | Team covers all goals, stats comfortably clear thresholds |
+| Likely to succeed | ⭐⭐⭐⭐ | Team covers goals, stats borderline on one threshold |
+| Possible with good gear | ⭐⭐⭐ | Team covers goals but stats need work |
+| Difficult | ⭐⭐ | One or more goals uncovered |
+| Not recommended | ⭐ | Significant gaps, player needs different champions first |
+Players understand that success depends on gear and stats — a
+confidence rating feels more honest than a yes/no prediction and
+is less discouraging for a new player.
+### The free/gated content split
+**Free — always:**
+- Recommended team (5 champions, level, stars)
+- Confidence rating (stars)
+- AI-generated encouraging paragraph (never reveals specific gaps)
+- "Biggest bottleneck" teaser — one sentence naming the category
+  of the main issue without specifics ("your team lacks reliable
+  debuff coverage" not "you need Decrease DEF")
+- "Go deeper" button
+**After one rewarded ad ("Go deeper"):**
+- Confidence percentage (e.g. "87%")
+- Strengths list (2-3 specific things this team does well)
+- Weaknesses list (2-3 specific gaps with consequences)
+- Gear benchmarks — specific stat targets per role:
+  e.g. "Debuffer: 220+ ACC", "Fastest champion: 250+ SPD",
+  "Nuker: 100% Crit Rate", "HP floor: 45,000+"
+- Champion alternatives — if a recommended champion is underbuilt,
+  show owned alternatives with rough effectiveness ranking
+- Highest impact upgrade — one specific action ("Building Stag Knight
+  to level 60 will improve your success rate more than any other
+  single change")
+- How to fix the main gap — farming location, stat target, build order
+### Champion alternatives with effectiveness % — deferred to Year 2
+Showing "High Khatun (80% effectiveness)" requires a scoring system
+grounded in real outcome data. Do not invent percentages — they will
+be wrong and will erode trust. Build this once the recommendation_outcomes
+table has real data to draw from. For MVP, show alternatives as a
+ranked list without percentages.
+### Analytics to instrument from day one
+Every event that isn't tracked from launch is data lost forever.
+Instrument these before going public:
+| Event | What it measures |
+|---|---|
+| roster_saved | Player completed setup |
+| recommendation_requested | Player picked content |
+| learn_more_clicked | Player tapped "Go deeper" |
+| ad_completed | Player watched the full ad |
+| gated_content_viewed | Player saw the deep analysis |
+| day_2_return | Player came back next day |
+| outcome_recorded | Player tapped 👍 or 👎 |
+Target conversion benchmarks (from the conversation):
+- learn_more_clicked / recommendation_requested: 40-60% = healthy
+- If below 20%: free summary may be giving away too much, or gated
+  content isn't communicating enough additional value
+- day_2_return: the most important single metric for an ad-supported
+  model — if players don't return, ads don't compound
+---
+## Confidence percentage calibration roadmap
+The success percentage shown to players starts as a rule-based estimate
+and gets more accurate as real outcome data accumulates. This is the
+core mechanism that turns the feedback loop into a competitive moat.
+### Phase 1 — Rule-based estimates (launch through ~1,000 outcomes)
+Percentage derived from matching engine output:
+- All goals + all thresholds + Strong/God Tier gear = 85-95%
+- All goals + all thresholds + Dungeon gear = 70-84%
+- All goals + one threshold borderline = 55-69%
+- All goals + stats failing = 40-54%
+- One goal unsatisfied = 20-39%
+- Two or more goals unsatisfied = 5-19%
+These are informed estimates, not measured rates. They are clearly
+flagged as PLACEHOLDER ESTIMATES in the code. The percentage is
+honest in direction (higher = better) but not yet calibrated to
+real player outcomes.
+### Phase 2 — First calibration (~1,000 outcomes per content type)
+**Trigger:** 1,000+ recommendation_outcomes rows with non-null outcome
+for a given dungeon_stage_id.
+**Action:** Run this analysis query:
+```sql
+select
+  verdict_band,
+  count(*) as total,
+  count(*) filter (where outcome = 'cleared') as cleared,
+  round(100.0 * count(*) filter (where outcome = 'cleared')
+    / count(*), 1) as actual_clear_rate
+from recommendation_outcomes
+where dungeon_stage_id = '<target_stage>'
+  and outcome in ('cleared', 'failed')
+group by verdict_band
+order by verdict_band;
+```
+Compare actual_clear_rate against the displayed percentage for each
+band. If a band is systematically off by more than 10 percentage
+points, recalibrate that band's range. Update the config object in
+the code — do not hardcode new values, keep them in the same
+calibratable config.
+**Who does this:** Mike reviews the query output and approves any
+band changes before they go live. Same human-review principle as
+champion tag approvals — no auto-merge on data that affects what
+players see.
+### Phase 3 — Per-composition rates (~10,000 outcomes)
+**Trigger:** Enough data to compute meaningful rates for specific
+team compositions, not just broad verdict bands.
+**What becomes possible:**
+- "Teams with Tagoar + Uugo covering Decrease DEF goals clear
+  Spider 9 at an 83% rate" — real number, not an estimate
+- Champion-specific success rate contributions
+- Gear tier impact measured empirically, not assumed
+**Action:** Replace the band-based percentage with a lookup against
+historical success rates for similar team compositions. The matching
+engine output becomes an input to a lookup rather than a direct
+percentage calculation.
+### Phase 4 — Specialized prediction model (~100,000 outcomes)
+**Trigger:** Statistical significance across multiple content types,
+multiple roster compositions, multiple gear tiers.
+**What becomes possible:**
+- The percentage is no longer derived from rules at all
+- Direct prediction from roster composition against historical
+  success rates
+- Fine-tune a small specialized model on this dataset
+- The model knows things no generic LLM knows: that players with
+  Geomancer + Pythion + Stag Knight clear Dragon 25 at 84%, that
+  Dungeon-geared Uugo fails the Spider 9 ACC threshold 60% of the
+  time, that God Tier Tagoar solo clears Spider 10 at 91%
+**This is the moat.** OpenAI, Anthropic, Google, and every other
+model provider does not have this data. It cannot be scraped, bought,
+or approximated. It only exists because real players used the app
+and tapped 👍 or 👎.
+### Calibration principle
+The percentage should always feel honest. A team showing 87% should
+clear roughly 87% of the time in practice. If real data shows it's
+actually clearing at 71%, the display should say 71%. Never inflate
+confidence to make the app look better — players will notice when
+the "87%" team keeps failing and trust collapses. Accuracy over
+optimism, always.
