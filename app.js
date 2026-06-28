@@ -442,6 +442,8 @@ function renderResults(data) {
         user_id:          lastMatchParams.deviceId,
         dungeon_stage_id: data.dungeon_stage_id ?? null,
         verdict:          data.verdict ?? null,
+        verdict_band:     data.verdict_band ?? null,
+        confidence_pct:   data.confidence_pct ?? null,
         recommended_team: teamSnapshot,
         roster_snapshot:  rosterSnapshot,
       }),

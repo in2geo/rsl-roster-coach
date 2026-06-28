@@ -11,7 +11,7 @@ function json(res, status, body) { res.status(status).json(body); }
 export default async function handler(req, res) {
   // POST — insert a new outcome row (outcome = null, player hasn't responded yet)
   if (req.method === 'POST') {
-    const { user_id, dungeon_stage_id, verdict, recommended_team, roster_snapshot } = req.body ?? {};
+    const { user_id, dungeon_stage_id, verdict, verdict_band, confidence_pct, recommended_team, roster_snapshot } = req.body ?? {};
     if (!user_id) {
       return json(res, 400, { error: 'user_id required' });
     }
@@ -23,6 +23,8 @@ export default async function handler(req, res) {
         game_id:          'raid_shadow_legends',
         dungeon_stage_id: dungeon_stage_id ?? null,
         verdict:          verdict ?? null,
+        verdict_band:     verdict_band ?? null,
+        confidence_pct:   confidence_pct ?? null,
         recommended_team: recommended_team ?? null,
         roster_snapshot:  roster_snapshot  ?? null,
       })
