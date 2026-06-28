@@ -149,3 +149,30 @@ analysis, second content piece, failure diagnosis = one ad each.
 **Never:** Selling player data, affiliate links disguised as
 recommendations, pay-to-win recommendations (recommending champions
 based on who paid, not what's actually best).
+---
+## Content expansion within RSL (post-MVP)
+Beyond Spider's Den and Clan Boss, the natural content expansion order
+within RSL is:
+| Content | Priority | Notes |
+|---|---|---|
+| Spider's Den stage 20 | High | Solo carry farming target, energy efficiency |
+| Dragon's Lair | High | Most-farmed dungeon, gear progression gateway |
+| Ice Golem | High | DEF-scaling gear, different team composition needs |
+| Fire Knight | Medium | Turn meter control focused, different tag set |
+| Arena (Bronze-Gold) | Medium | Different recommendation model — see below |
+| Faction Wars | Low | Faction-locked teams, niche audience |
+| Doom Tower | Low | Deep endgame, out of target audience scope |
+### Arena — the exception to the fixed-content model
+Arena is the one piece of content that requires a fundamentally
+different recommendation approach. Every other content type is
+roster-vs-fixed-requirements. Arena is roster-vs-specific-opponent —
+the recommendation changes based on what the player is facing.
+This makes Arena harder to build but also more valuable as a
+differentiator — no existing tool gives new players personalized
+Arena counter-pick advice for their specific roster against their
+specific opponent.
+Research source when ready to build: Ragash Arena video documentation
+(three identified videos — links to be added at build time). Treat as
+human_observation sources — synthesize, never transcribe.
+Target tier scope: Bronze through Gold only. Platinum+ is out of
+scope for this app's target audience.

@@ -278,3 +278,79 @@ game easier to launch.
   significantly more complex — 6 rune slots, set bonuses, substats)
 - Community trust: SW players have their own tools (SWOP, SWARFARM)
   the same way RSL players have HellHades — need a clear wedge
+
+## 12. Arena — post-MVP content area
+
+Arena is explicitly deferred until Spider's Den and Clan Boss are
+validated with real players. It requires a fundamentally different
+recommendation approach than dungeon content and should not be
+conflated with the existing matching engine.
+
+### Why Arena is different
+
+Every other piece of content in RSL Coach is roster-vs-fixed-content:
+the dungeon requirements are known, static, and the same for every
+player. The matching engine checks whether a player's roster covers
+the required goals.
+
+Arena is roster-vs-specific-defense: the player is attacking a
+specific opponent's team, which changes every fight. There is no
+fixed "goal list" — the recommendation depends on what the opponent
+is running. This requires a different data model and a different
+matching approach entirely.
+
+### What Arena recommendations actually need
+
+1. The player's offensive roster (already collected)
+2. The opponent's defense team (new input — player describes or
+   selects the 4 champions they're facing)
+3. A recommendation engine that evaluates the player's roster against
+   that specific defense — affinity advantages, counter-picks,
+   speed tuning for first-turn advantage, debuff immunity awareness
+
+This is a meaningfully harder problem than dungeon content because:
+- The "dungeon requirements" change every fight
+- Speed tuning for first-turn advantage is critical and highly
+  specific to the matchup
+- Affinity countering matters more in Arena than in PvE
+- The meta shifts with patches — what counters what changes over time
+
+### Arena tiers to cover (when building)
+
+New players encounter Arena in roughly this progression:
+- Bronze / Silver — mostly unoptimized defenses, speed and basic
+  debuffs dominate
+- Gold — speed tuning becomes critical, unkillable and revive teams
+  appear
+- Platinum+ — out of scope for this app's target audience
+
+MVP Arena scope (when built): Bronze through Gold only. Do not attempt
+Platinum+ recommendations — that audience is already served by
+veteran tools.
+
+### Research source — Ragash Arena documentation
+
+When ready to build Arena recommendations, the Ragash Arena videos
+are a documented starting research source for which champions matter
+at which tier. Three videos have been identified as relevant —
+links to be added when the build begins. These should be treated as
+human_observation sources (synthesize the judgment in your own words,
+never transcribe). The no-YouTube-scraping rule applies — watch the
+videos and record your own observations, do not attempt to pull
+transcripts.
+
+### Schema additions needed for Arena (design only — do not build yet)
+
+The current schema handles fixed-content recommendations via
+`dungeon_stages` and `goals`. Arena will need:
+
+- An `arena_tiers` table (Bronze/Silver/Gold/Platinum)
+- A way to input opponent defense (4 champions + their approximate
+  gear tier)
+- Counter-pick logic that differs from the OR-of-ANDs goal system
+- Speed threshold checks specific to first-turn advantage
+  (different from the Clan Boss speed tune brackets)
+
+Do not add these tables until Arena is actively being built — the
+game_id architecture already supports adding Arena as a content type
+without schema restructuring.
