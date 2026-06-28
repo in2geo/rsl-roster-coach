@@ -31,8 +31,23 @@ const server = http.createServer(async (req, res) => {
       }
     };
 
+    // Parse JSON body (Express does this automatically; plain Node does not)
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+      const raw = await new Promise((resolve, reject) => {
+        const chunks = [];
+        req.on('data', c => chunks.push(c));
+        req.on('end', () => resolve(Buffer.concat(chunks).toString()));
+        req.on('error', reject);
+      });
+      try { req.body = raw ? JSON.parse(raw) : {}; } catch { req.body = {}; }
+    }
+
+    // Parse query string (Express provides req.query; plain Node does not)
+    req.query = Object.fromEntries(url.searchParams);
+
     try {
-      const mod = await import(`./api/${name}.js`);
+      // Cache-bust so file edits are picked up without restarting the server
+      const mod = await import(`./api/${name}.js?v=${Date.now()}`);
       await mod.default(req, res);
     } catch (e) {
       console.error('API error:', e);
