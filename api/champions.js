@@ -14,6 +14,7 @@ export default async function handler(req, res) {
   const { data, error } = await supabase
     .from('champions')
     .select('id, name, rarity, portrait_url')
+    .eq('game_id', 'raid_shadow_legends')
     .order('name', { ascending: true });
 
   if (error) return json(res, 500, { error: error.message });

@@ -21,12 +21,14 @@ export default async function handler(req, res) {
   const { data: existing } = await supabase
     .from('daily_sessions')
     .select('ad_views_today')
+    .eq('game_id', 'raid_shadow_legends')
     .eq('user_id', user_id)
     .eq('session_date', today)
     .maybeSingle();
 
   await supabase.from('daily_sessions').upsert({
     user_id,
+    game_id: 'raid_shadow_legends',
     session_date: today,
     ad_views_today: (existing?.ad_views_today ?? 0) + 1,
   }, { onConflict: 'user_id,session_date' });

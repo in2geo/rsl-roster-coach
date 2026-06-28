@@ -26,6 +26,7 @@ export default async function handler(req, res) {
           champion_tags ( tag_id, status, tags ( name, bypasses_accuracy_check ) )
         )
       `)
+      .eq('game_id', 'raid_shadow_legends')
       .eq('user_id', user_id);
 
     if (error) return json(res, 500, { error: error.message });
@@ -41,11 +42,12 @@ export default async function handler(req, res) {
 
     if (!champion_id) return json(res, 400, { error: 'champion_id required' });
 
-    // Upsert — one row per (user_id, champion_id) pair
+    // Upsert — one row per (user_id, champion_id, game_id) triplet
     const { data, error } = await supabase
       .from('user_champions')
       .upsert({
         user_id,
+        game_id:         'raid_shadow_legends',
         champion_id,
         level:           level           ?? 1,
         stars:           stars           ?? 1,
@@ -69,6 +71,7 @@ export default async function handler(req, res) {
     const { error } = await supabase
       .from('user_champions')
       .delete()
+      .eq('game_id', 'raid_shadow_legends')
       .eq('user_id', user_id)
       .eq('champion_id', champion_id);
 

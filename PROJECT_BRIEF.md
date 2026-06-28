@@ -7,8 +7,10 @@ start; update it as decisions change.
 
 A coaching tool for Raid: Shadow Legends players who are new, have a
 limited roster, and don't know what to focus on. They need: which teams to
-build from what they actually own, and which events/tournaments are worth
-their resources right now.
+build from what they actually own, which events/tournaments are worth their
+resources right now, and whether any champion they own can solo content
+(which matters enormously during overlapping events and fusion tournaments
+where energy allocation is the real constraint).
 
 This is deliberately NOT competing with veteran-focused tools (HellHades'
 Optimiser, Gestal, RSL Helper/RSLTools, raidbro.com). Those are
@@ -19,129 +21,203 @@ champions and minimal gear. The wedge here is judgment and triage
 
 ## 2. Target user
 
-New-ish players, limited roster, uncertain what to prioritize. Likely
-lower willingness to pay (early in the game, not yet emotionally/
-financially invested) — hence ads, not subscriptions, as the monetization
-model. Likely higher churn than veteran players — design for fast
-activation, not a slow-building relationship.
+Account level 20–90 roughly — wide enough to include both players who
+just hit their creator-link milestone champions and players who have been
+running dungeon content for several months. Awakening (unlocks at account
+level 42) is relevant to the majority of this range and should be treated
+as a collectible field, not an edge case.
+
+Most real users arrive via creator/referral starter-link codes — these
+grant 2 unbooked Legendaries and 3 unbooked Epics on top of the standard
+starter Rare (Kael/Athel/Elhain/Galek) and whatever Common/Uncommon drops
+accumulate from early Campaign and fusion. So "limited roster" means small
+and mostly unbooked/underleveled, not low-rarity — a typical day-1 roster
+already includes Legendary and Epic champions.
+
+Likely lower willingness to pay (early in the game, not yet emotionally/
+financially invested) — hence ads, not subscriptions. Likely higher churn
+than veteran players — design for fast activation, not a slow-building
+relationship.
 
 ## 3. Core user flow
 
-1. Player takes a screenshot of their roster screen on their phone.
-2. Opens the web app in their mobile browser, taps Upload, picks the
-   screenshot via the standard photo picker (works identically on iOS and
-   Android — no special APIs needed for this).
-3. A vision model reads the screenshot into structured data: champion
-   identity, level, star/ascension rank. (NOT stats — those aren't visible
-   on the roster screen. See section 5.)
-4. The matching engine (plain code, not an LLM call) compares the
-   player's roster against the dungeon-requirements table for whatever
-   content they asked about, and picks the best available team from what
-   they own.
-5. The AI (Anthropic API) turns that structured result into a
-   plain-language explanation — including naming any gap explicitly if no
-   owned champion satisfies a need.
-6. First plan of the day is free. "Refresh this" / "go deeper" actions are
+1. Player opens the web app and selects their champions by rarity
+   (Mythical → Legendary → Epic → Rare). Each rarity opens a portrait
+   grid sorted by how commonly new players own that champion (creator-link
+   frequency ranking). Player taps each champion they own.
+2. For each selected champion, the app collects: level (1-60), star rank
+   (1-6), ascension level (0-6), gear tier (Starter/Dungeon/Strong/God
+   Tier — self-reported), mastery tier (None/Basic/Complete), and an
+   "is booked" flag. Awakening level only shown for accounts level 42+.
+   One-time setup; data persists across sessions.
+3. Player also sets their account level (used to sanity-check gear tier
+   and gate awakening visibility).
+4. Player picks a piece of content they want help with (dungeon + stage
+   or Clan Boss difficulty).
+5. The matching engine (plain code, not an LLM call) compares their roster
+   against the dungeon-requirements table, estimates each champion's stats
+   from base stats + level/star/ascension scaling + gear tier modifier,
+   and picks the best available team. If any owned champion is a known
+   solo carry for that content, this is surfaced as a separate callout
+   before the team recommendation.
+6. The AI (Anthropic API) turns that structured result into a
+   plain-language two-part explanation: (a) what this team can do right
+   now, (b) what specific action unlocks the next stage. Farming locations
+   not raw stat numbers. Gaps named explicitly — never silently excluded.
+7. First plan of the day is free. "Refresh this" / "go deeper" actions are
    gated behind a rewarded video ad.
-7. Daily push notification (requires the PWA to be added to the home
+8. Daily push notification (requires the PWA to be added to the home
    screen — this is the actual reason that onboarding step matters, not
    just cosmetics) brings the player back.
 
 ## 4. Data architecture
 
-Two tables are the source of truth. The AI explains decisions the tables
+Four tables are the source of truth. The AI explains decisions the tables
 already made; it does not invent recommendations from memory.
 
 ### Champion table
-Per champion: name, faction, affinity, rarity, and role/mechanic tags
-(Decrease Defense, AoE Damage, Cleanser, Speed Aura, Revive, Block Damage,
-Turn Meter Control, etc.) — tagged from the literal skill text, not from
-"best champions" articles. Guides are biased toward Legendary/Epic by
-nature (nobody writes "Top 40 Decrease Defense Champions Including the
-Mediocre Ones"), which would leave gaps exactly where this audience's
-rosters live: Common/Uncommon/Rare.
+Per champion: name, faction, affinity, rarity, base stats (HP, ATK, DEF,
+SPD, C.Rate, C.DMG, RES, ACC at level 60 fully ascended), and role/mechanic
+tags (Decrease Defense, AoE Damage, Cleanser, Speed Aura, Revive, Block
+Damage, Turn Meter Control, etc.) — tagged from the literal skill text, not
+from "best champions" articles. Guides are biased toward flashy or
+meta-relevant picks regardless of rarity — they skip champions that work
+but aren't discussed. Coverage should be driven by whether a champion is in
+the known starter-pack set, not by rarity tier alone.
 
 ### Dungeon-requirements table
 Per piece of content (dungeon + stage, or boss): requirements are written
 as GOALS with a list of valid tag-level solutions underneath, not a single
-required tag. Example (Spider's Den wave phase):
+required tag. Example (Spider's Den):
 
-- Goal: prevent the wave from dealing sustained damage before you clear it
-- Valid solutions: AoE Decrease Defense + AoE damage, OR AoE Stun/Freeze/
-  Daze, OR AoE Decrease Turn Meter
-- Speed also matters independently (falling behind the enemy's speed is a
-  common, separate failure mode)
+- Goal: prevent the spiders from dealing sustained damage before you clear them
+- Valid solutions: AoE Decrease Defense + AoE Damage, OR AoE Stun/Freeze/
+  Daze, OR AoE Decrease Turn Meter, OR Enemy Max HP Damage, OR AoE HP Burn
+- Speed and RES matter independently (separate stat_threshold_checks rows)
 
 Where a dungeon has a wave phase AND a boss phase with different needs
 (Dragon's Lair, Fire Knight, Ice Golem — NOT Spider's Den or the Clan
 Boss, which skip straight to the boss), the table needs both phases'
-requirements, and the matching engine has to find one team that covers
-both reasonably well, surfacing the trade-off explicitly when nothing
-covers both.
+requirements.
 
-## 5. Two tiers of champion data — and why this matters for failure diagnosis
+### Champion AI notes table (champion_ai_notes)
+Per champion, per dungeon (or global): plain-language AI configuration
+instructions for cases where wrong auto settings cause known run failures.
+Only populated for champions where this actually matters — not every
+champion. Examples: Elder Skarg A2 must be disabled until 3+ debuffs land;
+Fayne A3 must target boss only, not spiderlings; Tholin A2 must be disabled
+for Spider 10 solo runs.
 
-- **Tier 1 (free, from one screenshot):** identity, level, star rank.
-  Powers the basic team-recommendation flow via role-tag matching. This is
-  enough for "what team should I build" for a beginner.
-- **Tier 2 (estimated, then optionally verified):** actual numeric stats
-  (ATK/DEF/SPD/ACC/RES). A champion's base stats are fixed and known, and
-  level/rank scaling is a known formula, so Tier 2 CAN be estimated from
-  Tier 1 data without an extra screenshot. The estimate gets less
-  reliable as a player accumulates gear, since gear is the one variable
-  base-stat-plus-scaling can't capture.
-- **When Tier 2 precision actually matters:** diagnosing "I have the right
-  team but keep failing" (e.g. stuck between Spider 9 and 10). At that
-  point gear variance is usually the real culprit, and the right move is
-  to ask for actual stat-page screenshots of the specific champions in the
-  failing team — not rely on the cheap estimate. Pair this with cheap
-  triage questions first ("are you dying early or late in the fight,
-  does one specific champion die first") before reaching for stat math —
-  often narrows the diagnosis for free.
-- Known mechanics that make stat-threshold math tractable: debuff landing
-  is an Accuracy-vs-Resistance check capped between 3% and 100% (never a
-  hard guarantee either way); some dungeons have known/formulaic
-  thresholds (e.g. Spider's Den accuracy needed ≈ stage × 11); some
-  effects bypass the check entirely (instant Decrease Turn Meter); bosses
-  can have hardcoded exceptions (Hydra's unresistable Mark, Max-HP-damage
-  caps on bosses at high stages that don't apply to wave enemies).
+### Solo carry profiles table (champion_solo_profiles)
+Any champion known to be able to solo a specific dungeon stage. NOT limited
+to starter-pack champions — covers any champion in the game. Includes
+required gear set, key stat thresholds, AI settings, and a plain-language
+explanation of why it works. This is surfaced proactively when a player
+owns a solo carry: "You own [Champion] — they can solo [content] once built
+this way. Here's where they are now vs. what's needed."
 
-## 6. Data sourcing workflow (see CLAUDE.md for the hard rules)
+Solo carry capability matters especially during overlapping events and
+fusion tournaments — a player who can solo Spider 10 with one champion
+fills the other 4 slots with food champions, accomplishing two goals
+simultaneously. This is week-2 knowledge that dramatically affects energy
+allocation. Note: Clan Boss is NOT solo-able content and must never appear
+in this table — Clan Boss is a shared damage race where maximizing all 5
+champion slots is always the goal.
 
-For champion tags and dungeon requirements:
-1. Read the primary source (in-game Index for skill text; official patch
-   notes for new champions).
-2. Draft the tag/rule proposal (Claude can help format this).
-3. Human reviews and approves before it's live.
+## 5. Stat estimation engine
 
-For judgment that can't be looked up (e.g. "AoE Freeze is an acceptable
-substitute for AoE Decrease Defense because they solve the same problem —
-deny sustained damage — through different mechanisms"): this comes from
-watching account-review content (YouTube creators, forum threads) and
-writing your OWN observation in your own words, then having Claude help
-format that into a structured rule. Never scrape or transcribe the
-source — the judgment is the valuable part, and it has to be synthesized,
-not copied. Two separate outputs come from this: (a) rules for the
-matching engine, (b) a style/tone reference for how the AI phrases
-explanations — these are separate concerns and go in separate places.
+The matching engine estimates a champion's real stats from:
+base_stats (from champions table) + level/star/ascension scaling + gear_tier modifier
 
-Periodically check tag coverage BY RARITY (% of Common/Uncommon/Rare
-champions with at least one tag filled in, vs. Legendaries) as a QA habit
-— low coverage at low rarities is the blind spot that breaks fallback
-logic silently.
+### Gear tier definitions (plain language shown to player)
+- Starter — campaign drops, mostly unupgraded (+4 to +8)
+- Dungeon — mostly +8 to +12
+- Strong — mostly +12 to +16, good sets
+- God Tier — +16 with great substats
 
-## 7. MVP scope (don't build the full game on day one)
+### Important stat estimation notes
+- ACC and RES are additive gear bonuses, not multiplicative — base ACC is
+  0 for virtually all champions. Gear tier ACC/RES bonuses are flat adds.
+- C.Rate and C.DMG base values vary per champion (most are 15%/50% but
+  some differ — always use the value from the champions table).
+- All gear tier modifiers are PLACEHOLDER ESTIMATES pending calibration
+  against 10-15 real accounts. Do not treat as final. Store in a config
+  file, not hardcoded in matching logic.
+- Substat variance at God Tier is high and invisible to this system — flag
+  this as a known accuracy ceiling, not a bug.
+- Trust the player's self-reported gear tier over account-level inference.
+  A level 35 spender may have God Tier gear.
 
-- Champions: ~100-150 that a real new player is likely to own (starters,
-  common Campaign drops, early fusion rewards) — not all 900+.
-- Content: 2-3 pieces (Campaign progression, Spider's Den, maybe early
-  Clan Boss) — not full game coverage.
+## 6. Failure diagnosis flow
+
+When a player reports a failed run, surface three yes/no questions only:
+
+1. "Is your team dying before clearing the spiderlings?"
+2. "Are your debuffs landing — do you see Stun or Decrease DEF icons
+   appearing on the spiderlings?"
+3. "Are the spiderlings taking their turns repeatedly before your team acts?"
+
+Map answers to failure modes and specific fixes. Only surface these when
+the player explicitly taps "this team failed." The champion_ai_notes table
+covers the fourth failure mode (wrong AI rotation) that these three
+questions don't catch.
+
+## 7. Data sourcing workflow (see CLAUDE.md for the hard rules)
+
+For champion base stats: use raid.guide (https://raid.guide/en/stats/) —
+approved source confirmed accurate against in-game screenshots. For skill
+text and tags: in-game Index only. For dungeon requirements: in-game
+observation plus patch notes. For solo carry data and AI settings: search
+summaries from community sources, paraphrased in own words, never
+transcribed.
+
+For judgment calls (e.g. "AoE Freeze substitutes for AoE Decrease Defense
+because they solve the same problem through different mechanisms"): synthesize
+from watching account-review content, write in your own words. Two separate
+outputs: (a) matching engine rules, (b) explanation style notes — these are
+separate concerns and go in separate places.
+
+Zero-tag champions must surface explicitly. Any champion the player selects
+that has no approved tags must be flagged: "I found [Champion] on your
+roster but don't have enough data on them yet." Never silently exclude.
+
+QA habit: check tag coverage two ways — BY RARITY and against the known
+starter-pack roster specifically. Rarity alone won't catch a gap in an
+off-meta starter-pack Epic.
+
+## 8. MVP scope
+
+- Champions: ~100-150 that a real new player is likely to own — specifically
+  the creator-link starter-pack Legendaries/Epics (Tagoar, Uugo, and the
+  other high-frequency creator-link champions), the four traditional starter
+  Rares, common Campaign drops, and early fusion rewards. Coverage priority
+  is driven by creator-link frequency, not rarity tier.
+- Content: Spider's Den stages 9-10, Clan Boss all difficulties.
+- Do not expand to Spider 20 or Dragon's Lair until Spider 9-10 is validated
+  with real players producing correct recommendations.
 - Validate manually first: find a few real new players and do the
-  recommendation by hand (no app) before building anything. If that
-  doesn't get a genuinely excited reaction, the architecture doesn't
-  matter yet.
+  recommendation by hand (no app) before trusting the architecture. If that
+  doesn't get a genuinely excited reaction, the architecture doesn't matter.
 
-## 8. Legal/business basics
+## 9. Known open questions — do not assume answers
+
+1. Mythical champion access for beginners — unconfirmed whether starter
+   codes ever grant Mythical-tier champions. Do not build Mythical into the
+   starter-pack assumption until confirmed.
+2. Instant Decrease Turn Meter bypass — community lore says instant DTM
+   bypasses the ACC/RES check. Plarium's own Coldheart write-up implies ACC
+   matters. Unverified. The per-skill "cannot be resisted" clause is the
+   real rule — verify via literal skill text, not category assumption.
+3. Accuracy formula for Spider's Den — seed currently uses stage x 10
+   anchored to Plarium's official site. Community sources range from
+   stage x 10 to stage x 12.5. Treat as a floor-with-margin, not a
+   confirmed exact target.
+4. RES threshold for Spider's Den — no per-stage formula confirmed.
+   AyumiLove cites ~300 RES as a rough rule of thumb. Directional only.
+5. Gear tier stat multipliers — all current values are placeholder
+   estimates. Must be calibrated against 10-15 real accounts before shipping.
+
+## 10. Legal/business basics
 
 - Name and disclaimer must read clearly as an unofficial fan tool — not
   affiliated with Plarium.
@@ -149,3 +225,56 @@ logic silently.
   networks require this).
 - Vercel's free Hobby tier is non-commercial only — budget for Pro once
   ads are actually live, not just at MVP/testing stage.
+
+## 11. Platform vision (post-MVP — do not build until RSL is validated)
+
+RSL Coach is being built as a game-agnostic recommendation engine, not
+a Raid-specific tool. Raid: Shadow Legends is the first game and the
+validation vehicle. The architecture already supports multi-game expansion:
+champion table, dungeon requirements, tags, goals, and goal solutions are
+all game-scoped via game_id (see add-game-id-migration.sql).
+
+The core product loop is identical across games:
+1. Player creates roster (manual selection from a champion list)
+2. Player picks content they're stuck on
+3. Matching engine compares roster against content requirements
+4. AI explains the result in plain language
+5. Gaps named explicitly, solo carries surfaced, AI settings flagged
+
+Only the data changes per game — champion database, content database,
+tag taxonomy, dungeon requirements, recommendation rules. The UI,
+matching engine logic, ad gate, and explanation layer are reused.
+
+### Expansion priority (research only — do not build yet)
+
+| Game | Opportunity | Notes |
+|---|---|---|
+| Summoners War | ⭐⭐⭐⭐⭐ | Deep roster, complex PvE, years of active players |
+| Honkai: Star Rail | ⭐⭐⭐⭐ | Large player base, frequent team advice questions |
+| Epic Seven | ⭐⭐⭐⭐ | Large roster, PvE + PvP, gear complexity |
+| Wuthering Waves | ⭐⭐⭐ | Growing audience, team advice demand |
+| Idle Heroes | ⭐⭐⭐ | Casual audience, same core "who do I use?" question |
+
+### The sequencing rule
+
+Do not expand to a second game until:
+1. RSL Coach is publicly live
+2. At least 5 real new RSL players have used it
+3. At least 3 of those players said the recommendation was genuinely useful
+4. The ad gate is generating real revenue (even if small)
+
+"Dominate one first" is not just strategic advice — it's the validation
+gate that makes the platform story credible. Expanding before RSL is
+proven wastes the data and community trust that make each subsequent
+game easier to launch.
+
+### What Summoners War expansion would actually require
+(For planning purposes only — do not start this work yet)
+- Champion database for SW (different stat system, runes not gear)
+- Dungeon requirements for key SW content (Toa, GB10, DB10, etc.)
+- Tag taxonomy for SW skills (different from RSL — awakening bonuses,
+  leader skills, passive conditions all work differently)
+- Rune system understanding (SW's equivalent of RSL gear tiers, but
+  significantly more complex — 6 rune slots, set bonuses, substats)
+- Community trust: SW players have their own tools (SWOP, SWARFARM)
+  the same way RSL players have HellHades — need a clear wedge

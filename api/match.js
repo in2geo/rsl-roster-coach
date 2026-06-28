@@ -19,6 +19,7 @@ async function getSession(userId) {
   const { data } = await supabase
     .from('daily_sessions')
     .select('free_recommendation_used, free_content_key, ad_views_today')
+    .eq('game_id', 'raid_shadow_legends')
     .eq('user_id', userId)
     .eq('session_date', today)
     .maybeSingle();
@@ -29,6 +30,7 @@ async function markFreeUsed(userId, contentKey) {
   const today = new Date().toISOString().split('T')[0];
   await supabase.from('daily_sessions').upsert({
     user_id: userId,
+    game_id: 'raid_shadow_legends',
     session_date: today,
     free_recommendation_used: true,
     free_content_key: contentKey,
