@@ -525,7 +525,24 @@ function renderContentScreen() {
     };
   }
 
-  // Spider stage toggle
+  // Spider mode toggle (Normal / Hard)
+  const modeNormal = qs('#spider-mode-normal', screen);
+  const modeHard   = qs('#spider-mode-hard', screen);
+  const normalStages = qs('#spider-normal-stages', screen);
+  const hardNote     = qs('#spider-hard-note', screen);
+
+  function setSpiderMode(mode) {
+    const isHard = mode === 'hard';
+    modeNormal?.classList.toggle('active', !isHard);
+    modeHard?.classList.toggle('active', isHard);
+    normalStages?.classList.toggle('hidden', isHard);
+    hardNote?.classList.toggle('hidden', !isHard);
+  }
+  setSpiderMode('normal');
+  if (modeNormal) modeNormal.onclick = () => setSpiderMode('normal');
+  if (modeHard)   modeHard.onclick   = () => setSpiderMode('hard');
+
+  // Spider stage toggle (Normal mode only)
   const spider9  = qs('#spider-stage-9', screen);
   const spider10 = qs('#spider-stage-10', screen);
   [spider9, spider10].forEach(btn => {
@@ -536,7 +553,7 @@ function renderContentScreen() {
       btn.classList.add('active');
     });
   });
-  if (spider9) spider9.classList.add('active'); // default to stage 9
+  if (spider9) spider9.classList.add('active');
 
   // Clan Boss difficulty
   const cbBtns = screen.querySelectorAll('[data-difficulty]');
@@ -579,9 +596,14 @@ async function requestRecommendation(screen) {
   let contentKey, options = {};
 
   if (spiderActive) {
-    const stageBtn = qs('#content-spider .stage-btn.active', screen);
-    const stage = stageBtn?.dataset.stage ?? '9';
-    contentKey = stage === '10' ? 'spider' : 'spider_beginner';
+    const isHard = qs('#spider-mode-hard', screen)?.classList.contains('active');
+    if (isHard) {
+      contentKey = 'spider_hard';
+    } else {
+      const stageBtn = qs('#content-spider .stage-btn.active[data-stage]', screen);
+      const stage = stageBtn?.dataset.stage ?? '9';
+      contentKey = stage === '10' ? 'spider' : 'spider_beginner';
+    }
   } else {
     const diffBtn = qs('[data-difficulty].active', screen);
     contentKey = 'clan_boss';

@@ -826,6 +826,13 @@ footer a { color: var(--muted); text-decoration: underline; }
   color: var(--accent);
 }
 
+.spider-hard-desc {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 0.25rem;
+}
+
 /* ── Ad gate modal ─────────────────────────────────────────────────────────── */
 .ad-modal-overlay {
   position: fixed;

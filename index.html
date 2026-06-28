@@ -198,10 +198,23 @@
 
       <!-- Spider section -->
       <div id="content-spider" class="content-section">
-        <p class="section-label">Stage</p>
+        <p class="section-label">Mode</p>
         <div class="stage-toggle">
-          <button class="stage-btn active" id="spider-stage-9" data-stage="9">Stage 9</button>
-          <button class="stage-btn" id="spider-stage-10" data-stage="10">Stage 10</button>
+          <button class="stage-btn active" id="spider-mode-normal" data-mode="normal">Normal</button>
+          <button class="stage-btn" id="spider-mode-hard" data-mode="hard">Hard</button>
+        </div>
+
+        <div id="spider-normal-stages">
+          <p class="section-label" style="margin-top:1rem">Stage</p>
+          <div class="stage-toggle">
+            <button class="stage-btn active" id="spider-stage-9" data-stage="9">Stage 9</button>
+            <button class="stage-btn" id="spider-stage-10" data-stage="10">Stage 10</button>
+          </div>
+        </div>
+
+        <div id="spider-hard-note" class="hidden">
+          <p class="section-label" style="margin-top:1rem">Hard Stage 10</p>
+          <p class="spider-hard-desc">Solo carry content — requires Arix or Marius with end-game Slayer gear (247+ SPD, 4500+ DEF).</p>
         </div>
       </div>
 
