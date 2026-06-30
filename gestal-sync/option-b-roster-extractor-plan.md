@@ -6,8 +6,21 @@ comes only from Gestal (`gestal-sync/output/<name>_<accountId>.json`, produced b
 `sync.js` after a manual Refresh), uploaded via `tools/import-upload.js` → `/api/import`
 → `rsl_accounts`. Option B removes Gestal from that path; the app would read the game.
 
-**Status:** scoped against the IL2CPP dump. The data layout is fully mapped; one
-navigation hop and a fresh dump remain. Bounded project, with a real per-patch tax.
+**Status (updated — partially BUILT + validated):**
+- ✅ **Step zero / re-dump:** fresh dump of the current installed build is BYTE-IDENTICAL
+  to the v11.60.0 dump (same dump.cs/script.json SHA-256). Zero offset shifts; the build
+  has NOT moved. (Confirms the "many patches don't shift offsets" rule.)
+- ✅ **Champion reader (`--roster`): DONE, validated CLEAN** — 109/109 vs the Don$Gnut
+  Gestal export, every field (typeId/stars/level/empower/inStorage).
+- ✅ **Gear scalar reader (`--gear`): scalar fields CLEAN** — slotId/gearSetId/rarityId/
+  rank/level/ascension match across all shared artifacts; reconciles to the in-game
+  counts (816 unequipped gear + 181 unequipped accessories + 64 equipped = 1061 owned).
+- ⏳ **Remaining:** owned-artifact filter (drop ~28 non-owned/transient objects the broad
+  scan catches → exactly 1061); nested main stat / substats / equippedOnHeroId; then swap
+  `import-upload.js` off Gestal once the gear diff is fully clean.
+
+Code: `RslBattleReader/RosterReader.cs` (`--roster`), `ArtifactReader.cs` (`--gear`),
+`tools/diff-roster.mjs`, `tools/diff-gear.mjs`.
 
 **Boundary (passes):** passive `ReadProcessMemory` of the player's own client — same
 technique as RslBattleReader. NO injection/hooking. Stays within the CLAUDE.md
@@ -28,41 +41,54 @@ technique as RslBattleReader. NO injection/hooking. Stays within the CLAUDE.md
 - The Il2CppDumper v6.7.46 → `dump.cs` + `script.json` workflow + the Il2CppClass
   layout constants.
 
-## 2. Memory layout — mapped from dump.cs (GameAssembly v11.60.0)
+## 2. Memory layout — VALIDATED against the live game + Gestal export
 
-> Offsets are v11.60.0 and MUST be re-confirmed on a current dump (see §5).
+> Build is unchanged from v11.60.0 (identical dump). TypeInfo RVAs stored as the
+> exact **decimal** "Address" from script.json (a hex transcription bug burned us
+> once — keep them decimal).
 
 ```
-AppModel (resolved, reusable) — app-shell only; does NOT hold user data.
+TypeInfo RVAs (script.json "Address", decimal):
+   AppModel      82315664   (control; 0x4E80990)
+   Hero          82209328   ✅ resolves         (0x4E66A30)
+   Artifact      82424840   ✅ resolves         (0x4E9B408)
+   UserHeroData  82441240   ❌ resolves to garbage (0x2001FFB7) — that entry is bad;
+                            do NOT use it. Scan Hero objects directly instead.
 
-ROOT → live user data  ◀ the one unsolved hop (see §3)
-   UserGuard<UserWrapper>.Current (generic static)  OR a guard holding UserWrapper@0x10
-        ▼
-UserWrapper (TypeDefIndex 18084)
-   ├─ Heroes    (HeroesWrapper)    0x28
-   └─ Artifacts (EquipmentWrapper) 0x30
-        ▼  (wrappers read underlying data via the guard; UserHeroData offsets known)
-UserHeroData (TypeDefIndex 10585)
-   ├─ LastHeroId            0x10
-   ├─ HeroById  Dict<int,Hero>  0x18   ← owned roster, keyed by hero id
-   ├─ HeroesCountByRarity   0x20
-   └─ InventorySlots 0x28 / Storage 0x2C / Bathhouse 0x30 / BattlePresets 0x38
-        ▼
-Hero (TypeDefIndex 10462)
-   Id 0x18 · TypeId 0x1C · Grade(stars) 0x20 · Level 0x24 · Experience 0x28
-   EmpowerLevel 0x30 · Locked 0x34 · InStorage 0x35 · Skills(List) 0x60
-   MasteryData 0x68 · DoubleAscendData(ascension) 0x70 · Power 0x78
+ROOT HOP (what actually worked): resolve the Hero / Artifact Il2CppClass via its RVA
+(GameAssembly base + RVA → klass), then SIGNATURE-SCAN the heap for objects whose
+klass pointer (offset 0) == that class. Class pointers live at ~0x22B… (not 0x7FF8…).
+No need for UserWrapper / the generic UserGuard static, and the UserHeroData dict path
+is unreachable (bad RVA). Champions: ~167 Hero objects for a loaded roster.
 
-Artifact (gear)
-   _level 0x18 · _kindId(slot) 0x20 · _rankId(rank) 0x24 · _setKindId(set) 0x28
-   _primaryBonus(main stat) 0x38 · _secondaryBonuses(substats List) 0x40
-   + HeroEquippedItemsContext links gear ↔ hero
+Hero (TypeDefIndex 10462) — ✅ VALIDATED CLEAN vs Gestal:
+   Id 0x18 · TypeId 0x1C · Grade(stars) 0x20 · Level 0x24 · EmpowerLevel 0x30
+   Locked 0x34 · InStorage 0x35 · **InBathhouse 0x36 ← the player-facing STORAGE VAULT
+   flag (Gestal's inStorage); 0x35 was NOT it. Treat 0x35 || 0x36 as stored.**
+
+Artifact (TypeDefIndex 11328) — scalar fields ✅ VALIDATED CLEAN vs Gestal.
+   NOTE: real layout differs from the earlier (wrong-struct) draft:
+   _id 0x10 · _level 0x30 · _ascendLevel(Nullable<int>) 0x34 · _kindId(slot) 0x40
+   _rankId 0x44 · _rarityId 0x48 · _primaryBonus(main) 0x50
+   _secondaryBonuses(subs List) 0x58 · _setKindId(set) 0x68
+   Mappings to Gestal: ArtifactKindId enum → slotId (Weapon 5→0, Shield 6→2, Ring 7→6,
+   Helmet 1→1, Chest 2→4, Gloves 3→3, Boots 4→5, Cloak 8→7, Banner 9→8);
+   ascensionLevel null→0; setKindId 0→null (accessories have no set).
+   Still TODO: ArtifactBonus decode (main+subs), equippedOnHeroId, owned-only filter.
 ```
 
-Everything a champion/gear extractor needs is present — and every field has a
-ground-truth counterpart in the existing Gestal export to validate against.
+Every field validates against the Gestal export. Equipped vs unequipped reconciles to
+the in-game inventory (816 gear + 181 accessories = 997 unequipped + 64 equipped = 1061).
 
-## 3. The one unsolved hop — resolving the live `UserWrapper`
+## 3. The root hop — SOLVED via Hero/Artifact-class signature scan
+
+✅ **Resolved** — not via `UserWrapper` at all. We resolve the Hero (and Artifact)
+Il2CppClass by RVA and signature-scan the heap for object headers (klass == that
+class). This is simpler than the generic-static route below and proved out live
+(champions CLEAN). The remaining `UserWrapper`/`UserHeroData` notes are kept for
+reference / the owned-artifact filter, but are not on the critical path.
+
+(Historical scoping — the two approaches considered before building:)
 
 AppModel does not hold user data; the architecture routes everything through
 `UserGuard<UserWrapper>`. Two approaches:

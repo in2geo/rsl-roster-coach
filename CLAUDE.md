@@ -75,8 +75,13 @@ rosters — that segment is already served by other tools.
   seeds/09_clan_boss.sql (Hard+) and seeds/10_clan_boss_easy_normal.sql
   (Easy/Normal, deduped goals). Sustain goals at Hard+ remain gaps until
   champions get Leech/Ally Protection/Continuous Heal tags (coverage, not a bug).
-- Direct game-memory roster extractor (Option B) — SCOPED, not built. Plan +
-  traced IL2CPP offsets in gestal-sync/option-b-roster-extractor-plan.md.
+- Direct game-memory roster extractor (Option B) — PARTIALLY BUILT. Champion
+  reader (--roster) validated CLEAN vs Gestal (109/109, every field); gear scalar
+  reader (--gear) clean (slot/set/rank/rarity/level/ascension), counts reconcile
+  to in-game (816 gear + 181 acc unequipped + 64 equipped = 1061 owned). Remaining:
+  owned-artifact filter + nested main-stat/substats/equippedOnHeroId, then swap
+  import-upload.js off Gestal. Re-dump confirmed current build == v11.60.0 (zero
+  offset shifts). Plan/offsets: gestal-sync/option-b-roster-extractor-plan.md.
 - champion_names table — localization layer, English seeded
 - daily_sessions + ad gate spec — schema done, UI wiring pending
 - Event dungeon architecture (is_event/active_from/active_until) — schema
