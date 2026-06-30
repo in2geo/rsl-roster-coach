@@ -552,8 +552,15 @@ internal sealed class BattleWatcher(string outputPath)
                     {
                         int sn = sid % 1000;
                         snapshot.StageNumber = sn;
-                        if (snapshot.Dungeon is string dg)
+                        // StageId prefix → dungeon is authoritative and more complete than
+                        // the per-stage encounter-id map, so prefer it; fall back to the
+                        // encounter-id/fingerprint dungeon when the prefix is unmapped.
+                        var dg = DungeonId.DungeonFromStageId(sid) ?? snapshot.Dungeon;
+                        if (dg is not null)
+                        {
+                            snapshot.Dungeon = dg;
                             snapshot.StageLabel = $"{dg} Stage {sn}";
+                        }
                     }
 
                     // Keep only the player's champions: a candidate is an ally iff

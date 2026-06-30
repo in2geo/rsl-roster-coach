@@ -43,6 +43,25 @@ internal static class DungeonId
         [222601] = new("Dragon's Lair", 11),          // stage-specific (paired with 220601)
     };
 
+    // StageId (from BattleSetup in memory) encodes <dungeon-prefix><stage:3 digits>,
+    // e.g. 2059013 = Arcane Keep stage 13. The prefix is ONE per dungeon — more
+    // complete than the per-stage encounter ids above — so it's the preferred dungeon
+    // source when StageId is available. Confirmed from labeled captures + screenshots.
+    // NOTE: difficulty is NOT encoded here (comes from the fingerprint); Hard variants
+    // may use a different prefix — unverified, add when a Hard sample appears.
+    private static readonly Dictionary<int, string> StageIdPrefixNames = new()
+    {
+        [2029] = "Spirit Keep",
+        [2049] = "Force Keep",
+        [2059] = "Arcane Keep",
+        [2069] = "Dragon's Lair",
+        [2079] = "Ice Golem's Peak",
+    };
+
+    /// <summary>Dungeon name from a StageId's prefix (stageId / 1000), or null if unmapped.</summary>
+    public static string? DungeonFromStageId(int stageId) =>
+        stageId > 1000 && StageIdPrefixNames.TryGetValue(stageId / 1000, out var n) ? n : null;
+
     public readonly record struct Match(int Id, string? Name, int? Stage);
 
     // Plausible band for encounter content ids (excludes the smaller team-setup

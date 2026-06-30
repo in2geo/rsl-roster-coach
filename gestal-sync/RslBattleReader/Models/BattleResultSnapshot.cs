@@ -24,9 +24,10 @@ internal sealed class BattleResultSnapshot
     public bool  ManualSkillUsed { get; init; }
 
     // Stage identified via byte-signature fingerprint (no explicit id in file).
-    // StageNumber/StageLabel are settable so the watcher can override them with the
-    // authoritative value decoded from the in-memory StageId (stageId % 1000).
-    public string? Dungeon     { get; init; }
+    // Dungeon/StageNumber/StageLabel are settable so the watcher can override them
+    // with the authoritative values decoded from the in-memory StageId (dungeon from
+    // the prefix, stage from stageId % 1000).
+    public string? Dungeon     { get; set; }
     public int?    StageNumber { get; set; }
     public string? Difficulty  { get; init; }
     public string? StageLabel  { get; set; }
