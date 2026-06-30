@@ -1,5 +1,6 @@
 import { preloadRewardedAd, showRewardedAd } from './ads.js';
 import { initRosterFlow, showRosterScreen } from './roster.js';
+import { initTestMode, isTestMode } from './test-mode.js';
 
 // Unregister service worker on localhost so code changes are always fresh
 if ('serviceWorker' in navigator && location.hostname === 'localhost') {
@@ -16,7 +17,7 @@ const screens = {
   error:   document.getElementById('screen-error'),
 };
 
-const ROSTER_SCREEN_IDS = ['screen-rarity', 'screen-grid', 'screen-content'];
+const ROSTER_SCREEN_IDS = ['screen-rarity', 'screen-grid', 'screen-verify'];
 
 function showScreen(name) {
   Object.values(screens).forEach(s => s.classList.add('hidden'));
@@ -392,7 +393,13 @@ document.querySelectorAll('.reason-btn').forEach(btn => {
 function renderResults(data) {
   lastResult = data;
 
-  document.getElementById('result-content-name').textContent = data.content_label || '';
+  // Spider's Den Normal: show "Your best Spider's Den target is Stage X" heading
+  const resultHeading = document.getElementById('result-heading');
+  if (data.stage_number_attempted != null && data.content_label?.includes("Spider's Den — Stage")) {
+    resultHeading.innerHTML = `Your best Spider's Den target is <span id="result-content-name">Stage ${data.stage_number_attempted}</span>`;
+  } else {
+    resultHeading.innerHTML = `Your team for <span id="result-content-name">${data.content_label || ''}</span>`;
+  }
 
   const teamList = document.getElementById('team-list');
   teamList.innerHTML = '';
@@ -416,11 +423,15 @@ function renderResults(data) {
 
   const explanationEl = document.getElementById('explanation-text');
   explanationEl.textContent = data.explanation || '';
+  document.querySelector('.event-fallback-note')?.remove();
+  document.querySelector('.not-ready-note')?.remove();
   if (data.event_fallback_note) {
     explanationEl.insertAdjacentHTML('afterend',
       `<p class="event-fallback-note">${data.event_fallback_note}</p>`);
-  } else {
-    document.querySelector('.event-fallback-note')?.remove();
+  }
+  if (data.not_ready_note) {
+    explanationEl.insertAdjacentHTML('afterend',
+      `<p class="not-ready-note">${data.not_ready_note}</p>`);
   }
 
   // Gaps hidden behind Gate 1 — revealed after "Go deeper" ad
@@ -455,13 +466,14 @@ function renderResults(data) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        user_id:          lastMatchParams.deviceId,
-        dungeon_stage_id: data.dungeon_stage_id ?? null,
-        verdict:          data.verdict ?? null,
-        verdict_band:     data.verdict_band ?? null,
-        confidence_pct:   data.confidence_pct ?? null,
-        recommended_team: teamSnapshot,
-        roster_snapshot:  rosterSnapshot,
+        user_id:                lastMatchParams.deviceId,
+        dungeon_stage_id:       data.dungeon_stage_id ?? null,
+        stage_number_attempted: data.stage_number_attempted ?? null,
+        verdict:                data.verdict ?? null,
+        verdict_band:           data.verdict_band ?? null,
+        confidence_pct:         data.confidence_pct ?? null,
+        recommended_team:       teamSnapshot,
+        roster_snapshot:        rosterSnapshot,
       }),
     })
       .then(r => r.json())
@@ -542,9 +554,34 @@ const adModal    = document.getElementById('ad-modal');
 const adModalMsg = document.getElementById('ad-modal-msg');
 
 function showAdModal(message, action) {
+  // Test mode: skip the ad entirely and run the gated action straight away.
+  if (isTestMode()) { runGatedAction(action); return; }
   pendingAction = action;
   adModalMsg.textContent = message;
   adModal.classList.remove('hidden');
+}
+
+// Satisfies the server-side gate (records the view) then runs the gated action.
+// Shared by the "Watch ad" button and the test-mode bypass.
+async function runGatedAction(action) {
+  if (!action) return;
+  const deviceId = lastMatchParams?.deviceId ?? action.params?.deviceId;
+  if (deviceId) {
+    await fetch('/api/verify-ad', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: deviceId }),
+    }).catch(() => {});
+  }
+  if (action.type === 'match') {
+    await runRosterMatch(action.params);
+  } else if (action.type === 'deeper') {
+    revealGate1();
+    showScreen('results');
+  } else if (action.type === 'failure') {
+    showFailureDiagnosis();
+    showScreen('results');
+  }
 }
 
 function hideAdModal() {
@@ -568,29 +605,10 @@ document.getElementById('btn-modal-watch').addEventListener('click', async () =>
 
   if (!verified) { hideAdModal(); return; }
 
-  // Record the view server-side
-  if (lastMatchParams?.deviceId) {
-    await fetch('/api/verify-ad', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: lastMatchParams.deviceId }),
-    }).catch(() => {});
-  }
-
   hideAdModal();
   const action = pendingAction;
   pendingAction = null;
-
-  if (action?.type === 'match') {
-    // Retry the match that was gated
-    await runRosterMatch(action.params);
-  } else if (action?.type === 'deeper') {
-    revealGate1();
-    showScreen('results');
-  } else if (action?.type === 'failure') {
-    showFailureDiagnosis();
-    showScreen('results');
-  }
+  await runGatedAction(action);
 });
 
 // ── Results buttons ────────────────────────────────────────────────────────
@@ -612,24 +630,21 @@ document.getElementById('btn-restart').addEventListener('click', returnToContent
 document.getElementById('btn-error-retry').addEventListener('click', returnToContentScreen);
 
 function returnToContentScreen() {
-  // If the player came from the roster flow, send them back to content selection.
+  // If the player came from the roster flow, send them back to the verification screen.
   // Fall back to the legacy upload screen only if no roster flow was active.
   if (lastMatchParams) {
-    showRosterScreen('screen-content');
+    showRosterScreen('screen-verify');
   } else {
     resetToUpload();
   }
 }
 
 function resetToUpload() {
+  // The legacy screenshot-upload flow is retired — "start over" re-enters the
+  // roster flow (verification screen) instead of showing the upload screen.
   selectedFile = null;
   parsedChampions = [];
-  fileInput.value = '';
-  previewWrap.classList.add('hidden');
-  uploadLabel.classList.remove('hidden');
-  contentSelect.value = '';
-  updateAnalyseBtn();
-  showScreen('upload');
+  initRosterFlow();
 }
 
 function showDeepAnalysis() {
@@ -651,20 +666,29 @@ function showDeepAnalysis() {
 // ── Roster recommendation dispatch ────────────────────────────────────────
 // roster.js fires this event when the player taps "Get recommendation".
 document.addEventListener('rsl:request-recommendation', async e => {
-  const { contentKey, options, deviceId } = e.detail;
+  const { contentKey, options, deviceId, userChampions, context } = e.detail;
   showScreen('loading');
   cycleLoadingMessage(matchMessages);
 
   try {
-    const rosterRes = await fetch(`/api/user-champions?user_id=${deviceId}`);
-    const rosterBody = await rosterRes.json().catch(() => ({}));
-    if (!rosterRes.ok) throw new Error(rosterBody.error || 'Could not load roster');
+    let champions = userChampions;        // auto-populated from Gestal, if available
+    let ctx       = context ?? null;
+
+    // Fall back to the manually-saved Supabase roster when there's no Gestal export.
+    if (!Array.isArray(champions) || !champions.length) {
+      const rosterRes = await fetch(`/api/user-champions?user_id=${deviceId}`);
+      const rosterBody = await rosterRes.json().catch(() => ({}));
+      if (!rosterRes.ok) throw new Error(rosterBody.error || 'Could not load roster');
+      champions = rosterBody.champions ?? [];
+      ctx = null;
+    }
 
     const params = {
       contentKey,
       options: options ?? {},
       deviceId,
-      userChampions: rosterBody.champions ?? [],
+      userChampions: champions,
+      context: ctx,
     };
     lastMatchParams = params;
     await runRosterMatch(params);
@@ -677,7 +701,7 @@ document.addEventListener('rsl:request-recommendation', async e => {
 });
 
 async function runRosterMatch(params) {
-  const { contentKey, options, deviceId, userChampions } = params;
+  const { contentKey, options, deviceId, userChampions, context } = params;
 
   const res = await fetch('/api/match', {
     method:  'POST',
@@ -687,15 +711,16 @@ async function runRosterMatch(params) {
       content: contentKey,
       options,
       user_id: deviceId,
+      context: context ?? null,
     }),
   });
   const body = await res.json().catch(() => ({}));
 
   clearLoadingTimer();
 
-  // Gate hit — show ad modal over content screen
+  // Gate hit — show ad modal over the verification screen
   if (body.requiresAd) {
-    showRosterScreen('screen-content');
+    showRosterScreen('screen-verify');
     showAdModal(body.message || 'Watch a short video to unlock this recommendation.', {
       type: 'match',
       params,
@@ -711,6 +736,7 @@ async function runRosterMatch(params) {
 
 // ── Init ───────────────────────────────────────────────────────────────────
 preloadRewardedAd();
+initTestMode();
 initRosterFlow();
 
 if ('serviceWorker' in navigator && location.hostname !== 'localhost') {
