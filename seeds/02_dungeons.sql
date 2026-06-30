@@ -183,12 +183,87 @@ union all
 select gc_sol2.id, tags.id from gc_sol2, tags where tags.name = 'Shield';
 
 
--- ── 6. Spider's Den stage 7-10 ACC threshold ─────────────────────────────────
--- formula: stage * 11 (from community observation — ACC needed to land debuffs)
+-- ── 6. Spider's Den Stages 7-10 — goals + solutions (same as 1-6) + ACC threshold ──
+-- Strategic requirements are identical to Stages 1-6; only the ACC bar rises.
+-- The threshold check is additive on top of these goals, not a replacement.
 
+with
+  phase as (
+    select ph.id from phases ph
+    join dungeon_stages ds on ds.id = ph.dungeon_stage_id
+    join dungeons d on d.id = ds.dungeon_id
+    where d.name = 'Spider''s Den' and ds.label = 'Stages 7-10'
+  ),
+
+  ga as (
+    insert into goals (phase_id, description)
+    select phase.id, 'Prevent the spiderlings from dealing sustained damage before the team clears them'
+    from phase
+    returning id
+  ),
+  gb as (
+    insert into goals (phase_id, description, is_informational)
+    select phase.id, 'Team speed must exceed the spiderlings'' speed to avoid falling behind', true
+    from phase
+    returning id
+  ),
+  gc as (
+    insert into goals (phase_id, description)
+    select phase.id, 'Survive the Spider boss'' large single-target hits'
+    from phase
+    returning id
+  ),
+
+  sa_sol1 as (
+    insert into goal_solutions (goal_id, label, status, source_type, source_note, proposed_by)
+    select ga.id, 'AoE Decrease DEF + AoE Damage', 'proposed', 'human_observation',
+      'Decrease DEF amplifies AoE hits enough to burst spiderlings before they act', 'seed'
+    from ga returning id
+  ),
+  sa_sol2 as (
+    insert into goal_solutions (goal_id, label, status, source_type, source_note, proposed_by)
+    select ga.id, 'AoE Stun / Freeze / Sleep', 'proposed', 'human_observation',
+      'Hard CC stops spiderlings acting entirely, solving the sustained-damage problem', 'seed'
+    from ga returning id
+  ),
+  sa_sol3 as (
+    insert into goal_solutions (goal_id, label, status, source_type, source_note, proposed_by)
+    select ga.id, 'AoE Decrease Turn Meter', 'proposed', 'human_observation',
+      'Instant DTM (bypasses ACC check) delays spiderlings indefinitely when spammed', 'seed'
+    from ga returning id
+  ),
+  gc_sol1 as (
+    insert into goal_solutions (goal_id, label, status, source_type, source_note, proposed_by)
+    select gc.id, 'Healer', 'proposed', 'human_observation',
+      'A healer patches the team between Spider boss hits', 'seed'
+    from gc returning id
+  ),
+  gc_sol2 as (
+    insert into goal_solutions (goal_id, label, status, source_type, source_note, proposed_by)
+    select gc.id, 'Shield buff', 'proposed', 'human_observation',
+      'Shield absorbs the large single-target hit', 'seed'
+    from gc returning id
+  )
+
+insert into goal_solution_tags (goal_solution_id, tag_id)
+select sa_sol1.id, tags.id from sa_sol1, tags where tags.name = 'Decrease Defense'
+union all
+select sa_sol1.id, tags.id from sa_sol1, tags where tags.name = 'AoE Damage'
+union all
+select sa_sol2.id, tags.id from sa_sol2, tags where tags.name = 'AoE Stun'
+union all
+select sa_sol2.id, tags.id from sa_sol2, tags where tags.name = 'AoE Freeze'
+union all
+select sa_sol3.id, tags.id from sa_sol3, tags where tags.name = 'AoE Decrease Turn Meter'
+union all
+select gc_sol1.id, tags.id from gc_sol1, tags where tags.name = 'Healer'
+union all
+select gc_sol2.id, tags.id from gc_sol2, tags where tags.name = 'Shield';
+
+-- ACC threshold — formula source: Plarium official data, stage × 10
 insert into stat_threshold_checks (phase_id, stat, comparison, formula, notes)
-select ph.id, 'acc', 'formula', 'stage * 11',
-  'ACC needed to reliably land debuffs on spiderlings ≈ stage number × 11'
+select ph.id, 'acc', 'formula', 'stage * 10',
+  'ACC needed to reliably land debuffs on spiderlings ≈ stage number × 10 (Plarium official)'
 from phases ph
 join dungeon_stages ds on ds.id = ph.dungeon_stage_id
 join dungeons d on d.id = ds.dungeon_id

@@ -291,6 +291,160 @@ order by
   end;
 
 -- ----------------------------------------------------------------------------
+-- 11. Migrations
+-- ----------------------------------------------------------------------------
+
+-- 11-pre: Add crit rate / crit dmg base stat columns to champions
+alter table champions
+  add column base_crit_rate numeric,
+  add column base_crit_dmg  numeric;
+
+-- 11a: Add Mythical rarity
+alter table champions drop constraint champions_rarity_check;
+alter table champions add constraint champions_rarity_check
+  check (rarity in ('Common','Uncommon','Rare','Epic','Legendary','Mythical'));
+
+-- 11b: Fix tag_coverage_by_rarity sort order to include Mythical
+drop view tag_coverage_by_rarity;
+create view tag_coverage_by_rarity as
+select
+  c.rarity,
+  count(distinct c.id) as total_champions,
+  count(distinct ct.champion_id)
+    filter (where ct.status = 'approved') as champions_with_at_least_one_tag,
+  round(
+    100.0 * count(distinct ct.champion_id) filter (where ct.status = 'approved')
+    / nullif(count(distinct c.id), 0),
+    1
+  ) as pct_tagged
+from champions c
+left join champion_tags ct on ct.champion_id = c.id
+group by c.rarity
+order by
+  case c.rarity
+    when 'Common' then 1 when 'Uncommon' then 2 when 'Rare' then 3
+    when 'Epic' then 4 when 'Legendary' then 5 when 'Mythical' then 6
+  end;
+
+-- 11c: Per-champion AI configuration notes (e.g. skill-slot guidance for
+-- specific dungeons; Spider's Den Elder Skarg / Fayne failure modes)
+create table champion_ai_notes (
+  id            uuid primary key default gen_random_uuid(),
+  champion_id   uuid not null references champions(id) on delete cascade,
+  dungeon_id    uuid references dungeons(id) on delete cascade,
+  skill_slot    text check (skill_slot in ('A1','A2','A3','passive')),
+  instruction   text not null,
+  source_note   text,
+  status        text not null default 'proposed'
+                check (status in ('proposed','approved','rejected')),
+  created_at    timestamptz not null default now()
+);
+
+-- 11d-config: Gear tier stat multipliers — read by the estimation engine,
+-- never hardcoded. Values here are placeholder estimates; update after
+-- calibration against real accounts before shipping.
+create table gear_tier_config (
+  gear_tier   text primary key check (gear_tier in ('Starter','Dungeon','Strong','God Tier')),
+  hp_mult     numeric not null,
+  atk_mult    numeric not null,
+  def_mult    numeric not null,
+  spd_add     numeric not null,  -- flat addition, not a multiplier
+  acc_add     numeric not null,
+  res_add     numeric not null,
+  notes       text
+);
+
+insert into gear_tier_config (gear_tier, hp_mult, atk_mult, def_mult, spd_add, acc_add, res_add, notes) values
+  ('Starter',   1.00, 1.00, 1.00,  0,  0,  0, 'placeholder — calibrate before shipping'),
+  ('Dungeon',   1.20, 1.20, 1.20,  5, 10,  5, 'placeholder — calibrate before shipping'),
+  ('Strong',    1.50, 1.50, 1.50, 15, 30, 20, 'placeholder — calibrate before shipping'),
+  ('God Tier',  2.00, 2.00, 2.00, 30, 60, 40, 'placeholder — calibrate before shipping');
+
+-- 11d: User champion fields — gear tier (stat estimation modifier) and
+-- character state used by the matching engine
+alter table user_champions
+  add column gear_tier       text    check (gear_tier in ('Starter','Dungeon','Strong','God Tier')),
+  add column ascension_level int     not null default 0 check (ascension_level between 0 and 6),
+  add column mastery_tier    text    not null default 'None' check (mastery_tier in ('None','Basic','Complete')),
+  add column is_booked       boolean not null default false,
+  add column awakening_level int     not null default 0 check (awakening_level between 0 and 6);
+
+-- ----------------------------------------------------------------------------
+-- 12. Waitlist
+-- ----------------------------------------------------------------------------
+-- Inserts go through the service-role key in api/waitlist.js only.
+-- No public insert policy — browser clients cannot write directly.
+
+create table waitlist_emails (
+  id          uuid primary key default gen_random_uuid(),
+  email       text unique not null,
+  created_at  timestamptz not null default now()
+);
+
+alter table waitlist_emails enable row level security;
+-- Public read is intentionally blocked (no policy = deny).
+-- Writes are service-role only (service role bypasses RLS).
+
+-- ----------------------------------------------------------------------------
+-- 13. Solo carry profiles
+-- ----------------------------------------------------------------------------
+-- Covers the case where a single champion can clear a dungeon stage alone
+-- (e.g. Miscreated Monster soloing Spider's Den 10 with Lifesteal gear).
+-- This is structurally different from team goal/solution matching:
+--   - It's a single-champion threshold check, not a team composition check.
+--   - required_stats is a jsonb dict of stat floors (e.g. {"crit_rate": 1.0,
+--     "atk_min": 5000}) evaluated against the player's estimated stats.
+--   - required_set is the gear set prerequisite (Lifesteal being the most
+--     common for sustained solo runs).
+--   - ai_settings documents any skill-slot configuration required for the
+--     solo to function — wrong settings here typically mean a wipe.
+-- The matching engine checks solo profiles before team composition so the
+-- player sees "Champion X can solo this with Lifesteal gear" as the first
+-- option, not as an afterthought buried in team recommendations.
+
+create table champion_solo_profiles (
+  id                uuid primary key default gen_random_uuid(),
+  champion_id       uuid not null references champions(id) on delete cascade,
+  dungeon_stage_id  uuid not null references dungeon_stages(id) on delete cascade,
+  required_set      text,    -- gear set name, e.g. 'Lifesteal'. Null = no set req.
+  required_stats    jsonb,   -- stat floors, e.g. {"crit_rate": 1.0, "atk_min": 5000}
+  ai_settings       text,    -- plain-language skill config, shown directly to player
+  notes             text,
+  source_note       text,
+  status            text not null default 'proposed'
+                    check (status in ('proposed','approved','rejected')),
+  proposed_by       text,
+  proposed_at       timestamptz not null default now(),
+  approved_by       text,
+  approved_at       timestamptz
+);
+
+create index idx_solo_profiles_champion on champion_solo_profiles(champion_id);
+create index idx_solo_profiles_stage    on champion_solo_profiles(dungeon_stage_id);
+create index idx_solo_profiles_status   on champion_solo_profiles(status);
+
+-- 13b: Additional columns added during solo carry research pass
+alter table champion_solo_profiles
+  add column if not exists mechanism           text,   -- WHY no teammates needed: one-sentence self-sustaining loop
+  add column if not exists affinity_warning    text,
+  add column if not exists availability_note   text,
+  add column if not exists research_confidence text
+    check (research_confidence in ('High','Medium','Low','Unverified'));
+
+-- Research log: one row per Epic/Legendary champion processed, solo_found=false
+-- when no evidence found. Unique on champion_id so re-runs can upsert.
+create table if not exists champion_solo_research_log (
+  id             uuid primary key default gen_random_uuid(),
+  champion_id    uuid not null references champions(id) on delete cascade,
+  research_date  timestamptz not null default now(),
+  solo_found     boolean not null,
+  notes          text,
+  unique (champion_id)
+);
+
+create index idx_solo_research_log_champion on champion_solo_research_log(champion_id);
+
+-- ----------------------------------------------------------------------------
 -- Notes on Row Level Security (Supabase)
 -- ----------------------------------------------------------------------------
 -- champions / tags / champion_tags / dungeons / dungeon_stages / phases /
