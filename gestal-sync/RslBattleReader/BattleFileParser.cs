@@ -22,8 +22,13 @@ namespace RslBattleReader;
 /// </summary>
 internal static class BattleFileParser
 {
-    // Setup blob marker: -14, 82, fixarray(1), map16 …
-    private static readonly byte[] SetupBlobMarker = [0xF2, 0x52, 0x91, 0xDE];
+    // Setup blob marker: -14, <format-version>, fixarray(1), map16 …
+    // Byte [1] is a format-version field that bumps with game updates (0x52 on
+    // game v11.50-era, 0x54 after the v11.60 update). Match it as a wildcard so a
+    // version bump doesn't silently break parsing — the inner structure (the map-18
+    // with the "i"/"c" keys at fixed relative offsets) is unchanged across versions.
+    private static bool IsSetupBlob(byte[] b) =>
+        b.Length >= 4 && b[0] == 0xF2 && b[2] == 0x91 && b[3] == 0xDE;
 
     private static readonly StageFingerprint Fingerprint = StageFingerprint.Load();
 
@@ -49,7 +54,7 @@ internal static class BattleFileParser
             // Find the setup blob (carries the ResultType).
             byte[]? setup = null;
             foreach (var o in outer)
-                if (o is byte[] blob && StartsWith(blob, SetupBlobMarker)) { setup = blob; break; }
+                if (o is byte[] blob && IsSetupBlob(blob)) { setup = blob; break; }
 
             if (setup is null || setup.Length < 9)
             {

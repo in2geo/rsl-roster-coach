@@ -28,6 +28,23 @@ if (args.Contains("--whoami"))
     }
 }
 
+// Diagnostic: parse an existing battle dump offline (no game needed). Verifies the
+// file-parse path against a captured dump — handy after a game-format change.
+// Usage: --parse <path-to-file_HHMMSS.bin>
+{
+    int pi = Array.IndexOf(args, "--parse");
+    if (pi >= 0 && pi + 1 < args.Length)
+    {
+        var bytes = File.ReadAllBytes(args[pi + 1]);
+        var results = BattleFileParser.ParseAll(bytes);
+        if (results.Count == 0) { Console.WriteLine("no results parsed (setup blob not found?)"); return; }
+        foreach (var r in results)
+            Console.WriteLine($"parsed: {r.ResultType} | dungeon={r.Dungeon ?? "?"} stage={r.StageNumber?.ToString() ?? "?"} " +
+                              $"turns={r.AllyTurns?.ToString() ?? "?"} finish={r.FinishCause} heroCandidates={r.Heroes.Count}");
+        return;
+    }
+}
+
 var outputPath = Path.GetFullPath(
     Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "output", "battle-log.json"));
 
