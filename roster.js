@@ -136,9 +136,17 @@ async function renderAuthControl() {
     out.textContent = 'Sign out';
     out.onclick = async () => {
       try { const { signOut } = await import('./auth.js'); await signOut(); } catch {}
+      // Return to the fresh, new-visitor home: clear the roster + drop to the
+      // champion-selection start, so signing out doesn't leave the account's
+      // champions on screen.
       activeProfileId = null;
+      gestalUserChampions = null;
+      gestalContext = null;
+      roster = {};
       document.getElementById('profile-switcher-wrap')?.classList.add('hidden');
       renderAuthControl();
+      renderRarityScreen();
+      showRosterScreen('screen-rarity');
     };
     el.append(span, document.createTextNode(' · '), out);
   } else {
@@ -295,6 +303,9 @@ async function loadGestalContext() {
 
 // ── Entry point (called from app.js on load) ──────────────────────────────────
 export async function initRosterFlow() {
+  // Sign-in control is in the persistent header — render it once on load so it
+  // shows on every screen (home/rarity included), not just the verify screen.
+  renderAuthControl();
   try {
     // Prefer the real account: auto-populate from the Gestal export if available.
     const [autoLoaded] = await Promise.all([

@@ -17,6 +17,9 @@
   <header class="app-header">
     <h1>RSL Roster Coach</h1>
     <p class="tagline">What should I do next?</p>
+    <!-- Magic-link sign-in, persistent across screens. Anonymous → "Sign in";
+         signed-in → "Signed in as <email> · Sign out". -->
+    <div id="auth-control" class="auth-control"></div>
   </header>
 
   <!-- ── SCREEN 1: Upload ── -->
@@ -210,9 +213,6 @@
   <!-- ── ROSTER FLOW: Screen R4 — Content Selection ── -->
   <!-- ── Roster verification (default landing) ── -->
   <main id="screen-verify" class="screen hidden">
-    <!-- Sign-in control: magic-link auth. Anonymous users see "Sign in"; signed-in
-         users get profile sync + the switcher below. -->
-    <div id="auth-control" class="auth-control"></div>
     <!-- Profile switcher: only shown for signed-in users with ≥1 profile. -->
     <div id="profile-switcher-wrap" class="profile-switcher-wrap hidden">
       <label for="profile-switcher" class="profile-switcher-label">Profile</label>
