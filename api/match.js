@@ -10,7 +10,7 @@ const supabase = createClient(
 
 function json(res, status, body) { res.status(status).json(body); }
 
-const VALID_CONTENT = ['campaign', 'spider', 'spider_beginner', 'spider_hard', 'clan_boss', 'event_dungeon'];
+const VALID_CONTENT = ['campaign', 'spider', 'spider_hard', 'clan_boss', 'event_dungeon'];
 
 // ── Daily session helpers ─────────────────────────────────────────────────────
 
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
     try { body = JSON.parse(body); } catch { return json(res, 400, { error: 'Invalid JSON body' }); }
   }
 
-  const { userChampions, champions, content: contentKey, options = {}, user_id } = body;
+  const { userChampions, champions, content: contentKey, options = {}, user_id, context = null } = body;
 
   if (!VALID_CONTENT.includes(contentKey)) {
     return json(res, 400, { error: `Invalid content key: ${contentKey}` });
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
 
     let explanation;
     try {
-      explanation = await generateExplanation(matchResult);
+      explanation = await generateExplanation(matchResult, context);
     } catch {
       explanation = 'Explanation unavailable right now — your team above is still valid.';
     }
@@ -98,20 +98,22 @@ export default async function handler(req, res) {
       : null;
 
     return json(res, 200, {
-      content_label:      matchResult.content_label,
-      dungeon_stage_id:   matchResult.dungeon_stage_id,
-      verdict:            matchResult.verdict,
-      verdict_band:       matchResult.verdict_band,
-      confidence_pct:     matchResult.confidence_pct,
+      content_label:          matchResult.content_label,
+      dungeon_stage_id:       matchResult.dungeon_stage_id,
+      stage_number_attempted: matchResult.stage_number_attempted ?? null,
+      verdict:                matchResult.verdict,
+      verdict_band:           matchResult.verdict_band,
+      confidence_pct:         matchResult.confidence_pct,
       event_fallback_note,
-      solo_carries:        matchResult.solo_carries,
-      solo_carries_locked: matchResult.solo_carries_locked,
-      team:              matchResult.team,
-      stun_matrix:       matchResult.stun_matrix,
-      gaps:              matchResult.gaps,
-      threshold_results: matchResult.threshold_results,
-      ascension_gaps:    matchResult.ascension_gaps,
-      data_warning:      matchResult.data_warning,
+      not_ready_note:          matchResult.not_ready_note ?? null,
+      solo_carries:            matchResult.solo_carries,
+      solo_carries_locked:     matchResult.solo_carries_locked,
+      team:                   matchResult.team,
+      stun_matrix:            matchResult.stun_matrix,
+      gaps:                   matchResult.gaps,
+      threshold_results:      matchResult.threshold_results,
+      ascension_gaps:         matchResult.ascension_gaps,
+      data_warning:           matchResult.data_warning,
       explanation,
     });
   }
