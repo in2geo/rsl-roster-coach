@@ -14,6 +14,14 @@ if (args.Contains("--whoami"))
     return;
 }
 
+// Option B: read the owned champion roster directly from game memory (no Gestal).
+// Requires Raid running with the account loaded. Validate output vs the Gestal export.
+if (args.Contains("--roster"))
+{
+    RosterReader.Run();
+    return;
+}
+
 // Diagnostic: scan the game's heap for on-screen values (find the result-screen
 // view-model). Usage: --scan 85907,64079,120779,87497,17880
 {

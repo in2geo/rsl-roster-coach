@@ -116,4 +116,24 @@ internal static class Il2CppOffsets
     public const int DictIntObj_EntrySize = 24;
     public const int DictIntObj_KeyOffset  = 8;  // within Entry
     public const int DictIntObj_ValOffset  = 16; // within Entry (pointer)
+
+    // ── Roster (owned heroes) — Option B roster extractor ───────────────────
+    // TypeInfo RVAs from script.json. Verified IDENTICAL between the v11.60.0 dump
+    // and a fresh dump of the current installed build (same dump.cs/script.json
+    // SHA-256), so unchanged. The RVA points to a slot holding the Il2CppClass*;
+    // an object of that class carries the same pointer at its offset 0 (klass).
+    public const long UserHeroData_TypeInfo_RVA = 0x4DA1018;
+    public const long Hero_TypeInfo_RVA         = 0x4D685B0;
+
+    // UserHeroData fields (TypeDefIndex 10585)
+    public const int UHD_HeroById = 0x18; // Dictionary<int, Hero>
+
+    // Hero fields (TypeDefIndex 10462)
+    public const int Hero_Id           = 0x18;
+    public const int Hero_TypeId       = 0x1C;
+    public const int Hero_Grade        = 0x20; // stars (HeroGrade enum, 1-6)
+    public const int Hero_Level        = 0x24;
+    public const int Hero_EmpowerLevel = 0x30;
+    public const int Hero_Locked       = 0x34;
+    public const int Hero_InStorage    = 0x35; // bool
 }
