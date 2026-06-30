@@ -50,7 +50,8 @@ const championDetails = new Map();
 let sheetReturnTo = 'rarity';
 const RARITY_WEIGHT = { Mythical: 6, Legendary: 5, Epic: 4, Rare: 3, Uncommon: 2, Common: 1 };
 // Content options shown but not yet recommendable (no stage data seeded).
-const CONTENT_UNAVAILABLE = new Set(['ice_golem', 'fire_knight']);
+// Fire Knight / Ice Golem are now seeded (stages 10-20) and recommendable.
+const CONTENT_UNAVAILABLE = new Set();
 
 // Populates championDetails from the loaded champion list (covers the manual path;
 // the auto-load paths also add entries directly from their richer data).
@@ -816,6 +817,17 @@ function wireContentSheet(sheet) {
   setContent('spider');
   tabs.forEach(t => { t.onclick = () => setContent(t.dataset.content); });
 
+  // Stage pickers for the multi-stage dungeons (Fire Knight / Ice Golem 10-20):
+  // single-select the chosen stage within each section.
+  ['ice_golem', 'fire_knight'].forEach(key => {
+    const section = qs('#content-' + key, sheet);
+    const stageBtns = section ? [...section.querySelectorAll('.stage-num-btn')] : [];
+    stageBtns.forEach(b => b.onclick = () => {
+      stageBtns.forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+    });
+  });
+
   qs('#btn-content-cancel', sheet)?.addEventListener('click', closeContentSheet);
   if (recBtn) recBtn.onclick = () => { closeContentSheet(); requestRecommendation(sheet); };
 }
@@ -834,8 +846,13 @@ async function requestRecommendation(sheet) {
     options.boss_affinity = null;
   } else if (key === 'event_dungeon') {
     contentKey = 'event_dungeon';
+  } else if (key === 'ice_golem' || key === 'fire_knight') {
+    contentKey = key;
+    const activeStage = qs(`#content-${key} .stage-num-btn.active`, sheet);
+    options.stage = Number(activeStage?.dataset.stage);
+    if (!options.stage) return; // no stage selected
   } else {
-    return; // ice_golem / fire_knight — not recommendable yet
+    return; // unknown content tab
   }
 
   // Dispatch to existing match flow in app.js via a custom event.
