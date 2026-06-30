@@ -46,14 +46,44 @@ export default async function handler(req, res) {
   const user  = await userFromToken(token);
   if (!user) return json(res, 401, { error: 'Sign in required.' });
 
-  // Pick the requested account, else this user's most recently imported one.
+  // Resolve target: an explicit profile, else legacy ?account / most-recent gestal.
+  const profileId = req.query?.profile ?? null;
+
+  // Manual profile → return its user_champions roster directly (match-engine shape).
+  if (profileId) {
+    const { data: prof } = await service.from('profiles')
+      .select('id, name, population_method')
+      .eq('id', profileId).eq('user_id', user.id).maybeSingle();
+    if (!prof) return json(res, 404, { error: 'Profile not found.' });
+    if (prof.population_method === 'manual') {
+      const { data: champs, error: cErr } = await service.from('user_champions')
+        .select(`
+          id, level, stars, ascension_level, gear_tier, mastery_tier, is_booked, awakening_level,
+          champion:champion_id (
+            id, name, rarity, portrait_url, affinity, faction,
+            base_hp, base_atk, base_def, base_spd, base_acc, base_res, base_crit_rate, base_crit_dmg,
+            champion_tags ( tag_id, status, ascension_required, tags ( name, bypasses_accuracy_check ) )
+          )`)
+        .eq('game_id', 'raid_shadow_legends').eq('profile_id', profileId);
+      if (cErr) return json(res, 500, { error: cErr.message });
+      return json(res, 200, {
+        account: { accountId: null, displayName: prof.name, profileId: prof.id, method: 'manual' },
+        userChampions: champs ?? [],
+        context: { account: { displayName: prof.name }, roster: { total: (champs ?? []).length } },
+        stale: null,
+      });
+    }
+  }
+
+  // Gestal path: the requested profile (gestal), else ?account, else most-recent.
   let q = service.from('rsl_accounts')
     .select('account_id, display_name, raid_player_id, extracted_at, roster_json')
     .eq('user_id', user.id)
     .not('roster_json', 'is', null)
     .order('imported_at', { ascending: false })
     .limit(1);
-  if (req.query?.account) q = q.eq('account_id', req.query.account);
+  if (profileId) q = q.eq('profile_id', profileId);
+  else if (req.query?.account) q = q.eq('account_id', req.query.account);
 
   const { data: rows, error } = await q;
   if (error) return json(res, 500, { error: error.message });
