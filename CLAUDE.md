@@ -23,22 +23,29 @@ rosters — that segment is already served by other tools.
 - Spider's Den stages 9-10 — goals, solutions, stat thresholds, RES row
 - Clan Boss all six difficulties — goals, solutions, stat thresholds,
   boss exceptions, explanation style notes
-- Fire Knight's Castle stages 15-20 — wave phase (AoE CC goals/solutions to
+- Fire Knight's Castle stages 10-20 (was 15-20) — goals, solutions, stat
+  thresholds, boss exceptions. 15-20: wave phase (AoE CC goals/solutions to
   deny dangerous minion skills), boss phase (shield-breaking at 10 hits/round,
   Turn Meter control, Dazzling Flames SPD-debuff counter, Decrease DEF/Weaken
   damage window), tags added (Multi-Hit A1, Decrease SPD, Decrease Turn Meter,
   Heal Reduction, Counterattack, Block Cooldowns, Increase SPD, Ally Attack,
   Block Revive), ACC/SPD stat checks per stage, boss exceptions per stage,
-  explanation style note for the shield mechanic. Stages 1-14 deliberately out
+  explanation style note for the shield mechanic. Stages 1-9 deliberately out
   of scope.
-- Ice Golem's Peak stages 15-20 — wave phase (kill both minions before boss
-  phase, target the more dangerous one first), boss phase (avoid triggering
-  Frigid Vengeance via Poison/HP Burn instead of burst, minion management via
-  Block Revive, Numbing Chill ACC counter), ACC/RES/HP stat checks per stage,
-  boss exceptions per stage including Frigid Vengeance and Counterattack
-  warnings, champion_ai_notes (Underpriest Brogni flagged — reflect damage can
-  proc Frigid Vengeance), explanation style notes for Frigid Vengeance/
-  Counterattack. Stages 1-14 deliberately out of scope.
+- Ice Golem's Peak stages 10-20 (was 15-20) — goals, solutions, stat
+  thresholds, boss exceptions, with a confirmed difficulty cliff at stage 14
+  (relaxed floors 10-13: ACC 120+/HP 25000+, burst-survivable; stage-15-
+  equivalent floors at 14+: ACC 200+/HP 40000+/RES 200+). 15-20: wave phase
+  (kill both minions before boss phase, target the more dangerous one first),
+  boss phase (avoid triggering Frigid Vengeance via Poison/HP Burn instead of
+  burst, minion management via Block Revive, Numbing Chill ACC counter), ACC/
+  RES/HP stat checks per stage, boss exceptions per stage including Frigid
+  Vengeance and Counterattack warnings, champion_ai_notes (Underpriest Brogni
+  flagged — reflect damage can proc Frigid Vengeance), explanation style notes
+  for Frigid Vengeance/Counterattack. Stages 1-9 deliberately out of scope.
+- Block Revive tag corrected: bypasses_accuracy_check is now false (was
+  incorrectly true) — requires a normal ACC check to land; affects matching
+  logic for Ice Golem at ALL stages, not just 10-14.
 - Both Fire Knight and Ice Golem seeded with status = 'proposed' per
   no-auto-merge rule — nothing auto-approved.
 - NOT yet done for Fire Knight/Ice Golem: champion_strategy_modifiers (no
@@ -134,6 +141,12 @@ order by d.name, ds.label;
   known solo carry for the requested content, surface it first.
 - Clan Boss is NOT solo-able content. Never add Clan Boss rows to
   champion_solo_profiles.
+- Ice Golem stage 10-13 vs 14+ requires different explanation tone — see
+  explanation_style_notes topic "Ice Golem stage 10-13 vs stage 14+
+  difficulty framing". Do not apply uniform warning language across all
+  stages of a single dungeon without checking for stage-specific style
+  notes first. (NOTE: explanation_style_notes is not yet read by any code —
+  the explain.js layer must pull and apply these before this has any effect.)
 
 ## Champion selection UI spec (ready to build)
 - Screen 1: Four large rarity buttons (Mythical=red #E53935,
