@@ -1,5 +1,8 @@
 -- ============================================================================
--- Migration — de-duplicate near-duplicate tags (abbreviation vs full word)
+-- Migration — de-duplicate near-duplicate tags + normalize aura names
+-- ============================================================================
+-- Two parts: (1) merge abbreviated duplicate tags into their full-word canonical
+-- (below); (2) rename the abbreviated aura tags for consistency (end of file).
 -- ============================================================================
 -- The tags table accumulated abbreviated duplicates of full-word tags. Canonical
 -- form is the FULL WORD (matches the table's dominant convention: Decrease
@@ -65,7 +68,16 @@ begin
   end loop;
 end $$;
 
+-- ── Aura tag naming consistency (rename only — NOT duplicates) ───────────────
+-- The aura tags mixed abbreviations (ATK/DEF Aura) with full words (Speed Aura).
+-- Normalize to full word to match the table convention. These are unique names
+-- (no merge needed); a plain rename is safe because references follow by tag_id.
+-- HP Aura and Speed Aura already conform and are left unchanged. Idempotent:
+-- re-running after the rename is a no-op (old names no longer exist).
+update tags set name = 'Attack Aura'  where name = 'ATK Aura';
+update tags set name = 'Defense Aura' where name = 'DEF Aura';
+
 -- ── Verification (run after applying) ────────────────────────────────────────
--- Expect: no rows (all three duplicates gone, canonicals remain).
+-- Expect: no rows (all three duplicates + both old aura names gone).
 -- select name from tags where name in
---   ('Decrease ATK','Decrease SPD','Increase SPD');
+--   ('Decrease ATK','Decrease SPD','Increase SPD','ATK Aura','DEF Aura');
