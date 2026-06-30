@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Sign in · RSL Roster Coach</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .auth-wrap { max-width: 360px; margin: 0 auto; padding: 2.5rem 1.25rem; }
+    .auth-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; padding: 1.5rem;
+    }
+    .auth-card h1 { font-size: 1.25rem; margin: 0 0 0.25rem; }
+    .auth-card p.sub { color: var(--muted); font-size: 0.9rem; margin: 0 0 1.25rem; }
+    .auth-card label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.35rem; }
+    .auth-card input[type=email] {
+      width: 100%; box-sizing: border-box; padding: 0.7rem 0.8rem; margin-bottom: 0.9rem;
+      background: var(--bg); color: var(--text);
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; font-size: 1rem;
+    }
+    .auth-card button {
+      width: 100%; padding: 0.75rem; border: none; border-radius: 8px; cursor: pointer;
+      background: var(--accent); color: #fff; font-size: 1rem; font-weight: 600;
+    }
+    .auth-card button[disabled] { opacity: 0.6; cursor: default; }
+    .auth-msg { margin-top: 0.9rem; font-size: 0.88rem; line-height: 1.5; }
+    .auth-msg.ok   { color: #4caf50; }
+    .auth-msg.err  { color: var(--accent); }
+    .auth-signed   { font-size: 0.95rem; }
+    .auth-signed .email { color: var(--text); font-weight: 600; }
+    .auth-link {
+      display: inline-block; margin-top: 1rem; color: var(--muted);
+      background: none; border: none; cursor: pointer; font-size: 0.85rem; text-decoration: underline;
+      width: auto; padding: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <h1>RSL Roster Coach</h1>
+
+      <!-- Signed-out: request a magic link -->
+      <div id="signed-out">
+        <p class="sub">Sign in to manage your linked Raid accounts. We'll email you a magic link — no password.</p>
+        <form id="magic-form">
+          <label for="email">Email</label>
+          <input id="email" type="email" inputmode="email" autocomplete="email"
+                 placeholder="you@example.com" required />
+          <button id="send-btn" type="submit">Send magic link</button>
+        </form>
+        <p id="msg" class="auth-msg" aria-live="polite"></p>
+      </div>
+
+      <!-- Signed-in -->
+      <div id="signed-in" class="auth-signed hidden">
+        <p>Signed in as <span class="email" id="user-email"></span>.</p>
+        <button id="continue-btn" type="button">Continue to app</button>
+        <button id="signout-btn" type="button" class="auth-link">Sign out</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { getSession, sendMagicLink, onAuthChange, signOut } from './auth.js';
+
+    const $ = (id) => document.getElementById(id);
+    const msg = $('msg');
+
+    function showSignedIn(session) {
+      $('signed-out').classList.add('hidden');
+      $('signed-in').classList.remove('hidden');
+      $('user-email').textContent = session.user?.email ?? '';
+    }
+    function showSignedOut() {
+      $('signed-in').classList.add('hidden');
+      $('signed-out').classList.remove('hidden');
+    }
+
+    // Reflect current + future auth state (also catches the magic-link redirect).
+    (async () => {
+      try {
+        const session = await getSession();
+        session ? showSignedIn(session) : showSignedOut();
+        await onAuthChange((s) => (s ? showSignedIn(s) : showSignedOut()));
+      } catch (e) {
+        msg.className = 'auth-msg err';
+        msg.textContent = e.message || 'Sign-in is unavailable right now.';
+      }
+    })();
+
+    $('magic-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = $('email').value.trim();
+      if (!email) return;
+      const btn = $('send-btn');
+      btn.disabled = true; btn.textContent = 'Sending…';
+      msg.className = 'auth-msg';
+      msg.textContent = '';
+      try {
+        await sendMagicLink(email);
+        msg.className = 'auth-msg ok';
+        msg.textContent = `Check ${email} for your sign-in link. You can close this tab after clicking it.`;
+        btn.textContent = 'Link sent';
+      } catch (err) {
+        msg.className = 'auth-msg err';
+        msg.textContent = err.message || 'Could not send the link. Try again.';
+        btn.disabled = false; btn.textContent = 'Send magic link';
+      }
+    });
+
+    $('continue-btn').addEventListener('click', () => { window.location.href = '/'; });
+    $('signout-btn').addEventListener('click', async () => { await signOut(); showSignedOut(); });
+  </script>
+</body>
+</html>
