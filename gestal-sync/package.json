@@ -1,0 +1,12 @@
+{
+  "name": "gestal-sync",
+  "version": "1.0.0",
+  "description": "Reads Gestal account exports and outputs normalized JSON for RSL Roster Coach",
+  "type": "module",
+  "main": "sync.js",
+  "scripts": {
+    "sync": "node sync.js",
+    "watch": "node sync.js --watch"
+  },
+  "engines": { "node": ">=18" }
+}

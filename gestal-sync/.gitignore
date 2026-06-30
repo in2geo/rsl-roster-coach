@@ -1,0 +1,9 @@
+# Build output (RslBattleReader C# project)
+bin/
+obj/
+
+# Generated battle captures + logs (raw game dumps, per-run, not source)
+battle-dumps/
+output/
+*.bin
+hero-debug.txt

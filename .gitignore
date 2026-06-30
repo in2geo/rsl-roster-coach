@@ -3,3 +3,4 @@
 tools/output/
 node_modules/
 .env*
+.claude/launch.json

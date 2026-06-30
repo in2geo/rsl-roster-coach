@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <AssemblyName>RslBattleReader</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Fallback account id source: read Plarium's raidV2.db (SQLite) when
+         Gestal's active.json is unavailable. 10.0.x matches net10.0 and pulls the
+         patched SQLitePCLRaw 3.x (older 2.1.x has advisory GHSA-2m69-gcr7-jv3q). -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.9" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Stage fingerprint library — copied next to the exe so it can be grown
+         without recompiling. -->
+    <None Update="stage-signatures.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

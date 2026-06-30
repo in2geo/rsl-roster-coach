@@ -1,0 +1,108 @@
+{
+  "_comment": "Stage fingerprints for the battleResults file. Each signature is a byte sequence from the stage/enemy-definition region that is identical across all battles of that stage (any team, win or loss) and unique to that stage. To add a stage: capture 2+ battles of it (ideally 1 victory + 1 defeat with different teams), then run tools/make-signature.py to extract a distinctive run. Match is a raw substring search over the whole battleResults file. Longer/more-distinctive signatures first.",
+  "signatures": [
+    {
+      "dungeon": "Ice Golem's Peak",
+      "stage": 9,
+      "difficulty": "Normal",
+      "label": "Ice Golem's Peak Stage 9 (Normal)",
+      "signatureHex": "14c084001f02840070120384002f010e080121230a8dff00240a8e09001f8f0801201f04840070120584002f05460801212334bdff002434be09001fbf08011d4302a1740184001f1e84002123332d7b0024332e09001f2f8400200394020f84006a0f94026e1f029402701f029402701503940227566c94021f32"
+    },
+    {
+      "dungeon": "Dragon's Lair",
+      "stage": 3,
+      "difficulty": "Normal",
+      "label": "Dragon's Lair Stage 3 (Normal)",
+      "_note": "VERIFIED 2 disjoint teams (061119 + 061332) but FRAGILE: only 26b and tail is shared boilerplate. High re-derive risk as new content is added — re-run audit-signatures.py and re-derive if it collides.",
+      "signatureHex": "ba0b0016be0b0016bc0b0015bd0b00260d400b0016410b001f4c"
+    },
+    {
+      "dungeon": "Spirit Keep",
+      "stage": 6,
+      "difficulty": "Normal",
+      "label": "Spirit Keep Stage 6 (Normal)",
+      "_note": "VERIFIED: 2 samples with fully disjoint teams (060450 + 060627). 80-byte sig, unique vs all other dumps (audited).",
+      "signatureHex": "a16d9685a17203a16b06a176cb403e00010062a161c3a162c3180010051800111417000918000d30001fc2300004001800130230001734480000180013016000091800a2a2d181c0a16ac0a17ad32e00"
+    },
+    {
+      "dungeon": "Spirit Keep",
+      "stage": 8,
+      "difficulty": "Normal",
+      "label": "Spirit Keep Stage 8 (Normal)",
+      "_note": "145-byte enemy-script region run common to 3 SK8 dumps (132018 + 062636/062745), unique vs all others (audited). Teams likely similar across captures — re-verify with a clearly different team to confirm full team-independence.",
+      "signatureHex": "84002f0104840021230a297b00240a2a09001f2b840020110384001f648200212303e979002403ea09001feb8200201f0482006e110582003fcd02440601212316a9fd002416aa09001fab06011d4302a1740184000f900266140290020f0c026614028e020f120368140290020f84006b0f92026e1503920227562516030f58130ec2c0a1739682a169ce00035d550f03"
+    },
+    {
+      "dungeon": "Magic Keep",
+      "stage": 6,
+      "difficulty": "Normal",
+      "label": "Magic Keep Stage 6 (Normal)",
+      "_note": "VERIFIED: 2 samples with fully disjoint teams (055631 + 055807). 154-byte sig, unique vs all other dumps (audited).",
+      "signatureHex": "2405de09001fdf8300201f0483006f110583001f1e05012123012dfc0024012e09001f2f05011d4102a1740182000f8e026715028e020f0b026615028e020f11036615028e020f8300690f8e026c14038e0237cd561812031f161d0510929782a169ce00035cf10b03000b0016f20b0016f30b0015f40b00260d400b0016410b001f4c44031d1403c1023fcd622ab6001c1291b60010d552050f"
+    },
+    {
+      "dungeon": "Force Keep",
+      "stage": 6,
+      "difficulty": "Normal",
+      "label": "Force Keep Stage 6 (Normal)",
+      "_note": "VERIFIED: 2 samples with fully disjoint teams (054638 + 054830). 122-byte sig, unique vs all other dumps (audited).",
+      "signatureHex": "011d4102a1740182000f920268160292020f0e0266150292022f03f28c0121232775830124277609001f778c01200392020f84006a0f92026c150392022756048a011f16240510929682a169ce00035c298301000b00162a0b00152b0b00260d400b0016410b001f4cb1011d1503b9022f61daab001c1291ab00"
+    },
+    {
+      "dungeon": "Void Keep",
+      "stage": 5,
+      "difficulty": "Normal",
+      "label": "Void Keep Stage 5 (Normal)",
+      "_note": "VERIFIED: 2 samples with fully disjoint teams (053721 + 054149). 74-byte sig, unique vs all other dumps (audited).",
+      "signatureHex": "130384001fae8400212310cd7b002410ce09001fcf8400201f04840070130584001fa40801221469ff00146a09001f6b08011d4302a1740184000f8c01661f02940270150294020f9c03"
+    },
+    {
+      "dungeon": "Arcane Keep",
+      "stage": 6,
+      "difficulty": "Normal",
+      "label": "Arcane Keep Stage 6 (Normal)",
+      "_note": "VERIFIED: 2 samples with fully disjoint teams (053101 + 053425). 152-byte sig, unique vs all other dumps (audited).",
+      "signatureHex": "002409c609001fc783001d4102a1740183000f9302681f02930270150293022f010e8c0121230a8d8301240a8e09001f8f8c01200393020f1703671f0293026f15039302185517031f16260510839582a169ce00035b1903000b00031b0352ce00030d409a01000b0016410b001f4ca7011d1503af022761b22b020fa000111291a0002fd0f57400200332052f61c67400232fd1bd740018"
+    },
+    {
+      "dungeon": "Spider's Den",
+      "stage": 1,
+      "difficulty": "Normal",
+      "label": "Spider's Den Stage 1 (Normal)",
+      "_note": "VERIFIED: 2 samples with fully disjoint teams AND opposite results (052541 retreat-defeat + 052753 victory). NOTE: original 74b sig false-matched Arcane Keep 6 (shared generic enemy-wave boilerplate 1f..e4005e); this 67b sig re-derived to exclude that collision. Re-audit when new dungeons are added.",
+      "signatureHex": "030477030202000f7100511f6ee2005d1f6171005d0f36025d1fa135025d2fa26de3005d2fa26de4005e1f72e4005e1f72e4005e1f62e4005e1f62e4005e1f61e4005e"
+    },
+    {
+      "dungeon": "Spider's Den",
+      "stage": 3,
+      "difficulty": "Normal",
+      "label": "Spider's Den Stage 3 (Normal)",
+      "_note": "VERIFIED across 2 teams (dumps 051657 + 051821), unique vs all others. Long (1213b) because the two teams shared 3 champs (Pelops/Staltus/Fayne), so the run includes their Spider-context data — a future run with a fully disjoint team could miss; add a 3rd sample if so.",
+      "signatureHex": "a169ce0994781ea16c0ba16895de001fa16401a17401a1751600f33069cd28aaa1680ca16705a177c0a16c32a17800a16dc2a26862c2a26d62c2a26964c0a171c0a17200a17600a166c0a17ac0a1739382a169ce000196a5a16c010b0016a60b0080a7a16c01a16296898200f30b7309a16e05a17203a171c0a2616cc0a26162c0a1708aa168d300010021a1610b00610a3d70a3a1640b0000020026a1730b0016720b0016740b0016750b00166d0b0016630b0016690b00126671002108b75b000271000002000f710009111a2100017100110a0b000f710018df89a16b02a17301a16e03a17204fa00024330a3d70afa00430f5c28f489004f0ccccccbfa0042210113c300166113010f6b01444f89a16b03fa001600020003fa004f170a3d6efa00420202000ffa0009100423000d6502110716000ff4011b1f04ee020b4f0ccccccc8900090102000d89000102000f89001904ee022002983b00027100111c0b000cf401112816000cfa00110916000f7100187f89a16b05a1731eee02084207ae147a8900530019999997f4010002000ff4014e116266000cfa000102000d6b01100c17000f6b0119af89a16b06a17321a16e04e8030507fa000002000f8900140102000f89001904f401020200036b0100020002710011780b0001530502d8020cf401111621000ff40118f100a1659183a16cc0a17483a16b01a1625e03f00826666666a161c2a162c0a1799ece0007a191ce0007a2590a00109a0a0010640a0010990a00106d050010770500108205001081190010a3050010ad050010b7050010a50500f419b0a170c0a161c0a163c0a16fc0a27373c0a2626cc0a27265c0a27473c0a16ecb40c05b8eaabccd99d3061602d3065f116ca16803d3061d32cdae39c60634cdae3a0900183bcd067f24a16e06a17205cd060d000200027a010102000fe50242200a475c000deb0102ca0101eb0101020002e502101e0c000ecd06611eb851eaa16dbd010002000f3e070302cd060ffa0009433d70a3d489004311eb851efa004f63d70a3dfa0042020200037100000200027100111d0b000cfa0001020002fa000102000e56034f0f5c28f5fa00061f03d3050b00020003890042547ae14789005f00170a3d6ffa004e02e901015004112a87000ffa001f0002000ffa000602cd060fd9040643147ae146fa000fbb0951020200037100000200036b01000200026b010210010cd90401020003f4014f1eb851e9ee02114105a17302fa000fb50a7202020002fa0002c80501f40101020002fa00029f0a1672c70301e80302e9050fd3051802cd060faf0b1400020003830101ff010f7d02390fcd060c118f7c000f7100080209041675100102e204017f090fe2040232a16592cd0645c0a162c00a00209283050302db068019999999a161c283f007011200111485004061c3a179e5062fa1f4a9060d74c46b05e4e33ad3a9061603a9068114b4a1681ea167047c0d1f287c0d1433cdcf09a00624cf0a0900180ba906113ec1021f04a9060d01c6030250020fc701462205062c01069001017100111516000fc7010801020003bb030002000fbb03111102c1020ffa000601e40002890043428f5c28c102000200024a030102000232070102000f38060a0002000f3e05030fc1020c01020002710010080c000f71000050000000a175c60000"
+    },
+    {
+      "dungeon": "Fire Knight's Castle",
+      "stage": 5,
+      "difficulty": "Normal",
+      "label": "Fire Knight's Castle Stage 5 (Normal)",
+      "_note": "VERIFIED team-independent: common to 2 samples across 2 different teams (dumps 051043 + 051326), unique vs all other dumps. Timestamp tail trimmed.",
+      "signatureHex": "1f02840070120384002f062c080121233db9ff00243dba09001fbb0801201f04840070130584001fea080121234525ff0024452609001f2710021d4202a1740184002f07308400212347e17b002447e209001fe38400200494020f8400690f94026e1f029402701f02940270150394022f568694021c929982a169ce000360d98d02000b0016da0b0016db0b0016e00b0003c20255ce00030d401600250d410b002560df0b002f0d4cdc021840a16d9685"
+    },
+    {
+      "dungeon": "Ice Golem's Peak",
+      "stage": 8,
+      "difficulty": "Normal",
+      "label": "Ice Golem's Peak Stage 8 (Normal)",
+      "_note": "Re-derived from 5 runs (223819,042937,050151,063519,064129) after the old 27-byte sig failed to match fresh same-stage runs. This 115b run is from the enemy AI-script region (84 00...), stable across runs AND absent from IG7/IG9 — robust. Lesson: derive from the script region, validate across MANY runs, not 2-3.",
+      "signatureHex": "1f02840070120384002f01ae0801212310cdff002410ce09001fcf0801201f04840070120584001f0608012214420801144208011f4208011e4202a1740184002f049c8c0121232e198301242e1a09001f1b8400200494020f8400690f94026e1f029402701f02940270150394022756759402"
+    },
+    {
+      "dungeon": "Ice Golem's Peak",
+      "stage": 7,
+      "difficulty": "Normal",
+      "label": "Ice Golem's Peak Stage 7 (Normal)",
+      "_note": "VERIFIED team-independent: common to 2 samples across 2 different teams (dumps 223008 + 050651), unique vs IG8/IG9 and Dragon/Event dumps.",
+      "signatureHex": "1f02840070120384002f029e080121231a2dff00241a2e09001f2f0801201f04840070120584002f03f2080121232775ff0024277609001f7708011d4202a1740184002f04ba840021232f457b00242f4609001f478400200394020f84006a0f94026e1f029402701f029402701503940227566194021f1b280510929782a169ce00035f498d02000b00164a0b00164c0b00154d0b00260d400b0016420b00002c000f"
+    }
+  ]
+}
