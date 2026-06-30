@@ -2,6 +2,8 @@
 // Plain ES module, no framework. Imported by app.js.
 // Manages device identity, champion loading, roster saving, and content selection.
 
+import { getSession } from './auth.js';
+
 // ── Device identity ───────────────────────────────────────────────────────────
 function getDeviceId() {
   let id = localStorage.getItem('rsl_device_id');
@@ -34,6 +36,31 @@ let currentChampionForSheet = null;
 let accountLevel = null;
 let championsLoaded = false;
 
+// Auto-populated roster from the Gestal export (null = not available; fall back to
+// manual selection). When present, recommendations use these instead of Supabase.
+let gestalUserChampions = null;  // match-engine-ready userChampions[]
+let gestalContext = null;        // { account, roster, battleHistory } for the prompt
+
+// champion id → { name, rarity, portrait_url } for rendering verification cards.
+const championDetails = new Map();
+// Where the detail sheet returns after save/remove: 'verify' (edit) or 'rarity' (setup).
+let sheetReturnTo = 'rarity';
+const RARITY_WEIGHT = { Mythical: 6, Legendary: 5, Epic: 4, Rare: 3, Uncommon: 2, Common: 1 };
+// Content options shown but not yet recommendable (no stage data seeded).
+const CONTENT_UNAVAILABLE = new Set(['ice_golem', 'fire_knight']);
+
+// Populates championDetails from the loaded champion list (covers the manual path;
+// the auto-load paths also add entries directly from their richer data).
+function captureChampionDetails() {
+  for (const rarity of Object.keys(championsByRarity)) {
+    for (const c of championsByRarity[rarity]) {
+      if (!championDetails.has(c.id)) {
+        championDetails.set(c.id, { name: c.name, rarity, portrait_url: c.portrait_url ?? null });
+      }
+    }
+  }
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function qs(sel, root = document) { return root.querySelector(sel); }
 
@@ -47,7 +74,7 @@ function totalRosterCount() {
 }
 
 // ── Screen visibility ─────────────────────────────────────────────────────────
-const ROSTER_SCREENS = ['screen-rarity', 'screen-grid', 'screen-content'];
+const ROSTER_SCREENS = ['screen-rarity', 'screen-grid', 'screen-verify'];
 const LEGACY_SCREENS = ['screen-upload','screen-confirm','screen-loading','screen-results','screen-ad','screen-error'];
 
 export function showRosterScreen(name) {
@@ -75,16 +102,99 @@ async function loadSavedRoster() {
   return body.champions ?? [];
 }
 
+// ── Gestal auto-population ─────────────────────────────────────────────────────
+// Tries to load the player's real roster + battle history from the local Gestal
+// export. Returns true if a roster was auto-populated.
+// Fetches the auto-populated roster, preferring the signed-in user's Supabase-synced
+// roster (/api/my-roster — works for any deployed PC user) and falling back to the
+// local Gestal-file read (/api/gestal-context — the dev box, where the server sits on
+// the same machine as Gestal). Both return the same { userChampions, context } shape.
+async function fetchAutoRoster() {
+  // 1. Signed in → the roster the PC companion uploaded to Supabase.
+  try {
+    const session = await getSession();
+    if (session?.access_token) {
+      const res = await fetch('/api/my-roster', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        const body = await res.json();
+        if (Array.isArray(body.userChampions) && body.userChampions.length) {
+          if (body.stale?.isStale)
+            console.warn(`[roster] imported roster is ${body.stale.minutes} min stale — Refresh Gestal + re-import for current gear.`);
+          return body;
+        }
+      }
+    }
+  } catch { /* auth/config unavailable → fall through to the local read */ }
+
+  // 2. Local dev fallback: server reads the local Gestal export files.
+  try {
+    const res = await fetch('/api/gestal-context');
+    if (res.ok) {
+      const body = await res.json();
+      if (Array.isArray(body.userChampions) && body.userChampions.length) return body;
+    }
+  } catch { /* none available */ }
+
+  return null;
+}
+
+async function loadGestalContext() {
+  try {
+    const body = await fetchAutoRoster();
+    if (!body) return false;
+
+    gestalUserChampions = body.userChampions;
+    gestalContext       = body.context ?? null;
+
+    // Mirror into the in-memory `roster` (keyed by DB champion id) so the existing
+    // content-screen summary and counts work without the manual UI.
+    roster = {};
+    for (const uc of gestalUserChampions) {
+      if (uc.champion?.id != null) {
+        roster[uc.champion.id] = {
+          level:           uc.level,
+          stars:           uc.stars,
+          gear_tier:       uc.gear_tier ?? 'Starter',
+          ascension_level: uc.ascension_level ?? 0,
+          mastery_tier:    uc.mastery_tier ?? 'None',
+          is_booked:       uc.is_booked ?? false,
+        };
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ── Entry point (called from app.js on load) ──────────────────────────────────
 export async function initRosterFlow() {
   try {
-    const [saved] = await Promise.all([
-      loadSavedRoster(),
+    // Prefer the real account: auto-populate from the Gestal export if available.
+    const [autoLoaded] = await Promise.all([
+      loadGestalContext(),
       loadChampions(),
     ]);
 
+    if (autoLoaded) {
+      // Capture identity (name/rarity/portrait) for cards from the auto-loaded data.
+      captureChampionDetails();
+      for (const uc of gestalUserChampions) {
+        if (uc.champion) championDetails.set(uc.champion.id, {
+          name: uc.champion.name, rarity: uc.champion.rarity, portrait_url: uc.champion.portrait_url ?? null,
+        });
+      }
+      renderVerifyScreen();
+      showRosterScreen('screen-verify');
+      return;
+    }
+
+    const saved = await loadSavedRoster();
+
     if (saved.length > 0) {
-      // Returning player — rebuild in-memory roster and go to content screen
+      // Returning player — rebuild in-memory roster and land on the verification screen
       for (const uc of saved) {
         if (uc.champion?.id) {
           roster[uc.champion.id] = {
@@ -96,10 +206,14 @@ export async function initRosterFlow() {
             mastery_tier:   uc.mastery_tier ?? 'None',
             is_booked:      uc.is_booked ?? false,
           };
+          championDetails.set(uc.champion.id, {
+            name: uc.champion.name, rarity: uc.champion.rarity, portrait_url: uc.champion.portrait_url ?? null,
+          });
         }
       }
-      renderContentScreen();
-      showRosterScreen('screen-content');
+      captureChampionDetails();
+      renderVerifyScreen();
+      showRosterScreen('screen-verify');
     } else {
       renderRarityScreen();
       showRosterScreen('screen-rarity');
@@ -138,8 +252,9 @@ function renderRarityScreen() {
   const done = qs('#btn-roster-done', screen);
   if (done) {
     done.onclick = () => {
-      renderContentScreen();
-      showRosterScreen('screen-content');
+      captureChampionDetails();
+      renderVerifyScreen();
+      showRosterScreen('screen-verify');
     };
   }
 }
@@ -234,6 +349,7 @@ function renderSuggestions(rarity, query, container, input) {
       input.value = champ.name;
       container.innerHTML = '';
       renderGrid(rarity, ''); // show full grid
+      sheetReturnTo = 'rarity';
       openDetailSheet(champ, rarity);
     });
     container.appendChild(item);
@@ -287,7 +403,7 @@ function buildPortraitCard(champ, rarity) {
   card.appendChild(check);
   card.appendChild(name);
 
-  card.addEventListener('click', () => openDetailSheet(champ, rarity));
+  card.addEventListener('click', () => { sheetReturnTo = 'rarity'; openDetailSheet(champ, rarity); });
   return card;
 }
 
@@ -474,10 +590,18 @@ async function saveChampion(champ, rarity, sheet) {
     if (!res.ok) throw new Error('Save failed');
 
     roster[champ.id] = { level, stars, gear_tier, ascension_level, mastery_tier, is_booked };
+    if (champ.name) championDetails.set(champ.id, {
+      name: champ.name, rarity, portrait_url: champ.portrait_url ?? championDetails.get(champ.id)?.portrait_url ?? null,
+    });
     updateCardSelected(champ.id, true);
     closeDetailSheet();
-    refreshRarityScreen();
-    showRosterScreen('screen-rarity');
+    if (sheetReturnTo === 'verify') {
+      renderVerifyScreen();
+      showRosterScreen('screen-verify');
+    } else {
+      refreshRarityScreen();
+      showRosterScreen('screen-rarity');
+    }
   } catch {
     if (addBtn) { addBtn.disabled = false; addBtn.textContent = 'Try again'; }
   }
@@ -493,126 +617,231 @@ async function removeChampion(champ) {
     delete roster[champ.id];
     updateCardSelected(champ.id, false);
     closeDetailSheet();
-    refreshRarityScreen();
+    if (sheetReturnTo === 'verify') {
+      renderVerifyScreen();
+      showRosterScreen('screen-verify');
+    } else {
+      refreshRarityScreen();
+    }
   } catch { /* non-fatal — UI stays open */ }
 }
 
-// ── Screen 4: Content Selection ────────────────────────────────────────────────
-function renderContentScreen() {
-  const screen = document.getElementById('screen-content');
+// ── Roster Verification (default landing) ───────────────────────────────────────
+function renderVerifyScreen() {
+  const screen = document.getElementById('screen-verify');
   if (!screen) return;
 
-  // Roster summary
+  // Greeting (profile name) + rarity summary
+  const greeting = qs('#roster-greeting', screen);
+  if (greeting) {
+    const name = gestalContext?.account?.displayName;
+    greeting.textContent = name ? `Good to see you ${name}` : 'Your roster';
+  }
   const summary = qs('#roster-summary', screen);
   if (summary) {
     const parts = RARITIES
       .map(r => {
-        const count = Object.keys(roster).filter(id =>
-          (championsByRarity[r] ?? []).some(c => c.id === id)
-        ).length;
+        const count = Object.keys(roster).filter(id => championDetails.get(id)?.rarity === r).length;
         return count > 0 ? `${count} ${r}` : null;
       })
       .filter(Boolean);
-    summary.textContent = parts.join(' · ') || `${totalRosterCount()} champions`;
+    const base = parts.join(' · ') || `${totalRosterCount()} champions`;
+    const untaggedCount = gestalContext?.roster?.untagged?.length ?? 0;
+    summary.textContent = 'I see you have ' +
+      (untaggedCount > 0 ? `${base} · ${untaggedCount} not yet in database` : base);
   }
 
-  // Edit roster link
-  const editLink = qs('#btn-edit-roster', screen);
-  if (editLink) {
-    editLink.onclick = () => {
-      renderRarityScreen();
-      showRosterScreen('screen-rarity');
+  const editBtn = qs('#btn-edit-roster', screen);
+  if (editBtn) editBtn.onclick = () => { renderRarityScreen(); showRosterScreen('screen-rarity'); };
+
+  // Champion cards (sorted level desc, then rarity desc)
+  const list  = qs('#verify-list', screen);
+  const empty = qs('#verify-empty', screen);
+  const cards = getVerificationCards();
+  if (list) {
+    list.innerHTML = '';
+    for (const c of cards) list.appendChild(buildVerifyCard(c));
+    list.classList.toggle('hidden', cards.length === 0);
+  }
+  empty?.classList.toggle('hidden', cards.length > 0);
+
+  const addBtn = qs('#btn-verify-add', screen);
+  if (addBtn) addBtn.onclick = () => { renderRarityScreen(); showRosterScreen('screen-rarity'); };
+
+  // Footer
+  const count = qs('#verify-count', screen);
+  if (count) count.textContent = `${cards.length} champion${cards.length === 1 ? '' : 's'}`;
+  const recBtn = qs('#btn-verify-recommend', screen);
+  if (recBtn) recBtn.onclick = openContentSheet;
+}
+
+// Assembles sorted card data from roster state + champion identity.
+function getVerificationCards() {
+  return Object.entries(roster)
+    .map(([id, state]) => {
+      const d = championDetails.get(id) ?? {};
+      return {
+        id,
+        name:            d.name ?? 'Unknown champion',
+        rarity:          d.rarity ?? null,
+        portrait_url:    d.portrait_url ?? null,
+        level:           state.level ?? 1,
+        stars:           state.stars ?? 1,
+        ascension_level: state.ascension_level ?? 0,
+        gear_tier:       state.gear_tier ?? 'Starter',
+      };
+    })
+    .sort((a, b) =>
+      (b.level - a.level) ||
+      ((RARITY_WEIGHT[b.rarity] ?? 0) - (RARITY_WEIGHT[a.rarity] ?? 0)) ||
+      a.name.localeCompare(b.name)
+    );
+}
+
+function buildVerifyCard(c) {
+  const card = document.createElement('button');
+  card.className = 'verify-card';
+  card.style.setProperty('--rarity-color', RARITY_COLOR[c.rarity] ?? '#888');
+
+  // Portrait: show a letter placeholder by default; swap in the image only once it
+  // actually loads. A null URL (or a 404) cleanly leaves the letter showing.
+  const img = document.createElement('div');
+  img.className = 'verify-portrait portrait-placeholder';
+  img.textContent = c.name.charAt(0).toUpperCase();
+  if (c.portrait_url) {
+    const im = document.createElement('img');
+    im.className = 'verify-portrait-img';
+    im.alt = '';
+    im.onload = () => {
+      img.classList.remove('portrait-placeholder');
+      img.textContent = '';
+      img.appendChild(im);
     };
+    im.src = c.portrait_url; // onerror: do nothing → letter placeholder remains
   }
 
-  // Spider mode toggle (Normal / Hard)
-  const modeNormal = qs('#spider-mode-normal', screen);
-  const modeHard   = qs('#spider-mode-hard', screen);
-  const normalStages = qs('#spider-normal-stages', screen);
-  const hardNote     = qs('#spider-hard-note', screen);
+  const info = document.createElement('div');
+  info.className = 'verify-info';
 
+  const top = document.createElement('div');
+  top.className = 'verify-card-top';
+  const name = document.createElement('span');
+  name.className = 'verify-name';
+  name.textContent = c.name;
+  const stars = document.createElement('span');
+  stars.className = 'verify-stars';
+  stars.textContent = '★'.repeat(Math.max(1, Math.min(6, c.stars)));
+  top.append(name, stars);
+
+  const meta = document.createElement('span');
+  meta.className = 'verify-meta';
+  const bits = [`Lv ${c.level}`];
+  if (c.ascension_level > 0) bits.push(`Ascension ${c.ascension_level}`);
+  bits.push(`${c.gear_tier} gear`);
+  meta.textContent = bits.join('  |  ');
+
+  info.append(top, meta);
+  card.append(img, info);
+
+  card.addEventListener('click', () => {
+    sheetReturnTo = 'verify';
+    openDetailSheet({ id: c.id, name: c.name, portrait_url: c.portrait_url }, c.rarity);
+  });
+  return card;
+}
+
+// ── Content selection (bottom sheet, opened from verify) ────────────────────────
+let contentSheetWired = false;
+
+function openContentSheet() {
+  const sheet = document.getElementById('content-sheet');
+  const backdrop = document.getElementById('content-sheet-backdrop');
+  if (!sheet || !backdrop) return;
+  if (!contentSheetWired) { wireContentSheet(sheet); contentSheetWired = true; }
+  backdrop.classList.remove('hidden');
+  sheet.classList.add('open');
+  backdrop.onclick = closeContentSheet;
+}
+
+function closeContentSheet() {
+  document.getElementById('content-sheet')?.classList.remove('open');
+  document.getElementById('content-sheet-backdrop')?.classList.add('hidden');
+}
+
+function wireContentSheet(sheet) {
+  const modeNormal = qs('#spider-mode-normal', sheet);
+  const modeHard   = qs('#spider-mode-hard', sheet);
+  const hardNote   = qs('#spider-hard-note', sheet);
   function setSpiderMode(mode) {
     const isHard = mode === 'hard';
     modeNormal?.classList.toggle('active', !isHard);
     modeHard?.classList.toggle('active', isHard);
-    normalStages?.classList.toggle('hidden', isHard);
     hardNote?.classList.toggle('hidden', !isHard);
   }
   setSpiderMode('normal');
   if (modeNormal) modeNormal.onclick = () => setSpiderMode('normal');
   if (modeHard)   modeHard.onclick   = () => setSpiderMode('hard');
 
-  // Spider stage toggle (Normal mode only)
-  const spider9  = qs('#spider-stage-9', screen);
-  const spider10 = qs('#spider-stage-10', screen);
-  [spider9, spider10].forEach(btn => {
-    if (!btn) return;
-    btn.addEventListener('click', () => {
-      spider9?.classList.remove('active');
-      spider10?.classList.remove('active');
-      btn.classList.add('active');
-    });
-  });
-  if (spider9) spider9.classList.add('active');
+  const cbBtns = sheet.querySelectorAll('[data-difficulty]');
+  cbBtns.forEach(btn => btn.addEventListener('click', () => {
+    cbBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }));
 
-  // Clan Boss difficulty
-  const cbBtns = screen.querySelectorAll('[data-difficulty]');
-  cbBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      cbBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    });
-  });
-  // Default to Normal
-  const defaultDiff = qs('[data-difficulty="Normal"]', screen);
-  if (defaultDiff) defaultDiff.classList.add('active');
-
-  // Content toggle (Spider vs Clan Boss)
-  const spiderSection = qs('#content-spider', screen);
-  const cbSection     = qs('#content-clan-boss', screen);
-  const spiderTab = qs('[data-content="spider"]', screen);
-  const cbTab     = qs('[data-content="clan_boss"]', screen);
+  // Content tabs → show the matching section. Ice Golem / Fire Knight are pending a
+  // stage-data seed, so the recommend button is disabled while they're selected.
+  const SECTION = {
+    spider:        'content-spider',
+    clan_boss:     'content-clan-boss',
+    ice_golem:     'content-ice_golem',
+    fire_knight:   'content-fire_knight',
+    event_dungeon: 'content-event_dungeon',
+  };
+  const tabs   = [...sheet.querySelectorAll('.content-tab')];
+  const recBtn = qs('#btn-get-recommendation', sheet);
 
   function setContent(key) {
-    spiderSection?.classList.toggle('hidden', key !== 'spider');
-    cbSection?.classList.toggle('hidden', key !== 'clan_boss');
-    spiderTab?.classList.toggle('active', key === 'spider');
-    cbTab?.classList.toggle('active', key === 'clan_boss');
+    for (const [k, id] of Object.entries(SECTION)) {
+      qs('#' + id, sheet)?.classList.toggle('hidden', k !== key);
+    }
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.content === key));
+    if (recBtn) recBtn.disabled = CONTENT_UNAVAILABLE.has(key);
   }
   setContent('spider');
-  if (spiderTab) spiderTab.onclick = () => setContent('spider');
-  if (cbTab)     cbTab.onclick     = () => setContent('clan_boss');
+  tabs.forEach(t => { t.onclick = () => setContent(t.dataset.content); });
 
-  // Get recommendation button
-  const recBtn = qs('#btn-get-recommendation', screen);
-  if (recBtn) {
-    recBtn.onclick = () => requestRecommendation(screen);
-  }
+  qs('#btn-content-cancel', sheet)?.addEventListener('click', closeContentSheet);
+  if (recBtn) recBtn.onclick = () => { closeContentSheet(); requestRecommendation(sheet); };
 }
 
-async function requestRecommendation(screen) {
-  // Determine content key + options
-  const spiderActive = !qs('#content-spider', screen)?.classList.contains('hidden');
+async function requestRecommendation(sheet) {
+  // Determine content key + options from the active content tab.
+  const key = qs('.content-tab.active', sheet)?.dataset.content ?? 'spider';
   let contentKey, options = {};
 
-  if (spiderActive) {
-    const isHard = qs('#spider-mode-hard', screen)?.classList.contains('active');
-    if (isHard) {
-      contentKey = 'spider_hard';
-    } else {
-      const stageBtn = qs('#content-spider .stage-btn.active[data-stage]', screen);
-      const stage = stageBtn?.dataset.stage ?? '9';
-      contentKey = stage === '10' ? 'spider' : 'spider_beginner';
-    }
-  } else {
-    const diffBtn = qs('[data-difficulty].active', screen);
+  if (key === 'spider') {
+    const isHard = qs('#spider-mode-hard', sheet)?.classList.contains('active');
+    contentKey = isHard ? 'spider_hard' : 'spider';
+  } else if (key === 'clan_boss') {
     contentKey = 'clan_boss';
-    options.difficulty = diffBtn?.dataset.difficulty ?? 'Normal';
+    options.difficulty = qs('[data-difficulty].active', sheet)?.dataset.difficulty ?? 'Normal';
     options.boss_affinity = null;
+  } else if (key === 'event_dungeon') {
+    contentKey = 'event_dungeon';
+  } else {
+    return; // ice_golem / fire_knight — not recommendable yet
   }
 
-  // Dispatch to existing match flow in app.js via a custom event
+  // Dispatch to existing match flow in app.js via a custom event.
+  // When auto-populated from Gestal, carry the real roster + battle-history context
+  // so app.js sends them straight to /api/match (bypassing the Supabase round-trip).
   document.dispatchEvent(new CustomEvent('rsl:request-recommendation', {
-    detail: { contentKey, options, deviceId: DEVICE_ID },
+    detail: {
+      contentKey,
+      options,
+      deviceId: DEVICE_ID,
+      userChampions: gestalUserChampions,
+      context:       gestalContext,
+    },
   }));
 }

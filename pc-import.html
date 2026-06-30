@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PC Import (beta) · RSL Roster Coach</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Intentionally NOT linked from the public site. Reachable by URL for PC users. -->
+  <meta name="robots" content="noindex" />
+  <style>
+    .imp-wrap { max-width: 640px; margin: 0 auto; padding: 2rem 1.25rem; }
+    .imp-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+                border-radius: 14px; padding: 1.5rem; margin-bottom: 1rem; }
+    .imp-card h2 { font-size: 1.05rem; margin: 0 0 0.75rem; }
+    .imp-card p, .imp-card li { color: var(--muted); font-size: 0.9rem; line-height: 1.55; }
+    ol { padding-left: 1.2rem; } ol li { margin-bottom: 0.4rem; }
+    pre { background: var(--bg); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px;
+          padding: 0.75rem; overflow-x: auto; font-size: 0.82rem; color: var(--text); white-space: pre-wrap; word-break: break-all; }
+    .row { display: flex; gap: 0.5rem; align-items: center; }
+    button.copy { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+                  padding: 0.5rem 0.8rem; cursor: pointer; font-size: 0.85rem; white-space: nowrap; }
+    .token { font-family: monospace; font-size: 0.75rem; color: var(--text);
+             background: var(--bg); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px;
+             padding: 0.6rem; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .note { font-size: 0.8rem; color: #E8A33D; margin-top: 0.5rem; }
+    .status-ok { color: #4caf50; } .status-stale { color: #E8A33D; } .status-none { color: var(--muted); }
+    a.signin { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="imp-wrap">
+    <h1 style="font-size:1.25rem;">PC Import <span style="color:var(--muted);font-size:0.8rem;">(beta)</span></h1>
+    <p style="color:var(--muted);font-size:0.9rem;">Play on PC? Import your roster automatically instead of entering champions by hand.</p>
+
+    <!-- Signed-out -->
+    <div id="signed-out" class="imp-card hidden">
+      <h2>Sign in first</h2>
+      <p>This links the import to your account. <a class="signin" href="/login.html">Sign in &rarr;</a></p>
+    </div>
+
+    <!-- Signed-in -->
+    <div id="signed-in" class="hidden">
+      <div class="imp-card">
+        <h2>Import status</h2>
+        <p id="status" class="status-none">Checking…</p>
+      </div>
+
+      <div class="imp-card">
+        <h2>How to import</h2>
+        <ol>
+          <li>In <strong>Gestal</strong>: make your account active, then click <strong>Refresh</strong> (so the gear is current).</li>
+          <li>In the RSL Coach folder, run the sync, then the uploader with your token below.</li>
+        </ol>
+        <p style="margin-top:0.75rem;">Your upload token (expires in ~1 hour — reopen this page for a fresh one):</p>
+        <div class="row">
+          <div class="token" id="token">…</div>
+          <button class="copy" id="copy-token">Copy</button>
+        </div>
+        <p style="margin-top:1rem;">Run this in the project folder:</p>
+        <pre id="cmd">…</pre>
+        <div class="row"><button class="copy" id="copy-cmd">Copy command</button></div>
+        <p class="note">Keep this token private — it can write to your account. It expires automatically.</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { getSession, onAuthChange } from './auth.js';
+    const $ = (id) => document.getElementById(id);
+
+    function renderSignedIn(session) {
+      $('signed-out').classList.add('hidden');
+      $('signed-in').classList.remove('hidden');
+      const token = session.access_token;
+      $('token').textContent = token;
+      const origin = window.location.origin;
+      $('cmd').textContent =
+        `node gestal-sync/sync.js\n` +
+        `node tools/import-upload.js --url ${origin}/api/import --token ${token}`;
+      loadStatus(token);
+    }
+    function renderSignedOut() {
+      $('signed-in').classList.add('hidden');
+      $('signed-out').classList.remove('hidden');
+    }
+
+    async function loadStatus(token) {
+      try {
+        const res = await fetch('/api/my-roster', { headers: { Authorization: `Bearer ${token}` } });
+        const el = $('status');
+        if (res.status === 404) { el.className = 'status-none'; el.textContent = 'No roster imported yet — follow the steps below.'; return; }
+        if (!res.ok) { el.className = 'status-none'; el.textContent = 'Could not load status.'; return; }
+        const d = await res.json();
+        const n = d.context?.roster?.total ?? d.userChampions?.length ?? 0;
+        const mins = d.stale?.minutes;
+        if (d.stale?.isStale) { el.className = 'status-stale'; el.textContent = `Imported ${n} champions, but ${mins} min stale — Refresh Gestal + re-import for current gear.`; }
+        else { el.className = 'status-ok'; el.textContent = `✓ ${d.account?.displayName ?? 'Roster'} imported${mins != null ? ` (${mins} min ago)` : ''} — ${n} champions.`; }
+      } catch { $('status').textContent = 'Could not load status.'; }
+    }
+
+    function copy(text, btn) { navigator.clipboard.writeText(text).then(() => { const t = btn.textContent; btn.textContent = 'Copied'; setTimeout(() => btn.textContent = t, 1200); }); }
+    $('copy-token').addEventListener('click', () => copy($('token').textContent, $('copy-token')));
+    $('copy-cmd').addEventListener('click', () => copy($('cmd').textContent, $('copy-cmd')));
+
+    (async () => {
+      try {
+        const session = await getSession();
+        session ? renderSignedIn(session) : renderSignedOut();
+        await onAuthChange((s) => (s ? renderSignedIn(s) : renderSignedOut()));
+      } catch {
+        renderSignedOut();   // config/auth unavailable → show the sign-in path
+      }
+    })();
+  </script>
+</body>
+</html>
