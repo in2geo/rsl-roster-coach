@@ -1153,6 +1153,18 @@ footer a { color: var(--muted); text-decoration: underline; }
   margin-top: 0.75rem;
 }
 
+/* Sign-in control */
+.auth-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  min-height: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+.auth-status { color: var(--muted); }
+
 /* Profile switcher (signed-in, multi-roster users only) */
 .profile-switcher-wrap {
   display: flex;

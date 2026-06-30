@@ -113,6 +113,55 @@ async function loadSavedRoster() {
 // roster (/api/my-roster — works for any deployed PC user) and falling back to the
 // local Gestal-file read (/api/gestal-context — the dev box, where the server sits on
 // the same machine as Gestal). Both return the same { userChampions, context } shape.
+// ── Sign-in control (magic-link auth) ──────────────────────────────────────────
+// Renders "Sign in" for anonymous users and "Signed in as <email> · Sign out" for
+// authenticated ones. Signing in is what unlocks profiles + Gestal sync; anonymous
+// users keep working with their single device roster.
+async function renderAuthControl() {
+  const el = document.getElementById('auth-control');
+  if (!el) return;
+  let session = null;
+  try {
+    const { getSession } = await import('./auth.js');
+    session = await getSession();
+  } catch { el.textContent = ''; return; }
+
+  el.textContent = '';
+  if (session?.user) {
+    const span = document.createElement('span');
+    span.className = 'auth-status';
+    span.textContent = `Signed in as ${session.user.email ?? 'you'}`;
+    const out = document.createElement('button');
+    out.className = 'btn-text';
+    out.textContent = 'Sign out';
+    out.onclick = async () => {
+      try { const { signOut } = await import('./auth.js'); await signOut(); } catch {}
+      activeProfileId = null;
+      document.getElementById('profile-switcher-wrap')?.classList.add('hidden');
+      renderAuthControl();
+    };
+    el.append(span, document.createTextNode(' · '), out);
+  } else {
+    const btn = document.createElement('button');
+    btn.className = 'btn-text';
+    btn.textContent = 'Sign in to sync & use profiles';
+    btn.onclick = signInFlow;
+    el.appendChild(btn);
+  }
+}
+
+async function signInFlow() {
+  const email = (window.prompt('Enter your email — we’ll send a one-tap sign-in link:') || '').trim();
+  if (!email) return;
+  try {
+    const { sendMagicLink } = await import('./auth.js');
+    await sendMagicLink(email);
+    window.alert('Check your email for a sign-in link, and open it on this device to finish.');
+  } catch (e) {
+    window.alert('Could not send the sign-in link: ' + (e?.message || 'unknown error'));
+  }
+}
+
 // ── Profile switcher ───────────────────────────────────────────────────────────
 // Signed-in users can have multiple named rosters (profiles), populated manually
 // or by Gestal import. The switcher lists them and flips the active one. It stays
@@ -706,7 +755,8 @@ function renderVerifyScreen() {
   const screen = document.getElementById('screen-verify');
   if (!screen) return;
 
-  // Populate the profile switcher (no-op/hidden for anonymous users).
+  // Sign-in control + profile switcher (switcher stays hidden for anonymous users).
+  renderAuthControl();
   loadProfileSwitcher();
 
   // Greeting (profile name) + rarity summary

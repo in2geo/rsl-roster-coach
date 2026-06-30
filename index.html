@@ -210,6 +210,9 @@
   <!-- ── ROSTER FLOW: Screen R4 — Content Selection ── -->
   <!-- ── Roster verification (default landing) ── -->
   <main id="screen-verify" class="screen hidden">
+    <!-- Sign-in control: magic-link auth. Anonymous users see "Sign in"; signed-in
+         users get profile sync + the switcher below. -->
+    <div id="auth-control" class="auth-control"></div>
     <!-- Profile switcher: only shown for signed-in users with ≥1 profile. -->
     <div id="profile-switcher-wrap" class="profile-switcher-wrap hidden">
       <label for="profile-switcher" class="profile-switcher-label">Profile</label>
