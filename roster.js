@@ -184,30 +184,45 @@ async function loadProfileSwitcher() {
   if (!wrap || !sel) return;
 
   let profiles = [];
+  let signedIn = false;
   try {
     const { getSession } = await import('./auth.js');
     const session = await getSession();
-    if (!session?.access_token) { wrap.classList.add('hidden'); return; }
-    const res = await fetch('/api/profiles', { headers: { Authorization: `Bearer ${session.access_token}` } });
-    if (res.ok) profiles = (await res.json()).profiles ?? [];
-  } catch { wrap.classList.add('hidden'); return; }
+    if (session?.access_token) {
+      signedIn = true;
+      const res = await fetch('/api/profiles', { headers: { Authorization: `Bearer ${session.access_token}` } });
+      if (res.ok) profiles = (await res.json()).profiles ?? [];
+    }
+  } catch { /* treat as anonymous */ }
 
-  if (!profiles.length) { wrap.classList.add('hidden'); return; }
-  if (!activeProfileId) activeProfileId = (profiles.find(p => p.is_default) ?? profiles[0]).id;
+  // Anonymous users have no profiles — hide the switcher entirely.
+  if (!signedIn) { wrap.classList.add('hidden'); return; }
 
+  // Signed in: always show the switcher so "+ Add" is reachable, even with 0 profiles.
+  if (profiles.length && !activeProfileId) {
+    activeProfileId = (profiles.find(p => p.is_default) ?? profiles[0]).id;
+  }
   sel.innerHTML = '';
-  for (const p of profiles) {
+  if (!profiles.length) {
     const opt = document.createElement('option');
-    opt.value = p.id;
-    opt.textContent = p.name + (p.population_method === 'gestal' ? ' (synced)' : '');
-    if (p.id === activeProfileId) opt.selected = true;
+    opt.textContent = 'No profiles yet — add one →';
+    opt.disabled = true; opt.selected = true;
     sel.appendChild(opt);
+  } else {
+    for (const p of profiles) {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.name + (p.population_method === 'gestal' ? ' (synced)' : '');
+      if (p.id === activeProfileId) opt.selected = true;
+      sel.appendChild(opt);
+    }
   }
   wrap.classList.remove('hidden');
 
   if (!profilesWired) {
     profilesWired = true;
     sel.addEventListener('change', async () => {
+      if (!sel.value) return;
       activeProfileId = sel.value;
       await loadGestalContext();
       renderVerifyScreen();
@@ -236,13 +251,14 @@ async function addManualProfile() {
 }
 
 async function fetchAutoRoster() {
-  // 1. Signed in → the roster the PC companion uploaded to Supabase.
-  // Lazy-import auth so a CDN/auth load failure can't blank the app — on failure
-  // this throws and we fall through to the local read below.
+  // 1. Signed in → the roster from THIS user's account (profiles/rsl_accounts).
+  // Lazy-import auth so a CDN/auth load failure can't blank the app.
+  let signedIn = false;
   try {
     const { getSession } = await import('./auth.js');
     const session = await getSession();
     if (session?.access_token) {
+      signedIn = true;
       const url = activeProfileId
         ? `/api/my-roster?profile=${encodeURIComponent(activeProfileId)}`
         : '/api/my-roster';
@@ -258,16 +274,21 @@ async function fetchAutoRoster() {
         }
       }
     }
-  } catch { /* auth/config unavailable → fall through to the local read */ }
+  } catch { /* auth/config unavailable → treat as not signed in */ }
 
-  // 2. Local dev fallback: server reads the local Gestal export files.
-  try {
-    const res = await fetch('/api/gestal-context');
-    if (res.ok) {
-      const body = await res.json();
-      if (Array.isArray(body.userChampions) && body.userChampions.length) return body;
-    }
-  } catch { /* none available */ }
+  // 2. Local Gestal-file read — ANONYMOUS/dev only. A signed-in user must NOT get
+  // the dev box's local export (that's a stale/other account, e.g. DonCobb07);
+  // their roster comes solely from their own account above. Signed-in + no roster
+  // → return null so the app lands on the home/profile-create flow instead.
+  if (!signedIn) {
+    try {
+      const res = await fetch('/api/gestal-context');
+      if (res.ok) {
+        const body = await res.json();
+        if (Array.isArray(body.userChampions) && body.userChampions.length) return body;
+      }
+    } catch { /* none available */ }
+  }
 
   return null;
 }
