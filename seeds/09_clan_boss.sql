@@ -25,11 +25,11 @@
 --
 -- DELIBERATELY OUT OF SCOPE (data gaps to resolve separately — NOT invented here):
 --   • Easy and Normal have goals but ZERO solutions — need solutions authored.
---   • The actionable DAMAGE goal has ZERO solutions in every Hard+ tier — worded
+--   • The actionable DAMAGE goal had ZERO solutions in every Hard+ tier — worded
 --     "Deal damage through Poison or HP Burn ticks …" (Hard/Brutal) and "Stack
---     Poisons and HP Burns …" (Nightmare/Ultra Nightmare). Until it gets solutions
---     Clan Boss can never read "ready". A suggested block (covering both wordings)
---     is provided COMMENTED OUT at the bottom.
+--     Poisons and HP Burns …" (Nightmare/Ultra Nightmare). Section 3 now seeds
+--     Poison / HP Burn solutions for it as 'proposed' (the only genuinely NEW
+--     authored content here — pending the standard human approval step).
 --   • "Lifesteal set on all 5 champions" is a GEAR-SET requirement with no tag
 --     equivalent — left proposed + untagged (the engine guard skips it safely).
 --     Sustain stays satisfiable via Leech or Ally Protection + Continuous Heal.
@@ -86,43 +86,49 @@ where g.id = gs.goal_id and p.id = g.phase_id and ds.id = p.dungeon_stage_id and
     'Block Debuffs timed to the stun turn'
   );
 
--- ── 3. (OPTIONAL — review before enabling) Solutions for the empty damage goal ─
--- The actionable goal "Deal damage through Poison or HP Burn ticks …" exists in
--- Hard/Brutal/Nightmare/Ultra Nightmare with NO solutions, so the damage goal is
--- permanently unmet. The literal mechanic is Poison or HP Burn (OR — either one).
--- Uncomment to author + approve these. Idempotent (skips if the label already
--- exists for that goal).
---
--- insert into goal_solutions (goal_id, label, status, source_type, source_note, proposed_by, approved_by, approved_at)
--- select g.id, v.label, 'approved', 'human_observation', v.note, 'seed_09_clan_boss', 'seed_09_clan_boss', now()
--- from goals g
---   join phases p          on p.id  = g.phase_id
---   join dungeon_stages ds on ds.id = p.dungeon_stage_id
---   join dungeons d        on d.id  = ds.dungeon_id
---   join (values
---     ('Poison damage over time',  'Poison'),
---     ('HP Burn damage over time', 'HP Burn')
---   ) as v(label, tagname) on true
--- where d.name = 'Clan Boss'
---   and (g.description ilike 'Deal damage through Poison or HP Burn ticks%'
---        or g.description ilike 'Stack Poisons and HP Burns%')
---   and not exists (
---     select 1 from goal_solutions x where x.goal_id = g.id and x.label = v.label
---   );
--- -- then tag them:
--- insert into goal_solution_tags (goal_solution_id, tag_id)
--- select gs.id, t.id
--- from goal_solutions gs
---   join goals g on g.id = gs.goal_id
---   join phases p on p.id = g.phase_id
---   join dungeon_stages ds on ds.id = p.dungeon_stage_id
---   join dungeons d on d.id = ds.dungeon_id
---   join tags t on (gs.label = 'Poison damage over time'  and t.name = 'Poison')
---                or (gs.label = 'HP Burn damage over time' and t.name = 'HP Burn')
--- where d.name = 'Clan Boss'
---   and (g.description ilike 'Deal damage through Poison or HP Burn ticks%'
---        or g.description ilike 'Stack Poisons and HP Burns%')
--- on conflict (goal_solution_id, tag_id) do nothing;
+-- ── 3. Solutions for the empty damage goal (PROPOSED — pending review) ───────
+-- The actionable damage goal had NO solutions in any Hard+ tier (worded "Deal
+-- damage through Poison or HP Burn ticks …" in Hard/Brutal; "Stack Poisons and
+-- HP Burns …" in Nightmare/Ultra Nightmare), so the goal was permanently unmet.
+-- The literal mechanic is Poison OR HP Burn (either one satisfies it). These are
+-- the only genuinely NEW (authored) rows in this seed, so they land as 'proposed'
+-- for the standard review step — not auto-approved. Idempotent: skips a label
+-- that already exists for the goal. (Poison has tagged champions today; HP Burn
+-- has none yet, so that solution will read as a gap until champions are tagged.)
+
+insert into goal_solutions (goal_id, label, status, source_type, source_note, proposed_by)
+select g.id, v.label, 'proposed', 'human_observation', v.note, 'seed_09_clan_boss'
+from goals g
+  join phases p          on p.id  = g.phase_id
+  join dungeon_stages ds on ds.id = p.dungeon_stage_id
+  join dungeons d        on d.id  = ds.dungeon_id
+  join (values
+    ('Poison damage over time',  'Poison ticks are the primary damage source for traditional Clan Boss teams'),
+    ('HP Burn damage over time', 'HP Burn ticks add debuff-based damage independent of raw ATK')
+  ) as v(label, note) on true
+where d.name = 'Clan Boss'
+  and (g.description ilike 'Deal damage through Poison or HP Burn ticks%'
+       or g.description ilike 'Stack Poisons and HP Burns%')
+  and not exists (
+    select 1 from goal_solutions x where x.goal_id = g.id and x.label = v.label
+  );
+
+-- Tag the new solutions. Safe while they are still 'proposed' — the engine
+-- ignores unapproved solutions, so approval later is a single status flip with
+-- tags already attached.
+insert into goal_solution_tags (goal_solution_id, tag_id)
+select gs.id, t.id
+from goal_solutions gs
+  join goals g on g.id = gs.goal_id
+  join phases p on p.id = g.phase_id
+  join dungeon_stages ds on ds.id = p.dungeon_stage_id
+  join dungeons d on d.id = ds.dungeon_id
+  join tags t on (gs.label = 'Poison damage over time'  and t.name = 'Poison')
+               or (gs.label = 'HP Burn damage over time' and t.name = 'HP Burn')
+where d.name = 'Clan Boss'
+  and (g.description ilike 'Deal damage through Poison or HP Burn ticks%'
+       or g.description ilike 'Stack Poisons and HP Burns%')
+on conflict (goal_solution_id, tag_id) do nothing;
 
 -- ── 4. Verification (run after applying) ─────────────────────────────────────
 -- select ds.label, count(*) filter (where gs.status='approved') as approved,
