@@ -7,14 +7,27 @@
  *   2. Per champion — how often fielded, across which content, win rate when present.
  *   3. Headline notes — where you're farming, where you're losing/retreating.
  *
- * Read-only. No DB, no network. Reuses the readers in lib/gestal-context.js.
+ * The default summary is read-only (local files, no network). The --cross-reference
+ * mode additionally reads the champion/dungeon knowledge base from Supabase (service
+ * key, read-only) to score each captured team against the matching engine — battle
+ * data still comes from the local log.
  *
  * Usage:
  *   node tools/analyze-battles.js                 # most-recent account
  *   node tools/analyze-battles.js --account <id>  # a specific account
  *   node tools/analyze-battles.js --json          # machine-readable output
+ *   node --env-file=.env.local tools/analyze-battles.js --cross-reference
+ *       # evaluate each captured team vs the engine for its dungeon/stage (needs DB env)
  */
-import { readBattleHistory, readGestalRoster } from '../lib/gestal-context.js';
+import { readBattleHistory, readGestalRoster, buildUserChampions } from '../lib/gestal-context.js';
+import { createClient } from '@supabase/supabase-js';
+
+const CHAMPION_SELECT = `
+  id, name, rarity, affinity, faction,
+  base_hp, base_atk, base_def, base_spd, base_acc, base_res,
+  base_crit_rate, base_crit_dmg,
+  champion_tags ( tag_id, status, ascension_required, tags ( name, bypasses_accuracy_check ) )
+`;
 
 const args = process.argv.slice(2);
 const flag = (k) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : undefined; };
@@ -34,6 +47,91 @@ const accountId = accountArg ?? newest.accountId ?? null;
 const battles = allBattles.filter(b => !accountId || b.accountId === accountId);
 const roster = readGestalRoster(accountId);
 const displayName = battles[0]?.displayName ?? roster?.displayName ?? accountId ?? 'unknown';
+
+// ── Cross-reference mode ─────────────────────────────────────────────────────
+// Score each captured team against the matching engine for its actual dungeon/stage,
+// compared to the real outcome. Flags goals the engine marked unmet on battles the
+// team actually WON → candidate missing champion tags.
+if (args.includes('--cross-reference')) {
+  await crossReference();
+  process.exit(0);
+}
+
+async function crossReference() {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    console.error('Cross-reference needs DB access. Run with:');
+    console.error('  node --env-file=.env.local tools/analyze-battles.js --cross-reference');
+    return;
+  }
+  const { evaluateTeam } = await import('../lib/match-engine.js');
+  const supabase = createClient(
+    (process.env.SUPABASE_URL).replace(/\/rest\/v1\/?$/, ''),
+    process.env.SUPABASE_SERVICE_KEY, { global: { fetch } });
+
+  const stageOf = (b) => b.stageNumber
+    ?? (typeof b.stageId === 'number' && b.stageId > 1000 ? b.stageId % 1000 : null);
+  const evaluable = battles.filter(b => b.dungeon && stageOf(b) != null && (b.heroes ?? []).length);
+  if (!evaluable.length) { console.log('No battles with a resolved dungeon + stage number to cross-reference.'); return; }
+
+  // Build the mapped roster once: Gestal state ⋈ DB champions (tags + base stats) by name.
+  const ownedNames = [...new Set((roster?.champions ?? []).filter(c => !c.inStorage).map(c => c.name).filter(Boolean))];
+  let dbChampions = [];
+  if (ownedNames.length) {
+    const { data, error } = await supabase.from('champions').select(CHAMPION_SELECT)
+      .eq('game_id', 'raid_shadow_legends').in('name', ownedNames);
+    if (error) { console.error('champions query failed:', error.message); return; }
+    dbChampions = data ?? [];
+  }
+  const { userChampions } = buildUserChampions(roster?.champions ?? [], dbChampions);
+  const ucByName = new Map(userChampions.map(uc => [uc.champion.name, uc]));
+
+  // Group identical (dungeon, stage, team) runs; tally actual outcomes.
+  const groups = new Map();
+  for (const b of evaluable) {
+    const stage = stageOf(b);
+    const names = (b.heroes ?? []).map(h => h.name).sort();
+    const key = `${b.dungeon}|${stage}|${b.difficulty ?? ''}|${names.join(',')}`;
+    if (!groups.has(key)) groups.set(key, { dungeon: b.dungeon, stage, difficulty: b.difficulty ?? null, names, wins: 0, losses: 0, turns: [] });
+    const g = groups.get(key);
+    if (b.result === 'Victory') g.wins++; else if (b.result === 'Defeat') g.losses++;
+    if (typeof b.turns === 'number') g.turns.push(b.turns);
+  }
+
+  console.log(`\nCross-reference — ${displayName}: ${evaluable.length} battle(s) → ${groups.size} unique team/stage combo(s)\n`);
+  const missingTagFlags = [];
+  let seededCount = 0;
+
+  for (const g of [...groups.values()].sort((a, b) => a.dungeon.localeCompare(b.dungeon) || a.stage - b.stage)) {
+    const team = g.names.map(n => ucByName.get(n)).filter(Boolean);
+    const notInDb = g.names.filter(n => !ucByName.has(n));
+    const turnRange = g.turns.length ? `${Math.min(...g.turns)}-${Math.max(...g.turns)}t` : '–';
+
+    console.log(`${g.dungeon} ${g.difficulty ? g.difficulty + ' ' : ''}Stage ${g.stage}  [${g.names.join(', ')}]`);
+    console.log(`  actual: ${g.wins}W/${g.losses}L  ${turnRange}` + (notInDb.length ? `   (not in DB: ${notInDb.join(', ')})` : ''));
+
+    const ev = await evaluateTeam(team, g.dungeon, g.stage, g.difficulty);
+    if (!ev.seeded) { console.log(`  engine: — ${ev.reason}\n`); continue; }
+    seededCount++;
+    const verdict = ev.confidence_pct != null ? `${ev.confidence_pct}% (${ev.verdict_band})` : 'no actionable goals';
+    console.log(`  engine: ${verdict}  | ${ev.actionable_goals} goal(s), ${ev.gaps.length} gap(s)`);
+    if (ev.gaps.length) console.log(`  unmet:  ${ev.gaps.join('; ')}`);
+    if (g.wins > 0 && ev.gaps.length) {
+      missingTagFlags.push({ dungeon: g.dungeon, stage: g.stage, team: g.names, wins: g.wins, gaps: ev.gaps });
+      console.log(`  ⚠ WON ${g.wins}× despite ${ev.gaps.length} unmet goal(s) → likely missing champion tag(s).`);
+    }
+    console.log('');
+  }
+
+  console.log('── Summary ──');
+  console.log(`  ${groups.size} combo(s): ${seededCount} have DB coverage, ${groups.size - seededCount} at unseeded stages.`);
+  if (missingTagFlags.length) {
+    console.log(`  ${missingTagFlags.length} missing-tag candidate(s) (won despite an unmet goal):`);
+    for (const f of missingTagFlags)
+      console.log(`    ${f.dungeon} ${f.stage} (won ${f.wins}×): ${f.gaps.join('; ')}  | team: ${f.team.join(', ')}`);
+  } else {
+    console.log('  No missing-tag candidates (no seeded stage had a gap on a won battle).');
+  }
+}
 
 // ── 1. Per stage ─────────────────────────────────────────────────────────────────
 // Authoritative stage number from the in-memory StageId (last 3 digits = stage).
