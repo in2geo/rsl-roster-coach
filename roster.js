@@ -113,6 +113,71 @@ async function loadSavedRoster() {
 // roster (/api/my-roster — works for any deployed PC user) and falling back to the
 // local Gestal-file read (/api/gestal-context — the dev box, where the server sits on
 // the same machine as Gestal). Both return the same { userChampions, context } shape.
+// ── Profile switcher ───────────────────────────────────────────────────────────
+// Signed-in users can have multiple named rosters (profiles), populated manually
+// or by Gestal import. The switcher lists them and flips the active one. It stays
+// HIDDEN for anonymous/local users (no profiles), so the device-roster flow is
+// untouched.
+let activeProfileId = null;
+let profilesWired   = false;
+
+async function loadProfileSwitcher() {
+  const wrap = document.getElementById('profile-switcher-wrap');
+  const sel  = document.getElementById('profile-switcher');
+  if (!wrap || !sel) return;
+
+  let profiles = [];
+  try {
+    const { getSession } = await import('./auth.js');
+    const session = await getSession();
+    if (!session?.access_token) { wrap.classList.add('hidden'); return; }
+    const res = await fetch('/api/profiles', { headers: { Authorization: `Bearer ${session.access_token}` } });
+    if (res.ok) profiles = (await res.json()).profiles ?? [];
+  } catch { wrap.classList.add('hidden'); return; }
+
+  if (!profiles.length) { wrap.classList.add('hidden'); return; }
+  if (!activeProfileId) activeProfileId = (profiles.find(p => p.is_default) ?? profiles[0]).id;
+
+  sel.innerHTML = '';
+  for (const p of profiles) {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = p.name + (p.population_method === 'gestal' ? ' (synced)' : '');
+    if (p.id === activeProfileId) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  wrap.classList.remove('hidden');
+
+  if (!profilesWired) {
+    profilesWired = true;
+    sel.addEventListener('change', async () => {
+      activeProfileId = sel.value;
+      await loadGestalContext();
+      renderVerifyScreen();
+    });
+    document.getElementById('btn-add-profile')?.addEventListener('click', addManualProfile);
+  }
+}
+
+async function addManualProfile() {
+  const name = (window.prompt('Name this profile (e.g. "Main Account", "F2P Alt"):') || '').trim();
+  if (!name) return;
+  try {
+    const { getSession } = await import('./auth.js');
+    const session = await getSession();
+    if (!session?.access_token) { window.alert('Sign in to create profiles.'); return; }
+    const res = await fetch('/api/profiles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ name, method: 'manual' }),
+    });
+    if (!res.ok) { window.alert('Could not create profile.'); return; }
+    activeProfileId = (await res.json()).profile?.id ?? activeProfileId;
+    await loadProfileSwitcher();   // refresh list with the new profile selected
+    renderVerifyScreen();          // empty manual profile → 0 champions; use Edit Roster to add
+  } catch { window.alert('Could not create profile.'); }
+}
+
 async function fetchAutoRoster() {
   // 1. Signed in → the roster the PC companion uploaded to Supabase.
   // Lazy-import auth so a CDN/auth load failure can't blank the app — on failure
@@ -121,7 +186,10 @@ async function fetchAutoRoster() {
     const { getSession } = await import('./auth.js');
     const session = await getSession();
     if (session?.access_token) {
-      const res = await fetch('/api/my-roster', {
+      const url = activeProfileId
+        ? `/api/my-roster?profile=${encodeURIComponent(activeProfileId)}`
+        : '/api/my-roster';
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (res.ok) {
@@ -637,6 +705,9 @@ async function removeChampion(champ) {
 function renderVerifyScreen() {
   const screen = document.getElementById('screen-verify');
   if (!screen) return;
+
+  // Populate the profile switcher (no-op/hidden for anonymous users).
+  loadProfileSwitcher();
 
   // Greeting (profile name) + rarity summary
   const greeting = qs('#roster-greeting', screen);

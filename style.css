@@ -1152,3 +1152,25 @@ footer a { color: var(--muted); text-decoration: underline; }
   color: var(--muted);
   margin-top: 0.75rem;
 }
+
+/* Profile switcher (signed-in, multi-roster users only) */
+.profile-switcher-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.profile-switcher-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.profile-switcher {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--border, #333);
+  background: var(--card, #1e1e2e);
+  color: inherit;
+  font-size: 0.9rem;
+}

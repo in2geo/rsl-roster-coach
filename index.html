@@ -210,6 +210,12 @@
   <!-- ── ROSTER FLOW: Screen R4 — Content Selection ── -->
   <!-- ── Roster verification (default landing) ── -->
   <main id="screen-verify" class="screen hidden">
+    <!-- Profile switcher: only shown for signed-in users with ≥1 profile. -->
+    <div id="profile-switcher-wrap" class="profile-switcher-wrap hidden">
+      <label for="profile-switcher" class="profile-switcher-label">Profile</label>
+      <select id="profile-switcher" class="profile-switcher"></select>
+      <button class="btn-text" id="btn-add-profile" title="Add a new profile">+ Add</button>
+    </div>
     <div class="verify-header">
       <div class="verify-header-text">
         <p id="roster-greeting" class="roster-greeting">Your roster</p>
