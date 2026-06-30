@@ -22,6 +22,12 @@ if (args.Contains("--roster"))
     return;
 }
 
+if (args.Contains("--gear"))
+{
+    ArtifactReader.Run();
+    return;
+}
+
 // Debug: dump Hero objects matching a heroId. Usage: --hero 11
 {
     int hi = Array.IndexOf(args, "--hero");

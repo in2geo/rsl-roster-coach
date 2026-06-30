@@ -142,4 +142,16 @@ internal static class Il2CppOffsets
     // player-facing storage vault (Gestal counts it as inStorage). Treat either
     // 0x35 or 0x36 as "stored".
     public const int Hero_InBathhouse  = 0x36; // bool — storage vault
+
+    // Artifact class (TypeDefIndex 11328). RVA decimal from script.json.
+    public const long Artifact_TypeInfo_RVA = 82424840; // 0x4E9B408
+    public const int Art_Id              = 0x10;
+    public const int Art_Level           = 0x30;
+    public const int Art_AscendLevel     = 0x34; // Nullable<int>: value@0x34, hasValue@0x38
+    public const int Art_KindId          = 0x40; // ArtifactKindId enum (slot)
+    public const int Art_RankId          = 0x44; // ArtifactRankId enum
+    public const int Art_RarityId        = 0x48; // ItemRarity enum
+    public const int Art_PrimaryBonus    = 0x50; // ArtifactBonus* (main stat)
+    public const int Art_SecondaryBonuses= 0x58; // List<ArtifactBonus>* (substats)
+    public const int Art_SetKindId       = 0x68; // ArtifactSetKindId enum (set)
 }
