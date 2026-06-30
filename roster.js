@@ -1,8 +1,11 @@
 // ── roster.js — Champion selection UI (Screens 1–4) ──────────────────────────
 // Plain ES module, no framework. Imported by app.js.
 // Manages device identity, champion loading, roster saving, and content selection.
-
-import { getSession } from './auth.js';
+//
+// NOTE: auth.js (which loads supabase-js from a CDN) is imported LAZILY inside
+// fetchAutoRoster — never statically — so a CDN/auth failure can't break the whole
+// app's module load. The app must still render (local read / manual entry) if the
+// auth layer is unavailable.
 
 // ── Device identity ───────────────────────────────────────────────────────────
 function getDeviceId() {
@@ -111,7 +114,10 @@ async function loadSavedRoster() {
 // the same machine as Gestal). Both return the same { userChampions, context } shape.
 async function fetchAutoRoster() {
   // 1. Signed in → the roster the PC companion uploaded to Supabase.
+  // Lazy-import auth so a CDN/auth load failure can't blank the app — on failure
+  // this throws and we fall through to the local read below.
   try {
+    const { getSession } = await import('./auth.js');
     const session = await getSession();
     if (session?.access_token) {
       const res = await fetch('/api/my-roster', {
