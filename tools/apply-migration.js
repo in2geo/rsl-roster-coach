@@ -24,17 +24,19 @@ if (!file) {
   process.exit(1);
 }
 
+const sql = fs.readFileSync(path.resolve(file), 'utf8');
+
+// Dry-run validates the file without a DB connection — check it before requiring
+// the connection string, so it can run offline.
+if (dryRun) {
+  console.log(`[dry-run] would apply ${file} (${sql.length} chars). No connection made.`);
+  process.exit(0);
+}
+
 const connectionString = process.env.SUPABASE_DB_URL;
 if (!connectionString) {
   console.error('SUPABASE_DB_URL is not set. Add the Postgres connection string (Session pooler, :5432) to .env.local.');
   process.exit(1);
-}
-
-const sql = fs.readFileSync(path.resolve(file), 'utf8');
-
-if (dryRun) {
-  console.log(`[dry-run] would apply ${file} (${sql.length} chars). No connection made.`);
-  process.exit(0);
 }
 
 const client = new pg.Client({ connectionString, ssl: { rejectUnauthorized: false } });
