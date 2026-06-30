@@ -122,8 +122,10 @@ internal static class Il2CppOffsets
     // and a fresh dump of the current installed build (same dump.cs/script.json
     // SHA-256), so unchanged. The RVA points to a slot holding the Il2CppClass*;
     // an object of that class carries the same pointer at its offset 0 (klass).
-    public const long UserHeroData_TypeInfo_RVA = 0x4DA1018;
-    public const long Hero_TypeInfo_RVA         = 0x4D685B0;
+    // Stored as the exact decimal "Address" from script.json (hex in comment) to
+    // avoid transcription error.
+    public const long UserHeroData_TypeInfo_RVA = 82441240; // 0x4E9F418
+    public const long Hero_TypeInfo_RVA         = 82209328; // 0x4E66A30
 
     // UserHeroData fields (TypeDefIndex 10585)
     public const int UHD_HeroById = 0x18; // Dictionary<int, Hero>

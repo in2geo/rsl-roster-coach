@@ -6,14 +6,18 @@ using static RslBattleReader.Il2Cpp.Il2CppOffsets;
 namespace RslBattleReader;
 
 /// <summary>
-/// Option B — direct game-memory roster reader (champions). Resolves the
-/// UserHeroData Il2CppClass via its TypeInfo RVA, signature-scans the heap for the
-/// live instance (object whose klass pointer == that class, validated by a plausible
-/// HeroById dictionary of Hero records), then reads each owned Hero. Passive read
-/// only — same technique as the battle reader, no injection.
+/// Option B — direct game-memory roster reader (champions). Resolves the Hero
+/// Il2CppClass via its TypeInfo RVA (same mechanism the battle reader uses for
+/// AppModel), then signature-scans the heap for Hero objects (klass pointer ==
+/// that class), reading each owned Hero's fields. Dedups by Id. Passive read only —
+/// same technique as the battle reader, no injection.
 ///
-/// This deliberately sidesteps the generic UserGuard&lt;UserWrapper&gt; static: the
-/// klass-scan lands directly on UserHeroData.HeroById (the owned roster).
+/// We scan Hero objects directly rather than navigating UserHeroData.HeroById: the
+/// Hero class resolves cleanly (167 heap hits for a loaded roster) and this sidesteps
+/// both the generic UserGuard&lt;UserWrapper&gt; static and the bad UserHeroData RVA.
+/// Caveat: a champions-screen-loaded account holds its owned heroes as Hero objects;
+/// validate the result vs the Gestal export to confirm the count matches (and that no
+/// non-owned Hero objects — previews/enemies — leak in).
 /// </summary>
 [SupportedOSPlatform("windows")]
 internal static class RosterReader
@@ -30,109 +34,57 @@ internal static class RosterReader
         var moduleBase = mem.FindModuleBase("GameAssembly.dll");
         if (moduleBase == nint.Zero) { Console.WriteLine("[roster] GameAssembly.dll not found in process."); return; }
 
-        var klass = mem.ReadPointer(moduleBase + (nint)UserHeroData_TypeInfo_RVA);
-        if (!ProcessMemory.IsValidPointer(klass)) { Console.WriteLine("[roster] UserHeroData class pointer not resolved (stale RVA?)."); return; }
-        Console.WriteLine($"[roster] UserHeroData class = 0x{klass:X}; scanning heap for the live instance…");
-
-        var instance = ScanForInstance(mem, klass);
-        if (instance == nint.Zero)
+        var heroClass = mem.ReadPointer(moduleBase + (nint)Hero_TypeInfo_RVA);
+        if (!ProcessMemory.IsValidPointer(heroClass) || (long)heroClass < 0x10000)
         {
-            Console.WriteLine("[roster] no valid UserHeroData instance found — is the account loaded (past login/loading)?");
+            Console.WriteLine($"[roster] Hero class not resolved (got 0x{heroClass:X}).");
             return;
         }
-        Console.WriteLine($"[roster] UserHeroData instance = 0x{instance:X}");
+        Console.WriteLine($"[roster] Hero class = 0x{heroClass:X}; scanning heap for Hero objects…");
 
-        var heroes = ReadRoster(mem, instance);
-        var owned   = heroes.Count(h => !h.InStorage);
-        Console.WriteLine($"[roster] {heroes.Count} heroes total ({owned} active, {heroes.Count - owned} in storage):\n");
-        Console.WriteLine($"  {"id",-9}{"typeId",-10}{"stars",-7}{"level",-7}{"empower",-9}storage");
+        var heroes = ScanHeroes(mem, (long)heroClass);
+        if (heroes.Count == 0) { Console.WriteLine("[roster] no Hero objects found — is the account at the Champions screen?"); return; }
+
+        int active = heroes.Count(h => !h.InStorage);
+        Console.WriteLine($"[roster] {heroes.Count} heroes ({active} active, {heroes.Count - active} in storage):\n");
+        Console.WriteLine($"  {"id",-10}{"typeId",-10}{"stars",-7}{"level",-7}{"empower",-9}storage");
         foreach (var h in heroes.OrderByDescending(h => h.Grade).ThenByDescending(h => h.Level))
-            Console.WriteLine($"  {h.Id,-9}{h.TypeId,-10}{h.Grade,-7}{h.Level,-7}{h.EmpowerLevel,-9}{(h.InStorage ? "yes" : "")}");
+            Console.WriteLine($"  {h.Id,-10}{h.TypeId,-10}{h.Grade,-7}{h.Level,-7}{h.EmpowerLevel,-9}{(h.InStorage ? "yes" : "")}");
     }
 
-    // Walks readable regions; for each 8-aligned slot equal to the UserHeroData
-    // class pointer, treats the slot address as a candidate object base (klass@0)
-    // and validates it via HeroById. Returns the first valid instance.
-    private static nint ScanForInstance(ProcessMemory mem, nint klass)
+    // Walk readable regions; every 8-aligned slot equal to the Hero class pointer is
+    // a Hero object's klass field (offset 0), i.e. an object base. Read + range-check
+    // its fields; dedup by Id (the unique inventory hero id).
+    private static List<OwnedHero> ScanHeroes(ProcessMemory mem, long heroClass)
     {
-        long target = (long)klass;
-        const int chunk = 0x100000; // 1 MB
+        var byId = new Dictionary<int, OwnedHero>();
+        const int chunk = 0x100000;
         var buf = new byte[chunk];
-        long hits = 0;
         foreach (var (baseAddr, size) in mem.EnumerateReadableRegions())
         {
             for (long off = 0; off < size; off += chunk)
             {
                 int toRead = (int)Math.Min(chunk, size - off);
-                var readBuf = toRead == chunk ? buf : new byte[toRead];
-                if (!mem.TryReadBytes(baseAddr + (nint)off, readBuf)) continue;
+                var rb = toRead == chunk ? buf : new byte[toRead];
+                if (!mem.TryReadBytes(baseAddr + (nint)off, rb)) continue;
                 for (int i = 0; i + 8 <= toRead; i += 8)
                 {
-                    if (BitConverter.ToInt64(readBuf, i) != target) continue;
-                    hits++;
-                    var candidate = baseAddr + (nint)(off + i);
-                    if (ValidateUserHeroData(mem, candidate))
-                    {
-                        Console.WriteLine($"[roster] class-pointer hits scanned so far={hits}; validated instance.");
-                        return candidate;
-                    }
+                    if (BitConverter.ToInt64(rb, i) != heroClass) continue;
+                    var obj = baseAddr + (nint)(off + i);
+                    int id     = mem.ReadInt32(obj + Hero_Id);
+                    int typeId = mem.ReadInt32(obj + Hero_TypeId);
+                    int grade  = mem.ReadInt32(obj + Hero_Grade);
+                    int level  = mem.ReadInt32(obj + Hero_Level);
+                    if (id <= 0 || id > 2_000_000_000) continue;
+                    if (typeId is <= 0 or > 10_000_000) continue;
+                    if (grade is < 1 or > 6) continue;
+                    if (level is < 1 or > 60) continue;
+                    byId[id] = new OwnedHero(id, typeId, grade, level,
+                        mem.ReadInt32(obj + Hero_EmpowerLevel), mem.ReadBool(obj + Hero_InStorage));
                 }
             }
         }
-        Console.WriteLine($"[roster] class-pointer appeared {hits} time(s) but none validated as a populated UserHeroData.");
-        return nint.Zero;
-    }
-
-    // A real UserHeroData has HeroById = a Dictionary<int,Hero> with a plausible
-    // count whose first entry is a Hero with sane typeId/grade/level. Filters the
-    // false positives where the class pointer appears inside vtables/static data.
-    private static bool ValidateUserHeroData(ProcessMemory mem, nint obj)
-    {
-        var dict = mem.ReadPointer(obj + UHD_HeroById);
-        if (!ProcessMemory.IsValidPointer(dict)) return false;
-        int count = mem.ReadInt32(dict + Dict_Count);
-        if (count < 1 || count > 5000) return false;
-        var entries = mem.ReadPointer(dict + Dict_Entries);
-        if (!ProcessMemory.IsValidPointer(entries)) return false;
-        // Check the first several entries (some may be empty/deleted slots) — accept
-        // if ANY holds a Hero with sane typeId/grade/level.
-        int probe = Math.Min(count, 32);
-        for (int i = 0; i < probe; i++)
-        {
-            var entry = entries + Array_DataOffset + (nint)(i * DictIntObj_EntrySize);
-            if (mem.ReadInt32(entry) < 0) continue;
-            var hero = mem.ReadPointer(entry + DictIntObj_ValOffset);
-            if (!ProcessMemory.IsValidPointer(hero)) continue;
-            int typeId = mem.ReadInt32(hero + Hero_TypeId);
-            int grade  = mem.ReadInt32(hero + Hero_Grade);
-            int level  = mem.ReadInt32(hero + Hero_Level);
-            if (typeId is > 0 and < 1_000_000 && grade is >= 1 and <= 6 && level is >= 1 and <= 60)
-                return true;
-        }
-        return false;
-    }
-
-    private static List<OwnedHero> ReadRoster(ProcessMemory mem, nint instance)
-    {
-        var dict = mem.ReadPointer(instance + UHD_HeroById);
-        int count = mem.ReadInt32(dict + Dict_Count);
-        var entries = mem.ReadPointer(dict + Dict_Entries);
-        var list = new List<OwnedHero>(count);
-        for (int i = 0; i < count; i++)
-        {
-            var entry = entries + Array_DataOffset + (nint)(i * DictIntObj_EntrySize);
-            if (mem.ReadInt32(entry) < 0) continue; // hash < 0 => empty/deleted slot
-            var hero = mem.ReadPointer(entry + DictIntObj_ValOffset);
-            if (!ProcessMemory.IsValidPointer(hero)) continue;
-            list.Add(new OwnedHero(
-                mem.ReadInt32(hero + Hero_Id),
-                mem.ReadInt32(hero + Hero_TypeId),
-                mem.ReadInt32(hero + Hero_Grade),
-                mem.ReadInt32(hero + Hero_Level),
-                mem.ReadInt32(hero + Hero_EmpowerLevel),
-                mem.ReadBool(hero + Hero_InStorage)));
-        }
-        return list;
+        return [.. byId.Values];
     }
 
     private static Process? FindRaid()
