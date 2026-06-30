@@ -7,12 +7,17 @@
     "node": "22.x"
   },
   "scripts": {
-    "dev": "vercel dev",
+    "start": "node server.js",
     "tag-agent": "node --env-file=.env tools/tag-agent.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
     "@supabase/supabase-js": "^2.50.0",
-    "busboy": "^1.6.0"
+    "busboy": "^1.6.0",
+    "dotenv": "^17.4.2",
+    "sharp": "^0.35.2"
+  },
+  "devDependencies": {
+    "pg": "^8.22.0"
   }
 }

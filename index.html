@@ -208,18 +208,41 @@
   </main>
 
   <!-- ── ROSTER FLOW: Screen R4 — Content Selection ── -->
-  <main id="screen-content" class="screen hidden">
-    <div class="card">
-      <h2 class="screen-title">What are you working on?</h2>
-
-      <div class="roster-summary-row">
-        <span id="roster-summary" class="roster-summary">0 champions</span>
-        <button class="btn-text" id="btn-edit-roster">Edit roster</button>
+  <!-- ── Roster verification (default landing) ── -->
+  <main id="screen-verify" class="screen hidden">
+    <div class="verify-header">
+      <div class="verify-header-text">
+        <p id="roster-greeting" class="roster-greeting">Your roster</p>
+        <p id="roster-summary" class="roster-summary">0 champions</p>
       </div>
+      <button class="btn-text" id="btn-edit-roster">Edit Roster</button>
+    </div>
+
+    <div id="verify-list" class="verify-list"></div>
+
+    <div id="verify-empty" class="verify-empty hidden">
+      <p>Your roster is empty. Tap below to add your champions.</p>
+      <button class="btn-primary" id="btn-verify-add">Add Champions</button>
+    </div>
+
+    <div class="verify-footer">
+      <span id="verify-count" class="verify-count">0 champions</span>
+      <button class="btn-cta" id="btn-verify-recommend">Get My Recommendation →</button>
+    </div>
+  </main>
+
+  <!-- ── Content selection (bottom sheet, opened from verify) ── -->
+  <div id="content-sheet-backdrop" class="sheet-backdrop hidden"></div>
+  <div id="content-sheet" class="detail-sheet">
+    <div class="sheet-body">
+      <h2 class="screen-title">What are you working on?</h2>
 
       <div class="content-tabs">
         <button class="content-tab active" data-content="spider">Spider's Den</button>
         <button class="content-tab" data-content="clan_boss">Clan Boss</button>
+        <button class="content-tab" data-content="ice_golem">Ice Golem</button>
+        <button class="content-tab" data-content="fire_knight">Fire Knight</button>
+        <button class="content-tab" data-content="event_dungeon">Event</button>
       </div>
 
       <!-- Spider section -->
@@ -228,14 +251,6 @@
         <div class="stage-toggle">
           <button class="stage-btn active" id="spider-mode-normal" data-mode="normal">Normal</button>
           <button class="stage-btn" id="spider-mode-hard" data-mode="hard">Hard</button>
-        </div>
-
-        <div id="spider-normal-stages">
-          <p class="section-label" style="margin-top:1rem">Stage</p>
-          <div class="stage-toggle">
-            <button class="stage-btn active" id="spider-stage-9" data-stage="9">Stage 9</button>
-            <button class="stage-btn" id="spider-stage-10" data-stage="10">Stage 10</button>
-          </div>
         </div>
 
         <div id="spider-hard-note" class="hidden">
@@ -257,11 +272,27 @@
         </div>
       </div>
 
-      <button class="btn-primary" id="btn-get-recommendation">Get recommendation →</button>
+      <!-- Ice Golem — pending stage data seed -->
+      <div id="content-ice_golem" class="content-section hidden">
+        <p class="coming-soon-note">Ice Golem's Peak stage data is coming soon — we're seeding the stage requirements now.</p>
+      </div>
 
-      <p class="disclaimer">Unofficial fan tool — not affiliated with Plarium.</p>
+      <!-- Fire Knight — pending stage data seed -->
+      <div id="content-fire_knight" class="content-section hidden">
+        <p class="coming-soon-note">Fire Knight's Castle stage data is coming soon — we're seeding the stage requirements now.</p>
+      </div>
+
+      <!-- Event Dungeon — generic fallback (no specific event seeded) -->
+      <div id="content-event_dungeon" class="content-section hidden">
+        <p class="coming-soon-note">No specific event is loaded yet, so we'll use general event-dungeon strategy — bring your best debuffers and poisoners.</p>
+      </div>
     </div>
-  </main>
+
+    <div class="sheet-actions">
+      <button class="btn-primary" id="btn-get-recommendation">Get recommendation →</button>
+      <button class="btn-text" id="btn-content-cancel">Cancel</button>
+    </div>
+  </div>
 
   <!-- ── Detail sheet overlay (shared across grid screens) ── -->
   <div id="sheet-backdrop" class="sheet-backdrop hidden"></div>

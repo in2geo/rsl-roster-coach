@@ -767,37 +767,127 @@ footer a { color: var(--muted); text-decoration: underline; }
   gap: 0.5rem;
 }
 
+.roster-greeting {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 0 0 0.25rem;
+}
+
+/* ── Roster verification screen ── */
+.verify-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0 0.75rem;
+}
+.verify-header-text { min-width: 0; }
+
+.verify-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding-bottom: 7rem; /* clear the sticky footer */
+}
+
+.verify-card {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  min-height: 72px;
+  padding: 0.6rem 0.8rem;
+  background: var(--surface);
+  border: none;
+  border-left: 4px solid var(--rarity-color, #888);
+  border-radius: 10px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text);
+}
+.verify-card:hover { background: rgba(255,255,255,0.05); }
+
+.verify-portrait {
+  width: 52px; height: 52px; flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: var(--muted);
+}
+.verify-portrait-img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.verify-info { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; flex: 1; }
+.verify-card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
+.verify-name {
+  font-weight: 600; font-size: 0.98rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.verify-stars { color: #FFB700; font-size: 0.8rem; flex-shrink: 0; letter-spacing: 1px; }
+.verify-meta { font-size: 0.8rem; color: var(--muted); }
+
+.verify-empty { text-align: center; color: var(--muted); padding: 2rem 1rem; }
+
+.verify-footer {
+  position: fixed;
+  bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 480px;
+  background: var(--bg);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 0.5rem;
+  z-index: 50;
+}
+.verify-count { font-size: 0.8rem; color: var(--muted); text-align: center; }
+
+.btn-cta {
+  width: 100%; padding: 0.9rem; border: none; border-radius: 10px;
+  background: #E8A33D; color: #1a1208;
+  font-size: 1.05rem; font-weight: 700; cursor: pointer;
+}
+.btn-cta:hover { opacity: 0.92; }
+
 .roster-summary {
   font-size: 0.9rem;
   color: var(--muted);
 }
 
 .content-tabs {
-  display: flex;
-  gap: 0;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid var(--muted);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
 }
 
 .content-tab {
-  flex: 1;
   background: transparent;
   color: var(--muted);
-  border: none;
-  padding: 0.65rem;
-  font-size: 0.9rem;
+  border: 1px solid var(--muted);
+  border-radius: 8px;
+  padding: 0.6rem 0.4rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .content-tab.active {
   background: var(--accent);
   color: #fff;
+  border-color: var(--accent);
 }
 
-.content-section { display: flex; flex-direction: column; gap: 0.5rem; }
+.content-section { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem; }
+
+.coming-soon-note {
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
 
 .section-label {
   font-size: 0.8rem;
@@ -906,6 +996,17 @@ footer a { color: var(--muted); text-decoration: underline; }
   padding: 0.6rem 0.75rem;
   border-left: 3px solid var(--accent2);
   background: rgba(245, 166, 35, 0.06);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.not-ready-note {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-left: 3px solid #e57373;
+  background: rgba(229, 115, 115, 0.06);
   border-radius: 0 var(--radius) var(--radius) 0;
 }
 
