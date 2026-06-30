@@ -50,6 +50,13 @@ internal static class RosterReader
         Console.WriteLine($"  {"id",-10}{"typeId",-10}{"stars",-7}{"level",-7}{"empower",-9}storage");
         foreach (var h in heroes.OrderByDescending(h => h.Grade).ThenByDescending(h => h.Level))
             Console.WriteLine($"  {h.Id,-10}{h.TypeId,-10}{h.Grade,-7}{h.Level,-7}{h.EmpowerLevel,-9}{(h.InStorage ? "yes" : "")}");
+
+        // Emit JSON for the validation diff against the Gestal export.
+        var outPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "output", "roster-memory.json"));
+        Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
+        var shaped = heroes.Select(h => new { heroId = h.Id, typeId = h.TypeId, stars = h.Grade, level = h.Level, empowerLevel = h.EmpowerLevel, inStorage = h.InStorage });
+        File.WriteAllText(outPath, System.Text.Json.JsonSerializer.Serialize(shaped, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        Console.WriteLine($"\n[roster] wrote {outPath}");
     }
 
     // Walk readable regions; every 8-aligned slot equal to the Hero class pointer is
