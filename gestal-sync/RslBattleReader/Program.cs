@@ -22,6 +22,16 @@ if (args.Contains("--roster"))
     return;
 }
 
+// Debug: dump Hero objects matching a heroId. Usage: --hero 11
+{
+    int hi = Array.IndexOf(args, "--hero");
+    if (hi >= 0 && hi + 1 < args.Length && int.TryParse(args[hi + 1], out var id))
+    {
+        RosterReader.DebugHero(id);
+        return;
+    }
+}
+
 // Diagnostic: scan the game's heap for on-screen values (find the result-screen
 // view-model). Usage: --scan 85907,64079,120779,87497,17880
 {

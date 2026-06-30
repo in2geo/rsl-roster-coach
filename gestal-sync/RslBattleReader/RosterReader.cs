@@ -86,12 +86,44 @@ internal static class RosterReader
                     if (typeId is <= 0 or > 10_000_000) continue;
                     if (grade is < 1 or > 6) continue;
                     if (level is < 1 or > 60) continue;
+                    bool stored = mem.ReadBool(obj + Hero_InStorage) || mem.ReadBool(obj + Hero_InBathhouse);
                     byId[id] = new OwnedHero(id, typeId, grade, level,
-                        mem.ReadInt32(obj + Hero_EmpowerLevel), mem.ReadBool(obj + Hero_InStorage));
+                        mem.ReadInt32(obj + Hero_EmpowerLevel), stored);
                 }
             }
         }
         return [.. byId.Values];
+    }
+
+    // Debug: dump every Hero object matching a heroId, showing the bytes around the
+    // storage/flag region so we can locate the real in-storage flag.
+    public static void DebugHero(int targetId)
+    {
+        var proc = FindRaid(); if (proc is null) { Console.WriteLine("[hero] Raid not running."); return; }
+        using var mem = ProcessMemory.OpenById(proc.Id); if (mem is null) return;
+        var moduleBase = mem.FindModuleBase("GameAssembly.dll");
+        var heroClass = (long)mem.ReadPointer(moduleBase + (nint)Hero_TypeInfo_RVA);
+        Console.WriteLine($"[hero] searching Hero objects with Id={targetId}…");
+        const int chunk = 0x100000; var buf = new byte[chunk]; int found = 0;
+        foreach (var (baseAddr, size) in mem.EnumerateReadableRegions())
+            for (long off = 0; off < size; off += chunk)
+            {
+                int toRead = (int)Math.Min(chunk, size - off);
+                var rb = toRead == chunk ? buf : new byte[toRead];
+                if (!mem.TryReadBytes(baseAddr + (nint)off, rb)) continue;
+                for (int i = 0; i + 8 <= toRead; i += 8)
+                {
+                    if (BitConverter.ToInt64(rb, i) != heroClass) continue;
+                    var obj = baseAddr + (nint)(off + i);
+                    if (mem.ReadInt32(obj + Hero_Id) != targetId) continue;
+                    found++;
+                    var b = new byte[0x20]; mem.TryReadBytes(obj + 0x30, b);
+                    string hex = string.Join(" ", b.Select((x, k) => $"{0x30 + k:X2}:{x:X2}"));
+                    Console.WriteLine($"  obj=0x{obj:X} typeId={mem.ReadInt32(obj + Hero_TypeId)} grade={mem.ReadInt32(obj + Hero_Grade)} level={mem.ReadInt32(obj + Hero_Level)}");
+                    Console.WriteLine($"    bytes 0x30-0x4F: {hex}");
+                }
+            }
+        Console.WriteLine($"[hero] {found} object(s) for Id={targetId}.");
     }
 
     private static Process? FindRaid()

@@ -138,4 +138,8 @@ internal static class Il2CppOffsets
     public const int Hero_EmpowerLevel = 0x30;
     public const int Hero_Locked       = 0x34;
     public const int Hero_InStorage    = 0x35; // bool
+    // dump labels 0x36 "InBathhouse", but empirically it's the flag set for the
+    // player-facing storage vault (Gestal counts it as inStorage). Treat either
+    // 0x35 or 0x36 as "stored".
+    public const int Hero_InBathhouse  = 0x36; // bool — storage vault
 }
