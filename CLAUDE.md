@@ -17,38 +17,87 @@ rosters — that segment is already served by other tools.
 - AI: Anthropic API (separate from claude.ai — console.anthropic.com)
 - Monetization: rewarded video ads. First daily recommendation always free.
 
-## Current project state (updated end of session June 27 2026)
+## Current project state (updated end of session June 30 2026)
 
 ### In the DB and verified
 - Spider's Den stages 9-10 — goals, solutions, stat thresholds, RES row
 - Clan Boss all six difficulties — goals, solutions, stat thresholds,
   boss exceptions, explanation style notes
+- Fire Knight's Castle stages 15-20 — wave phase (AoE CC goals/solutions to
+  deny dangerous minion skills), boss phase (shield-breaking at 10 hits/round,
+  Turn Meter control, Dazzling Flames SPD-debuff counter, Decrease DEF/Weaken
+  damage window), tags added (Multi-Hit A1, Decrease SPD, Decrease Turn Meter,
+  Heal Reduction, Counterattack, Block Cooldowns, Increase SPD, Ally Attack,
+  Block Revive), ACC/SPD stat checks per stage, boss exceptions per stage,
+  explanation style note for the shield mechanic. Stages 1-14 deliberately out
+  of scope.
+- Ice Golem's Peak stages 15-20 — wave phase (kill both minions before boss
+  phase, target the more dangerous one first), boss phase (avoid triggering
+  Frigid Vengeance via Poison/HP Burn instead of burst, minion management via
+  Block Revive, Numbing Chill ACC counter), ACC/RES/HP stat checks per stage,
+  boss exceptions per stage including Frigid Vengeance and Counterattack
+  warnings, champion_ai_notes (Underpriest Brogni flagged — reflect damage can
+  proc Frigid Vengeance), explanation style notes for Frigid Vengeance/
+  Counterattack. Stages 1-14 deliberately out of scope.
+- Both Fire Knight and Ice Golem seeded with status = 'proposed' per
+  no-auto-merge rule — nothing auto-approved.
+- NOT yet done for Fire Knight/Ice Golem: champion_strategy_modifiers (no
+  dungeon-specific overrides seeded yet — Ally Attack champions like Fahrakin/
+  Cardiel only exist for Clan Boss so far)
 - Champion solo profiles — Dragon, Spider, Ice Golem, Fire Knight across
   Normal and Hard stages
-- Fire Knight's Castle stages 15-20 — goals, solutions, stat thresholds,
-  boss exceptions, explanation style notes
-- Ice Golem's Peak stages 15-20 — goals, solutions, stat thresholds,
-  boss exceptions, explanation style notes
 - Champion AI notes — Elder Skarg, Fayne, Mavara, Folan, Sabrael, Fimo,
-  Nson, Jorad, Polar Fireheart, Underpriest Brogni (Ice Golem warning)
+  Nson, Jorad, Polar Fireheart, Underpriest Brogni (Ice Golem)
 - Champions table — priority starter-pack champions plus recent meta
   champions with base stats from raid.guide
 - Schema migrations applied — role, mastery_tier, ascension_level,
   has_lore_of_steel, threshold_type, speed_set_bonuses,
   boss_stun_priority all documented
 - base_crit_rate / base_crit_dmg DDL migration — flagged, confirm applied
+- game_id architecture applied — games table, game_id on all key tables
+- recommendation_outcomes table — feedback loop schema, not yet wired to UI
+- profiles table + roster_shares — multi-profile schema, not yet built
+- champion_names table — localization layer, English seeded
+- daily_sessions + ad gate spec — schema done, UI wiring pending
+- Event dungeon architecture (is_event/active_from/active_until) — schema
+  done, generic fallback template seeded
 
 ### Next for Claude Code (in order)
-1. Build formulas.js — DEF diminishing returns, True Speed, tick formula,
+1. Run the dungeon coverage verification query (see "Content coverage check"
+   below) to get an accurate current picture before continuing
+2. Build formulas.js — DEF diminishing returns, True Speed, tick formula,
    stun priority matrix
-2. Build stat estimation engine against formulas.js
-3. Build matching engine with solo carry check first, then team
-   recommendation
-4. Run raid.guide base stats scraper for remaining champions
-5. Build champion selection UI (spec already written — see session notes)
-6. Build AI explanation layer (two-part output)
-7. Wire waitlist form to Supabase
-8. Build post-failure diagnosis flow (three yes/no questions)
+3. Build stat estimation engine against formulas.js
+4. Build matching engine with solo carry check first, then team
+   recommendation — include the Spider's Den highest-confidence-stage scan
+   logic (stage 10→1, return highest at ≥80% confidence)
+5. Run raid.guide base stats scraper for remaining champions
+6. Build champion selection UI (spec already written — see session notes)
+7. Build roster verification screen (spec already written)
+8. Build AI explanation layer (two-part output, confidence percentage not
+   binary verdict)
+9. Wire ad gate logic (daily_sessions, gate checks, placeholder ad flow)
+10. Wire feedback UI (recommendation_outcomes, 👍/👎)
+11. Wire waitlist form to Supabase
+12. Build post-failure diagnosis flow (three yes/no questions)
+13. champion_strategy_modifiers for Fire Knight/Ice Golem (not started)
+
+### Content coverage check (run before assuming any dungeon is complete)
+```sql
+select d.name as dungeon, ds.label as stage,
+       count(distinct g.id) as goal_count,
+       count(distinct gs.id) as solution_count,
+       count(distinct stc.id) as threshold_count
+from dungeons d
+join dungeon_stages ds on ds.dungeon_id = d.id
+left join phases p on p.dungeon_stage_id = ds.id
+left join goals g on g.phase_id = p.id
+left join goal_solutions gs on gs.goal_id = g.id and gs.status = 'approved'
+left join stat_threshold_checks stc on stc.phase_id = p.id
+where d.game_id = 'raid_shadow_legends'
+group by d.name, ds.label
+order by d.name, ds.label;
+```
 
 ## Data sourcing — hard rules
 - NEVER scrape or write a scraper targeting HellHades, Gestal, AyumiLove,
@@ -85,28 +134,6 @@ rosters — that segment is already served by other tools.
   known solo carry for the requested content, surface it first.
 - Clan Boss is NOT solo-able content. Never add Clan Boss rows to
   champion_solo_profiles.
-- `bypasses_accuracy_check = true` on a tag means that solution satisfies
-  its goal regardless of the player's ACC stat. Currently applies to
-  Block Revive only (Ice Golem minion management goal). When evaluating
-  goal solutions, check this flag before applying ACC threshold gates —
-  do not require ACC floor for bypassing solutions.
-- `ascension_required` on `champion_tags` and `champion_solo_profiles`
-  gates tag existence and solo carry recommendations respectively.
-  Universal rule (confirmed): 3-star ascension is the ONLY level that
-  unlocks or upgrades skills. Levels 1, 2, 4 never gate skills; levels
-  5-6 unlock gear slots only. So `ascension_required` has exactly two
-  meaningful values in practice: `0` (available from level 1, the
-  default) and `3` (requires 3-star ascension).
-  Default assumption: any tag or solo profile where the mechanism depends
-  on a passive or an ascended active skill gets `ascension_required = 3`.
-  If `ascension_required > user_champions.ascension_level`, the tag does
-  not count toward goal solutions (surface as explicit gap: "Fayne can
-  cover Decrease ATK but needs 3-star ascension first"), and solo carry
-  profiles surface as near-term goals rather than ready recommendations
-  ("Tholin can solo Spider's Den once he reaches 3-star ascension").
-  Known confirmed values: Fayne Decrease ATK = 3; Pelops HP Burn tag = 3;
-  solo profiles for Pelops, Torturehelm, Xenomorph, Tholin = 3.
-  Schema migration: `add-ascension-required.sql`.
 
 ## Champion selection UI spec (ready to build)
 - Screen 1: Four large rarity buttons (Mythical=red #E53935,
@@ -202,16 +229,28 @@ stops appearing automatically — no cleanup needed.
 - Do not seed an event without confirmed thresholds — use the generic
   fallback until thresholds are researched and verified
 
-## Champion-specific matching engine notes (future content)
+## Hard boundary: passive reading only, no process injection
 
-These are build notes for when the relevant content is added — do not
-implement until that content is actively being built.
+The battle log / Gestal-sync data collection tooling (RslBattleReader and
+related tools) operates on a strict boundary: PASSIVE READING of the player's
+own game client memory and local files only. This includes: reading process
+memory, reading local save/cache files, reading the battleResults / heroRounds
+blobs already written to disk by the game.
 
-### Pelops — Spider 20 (post-MVP)
-Pelops' Magma Shield scales at 30% Max HP, making him an HP-scaler,
-not a DEF-scaler. When building Spider 20 solo carry support:
-- Check HP against the 70k floor FIRST — this is the primary gate
-- DEF is secondary for Pelops specifically; do not apply the standard
-  DEF-first evaluation used for other solo carry profiles
-- This is a champion_strategy_modifiers entry, not a champion_ai_notes
-  entry — it affects stat threshold ordering, not AI battle settings
+NEVER pursue function hooking, code injection, or detouring functions inside
+the running Raid process. This is a fundamentally different technique from
+passive memory reading — it modifies how the game process behaves rather than
+just observing its existing state — and it is the exact signature Plarium's
+anti-cheat is built to detect. This applies even when a passive-reading path
+seems harder or slower than an injection-based shortcut would be.
+
+If a future task seems to require process injection to get richer data, STOP
+and look for a passive alternative first (e.g. decoding an existing replay/
+record blob that the game already writes for its own Replay feature, rather
+than hooking the function that generates the data live). If no passive
+alternative exists, surface the tradeoff explicitly to Mike and wait for an
+explicit decision — do not proceed on the assumption that "we've done similar
+things before" extends to this.
+
+This boundary protects the account this data collection is built around.
+Getting it banned defeats the entire purpose of the tooling.
