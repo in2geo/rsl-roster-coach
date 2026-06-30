@@ -63,7 +63,20 @@ rosters — that segment is already served by other tools.
 - base_crit_rate / base_crit_dmg DDL migration — flagged, confirm applied
 - game_id architecture applied — games table, game_id on all key tables
 - recommendation_outcomes table — feedback loop schema, not yet wired to UI
-- profiles table + roster_shares — multi-profile schema, not yet built
+- profiles layer — BUILT (this session): profiles spine over the existing
+  multi-account model. A profile is a named roster populated by either manual
+  entry (user_champions scoped by profile_id) or Gestal import (rsl_accounts
+  scoped by profile_id); anonymous device users keep a single implicit roster.
+  Switcher UI + magic-link sign-in control wired; signed-in users no longer get
+  the dev box's local Gestal fallback. See migrations/2026-06-30_profiles_layer.sql
+  and the [[profiles-architecture]] memory. roster_shares still not built.
+- Clan Boss content — remediated (this session): the six-difficulty solutions
+  were skeleton rows (proposed + untagged). Now tagged + approved via
+  seeds/09_clan_boss.sql (Hard+) and seeds/10_clan_boss_easy_normal.sql
+  (Easy/Normal, deduped goals). Sustain goals at Hard+ remain gaps until
+  champions get Leech/Ally Protection/Continuous Heal tags (coverage, not a bug).
+- Direct game-memory roster extractor (Option B) — SCOPED, not built. Plan +
+  traced IL2CPP offsets in gestal-sync/option-b-roster-extractor-plan.md.
 - champion_names table — localization layer, English seeded
 - daily_sessions + ad gate spec — schema done, UI wiring pending
 - Event dungeon architecture (is_event/active_from/active_until) — schema
@@ -267,3 +280,52 @@ things before" extends to this.
 
 This boundary protects the account this data collection is built around.
 Getting it banned defeats the entire purpose of the tooling.
+
+## Hard rule: all content changes go through committed seed files
+
+Never apply goals, goal_solutions, stat_threshold_checks, or any other content
+row directly to the live DB outside a committed `seeds/*.sql` file — not even for
+a quick fix or test. This happened once (the six-difficulty Clan Boss content
+existed live in the DB with no corresponding seed file anywhere in git history)
+and the result was 40 untagged, unapproved "skeleton" solutions that silently
+made Clan Boss non-functional, with no way to trace how or when they were created
+and no way to recover the process that made them.
+
+If a piece of content needs to change: write or update a `seeds/*.sql` file,
+commit it, then apply it. The DB should always be reconstructable from the
+committed seed files — if it isn't, that's the bug to fix.
+
+## Per-patch IL2CPP re-dump process (routine maintenance)
+
+Both the battle reader (RslBattleReader) and the direct roster extractor (Option
+B, once built) navigate game memory via byte offsets compiled into
+GameAssembly.dll. When Plarium ships an update, some offsets shift. This is
+expected, not a crisis — treat it as routine maintenance.
+
+### What triggers a re-dump
+- Game update ships (Plarium patches roughly every 2-3 weeks)
+- Memory reads start returning null/garbage where they previously worked
+- StageId, champion identity, or roster reads stop resolving correctly
+
+### The re-dump process (~30-60 minutes when offsets actually shift)
+1. Locate the new `GameAssembly.dll` on disk (already present since the game is
+   installed locally)
+2. Run Il2CppDumper against it to produce a fresh `dump.cs`
+3. Grep `dump.cs` for the specific class/field names the reader uses (UserWrapper,
+   HeroById, Hero, BattleSetup, StageId, etc.) — names don't change between
+   patches, only numeric offsets do
+4. Compare new offsets against the constants hardcoded in the reader
+5. Update any constants that shifted, rebuild, validate against a known-good
+   reference (the Gestal export for roster; a real battle capture for battle
+   results)
+
+### Important: many patches don't shift the relevant offsets at all
+Don't assume a re-dump is needed just because a patch shipped. Confirm by checking
+whether reads are still returning correct values first. The battle reader's
+game-update fix earlier in this project (June 2026) was confirmed a non-event —
+offsets hadn't shifted despite a version bump.
+
+### This stays within the passive-read boundary
+Re-dumping and updating offsets is still passive reading — reading your own game
+client's compiled structure to find data locations. It does not cross into
+injection or process modification territory.
