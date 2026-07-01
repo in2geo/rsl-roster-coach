@@ -13,7 +13,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { readBattleHistory, readGestalRoster } from '../lib/gestal-context.js';
 import { evaluateTeam, resolveDungeonStage } from '../lib/match-engine.js';
-import { buildRosterMapper, stageOf } from '../lib/battle-pipeline.js';
+import { buildRosterMapper, lookupHero, stageOf } from '../lib/battle-pipeline.js';
 
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
   console.error('Needs DB access. Run: node --env-file=.env.local tools/upload-battles.js');
@@ -93,7 +93,7 @@ for (const row of pending ?? []) {
   const outcome = row.result === 'Victory' ? 'cleared' : row.result === 'Defeat' ? 'failed' : null;
   if (outcome) {
     const ucByName = await mapperFor(row.account_id);
-    const team = (row.heroes ?? []).map(h => ucByName.get(h.name)).filter(Boolean);
+    const team = (row.heroes ?? []).map(h => lookupHero(ucByName, h)).filter(Boolean);
     const ev = await evaluateTeam(team, row.dungeon_name, row.stage_number, row.difficulty);
     const { error } = await supabase.from('recommendation_outcomes').insert({
       user_id:                row.user_id ?? row.account_id,   // hybrid: fall back to in-game account id

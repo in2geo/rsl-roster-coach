@@ -24,7 +24,7 @@ function json(res, status, body) { res.status(status).json(body); }
 
 // Same champion projection the match-engine expects (mirrors /api/user-champions).
 const CHAMPION_SELECT = `
-  id, name, rarity, portrait_url, affinity, faction,
+  id, name, type_id, rarity, portrait_url, affinity, faction,
   base_hp, base_atk, base_def, base_spd, base_acc, base_res,
   base_crit_rate, base_crit_dmg,
   champion_tags ( tag_id, status, ascension_required, tags ( name, bypasses_accuracy_check ) )
@@ -44,24 +44,24 @@ export default async function handler(req, res) {
 
   const battleLog = readBattleHistory();
 
-  // Look up DB champions for the names the player actually owns (battle-ready only).
-  const ownedNames = [...new Set(
-    (gestalRoster.champions ?? [])
-      .filter(c => !c.inStorage)
-      .map(c => c.name)
-      .filter(Boolean)
-  )];
+  // Look up DB champions the player owns (battle-ready only). Match on the stable
+  // game typeId first, name as fallback — fetch by both and merge unique by id.
+  const owned = (gestalRoster.champions ?? []).filter(c => !c.inStorage);
+  const ownedNames   = [...new Set(owned.map(c => c.name).filter(Boolean))];
+  const ownedTypeIds = [...new Set(owned.map(c => c.baseTypeId ?? c.typeId).filter(t => t != null))];
 
-  let dbChampions = [];
-  if (ownedNames.length) {
+  const dbById = new Map();
+  for (const [col, vals] of [['type_id', ownedTypeIds], ['name', ownedNames]]) {
+    if (!vals.length) continue;
     const { data, error } = await supabase
       .from('champions')
       .select(CHAMPION_SELECT)
       .eq('game_id', 'raid_shadow_legends')
-      .in('name', ownedNames);
+      .in(col, vals);
     if (error) return json(res, 500, { error: error.message });
-    dbChampions = data ?? [];
+    for (const c of data ?? []) dbById.set(c.id, c);
   }
+  const dbChampions = [...dbById.values()];
 
   const { userChampions, unmatched } = buildUserChampions(gestalRoster.champions, dbChampions);
   const context = buildContext({ gestalRoster, userChampions, unmatched, battleLog });

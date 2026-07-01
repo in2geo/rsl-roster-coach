@@ -23,7 +23,7 @@ import { readBattleHistory, readGestalRoster, buildUserChampions } from '../lib/
 import { createClient } from '@supabase/supabase-js';
 
 const CHAMPION_SELECT = `
-  id, name, rarity, affinity, faction,
+  id, name, type_id, rarity, affinity, faction,
   base_hp, base_atk, base_def, base_spd, base_acc, base_res,
   base_crit_rate, base_crit_dmg,
   champion_tags ( tag_id, status, ascension_required, tags ( name, bypasses_accuracy_check ) )
