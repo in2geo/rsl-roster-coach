@@ -59,7 +59,17 @@ const TAG_MAP = {
   'increase spd': 'Increase Speed', 'increase turn meter': 'Increase Turn Meter',
   'continuous heal': 'Continuous Heal', 'shield': 'Shield', 'block damage': 'Block Damage',
   'ally protection': 'Ally Protection', 'revive': 'Revive', 'cleanse': 'Cleanse',
+  'block debuffs': 'Block Debuffs',
+  // 2026-07-01 vocabulary expansion (seeds/14_new_tags.sql):
+  'provoke': 'Provoke', 'unkillable': 'Unkillable',
+  'perfect veil': 'Perfect Veil', 'veil': 'Veil', 'fear': 'Fear', 'true fear': 'True Fear',
+  'decrease acc': 'Decrease ACC', 'increase c.rate': 'Increase C.Rate', 'increase c.dmg': 'Increase C.DMG',
+  'block buffs': 'Block Buffs', 'hex': 'Hex', 'bomb': 'Bomb',
+  'reflect damage': 'Reflect Damage', 'block active skills': 'Block Active Skills',
 };
+// Normalize a raid.guide bracket to a TAG_MAP key: lowercase, collapse ". " → "."
+// so "Increase C. RATE" and "Increase C.DMG" match ("increase c.rate"/"c.dmg").
+const nk = (s) => s.toLowerCase().replace(/\s*\.\s*/g, '.').replace(/\s+/g, ' ').trim();
 // stat auras raid.guide encodes → note only (not tags). placement normalization.
 const AURA_STAT = { hp: 'hp', atk: 'atk', def: 'def', spd: 'spd', 'c.rate': 'crit_rate', 'c.dmg': 'crit_dmg', res: 'res', acc: 'acc', accuracy: 'acc', resist: 'res' };
 // AoE-variant tags that actually exist (so we only prefix when the tag is real).
@@ -125,7 +135,7 @@ function bookedChanceFor(desc, bracketName) {
 }
 
 function mapTag(bracketName, aoe, tagSet) {
-  const base = TAG_MAP[bracketName.toLowerCase()];
+  const base = TAG_MAP[nk(bracketName)];
   if (!base) return null;
   if (aoe && AOE_TAGS.has(`AoE ${base}`)) return `AoE ${base}`;
   return tagSet.has(base) ? base : null;
@@ -167,13 +177,20 @@ async function main() {
     const slug = slugByName.get(champ.toLowerCase());
     if (!slug) { missPage.push(`${champ} | ${champ} | (no slug) | not-on-raid.guide`); continue; }
 
-    await sleep(DELAY_MS);
-    let html;
-    try {
-      const res = await fetch(PAGE(slug), { headers: UA });
-      if (!res.ok) { missPage.push(`${champ} | ${champ} | ${slug} | HTTP ${res.status}`); continue; }
-      html = await res.text();
-    } catch (e) { missPage.push(`${champ} | ${champ} | ${slug} | fetch error ${e.message}`); continue; }
+    // Fetch with retry — raid.guide rate-limits the tail of a long batch, so a
+    // transient "fetch failed" must be retried (with backoff) before giving up.
+    // A real 404 is genuine (champion not on the site) — no retry.
+    let html, fail = null;
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      await sleep(attempt === 1 ? DELAY_MS : 1500 * attempt);
+      try {
+        const res = await fetch(PAGE(slug), { headers: UA });
+        if (res.status === 404) { fail = `HTTP 404`; break; }
+        if (!res.ok) { fail = `HTTP ${res.status}`; continue; }
+        html = await res.text(); fail = null; break;
+      } catch (e) { fail = `fetch error ${e.message}`; }
+    }
+    if (html == null) { missPage.push(`${champ} | ${champ} | ${slug} | ${fail}`); continue; }
 
     const aura = parseAura(html);
     if (aura) auraSql.push(`-- ${champ}: ${aura.stat} ${(aura.pct * 100)}% place=${aura.placement}\n--   (raw: ${aura.raw})`);
@@ -185,7 +202,7 @@ async function main() {
     for (const sk of skills) {
       for (const br of sk.brackets) {
         const tag = mapTag(br, sk.aoe, tagSet);
-        if (!tag) { if (TAG_MAP[br.toLowerCase()] === undefined) missTag.push(`${champ} | ${sk.name} (${sk.slot}) | [${br}] | (no mapping)`); continue; }
+        if (!tag) { if (TAG_MAP[nk(br)] === undefined) missTag.push(`${champ} | ${sk.name} (${sk.slot}) | [${br}] | (no mapping)`); continue; }
         if (emitted.has(`${champ}|${tag}`)) continue;   // one row per distinct tag
         emitted.add(`${champ}|${tag}`);
         const booked = bookedChanceFor(sk.desc, br);

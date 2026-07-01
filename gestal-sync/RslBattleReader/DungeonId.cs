@@ -56,6 +56,7 @@ internal static class DungeonId
         [2059] = "Arcane Keep",
         [2069] = "Dragon's Lair",
         [2079] = "Ice Golem's Peak",
+        [2189] = "Event Dungeon",   // rotating event content (2189012 = Event stage 12, confirmed 2026-07-01)
     };
 
     /// <summary>Dungeon name from a StageId's prefix (stageId / 1000), or null if unmapped.</summary>
