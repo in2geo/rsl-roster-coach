@@ -14,6 +14,14 @@ import { createClient } from '@supabase/supabase-js';
 import { readBattleHistory, readGestalRoster } from '../lib/gestal-context.js';
 import { evaluateTeam, resolveDungeonStage } from '../lib/match-engine.js';
 import { buildRosterMapper, lookupHero, stageOf } from '../lib/battle-pipeline.js';
+import { normalizeBattle } from '../lib/clan-boss.js';
+
+// Clan Boss battles resolve to a dungeon_stage_id, so they land in battle_history —
+// but the reader's hero capture for Clan Boss is currently incomplete (drops champions
+// whose record is in the columnar region; see the BattleWatcher low-byte fix). Writing
+// those as recommendation_outcomes would seed the calibration set with partial teams,
+// so hold Clan Boss outcomes until that fix lands. Flip to false to let them through.
+const HOLD_CLAN_BOSS_OUTCOMES = true;
 
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
   console.error('Needs DB access. Run: node --env-file=.env.local tools/upload-battles.js');
@@ -24,7 +32,9 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY, { global: { fetch } });
 
 const RESULTS = new Set(['Victory', 'Defeat', 'Draw', 'Unknown']);
-const battles = readBattleHistory();
+// Normalize Clan Boss battles (battleKindId=3) → dungeon "Clan Boss" + difficulty so
+// they resolve to a dungeon_stage_id instead of falling through as null.
+const battles = readBattleHistory().map(normalizeBattle);
 console.log(`Read ${battles.length} battles from battle-log.json\n`);
 
 // ── Phase 1: upload → battle_history ──────────────────────────────────────────
@@ -87,8 +97,11 @@ async function mapperFor(accountId) {
   return m;
 }
 
-let outcomes = 0, processed = 0;
+let outcomes = 0, processed = 0, heldClanBoss = 0;
 for (const row of pending ?? []) {
+  // Hold Clan Boss outcomes (incomplete team capture) — leave outcome_recorded=false
+  // so they flow automatically once the reader's hero fix lands and the flag is flipped.
+  if (HOLD_CLAN_BOSS_OUTCOMES && row.dungeon_name === 'Clan Boss') { heldClanBoss++; continue; }
   processed++;
   const outcome = row.result === 'Victory' ? 'cleared' : row.result === 'Defeat' ? 'failed' : null;
   if (outcome) {
@@ -117,4 +130,5 @@ for (const row of pending ?? []) {
   await supabase.from('battle_history').update({ outcome_recorded: true }).eq('id', row.id);
 }
 console.log(`Phase 2 — recommendation_outcomes: ${outcomes} written (${processed} battle_history row(s) processed)`);
+if (heldClanBoss) console.log(`         held ${heldClanBoss} Clan Boss battle(s) — incomplete team capture (pending reader fix)`);
 console.log(`\nSUMMARY: ${battles.length} battles read → ${uploaded} uploaded → ${resolved} dungeon_stage resolved → ${outcomes} outcomes.`);

@@ -20,6 +20,7 @@
  *       # evaluate each captured team vs the engine for its dungeon/stage (needs DB env)
  */
 import { readBattleHistory, readGestalRoster, buildUserChampions } from '../lib/gestal-context.js';
+import { normalizeBattle } from '../lib/clan-boss.js';
 import { createClient } from '@supabase/supabase-js';
 
 const CHAMPION_SELECT = `
@@ -35,7 +36,9 @@ const asJson = args.includes('--json');
 const accountArg = flag('--account') ?? null;
 
 // ── Load ───────────────────────────────────────────────────────────────────────
-const allBattles = readBattleHistory();
+// Normalize Clan Boss battles (battleKindId=3) → dungeon "Clan Boss" + difficulty
+// so they resolve like any other content instead of falling through as null.
+const allBattles = readBattleHistory().map(normalizeBattle);
 if (!allBattles.length) {
   console.error('No battles in the log yet (battle-log.json is empty or missing).');
   process.exit(0);
