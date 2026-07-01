@@ -63,53 +63,24 @@ async function crossReference() {
     console.error('  node --env-file=.env.local tools/analyze-battles.js --cross-reference');
     return;
   }
-  const { evaluateTeam } = await import('../lib/match-engine.js');
+  const { groupAndEvaluateBattles } = await import('../lib/battle-pipeline.js');
   const supabase = createClient(
     (process.env.SUPABASE_URL).replace(/\/rest\/v1\/?$/, ''),
     process.env.SUPABASE_SERVICE_KEY, { global: { fetch } });
 
-  const stageOf = (b) => b.stageNumber
-    ?? (typeof b.stageId === 'number' && b.stageId > 1000 ? b.stageId % 1000 : null);
-  const evaluable = battles.filter(b => b.dungeon && stageOf(b) != null && (b.heroes ?? []).length);
-  if (!evaluable.length) { console.log('No battles with a resolved dungeon + stage number to cross-reference.'); return; }
+  const { groups, evaluableCount } = await groupAndEvaluateBattles(battles, roster, supabase);
+  if (!evaluableCount) { console.log('No battles with a resolved dungeon + stage number to cross-reference.'); return; }
 
-  // Build the mapped roster once: Gestal state ⋈ DB champions (tags + base stats) by name.
-  const ownedNames = [...new Set((roster?.champions ?? []).filter(c => !c.inStorage).map(c => c.name).filter(Boolean))];
-  let dbChampions = [];
-  if (ownedNames.length) {
-    const { data, error } = await supabase.from('champions').select(CHAMPION_SELECT)
-      .eq('game_id', 'raid_shadow_legends').in('name', ownedNames);
-    if (error) { console.error('champions query failed:', error.message); return; }
-    dbChampions = data ?? [];
-  }
-  const { userChampions } = buildUserChampions(roster?.champions ?? [], dbChampions);
-  const ucByName = new Map(userChampions.map(uc => [uc.champion.name, uc]));
-
-  // Group identical (dungeon, stage, team) runs; tally actual outcomes.
-  const groups = new Map();
-  for (const b of evaluable) {
-    const stage = stageOf(b);
-    const names = (b.heroes ?? []).map(h => h.name).sort();
-    const key = `${b.dungeon}|${stage}|${b.difficulty ?? ''}|${names.join(',')}`;
-    if (!groups.has(key)) groups.set(key, { dungeon: b.dungeon, stage, difficulty: b.difficulty ?? null, names, wins: 0, losses: 0, turns: [] });
-    const g = groups.get(key);
-    if (b.result === 'Victory') g.wins++; else if (b.result === 'Defeat') g.losses++;
-    if (typeof b.turns === 'number') g.turns.push(b.turns);
-  }
-
-  console.log(`\nCross-reference — ${displayName}: ${evaluable.length} battle(s) → ${groups.size} unique team/stage combo(s)\n`);
+  console.log(`\nCross-reference — ${displayName}: ${evaluableCount} battle(s) → ${groups.length} unique team/stage combo(s)\n`);
   const missingTagFlags = [];
   let seededCount = 0;
 
-  for (const g of [...groups.values()].sort((a, b) => a.dungeon.localeCompare(b.dungeon) || a.stage - b.stage)) {
-    const team = g.names.map(n => ucByName.get(n)).filter(Boolean);
-    const notInDb = g.names.filter(n => !ucByName.has(n));
+  for (const g of [...groups].sort((a, b) => a.dungeon.localeCompare(b.dungeon) || a.stage - b.stage)) {
     const turnRange = g.turns.length ? `${Math.min(...g.turns)}-${Math.max(...g.turns)}t` : '–';
-
     console.log(`${g.dungeon} ${g.difficulty ? g.difficulty + ' ' : ''}Stage ${g.stage}  [${g.names.join(', ')}]`);
-    console.log(`  actual: ${g.wins}W/${g.losses}L  ${turnRange}` + (notInDb.length ? `   (not in DB: ${notInDb.join(', ')})` : ''));
+    console.log(`  actual: ${g.wins}W/${g.losses}L  ${turnRange}` + (g.notInDb.length ? `   (not in DB: ${g.notInDb.join(', ')})` : ''));
 
-    const ev = await evaluateTeam(team, g.dungeon, g.stage, g.difficulty);
+    const ev = g.evaluation;
     if (!ev.seeded) { console.log(`  engine: — ${ev.reason}\n`); continue; }
     seededCount++;
     const verdict = ev.confidence_pct != null ? `${ev.confidence_pct}% (${ev.verdict_band})` : 'no actionable goals';
@@ -123,7 +94,7 @@ async function crossReference() {
   }
 
   console.log('── Summary ──');
-  console.log(`  ${groups.size} combo(s): ${seededCount} have DB coverage, ${groups.size - seededCount} at unseeded stages.`);
+  console.log(`  ${groups.length} combo(s): ${seededCount} have DB coverage, ${groups.length - seededCount} at unseeded stages.`);
   if (missingTagFlags.length) {
     console.log(`  ${missingTagFlags.length} missing-tag candidate(s) (won despite an unmet goal):`);
     for (const f of missingTagFlags)
