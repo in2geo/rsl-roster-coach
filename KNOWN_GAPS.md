@@ -16,6 +16,37 @@ known clear, not a calibrated value. Refine (and calibrate RES floors similarly)
 as more battle-log data points accumulate. RES floors are still original judgment
 calls with no battle-log evidence yet.
 
+### Sustain gear assumption
+The app assumes no player champion runs Lifesteal, Regeneration, or Immortal gear.
+All sustain must come from champion skills. This is enforced in the global sustain
+check in `match-engine.js` (`checkTeamSustain`), which surfaces a `sustain` result on
+every `matchRoster`/`evaluateTeam` output.
+
+Impact: teams with no sustain champion always surface a sustain gap warning regardless
+of dungeon. This is intentional.
+
+Limitation: the assumption is binary — a player who does have Lifesteal on one champion
+gets the same warning as a player with none. Resolving this requires asking the player
+which gear set each champion is using, which adds friction we've chosen not to add at
+MVP.
+
+Related gaps:
+- **Champion detail UI note NOT built (Part 3 deferred):** the sustain-assumption
+  disclosure line ("We assume this champion is using damage or speed gear — not Lifesteal
+  or Regeneration. Make sure your team includes a healer.") is specified but the champion
+  detail screen itself doesn't exist yet (`app.html` has no gear-tier selector / detail
+  sheet). Add the note when that screen is built (see the champion-selection UI spec in
+  CLAUDE.md, Screen 3).
+- **`champion_team_requirements` rows are `proposed`:** Criodan (healer) and Fahrakin the
+  Fat (Clan Boss sustain_any) are seeded but not yet approved, so `checkTeamRequirements`
+  doesn't act on them until a human flips them to `approved` (no-auto-merge rule). The
+  Heinrich Demondoom row no-ops until that champion is added to `champions`.
+- **Pre-existing, unrelated:** `CRITICAL_DEBUFFER_TAGS` in `match-engine.js` uses
+  `'Decrease DEF'`/`'Decrease ATK'`, but the seeded tag names are `'Decrease Defense'`/
+  `'Decrease Attack'` — so the Clan Boss stun-matrix's `is_critical_debuffer` check never
+  matches. The new sustain code uses the correct names; the stun matrix should be fixed
+  separately.
+
 ## Code gaps
 
 ### Clan Boss battle-log outcomes — hero capture + dungeon ID FIXED; only DIFFICULTY still blocks the flag
