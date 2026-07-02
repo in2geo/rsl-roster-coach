@@ -16,6 +16,14 @@ known clear, not a calibrated value. Refine (and calibrate RES floors similarly)
 as more battle-log data points accumulate. RES floors are still original judgment
 calls with no battle-log evidence yet.
 
+### Clan Boss chest-tier thresholds (source = screenshots, July 2026)
+`clan_boss_chest_tiers` (seed 26) damage→chest thresholds for all six difficulties were
+captured from in-game **rewards-screen screenshots in July 2026**, not an official data
+source. Plarium periodically rebalances Clan Boss rewards — **re-verify these thresholds
+if CB rewards change** (a rebalance would silently mis-tier every scored run). The chest
+NAMES are also baked into the `recommendation_outcomes.outcome` CHECK constraint, so a
+rename would need a migration too. `captured_at` on each row records when they were taken.
+
 ### Sustain gear assumption
 The app assumes no player champion runs Lifesteal, Regeneration, or Immortal gear.
 All sustain must come from champion skills. This is enforced in the global sustain
@@ -77,16 +85,21 @@ Clan Boss **Nightmare** capture (2026-07-02), preserved as the regression fixtur
    Clan Boss fingerprint as authoritative over `DungeonId`. Validated: the 3 CB dumps
    → "Clan Boss", the real Dragon-11 → still "Dragon's Lair 11", non-CB unaffected.
 
-HELD — outcome MODEL, not difficulty (revised 2026-07-02): `upload-battles.js` holds
-**all** Clan Boss outcomes again (`HOLD_CLAN_BOSS_OUTCOMES=true`). The blocker is no
-longer difficulty — it's that CB isn't kill-or-die. You farm CB by damage tier (chest
-keys); almost every run ends as a "Defeat" (boss not killed) even when it's a good run,
-so mapping Defeat→failed would flood the calibration set with false failures. CB needs a
-damage-tier success model (keys / damage thresholds) before its runs can be scored. The
-battles are still captured in `battle_history` (nothing lost). Confirmed live 2026-07-02
-by a real CB Nightmare capture (11.07M dmg, Don$Gnut) that logged `result=Defeat` — a
-normal farming run, not a failure. Flip the flag false ONLY together with a CB-specific
-outcome mapping.
+OUTCOME MODEL BUILT — gated on damage capture (2026-07-02): CB is scored by chest tier
+(total damage), not kill/no-kill. `clan_boss_chest_tiers` (seed 26) holds per-difficulty
+damage→chest thresholds; `chestTierFor()` in `lib/clan-boss.js` resolves a damage figure
+to a chest name (e.g. 11.07M Nightmare → `guardian`). `upload-battles.js` now writes a CB
+`recommendation_outcomes` row with `outcome = <chest tier>` when `total_damage_dealt` is
+present, and HOLDS the run when it's absent (the old blanket `HOLD_CLAN_BOSS_OUTCOMES`
+flag is superseded by this damage gate). `recommendation_outcomes.outcome` CHECK was
+widened to allow the 12 chest names; `battle_history` gained `total_damage_dealt`.
+Validated: the real 11.07M Nightmare run was backfilled to `outcome='guardian'`.
+
+REMAINING GAP — the reader does NOT capture `total_damage_dealt` yet (it's the deferred
+per-hero-stats problem: post-battle stats are computed on-screen, not snapshottable from
+the empty StatisticsByHero dict — see the reader memory notes). So every real CB capture
+is held today; only manually-backfilled rows (with an injected damage figure) resolve to
+a chest tier. Building total-damage capture in the reader is the unblocker.
 
 Difficulty sourcing is now SOLVED (the reason it was ever a blocker): the memory-read
 fragility below is fixed, so `stageId` is captured live. `lib/clan-boss.js` maps
