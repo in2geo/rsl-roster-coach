@@ -21,7 +21,7 @@ const ANON_KEY    = process.env.SUPABASE_ANON_KEY;
 const service = createClient(BASE_URL, SERVICE_KEY, { global: { fetch } });
 
 const CHAMPION_SELECT = `
-  id, name, rarity, portrait_url, affinity, faction,
+  id, name, type_id, rarity, portrait_url, affinity, faction,
   base_hp, base_atk, base_def, base_spd, base_acc, base_res,
   base_crit_rate, base_crit_dmg,
   champion_tags ( tag_id, status, ascension_required, tags ( name, bypasses_accuracy_check ) )
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
         .select(`
           id, level, stars, ascension_level, gear_tier, mastery_tier, is_booked, awakening_level,
           champion:champion_id (
-            id, name, rarity, portrait_url, affinity, faction,
+            id, name, type_id, rarity, portrait_url, affinity, faction,
             base_hp, base_atk, base_def, base_spd, base_acc, base_res, base_crit_rate, base_crit_dmg,
             champion_tags ( tag_id, status, ascension_required, tags ( name, bypasses_accuracy_check ) )
           )`)
@@ -100,20 +100,24 @@ export default async function handler(req, res) {
     artifacts:      acct.roster_json?.artifacts ?? [],
   };
 
-  // Join owned champions to the DB knowledge base (tags + base stats) by name.
-  const ownedNames = [...new Set(
-    gestalRoster.champions.filter(c => !c.inStorage).map(c => c.name).filter(Boolean)
-  )];
-  let dbChampions = [];
-  if (ownedNames.length) {
+  // Join owned champions to the DB knowledge base (tags + base stats). Match on
+  // the stable game typeId first, name as fallback (display names drift:
+  // "Glorious Pallas" vs "Pallas") — fetch by both and merge unique by id.
+  const owned = gestalRoster.champions.filter(c => !c.inStorage);
+  const ownedNames   = [...new Set(owned.map(c => c.name).filter(Boolean))];
+  const ownedTypeIds = [...new Set(owned.map(c => c.baseTypeId ?? c.typeId).filter(t => t != null))];
+  const dbById = new Map();
+  for (const [col, vals] of [['type_id', ownedTypeIds], ['name', ownedNames]]) {
+    if (!vals.length) continue;
     const { data, error: cErr } = await service
       .from('champions')
       .select(CHAMPION_SELECT)
       .eq('game_id', 'raid_shadow_legends')
-      .in('name', ownedNames);
+      .in(col, vals);
     if (cErr) return json(res, 500, { error: cErr.message });
-    dbChampions = data ?? [];
+    for (const c of data ?? []) dbById.set(c.id, c);
   }
+  const dbChampions = [...dbById.values()];
 
   const { userChampions, unmatched } = buildUserChampions(gestalRoster.champions, dbChampions);
   const context = buildContext({ gestalRoster, userChampions, unmatched, battleLog: [] });

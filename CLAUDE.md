@@ -130,12 +130,18 @@ order by d.name, ds.label;
 - NEVER scrape YouTube (videos, transcripts, or comments).
 - DO use: in-game Index/Compendium (skill text), official Plarium patch
   notes, Fandom wiki (CC-BY-SA).
-- DO use raid.guide (https://raid.guide/en/stats/) for champion base stats
-  only — confirmed accurate, not on no-scrape list. Not for skill text,
-  tags, or strategy guidance.
-- Tag champions from literal skill text only — never from guides or tier
-  lists. Guides are biased toward meta picks and miss the specific
-  starter-pack champions this audience actually owns.
+- DO use raid.guide (https://raid.guide/en/stats/) for champion base stats,
+  and (carve-out, 2026-07-01) for verbatim champion SKILL DESCRIPTIONS on the
+  per-champion pages (https://raid.guide/en/shadow-legends/<slug>/) — these are
+  Plarium's literal skill text, not editorial. Confirmed accurate, not on the
+  no-scrape list. STILL off-limits from raid.guide: tier ratings, star grades,
+  "best build"/strategy opinions, and any recommendation — those are editorial.
+- Tag champions from literal skill text only — never from guides' tier lists
+  or opinions. raid.guide's verbatim skill descriptions COUNT as literal skill
+  text (same words as the in-game Index); a guide's ratings/strategy do not.
+  Tags sourced this way are `source_type='raid_guide'`, `status='proposed'` and
+  MUST be human-reviewed before they go live (the engine only reads approved
+  tags). Guides' meta bias lives in ratings/picks, not the skill descriptions.
 - Every new tag or rule gets proposed in structured form, then reviewed
   and approved by a human before it's considered live. No auto-merge.
 - Zero-tag champions must surface explicitly — never silently exclude.

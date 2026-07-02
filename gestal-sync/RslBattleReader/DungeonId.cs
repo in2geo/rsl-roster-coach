@@ -56,6 +56,14 @@ internal static class DungeonId
         [2059] = "Arcane Keep",
         [2069] = "Dragon's Lair",
         [2079] = "Ice Golem's Peak",
+        [2109] = "Minotaur's Labyrinth",  // 2109015 = Minotaur stage 15, confirmed 2026-07-01
+        // Event Dungeon rotates. The reader only tags the run "Event Dungeon" (prefix 2189).
+        // DEPENDENCY: cross-referencing event runs must go through the matching engine's
+        // is_event query — dungeons where is_event=true and (active_until is null or
+        // active_until >= current_date), specific live event first, "Event Dungeon (Generic)"
+        // as fallback — NOT resolveDungeonStage's exact-name match. Note the reader's
+        // "Event Dungeon" label also does NOT exact-match the DB row "Event Dungeon (Generic)".
+        [2189] = "Event Dungeon",   // rotating event content (2189012 = Event stage 12, confirmed 2026-07-01)
     };
 
     /// <summary>Dungeon name from a StageId's prefix (stageId / 1000), or null if unmapped.</summary>

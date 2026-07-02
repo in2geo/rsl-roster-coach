@@ -237,10 +237,13 @@ async function insertTestRoster(rosterChampions) {
       is_booked: false, awakening_level: 0,
     }));
 
-  const { error: upsertErr } = await supabase
+  // Plain insert (not upsert): the roster is deleted just above, and
+  // user_champions now has only PARTIAL unique indexes (profiles migration), which
+  // PostgREST's onConflict column list can't target.
+  const { error: insertErr } = await supabase
     .from('user_champions')
-    .upsert(rows, { onConflict: 'user_id,champion_id' });
-  if (upsertErr) throw new Error(`Roster insert failed: ${upsertErr.message}`);
+    .insert(rows);
+  if (insertErr) throw new Error(`Roster insert failed: ${insertErr.message}`);
 }
 
 // ── Output helpers ────────────────────────────────────────────────────────────
