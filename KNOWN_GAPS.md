@@ -47,28 +47,20 @@ Note the reader's `"Event Dungeon"` label does not exact-match the DB row
 (`effective-stats.js` header TODO). Material impact is mainly SPD (Lore of Steel
 glyphs); low impact on the ACC/HP/RES threshold checks.
 
-### Champion ascension level not in Gestal export
-Gestal's UI renders ascension correctly but zeroes `ascensionLevel`
-in champions.json. Confirmed via exhaustive file search July 2026.
+### Champion ascension level — RESOLVED (derived from typeId, July 2026)
+The game encodes ascension in the champion typeId: **`ascension = typeId − baseTypeId`**
+(0-6). Gestal's `ascensionLevel` field is always 0 and is a red herring; both `typeId`
+and `baseTypeId` are already in the Gestal export. Confirmed by a controlled live
+ascend — Skeletor's in-memory `Hero.TypeId` went 9330 → 9331 when ascended to level 1 —
+plus a roster-wide check (every `typeId − baseTypeId` in 0-6, matching known state:
+Pelops 6, Narma/Gnut/Tagoar 3, Skeletor 0). `buildUserChampions.ascensionFromGestal(g)`
+computes it; the mapRoster `ascension_required` gate now works from Gestal data alone.
 
-**Interim fix:** `config/ascension_overrides.json` (gitignored,
-account-specific). Matching engine merges overrides at startup;
-non-zero Gestal values supersede when Option B lands.
+No memory read (Option B) and no override file needed — the interim
+`config/ascension_overrides.json` and the Option-B ascension-offset task are both
+**retired**. (`DoubleAscendData.Grade` is the *awakening* level, not ascension.)
 
-**Durable fix (Option B) — BLOCKED, source not located (dump.cs
-investigated July 2026):** The Hero struct (TypeDefIndex 10462) has NO
-ascension field — 0x28/0x2C are Experience/FullExperience, not
-adjacent ascension. The only ascension-named things in the whole dump
-are methods (AscendHeroWithUpdate). The one nested candidate,
-Hero.DoubleAscendData.Grade (0x70 -> 0x10, DoubleAscendGrade enum
-Stars1..6), was read live and returned 1 for Pelops — which matches
-Gestal awakenLevel=1 and "one star awakened", i.e. it is the AWAKENING
-level, NOT classic ascension (Pelops is fully ascended = 6). So classic
-ascension is not `ascensionLevel` (Gestal 0), not DoubleAscendData.Grade
-(awakening), and not any named Hero field. Where RSL stores per-hero
-classic ascension is unresolved — needs game-side knowledge before Option
-B can proceed. Interim override remains the working source meanwhile.
-
-**Impact:** Ascension-gated tags (Pelops HP Burn + Petrification,
-Fayne Decrease ATK) are excluded from matching until override or
-Option B is in place. Solo carry gate for Pelops also blocked.
+Verified: Pelops derives ascension 6, so his HP Burn + Petrification (ascension_required
+3) now count. NOTE: `ascension_required` itself must still be set per-skill from the
+in-game padlock/description (default 0) — see the tagging rule; that's separate from
+sourcing the player's ascension level.
