@@ -7,3 +7,6 @@ node_modules/
 
 # raid.guide scraper review artifacts (source of truth is Supabase)
 output/
+
+# Account-specific ascension override (interim; see KNOWN_GAPS.md)
+config/ascension_overrides.json

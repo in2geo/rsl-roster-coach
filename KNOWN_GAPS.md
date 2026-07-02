@@ -47,9 +47,20 @@ Note the reader's `"Event Dungeon"` label does not exact-match the DB row
 (`effective-stats.js` header TODO). Material impact is mainly SPD (Lore of Steel
 glyphs); low impact on the ACC/HP/RES threshold checks.
 
-### Ascension flat bonus unverified
-Whether the Gestal `baseStats` already folds in potion-based ascension bonuses is
-unverified — the test accounts had `ascensionLevel 0` on every champion. Verify
-against an ascended champion when one is available. Note: ascension *level* is
-correctly used for `ascension_required` skill gating; this gap is only about the
-stat magnitudes.
+### Champion ascension level not in Gestal export
+Gestal's UI renders ascension correctly but zeroes `ascensionLevel`
+in champions.json. Confirmed via exhaustive file search July 2026.
+
+**Interim fix:** `config/ascension_overrides.json` (gitignored,
+account-specific). Matching engine merges overrides at startup;
+non-zero Gestal values supersede when Option B lands.
+
+**Durable fix (Option B):** Read AscensionLevel directly from Hero
+struct in game memory — same source Gestal UI uses. Requires
+identifying the field offset from a fresh dump.cs. Adjacent to
+existing Grade/Level/EmpowerLevel reads — likely small scope once
+offset is confirmed.
+
+**Impact:** Ascension-gated tags (Pelops HP Burn + Petrification,
+Fayne Decrease ATK) are excluded from matching until override or
+Option B is in place. Solo carry gate for Pelops also blocked.
