@@ -41,11 +41,13 @@ Related gaps:
   Fat (Clan Boss sustain_any) are seeded but not yet approved, so `checkTeamRequirements`
   doesn't act on them until a human flips them to `approved` (no-auto-merge rule). The
   Heinrich Demondoom row no-ops until that champion is added to `champions`.
-- **Pre-existing, unrelated:** `CRITICAL_DEBUFFER_TAGS` in `match-engine.js` uses
-  `'Decrease DEF'`/`'Decrease ATK'`, but the seeded tag names are `'Decrease Defense'`/
-  `'Decrease Attack'` — so the Clan Boss stun-matrix's `is_critical_debuffer` check never
-  matches. The new sustain code uses the correct names; the stun matrix should be fixed
-  separately.
+- **Pre-existing, unrelated — FIXED:** `CRITICAL_DEBUFFER_TAGS` in `match-engine.js`
+  previously used `'Decrease DEF'`/`'Decrease ATK'`, which don't match the seeded tag
+  names (`'Decrease Defense'`/`'Decrease Attack'`), so the Clan Boss stun-matrix's
+  `is_critical_debuffer` check never matched and `stun_warning`/`reorder_suggestion` never
+  fired. Corrected to `['Decrease Defense', 'Decrease Attack', 'Weaken']` (all three
+  verified against the `tags` table). Verified via a `buildStunMatrix` harness: a team with
+  a Decrease Attack/Defense champion as the predicted stun target now fires both warnings.
 
 ## Code gaps
 
@@ -75,19 +77,22 @@ Clan Boss **Nightmare** capture (2026-07-02), preserved as the regression fixtur
    Clan Boss fingerprint as authoritative over `DungeonId`. Validated: the 3 CB dumps
    → "Clan Boss", the real Dragon-11 → still "Dragon's Lair 11", non-CB unaffected.
 
-PARTIALLY RELEASED (2026-07-02): `upload-battles.js` now holds only **difficulty-
-unknown** Clan Boss rows (`HOLD_CLAN_BOSS_UNKNOWN_DIFFICULTY`, was the blanket
-`HOLD_CLAN_BOSS_OUTCOMES`). CB outcomes are per-difficulty; a CB battle only resolves
-to a `dungeon_stage_id` (and reaches Phase 2) when its difficulty is already known,
-because for CB the difficulty IS the stage number (Easy=1…Ultra NM=6, via the
-`stageId → tier` map in `lib/clan-boss.js`). So confirmed-difficulty CB rows now flow
-through to `recommendation_outcomes`; difficulty-unknown ones stay held until sourced.
-Remaining gap = broadening difficulty coverage: only **Easy** (4019001) and **Brutal**
-(4019013) stageIds are mapped. More come from the memory `stageId` once the metadata-
-usage fragility below is fixed, or from per-difficulty file signatures (so far only
-Nightmare is labeled — fixture `file_080047.bin` + same-session `file_082802.bin`,
-whose stageId isn't captured yet). Set the flag to false to release even difficulty-
-unknown CB rows (not recommended — they'd land on the wrong per-difficulty stage).
+HELD — outcome MODEL, not difficulty (revised 2026-07-02): `upload-battles.js` holds
+**all** Clan Boss outcomes again (`HOLD_CLAN_BOSS_OUTCOMES=true`). The blocker is no
+longer difficulty — it's that CB isn't kill-or-die. You farm CB by damage tier (chest
+keys); almost every run ends as a "Defeat" (boss not killed) even when it's a good run,
+so mapping Defeat→failed would flood the calibration set with false failures. CB needs a
+damage-tier success model (keys / damage thresholds) before its runs can be scored. The
+battles are still captured in `battle_history` (nothing lost). Confirmed live 2026-07-02
+by a real CB Nightmare capture (11.07M dmg, Don$Gnut) that logged `result=Defeat` — a
+normal farming run, not a failure. Flip the flag false ONLY together with a CB-specific
+outcome mapping.
+
+Difficulty sourcing is now SOLVED (the reason it was ever a blocker): the memory-read
+fragility below is fixed, so `stageId` is captured live. `lib/clan-boss.js` maps
+**Easy** (4019001), **Brutal** (4019013), and **Nightmare** (4019017, confirmed
+2026-07-02 — live capture + "Demon Lord. Nightmare" result screen). Normal/Hard/Ultra-NM
+stageIds are still unmapped (add each once a real capture confirms it).
 
 ### Memory reads depend on the class already being initialized (metadata-usage fragility) — FIXED 2026-07-02
 `--roster` (Hero heap scan), `--gear` (Artifact), and the AppModel/stageId chain used
