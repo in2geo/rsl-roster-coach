@@ -18,17 +18,21 @@ calls with no battle-log evidence yet.
 
 ## Code gaps
 
-### Clan Boss battle-log outcomes NOT captured
-Clan Boss runs are **not turned into `recommendation_outcomes`** — the battle log
-is blind to Clan Boss results. Root cause: a hero-capture bug in
-`gestal-sync/RslBattleReader/BattleWatcher.cs` (the columnar-region typeId read
-drops champions, so the team read is incomplete; also confounded by Quick Battles,
-which don't serialize a full replay). The parked low-byte fix and full diagnosis
-are in the `rslbattlereader-status` project memory. Until fixed, Clan Boss outcomes
-are gated out by `HOLD_CLAN_BOSS_OUTCOMES=true` in `tools/upload-battles.js` (they
-still land in `battle_history`, just not the calibration set). Validate the fix
-against a MANUALLY-PLAYED Clan Boss battle (not a Quick Battle) before flipping the
-flag.
+### Clan Boss battle-log outcomes — FIX APPLIED, awaiting validation
+Clan Boss runs are still **not turned into `recommendation_outcomes`** — the battle
+log's hero capture dropped champions whose record lands in the file's columnar/stats
+region (the two bytes before the "h" key carry the correct typeId LOW byte but a
+garbage high byte, so the old full-u16 match failed). **Fix applied** in
+`BattleWatcher.cs`: the roster filter now matches on `heroId + typeId low byte`
+(`(c.TypeId & 0xFF) == (h.TypeId & 0xFF)`) instead of the full u16 — validated in the
+diagnosis to recover the dropped champion (Pelops) while still rejecting enemies.
+Reader rebuilt (0 errors).
+
+STILL HELD: `HOLD_CLAN_BOSS_OUTCOMES=true` stays on. It must NOT be flipped until Mike
+plays a **manually-played** Clan Boss battle (not a Quick Battle — those may not
+serialize a full replay) and confirms the full 5-champion team is captured. Once
+confirmed, set the flag false so held Clan Boss `battle_history` rows flow into the
+calibration set. Full diagnosis in the `rslbattlereader-status` project memory.
 
 ### Event Dungeon / Minotaur cross-reference not wired
 The reader tags event runs only as `"Event Dungeon"` (stageId prefix 2189) and

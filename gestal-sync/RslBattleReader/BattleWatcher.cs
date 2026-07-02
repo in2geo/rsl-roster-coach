@@ -563,14 +563,19 @@ internal sealed class BattleWatcher(string outputPath)
                         }
                     }
 
-                    // Keep only the player's champions: a candidate is an ally iff
-                    // its heroId maps to a roster champion whose typeId agrees (low
-                    // 16 bits — the file stores the 16-bit form). Others are enemy
-                    // units / coincidental "h" bytes. Re-slot 0..n in file order and
-                    // attach the canonical name + full typeId from the roster.
+                    // Keep only the player's champions: a candidate is an ally iff its
+                    // heroId maps to a roster champion whose typeId agrees. Match on the
+                    // LOW BYTE only, not the full u16: in Clan Boss captures the hero
+                    // record can land in the file's columnar/stats region where the two
+                    // bytes before the "h" key put the correct typeId low byte but a
+                    // GARBAGE high byte (e.g. Pelops 0x41B0 vs the real 0x28B0), which the
+                    // full-u16 match dropped. heroId (unique per account) + low byte is
+                    // enough to separate allies from enemies (validated on the Brutal
+                    // dumps: recovers Pelops, still rejects Seeker/Valerie). Re-slot
+                    // 0..n in file order and attach the canonical name + full typeId.
                     int slot = 0;
                     snapshot.Heroes = snapshot.Heroes
-                        .Where(h => roster.TryGetValue(h.HeroId, out var c) && (c.TypeId & 0xFFFF) == h.TypeId)
+                        .Where(h => roster.TryGetValue(h.HeroId, out var c) && (c.TypeId & 0xFF) == (h.TypeId & 0xFF))
                         .Select(h => h with
                         {
                             Slot   = slot++,
