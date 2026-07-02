@@ -2,6 +2,14 @@
   "_comment": "Stage fingerprints for the battleResults file. Each signature is a byte sequence from the stage/enemy-definition region that is identical across all battles of that stage (any team, win or loss) and unique to that stage. To add a stage: capture 2+ battles of it (ideally 1 victory + 1 defeat with different teams), then run tools/make-signature.py to extract a distinctive run. Match is a raw substring search over the whole battleResults file. Longer/more-distinctive signatures first.",
   "signatures": [
     {
+      "dungeon": "Clan Boss",
+      "stage": 0,
+      "difficulty": "",
+      "label": "Clan Boss",
+      "_note": "Anchors on the Clan Boss demon's own record (map16 with fixed uid u=0x0964D59D). VERIFIED team- and difficulty-independent: common to 5 CB dumps across different sessions, matches ALL 21 CB dumps and 0 of 151 non-CB dumps (incl. the real Dragon's Lair St11 run 155750, whose coincidental id 222601 otherwise mislabels CB via DungeonId). Difficulty is NOT encoded here — it comes from the memory stageId (4019xxx) when available, or per-difficulty sigs later.",
+      "signatureHex": "de001fa16401a17405a175ce0964d59da169cd"
+    },
+    {
       "dungeon": "Ice Golem's Peak",
       "stage": 9,
       "difficulty": "Normal",

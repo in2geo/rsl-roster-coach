@@ -11,6 +11,12 @@ namespace RslBattleReader;
 /// This holds regardless of whether the surrounding bytes use standard MessagePack
 /// or the custom value-opcode framing, so it's a robust, encoding-agnostic anchor.
 ///
+/// The heroId value is MessagePack-encoded and may be a fixint (0..127), uint8
+/// (0xCC), uint16 (0xCD) or uint32 (0xCE). All four must be decoded — a champion
+/// whose inventory heroId is ≥ 256 (uint16) was previously skipped, silently
+/// dropping real team members from the capture (e.g. a Clan Boss team of 5 with two
+/// heroIds > 255 came through as only 3). See battle-dumps/file_080047.bin fixture.
+///
 /// The pattern matches BOTH the player's champions and the enemy units. Validation
 /// against the player's roster (heroId→typeId must agree) separates the allies from
 /// enemies / coincidental matches — done in BattleWatcher where the roster is known.
@@ -28,6 +34,10 @@ internal static class HeroIdentity
             int heroId;
             if (v < 0x80) heroId = v;                       // positive fixint
             else if (v == 0xCC && i + 3 < d.Length) heroId = d[i + 3]; // uint8
+            else if (v == 0xCD && i + 4 < d.Length)         // uint16-BE (heroId 256..65535)
+                heroId = (d[i + 3] << 8) | d[i + 4];
+            else if (v == 0xCE && i + 6 < d.Length)         // uint32-BE (heroId ≥ 65536)
+                heroId = (d[i + 3] << 24) | (d[i + 4] << 16) | (d[i + 5] << 8) | d[i + 6];
             else continue;
             int typeId = (d[i - 2] << 8) | d[i - 1];        // u16-BE before the key
             raw.Add((i, heroId, typeId));
