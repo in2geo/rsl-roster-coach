@@ -16,12 +16,15 @@ import { evaluateTeam, resolveDungeonStage } from '../lib/match-engine.js';
 import { buildRosterMapper, lookupHero, stageOf } from '../lib/battle-pipeline.js';
 import { normalizeBattle } from '../lib/clan-boss.js';
 
-// Clan Boss battles resolve to a dungeon_stage_id, so they land in battle_history —
-// but the reader's hero capture for Clan Boss is currently incomplete (drops champions
-// whose record is in the columnar region; see the BattleWatcher low-byte fix). Writing
-// those as recommendation_outcomes would seed the calibration set with partial teams,
-// so hold Clan Boss outcomes until that fix lands. Flip to false to let them through.
-const HOLD_CLAN_BOSS_OUTCOMES = true;
+// Clan Boss outcomes are per-difficulty (the calibration solutions differ by tier),
+// so an outcome row needs a confirmed difficulty. The reader now captures the full
+// 5-champion team and identifies the run as Clan Boss, but the file alone doesn't
+// carry difficulty — it's sourced from the in-memory stageId (4019xxx → tier, see
+// lib/clan-boss.js), which only some captures resolve. A CB battle only reaches
+// Phase 2 with a dungeon_stage_id when its difficulty is already known (difficulty
+// IS the stage number for CB), so hold ONLY the difficulty-unknown rows and let the
+// confirmed ones through. Set to false to release even difficulty-unknown CB rows.
+const HOLD_CLAN_BOSS_UNKNOWN_DIFFICULTY = true;
 
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
   console.error('Needs DB access. Run: node --env-file=.env.local tools/upload-battles.js');
@@ -99,9 +102,10 @@ async function mapperFor(accountId) {
 
 let outcomes = 0, processed = 0, heldClanBoss = 0;
 for (const row of pending ?? []) {
-  // Hold Clan Boss outcomes (incomplete team capture) — leave outcome_recorded=false
-  // so they flow automatically once the reader's hero fix lands and the flag is flipped.
-  if (HOLD_CLAN_BOSS_OUTCOMES && row.dungeon_name === 'Clan Boss') { heldClanBoss++; continue; }
+  // Hold only difficulty-unknown Clan Boss rows — leave outcome_recorded=false so they
+  // flow automatically once difficulty is sourced (memory stageId recovers, or a
+  // per-difficulty file signature is added). Confirmed-difficulty CB rows pass through.
+  if (HOLD_CLAN_BOSS_UNKNOWN_DIFFICULTY && row.dungeon_name === 'Clan Boss' && !row.difficulty) { heldClanBoss++; continue; }
   processed++;
   const outcome = row.result === 'Victory' ? 'cleared' : row.result === 'Defeat' ? 'failed' : null;
   if (outcome) {
@@ -130,5 +134,5 @@ for (const row of pending ?? []) {
   await supabase.from('battle_history').update({ outcome_recorded: true }).eq('id', row.id);
 }
 console.log(`Phase 2 — recommendation_outcomes: ${outcomes} written (${processed} battle_history row(s) processed)`);
-if (heldClanBoss) console.log(`         held ${heldClanBoss} Clan Boss battle(s) — incomplete team capture (pending reader fix)`);
+if (heldClanBoss) console.log(`         held ${heldClanBoss} Clan Boss battle(s) — difficulty unknown (not yet sourced)`);
 console.log(`\nSUMMARY: ${battles.length} battles read → ${uploaded} uploaded → ${resolved} dungeon_stage resolved → ${outcomes} outcomes.`);

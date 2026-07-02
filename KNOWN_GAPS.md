@@ -44,27 +44,43 @@ Clan Boss **Nightmare** capture (2026-07-02), preserved as the regression fixtur
    Clan Boss fingerprint as authoritative over `DungeonId`. Validated: the 3 CB dumps
    → "Clan Boss", the real Dragon-11 → still "Dragon's Lair 11", non-CB unaffected.
 
-STILL HELD: `HOLD_CLAN_BOSS_OUTCOMES=true` stays on for ONE remaining reason —
-**difficulty**. The file identifies Clan Boss (dungeon) but not which difficulty
-(Easy…Brutal); the CB calibration solutions are per-difficulty, so an outcome row
-needs it. Difficulty sources: the memory `stageId` (prefix 4019, e.g. 4019013=Brutal
-per `lib/clan-boss.js`) when memory reads are healthy — currently blocked by the
-metadata-usage fragility below — OR per-difficulty file signatures (needs labeled
-captures of each difficulty; so far only Nightmare is labeled — fixture
-`file_080047.bin` + same-session `file_082802.bin`). Flip the flag once
-difficulty is reliably sourced, OR once `upload-battles.js` handles difficulty-unknown
-CB rows (e.g. hold only those).
+PARTIALLY RELEASED (2026-07-02): `upload-battles.js` now holds only **difficulty-
+unknown** Clan Boss rows (`HOLD_CLAN_BOSS_UNKNOWN_DIFFICULTY`, was the blanket
+`HOLD_CLAN_BOSS_OUTCOMES`). CB outcomes are per-difficulty; a CB battle only resolves
+to a `dungeon_stage_id` (and reaches Phase 2) when its difficulty is already known,
+because for CB the difficulty IS the stage number (Easy=1…Ultra NM=6, via the
+`stageId → tier` map in `lib/clan-boss.js`). So confirmed-difficulty CB rows now flow
+through to `recommendation_outcomes`; difficulty-unknown ones stay held until sourced.
+Remaining gap = broadening difficulty coverage: only **Easy** (4019001) and **Brutal**
+(4019013) stageIds are mapped. More come from the memory `stageId` once the metadata-
+usage fragility below is fixed, or from per-difficulty file signatures (so far only
+Nightmare is labeled — fixture `file_080047.bin` + same-session `file_082802.bin`,
+whose stageId isn't captured yet). Set the flag to false to release even difficulty-
+unknown CB rows (not recommended — they'd land on the wrong per-difficulty stage).
 
-### Memory reads depend on the class already being initialized (metadata-usage fragility)
-`--roster` (Hero heap scan) and the AppModel/stageId chain both read the class
-pointer straight from its TypeInfo RVA. In a **fresh game session** that slot can
-still hold the unresolved IL2CPP metadata-usage token (observed 2026-07-02: the read
-returned a constant `0x6000E2F3` that did **not** change when ASLR relocated the
-module base — proof it's a token, not a live pointer), so the scan finds nothing and
-AppModel never resolves. It recovers once the game exercises the class (deep enough
-into the collection / a battle team-select). NOT an offset shift — the 06-30
-`GameAssembly.dll` + `global-metadata.dat` were byte-identical; today's patch was
-assets only. Proper fix: force class init / resolve the token rather than assume it.
+### Memory reads depend on the class already being initialized (metadata-usage fragility) — FIXED 2026-07-02
+`--roster` (Hero heap scan), `--gear` (Artifact), and the AppModel/stageId chain used
+to read the class pointer straight from its TypeInfo RVA. In a **fresh game session**
+that slot still holds the unresolved IL2CPP metadata-usage token (observed: a constant
+`0x6000E2F3` for Hero, `0xA000FB8F` for Artifact, that did **not** move when ASLR
+relocated the module base — proof it's a token, not a live pointer). `IsValidPointer`
+range-checked it as "valid", so navigation silently died one step later and looked
+like an offset shift when it wasn't.
+
+Fixed by `Il2Cpp/Il2CppClassResolver.cs`: read the RVA slot; if it isn't a live class
+(readability + `element_class == self` + name/namespace match), fall back to scanning
+memory for the Il2CppClass by its (name, namespace). The class struct exists as long
+as any instance does — the AppModel singleton always does once the game runs — so this
+recovers the pointer without waiting for the game to exercise the class. Validated live
+(2026-07-02, fresh-session token state): Hero → 99 heroes, Artifact → 1141, AppModel →
+resolved. Passive read only. Resolved pointers are cached (`ConcurrentDictionary`; the
+watcher resolves AppModel from two threads) and re-validated so a game restart
+transparently re-resolves.
+
+Residual (inherent, not the token bug): `--roster` still only sees Hero objects that
+are *materialized* on the heap — a partial count until the Champion Collection is
+opened (this session: 99 of ~109). The resolver can't conjure data the game hasn't
+loaded; that's correct behaviour, and the message now says to open the collection.
 
 ### Event Dungeon / Minotaur cross-reference not wired
 The reader tags event runs only as `"Event Dungeon"` (stageId prefix 2189) and

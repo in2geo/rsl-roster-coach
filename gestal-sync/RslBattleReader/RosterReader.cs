@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using RslBattleReader.Il2Cpp;
 using RslBattleReader.Memory;
 using static RslBattleReader.Il2Cpp.Il2CppOffsets;
 
@@ -34,10 +35,12 @@ internal static class RosterReader
         var moduleBase = mem.FindModuleBase("GameAssembly.dll");
         if (moduleBase == nint.Zero) { Console.WriteLine("[roster] GameAssembly.dll not found in process."); return; }
 
-        var heroClass = mem.ReadPointer(moduleBase + (nint)Hero_TypeInfo_RVA);
-        if (!ProcessMemory.IsValidPointer(heroClass) || (long)heroClass < 0x10000)
+        var heroClass = Il2CppClassResolver.Resolve(
+            mem, moduleBase, Hero_TypeInfo_RVA, "Hero", "SharedModel.Meta.Heroes", verbose: true);
+        if (heroClass == nint.Zero)
         {
-            Console.WriteLine($"[roster] Hero class not resolved (got 0x{heroClass:X}).");
+            Console.WriteLine("[roster] Hero class not present in memory — open the Champion " +
+                              "Collection so the game initializes it, then retry.");
             return;
         }
         Console.WriteLine($"[roster] Hero class = 0x{heroClass:X}; scanning heap for Hero objects…");
@@ -102,7 +105,8 @@ internal static class RosterReader
         var proc = FindRaid(); if (proc is null) { Console.WriteLine("[hero] Raid not running."); return; }
         using var mem = ProcessMemory.OpenById(proc.Id); if (mem is null) return;
         var moduleBase = mem.FindModuleBase("GameAssembly.dll");
-        var heroClass = (long)mem.ReadPointer(moduleBase + (nint)Hero_TypeInfo_RVA);
+        var heroClass = (long)Il2CppClassResolver.Resolve(
+            mem, moduleBase, Hero_TypeInfo_RVA, "Hero", "SharedModel.Meta.Heroes");
         Console.WriteLine($"[hero] searching Hero objects with Id={targetId}…");
         const int chunk = 0x100000; var buf = new byte[chunk]; int found = 0;
         foreach (var (baseAddr, size) in mem.EnumerateReadableRegions())

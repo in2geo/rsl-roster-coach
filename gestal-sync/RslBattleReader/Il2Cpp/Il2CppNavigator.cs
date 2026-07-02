@@ -23,9 +23,12 @@ internal sealed class Il2CppNavigator(ProcessMemory mem, nint gameAssemblyBase)
     /// </summary>
     public nint ResolveAppModelInstance()
     {
-        var appModelTypeInfoAddr = gameAssemblyBase + (nint)AppModel_TypeInfo_RVA;
-        var appModelClass        = mem.ReadPointer(appModelTypeInfoAddr);
-        if (!ProcessMemory.IsValidPointer(appModelClass)) return nint.Zero;
+        // Resolve via the class resolver, not a raw RVA read: in a fresh session the
+        // TypeInfo slot can hold an unresolved metadata-usage token instead of the live
+        // class pointer (see Il2CppClassResolver / KNOWN_GAPS "metadata-usage fragility").
+        var appModelClass = Il2CppClassResolver.Resolve(
+            mem, gameAssemblyBase, AppModel_TypeInfo_RVA, "AppModel", "Client.Model");
+        if (appModelClass == nint.Zero) return nint.Zero;
 
         var singleInstanceClass  = mem.ReadPointer(appModelClass + ILClass_Parent);
         if (!ProcessMemory.IsValidPointer(singleInstanceClass)) return nint.Zero;
