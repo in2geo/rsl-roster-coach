@@ -55,11 +55,19 @@ in champions.json. Confirmed via exhaustive file search July 2026.
 account-specific). Matching engine merges overrides at startup;
 non-zero Gestal values supersede when Option B lands.
 
-**Durable fix (Option B):** Read AscensionLevel directly from Hero
-struct in game memory — same source Gestal UI uses. Requires
-identifying the field offset from a fresh dump.cs. Adjacent to
-existing Grade/Level/EmpowerLevel reads — likely small scope once
-offset is confirmed.
+**Durable fix (Option B) — BLOCKED, source not located (dump.cs
+investigated July 2026):** The Hero struct (TypeDefIndex 10462) has NO
+ascension field — 0x28/0x2C are Experience/FullExperience, not
+adjacent ascension. The only ascension-named things in the whole dump
+are methods (AscendHeroWithUpdate). The one nested candidate,
+Hero.DoubleAscendData.Grade (0x70 -> 0x10, DoubleAscendGrade enum
+Stars1..6), was read live and returned 1 for Pelops — which matches
+Gestal awakenLevel=1 and "one star awakened", i.e. it is the AWAKENING
+level, NOT classic ascension (Pelops is fully ascended = 6). So classic
+ascension is not `ascensionLevel` (Gestal 0), not DoubleAscendData.Grade
+(awakening), and not any named Hero field. Where RSL stores per-hero
+classic ascension is unresolved — needs game-side knowledge before Option
+B can proceed. Interim override remains the working source meanwhile.
 
 **Impact:** Ascension-gated tags (Pelops HP Burn + Petrification,
 Fayne Decrease ATK) are excluded from matching until override or
