@@ -25,9 +25,10 @@ internal static class Il2CppClassResolver
 {
     // Il2CppClass_1 field offsets (Unity 2021 layout, confirmed against il2cpp.h;
     // parent@0x58 matches Il2CppOffsets.ILClass_Parent).
-    private const int Class_Name         = 0x10; // const char*
-    private const int Class_Namespace    = 0x18; // const char*
-    private const int Class_ElementClass = 0x40; // Il2CppClass* — == self for a plain class
+    private const int Class_Name          = 0x10; // const char*
+    private const int Class_Namespace     = 0x18; // const char*
+    private const int Class_ElementClass  = 0x40; // Il2CppClass* — == self for a plain class
+    private const int Class_DeclaringType = 0x50; // Il2CppClass* — outer class of a nested type
 
     // Concurrent: the watcher resolves AppModel from both the 2s poll and the 100ms
     // fast poller (separate threads).
@@ -52,7 +53,7 @@ internal static class Il2CppClassResolver
             Console.WriteLine($"[il2cpp] {name}: RVA slot = 0x{slot:X} is not a live class " +
                               "(unresolved metadata-usage token) — scanning memory for the class…");
 
-        var found = ScanForClass(mem, name, ns);
+        var found = ScanForClass(mem, name, c => LooksLikeClass(mem, c, name, ns));
         if (found != nint.Zero)
         {
             _cache[name] = found;
@@ -77,9 +78,41 @@ internal static class Il2CppClassResolver
         return mem.ReadCString(mem.ReadPointer(cand + Class_Namespace)) == ns;
     }
 
-    // Locate the name string, then find the Il2CppClass whose name field points at it
-    // and that validates structurally.
-    private static nint ScanForClass(ProcessMemory mem, string name, string ns)
+    /// <summary>
+    /// Resolve a NESTED class by inner name + declaring (outer) class name. A nested
+    /// class's bare name (e.g. "Params") is ambiguous, so we match on the inner name AND
+    /// require its declaringType to carry <paramref name="outerName"/> — namespace-
+    /// independent. Fast path = the TypeInfo RVA slot; fallback = name-scan.
+    /// </summary>
+    public static nint ResolveNested(ProcessMemory mem, nint moduleBase, long typeInfoRva,
+                                     string innerName, string outerName, bool verbose = false)
+    {
+        var slot = mem.ReadPointer(moduleBase + (nint)typeInfoRva);
+        if (LooksLikeNested(mem, slot, innerName, outerName)) return slot;
+        if (verbose)
+            Console.WriteLine($"[il2cpp] {outerName}.{innerName}: RVA slot = 0x{slot:X} not a live class " +
+                              "— scanning by inner name + declaring type…");
+        var found = ScanForClass(mem, innerName, c => LooksLikeNested(mem, c, innerName, outerName));
+        if (verbose)
+            Console.WriteLine(found != nint.Zero
+                ? $"[il2cpp] {outerName}.{innerName}: resolved by scan → 0x{found:X}"
+                : $"[il2cpp] {outerName}.{innerName}: not found (is the relevant screen open?).");
+        return found;
+    }
+
+    private static bool LooksLikeNested(ProcessMemory mem, nint cand, string innerName, string outerName)
+    {
+        if (!ProcessMemory.IsValidPointer(cand) || !mem.IsReadable(cand)) return false;
+        if (mem.ReadPointer(cand + Class_ElementClass) != cand) return false;
+        if (mem.ReadCString(mem.ReadPointer(cand + Class_Name)) != innerName) return false;
+        var outer = mem.ReadPointer(cand + Class_DeclaringType);
+        if (!ProcessMemory.IsValidPointer(outer) || !mem.IsReadable(outer)) return false;
+        return mem.ReadCString(mem.ReadPointer(outer + Class_Name)) == outerName;
+    }
+
+    // Locate the name string, then find the Il2CppClass whose name field points at it and
+    // that passes <paramref name="validate"/>.
+    private static nint ScanForClass(ProcessMemory mem, string name, Func<nint, bool> validate)
     {
         // Pass 1: addresses of the exact null-terminated type name.
         var nameAddrs = new HashSet<long>();
@@ -101,7 +134,7 @@ internal static class Il2CppClassResolver
                 {
                     if (!nameAddrs.Contains(BitConverter.ToInt64(rb, i))) continue;
                     var cand = baseAddr + (nint)(off + i) - Class_Name; // this qword is class + 0x10
-                    if (LooksLikeClass(mem, cand, name, ns)) return cand;
+                    if (validate(cand)) return cand;
                 }
             }
         }
