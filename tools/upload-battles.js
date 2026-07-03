@@ -14,14 +14,16 @@ import { createClient } from '@supabase/supabase-js';
 import { readBattleHistory, readGestalRoster } from '../lib/gestal-context.js';
 import { evaluateTeam, resolveDungeonStage } from '../lib/match-engine.js';
 import { buildRosterMapper, lookupHero, stageOf } from '../lib/battle-pipeline.js';
-import { normalizeBattle } from '../lib/clan-boss.js';
+import { normalizeBattle, chestTierFor } from '../lib/clan-boss.js';
 
-// Clan Boss battles resolve to a dungeon_stage_id, so they land in battle_history —
-// but the reader's hero capture for Clan Boss is currently incomplete (drops champions
-// whose record is in the columnar region; see the BattleWatcher low-byte fix). Writing
-// those as recommendation_outcomes would seed the calibration set with partial teams,
-// so hold Clan Boss outcomes until that fix lands. Flip to false to let them through.
-const HOLD_CLAN_BOSS_OUTCOMES = true;
+// Clan Boss is scored by chest tier (total damage), not kill/no-kill — nearly every CB
+// run logs "Defeat" (boss not killed) even when it's a good run, so cleared/failed is
+// meaningless here. A CB outcome is written ONLY when total_damage_dealt was captured;
+// the chest tier comes from clan_boss_chest_tiers (see lib/clan-boss.js chestTierFor).
+// This supersedes the old blanket HOLD_CLAN_BOSS_OUTCOMES flag: the gate is now damage
+// presence. The reader does not emit total_damage_dealt yet (deferred per-hero-stats
+// capture — see KNOWN_GAPS), so real CB runs are held today; only rows carrying a damage
+// figure (e.g. a manual backfill) resolve to a chest tier.
 
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
   console.error('Needs DB access. Run: node --env-file=.env.local tools/upload-battles.js');
@@ -36,6 +38,18 @@ const RESULTS = new Set(['Victory', 'Defeat', 'Draw', 'Unknown']);
 // they resolve to a dungeon_stage_id instead of falling through as null.
 const battles = readBattleHistory().map(normalizeBattle);
 console.log(`Read ${battles.length} battles from battle-log.json\n`);
+
+// Clan Boss chest-tier thresholds per dungeon_stage_id (cached; used to score CB damage).
+const cbTierCache = new Map();
+async function cbTiersFor(dungeonStageId) {
+  if (cbTierCache.has(dungeonStageId)) return cbTierCache.get(dungeonStageId);
+  const { data } = await supabase.from('clan_boss_chest_tiers')
+    .select('chest_name, sort_order, damage_min, damage_max')
+    .eq('dungeon_stage_id', dungeonStageId).order('sort_order');
+  const tiers = data ?? [];
+  cbTierCache.set(dungeonStageId, tiers);
+  return tiers;
+}
 
 // ── Phase 1: upload → battle_history ──────────────────────────────────────────
 const profileCache = new Map();
@@ -75,6 +89,7 @@ for (const b of battles) {
     manual_skill_used: !!b.manualSkillUsed,
     heroes:            b.heroes ?? [],
     dungeon_stage_id:  dungeonStageId,
+    total_damage_dealt: typeof b.totalDamageDealt === 'number' ? b.totalDamageDealt : null,
   }, { onConflict: 'account_id,captured_at', ignoreDuplicates: true });
   if (error) { console.error(`  upload error (${b.capturedAt}):`, error.message); continue; }
   uploaded++;
@@ -83,7 +98,7 @@ console.log(`Phase 1 — battle_history: ${uploaded} upserted, ${resolved} resol
 
 // ── Phase 2: process battle_history → recommendation_outcomes ─────────────────
 const { data: pending, error: pErr } = await supabase.from('battle_history')
-  .select('id, account_id, user_id, dungeon_name, stage_number, difficulty, dungeon_stage_id, result, heroes, captured_at')
+  .select('id, account_id, user_id, dungeon_name, stage_number, difficulty, dungeon_stage_id, result, heroes, captured_at, total_damage_dealt')
   .not('dungeon_stage_id', 'is', null).eq('outcome_recorded', false);
 if (pErr) { console.error('pending query failed:', pErr.message); process.exit(1); }
 
@@ -99,11 +114,17 @@ async function mapperFor(accountId) {
 
 let outcomes = 0, processed = 0, heldClanBoss = 0;
 for (const row of pending ?? []) {
-  // Hold Clan Boss outcomes (incomplete team capture) — leave outcome_recorded=false
-  // so they flow automatically once the reader's hero fix lands and the flag is flipped.
-  if (HOLD_CLAN_BOSS_OUTCOMES && row.dungeon_name === 'Clan Boss') { heldClanBoss++; continue; }
+  // Determine the outcome. Clan Boss is scored by chest tier (total damage), not
+  // kill/no-kill — hold the run until damage is captured, else resolve the chest tier.
+  let outcome;
+  if (row.dungeon_name === 'Clan Boss') {
+    if (row.total_damage_dealt == null) { heldClanBoss++; continue; }     // damage not captured → hold
+    outcome = chestTierFor(await cbTiersFor(row.dungeon_stage_id), row.total_damage_dealt);
+    if (!outcome) { heldClanBoss++; continue; }                           // below lowest chest → hold
+  } else {
+    outcome = row.result === 'Victory' ? 'cleared' : row.result === 'Defeat' ? 'failed' : null;
+  }
   processed++;
-  const outcome = row.result === 'Victory' ? 'cleared' : row.result === 'Defeat' ? 'failed' : null;
   if (outcome) {
     const ucByName = await mapperFor(row.account_id);
     const team = (row.heroes ?? []).map(h => lookupHero(ucByName, h)).filter(Boolean);
@@ -130,5 +151,5 @@ for (const row of pending ?? []) {
   await supabase.from('battle_history').update({ outcome_recorded: true }).eq('id', row.id);
 }
 console.log(`Phase 2 — recommendation_outcomes: ${outcomes} written (${processed} battle_history row(s) processed)`);
-if (heldClanBoss) console.log(`         held ${heldClanBoss} Clan Boss battle(s) — incomplete team capture (pending reader fix)`);
+if (heldClanBoss) console.log(`         held ${heldClanBoss} Clan Boss battle(s) — no total_damage_dealt captured (chest tier unknown)`);
 console.log(`\nSUMMARY: ${battles.length} battles read → ${uploaded} uploaded → ${resolved} dungeon_stage resolved → ${outcomes} outcomes.`);

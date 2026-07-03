@@ -84,13 +84,21 @@ internal static class BattleFileParser
             // stage-specific. The fingerprint backstops both (and is the only
             // source of stage number for ids that span several stages).
             var dungeonId = DungeonId.Identify(fileBytes);
-            var dungeonName = dungeonId?.Name ?? stage?.Dungeon;
-            var stageNumber = dungeonId?.Stage ?? stage?.Stage;
+
+            // The enemy-definition fingerprint is AUTHORITATIVE for Clan Boss: CB
+            // carries no in-band encounter id, so DungeonId only ever picks up a
+            // COINCIDENTAL dungeon id for a CB file (e.g. 222601 == Dragon's Lair 11,
+            // which really does appear in CB battle files). When the fingerprint
+            // recognises the CB demon, it overrides DungeonId outright. For all other
+            // content DungeonId stays primary (exact-int, team-independent).
+            bool fpIsClanBoss = stage?.Dungeon == "Clan Boss";
+            var dungeonName = fpIsClanBoss ? stage!.Dungeon : (dungeonId?.Name ?? stage?.Dungeon);
+            var stageNumber = fpIsClanBoss ? (int?)null : (dungeonId?.Stage ?? stage?.Stage);
             var stageLabel = stage?.Label
                 ?? (dungeonName is null ? null
                     : stageNumber is int sn ? $"{dungeonName} Stage {sn}"
                     : $"{dungeonName} (stage unknown)");
-            if (dungeonId is { Name: null } unknown)
+            if (!fpIsClanBoss && dungeonId is { Name: null } unknown)
                 Console.WriteLine($"  [dungeon] unrecognised encounter id {unknown.Id} — add to DungeonId.Map");
 
             // AllyTurns: the "t":<turns> field, identified by the constant fields

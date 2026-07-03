@@ -159,6 +159,38 @@ internal sealed class ProcessMemory : IDisposable
         return new Guid(buf);
     }
 
+    /// <summary>True if <paramref name="size"/> bytes at <paramref name="address"/> are
+    /// fully readable — distinguishes a live pointer from an unmapped value (e.g. an
+    /// unresolved IL2CPP metadata-usage token that only looks pointer-shaped).</summary>
+    public bool IsReadable(nint address, int size = 8)
+    {
+        if (address == nint.Zero) return false;
+        var buf = new byte[size];
+        return ReadProcessMemory(_handle, address, buf, size, out var read) && (long)read == size;
+    }
+
+    /// <summary>Reads a NUL-terminated ASCII C-string (used for Il2CppClass name /
+    /// namespace). Reads in small steps so a string near the end of a mapped page isn't
+    /// lost to an all-or-nothing over-read. Returns null if the address isn't readable.</summary>
+    public string? ReadCString(nint address, int maxLen = 256)
+    {
+        if (address == nint.Zero) return null;
+        var sb = new System.Text.StringBuilder();
+        const int step = 16;
+        var buf = new byte[step];
+        for (int done = 0; done < maxLen; done += step)
+        {
+            if (!ReadProcessMemory(_handle, address + done, buf, step, out var read) || (long)read <= 0)
+                return sb.Length > 0 ? sb.ToString() : null;
+            for (int i = 0; i < (int)read; i++)
+            {
+                if (buf[i] == 0) return sb.ToString();
+                sb.Append((char)buf[i]);
+            }
+        }
+        return sb.ToString();
+    }
+
     /// <summary>
     /// Reads a Nullable&lt;T&gt; where T is a 4-byte value type.
     /// hasValue bool is stored immediately after value (at valueOffset+4).

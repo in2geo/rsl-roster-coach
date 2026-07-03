@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using RslBattleReader.Il2Cpp;
 using RslBattleReader.Memory;
 using static RslBattleReader.Il2Cpp.Il2CppOffsets;
 
@@ -32,8 +33,9 @@ internal static class ArtifactReader
         var moduleBase = mem.FindModuleBase("GameAssembly.dll");
         if (moduleBase == nint.Zero) { Console.WriteLine("[gear] GameAssembly.dll not found."); return; }
 
-        var artClass = (long)mem.ReadPointer(moduleBase + (nint)Artifact_TypeInfo_RVA);
-        if (artClass < 0x10000) { Console.WriteLine($"[gear] Artifact class not resolved (0x{artClass:X})."); return; }
+        var artClass = (long)Il2CppClassResolver.Resolve(
+            mem, moduleBase, Artifact_TypeInfo_RVA, "Artifact", "SharedModel.Meta.Artifacts", verbose: true);
+        if (artClass == 0) { Console.WriteLine("[gear] Artifact class not present in memory — open the gear/inventory screen, then retry."); return; }
         Console.WriteLine($"[gear] Artifact class = 0x{artClass:X}; scanning heap…");
 
         var arts = Scan(mem, artClass);

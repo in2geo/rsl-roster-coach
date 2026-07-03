@@ -171,6 +171,12 @@ order by d.name, ds.label;
   stages of a single dungeon without checking for stage-specific style
   notes first. (NOTE: explanation_style_notes is not yet read by any code —
   the explain.js layer must pull and apply these before this has any effect.)
+- The app assumes no champion has Lifesteal, Regeneration, or Immortal
+  gear. Every team recommendation must include sustain from champion
+  skills. Surface this assumption on the champion detail screen and in
+  the recommendation output when no sustain champion is present. Enforced
+  by the global sustain check in match-engine.js (checkTeamSustain); see
+  the champion_team_requirements table for per-champion dependencies.
 
 ## Champion selection UI spec (ready to build)
 - Screen 1: Four large rarity buttons (Mythical=red #E53935,

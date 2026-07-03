@@ -17,6 +17,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import pg from 'pg';
+import { loadNameResolver } from '../lib/champion-names.js';
 
 const NEWS_HUB = 'https://forum.plarium.com/raid-shadow-legends/843_news/';
 const url = process.argv[2];
@@ -58,34 +59,41 @@ async function fetchRebalanceSection(pageUrl) {
   return { section, fullText: text.replace(/@@SEC@@/g, '\n') };
 }
 
-// Which DB champion names appear (word-bounded, case-insensitive) in the text.
-function championsMentioned(text, names) {
+// Which champions are mentioned (word-bounded, case-insensitive) in the text — matching
+// canonical names AND aliases (short/community forms), collapsed to the canonical
+// champion. Returns [{ id, name }]. Uses the champion_aliases resolver so a rebalance
+// post that says "Fahrakin" or "Pallas" still maps to the seeded champion.
+function championsMentioned(text, resolver) {
   const hay = text.toLowerCase();
-  return names.filter((name) => {
-    const esc = name.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return new RegExp(`(^|[^a-z0-9])${esc}([^a-z0-9]|$)`, 'i').test(hay);
-  });
+  const found = new Map(); // champion id -> { id, name }
+  for (const key of resolver.keys) {
+    const esc = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (new RegExp(`(^|[^a-z0-9])${esc}([^a-z0-9]|$)`, 'i').test(hay)) {
+      const champ = resolver.resolve(key);
+      if (champ) found.set(champ.id, champ);
+    }
+  }
+  return [...found.values()];
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 const client = new pg.Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } });
 await client.connect();
 try {
-  const { rows: champs } = await client.query("select id, name from champions where game_id = 'raid_shadow_legends'");
-  const idByName = new Map(champs.map((c) => [c.name, c.id]));
+  const resolver = await loadNameResolver(client); // champions.name + champion_aliases
 
   const { section, fullText } = await fetchRebalanceSection(url);
-  const mentioned = championsMentioned(section ?? fullText, champs.map((c) => c.name));
+  const mentioned = championsMentioned(section ?? fullText, resolver);
 
   const results = [];
-  for (const name of mentioned) {
+  for (const champ of mentioned) {
     const { rows } = await client.query(
       `select (select count(*) from champion_tags          where champion_id = $1 and status = 'approved') tags,
               (select count(*) from champion_solo_profiles where champion_id = $1 and status = 'approved') solos`,
-      [idByName.get(name)],
+      [champ.id],
     );
     const tags = Number(rows[0].tags), solos = Number(rows[0].solos);
-    results.push({ name, tags, solos, needsReview: tags > 0 || solos > 0 });
+    results.push({ name: champ.name, tags, solos, needsReview: tags > 0 || solos > 0 });
   }
 
   const date = new Date().toISOString().slice(0, 10);
