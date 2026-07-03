@@ -24,6 +24,27 @@ if CB rewards change** (a rebalance would silently mis-tier every scored run). T
 NAMES are also baked into the `recommendation_outcomes.outcome` CHECK constraint, so a
 rename would need a migration too. `captured_at` on each row records when they were taken.
 
+### ascension_required — no automated source; manual from the in-game Index
+Per-skill ascension-unlock requirements (`champion_tags.ascension_required`) have **no
+compliant automated source** (established 2026-07-02):
+- raid.guide doesn't list ascension unlocks (see `scrape-champion-tags.js`).
+- The in-game padlock ("Unlocks at Ascension Level N") is only visible on an **owned,
+  not-yet-ascended** champion — it disappears once ascended, and unowned champions can't
+  be checked at all.
+- The game HAS the value, but only in transient UI-context objects (`UnlockOnAscendLevel`
+  in `AscendSkillInfoContext`/`HeroSkillInfoContext` — computed, needs ownership + object-
+  graph RE) and as effect-condition **formulas** (`ownersAscendLevel>=N`) in the static-
+  data (needs DSL decode, partial cache). Plarium's API would have it, but network
+  interception is off-limits (no-injection boundary).
+
+So it's captured **manually from the in-game Index** and recorded in
+`seeds/31_ascension_overrides.sql` — the durable, growable source of truth (mirrored in
+`scrape-champion-tags.js` `ASCENSION_OVERRIDES` for raid.guide-scraped champions). Gated
+skills are a minority (mostly passives), so the list grows slowly. A `--skills` memory
+reader was prototyped and **shelved** — even working it needs ownership and hit an object-
+graph wall (the `ISettableContext<Params>` struct is consumed on set, not heap-scannable).
+The nested-class resolver from that effort (`Il2CppClassResolver.ResolveNested`) was kept.
+
 ### Sustain gear assumption
 The app assumes no player champion runs Lifesteal, Regeneration, or Immortal gear.
 All sustain must come from champion skills. This is enforced in the global sustain
