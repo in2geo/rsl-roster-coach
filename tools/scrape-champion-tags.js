@@ -74,8 +74,16 @@ const nk = (s) => s.toLowerCase().replace(/\s*\.\s*/g, '.').replace(/\s+/g, ' ')
 const AURA_STAT = { hp: 'hp', atk: 'atk', def: 'def', spd: 'spd', 'c.rate': 'crit_rate', 'c.dmg': 'crit_dmg', res: 'res', acc: 'acc', accuracy: 'acc', resist: 'res' };
 // AoE-variant tags that actually exist (so we only prefix when the tag is real).
 const AOE_TAGS = new Set(['AoE Stun', 'AoE Freeze', 'AoE Sleep', 'AoE Decrease Turn Meter', 'AoE Damage']);
-// Ascension corrections confirmed from in-game Index (raid.guide can't flag these).
-const ASCENSION_OVERRIDES = { 'Fayne|Decrease Attack': 3 };
+// Ascension corrections confirmed from the in-game Index (raid.guide can't flag these,
+// and the padlock is only visible on an owned, not-yet-ascended champion). DURABLE SOURCE
+// OF TRUTH: seeds/31_ascension_overrides.sql (applied to champion_tags.ascension_required,
+// and it also covers champions not on raid.guide, e.g. Skeletor). Keep this map in sync —
+// it's applied at scrape time for raid.guide champions. Format: 'Champion|Tag': level.
+const ASCENSION_OVERRIDES = {
+  'Fayne|Decrease Attack': 3,
+  'Skeletor|Decrease RES': 3,
+  'Skeletor|Petrification': 3,
+};
 
 const args = process.argv.slice(2);
 const flag = (k) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : undefined; };
