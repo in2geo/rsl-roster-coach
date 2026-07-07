@@ -45,33 +45,37 @@ reader was prototyped and **shelved** — even working it needs ownership and hi
 graph wall (the `ISettableContext<Params>` struct is consumed on set, not heap-scannable).
 The nested-class resolver from that effort (`Il2CppClassResolver.ResolveNested`) was kept.
 
-### champion_solo_profiles affinity mislabels in seeds/06 (audit — verify per champion from in-game)
-Artak was seeded as **Spirit** in `seeds/06_solo_carry_proposals.sql` but the in-game
-detail screen shows he is **Magic** (blue affinity icon). Fixed for Artak (seed 41 creates
-his champions row as Magic; his 7 solo entries in seed 06 were corrected). While fixing it,
-the **same pattern was found on other champions in seed 06 and NOT yet corrected** — they
-need per-champion in-game affinity verification before touching (the wrong-affinity premise
-is exactly what produced the bad reasoning, so don't trust seed 06's own labels):
+### champion_solo_profiles affinity / stage-label errors in seeds/06 (audit — verify per champion from in-game)
+Reference — RAID affinity colour map (icon next to the champion name):
+**Magic = blue, Force = red, Spirit = green, Void = purple.** Affinity wheel
+(repo-anchored, seed 35 line 65): **Magic > Spirit > Force > Magic; Void neutral**
+(Magic strong vs Spirit, Spirit strong vs Force, Force strong vs Magic).
 
-- **Teodor the Savant** (Legendary / "Spirit") — Dragon Stage 25 entry (~line 415). Says
-  *"Spirit is WEAK at Dragon Stage 20"* (backwards — Spirit is **strong** vs Force) and
-  *"Spirit ADVANTAGED at Force Stage 25"*.
-- **Richtoff the Bold** (Legendary / "Spirit") — Dragon Stage 25 entry (~line 575).
-- **Ezio Auditore** (Legendary / "Spirit") — Dragon Stage 25 (~line 597) and Dragon Hard
-  Stage 10 (~line 770, *"Spirit ADVANTAGED at Force per FLAG-24"*).
+Artak was seeded as Spirit in `seeds/06_solo_carry_proposals.sql` but his in-game icon is
+**blue = Magic**. Fixed (seed 41 creates his champions row as Magic; his 7 solo entries in
+seed 06 were corrected). Verified from video since then:
 
-Two recurring errors in these entries:
-1. **Dragon Stage 25 is mislabelled "Force" — it is Void** (per the repo's own Dragon
-   affinity rotation, seed 32/35: Magic→Spirit→Force→Void from stage 10; 25 ≡ 1 mod 4 →
-   Void). At the real Stage 25 a Spirit champion is **neutral**, not advantaged.
-2. At least one **Spirit-vs-Force relationship stated backwards** (Teodor). Correct wheel
-   (repo-anchored, seed 35 line 65): Magic > Spirit > Force > Magic; Void neutral. So Spirit
-   is strong vs Force, weak vs Magic.
+- **Ezio Auditore** — icon is **green = Spirit**, so seed 07's `affinity='Spirit'` is
+  CORRECT (no change needed; an earlier draft wrongly read the green icon as Force). BUT two
+  other Ezio issues remain: (a) seed 07 has `faction='Shadowkin'` while the in-game screen
+  reads **"Sacred Order"** — verify/fix; (b) the seed 06 solo lookups use
+  `where name = 'Ezio'` but the champions row is named **'Ezio Auditore'**, so those
+  profiles bind to NULL — fix the name.
 
-Whether Teodor/Richtoff/Ezio are even Spirit is itself unverified — confirm each champion's
-affinity from the in-game Index (as done for Artak) before rewriting, then apply the wheel
-to each stage's real affinity. Repo Dragon affinities are only seeded for stages 10-20;
-21-25 are extrapolated from the rotation and should be verified too.
+Still UNVERIFIED (need their own videos before touching — don't trust seed 06's labels):
+- **Teodor the Savant** (Legendary / "Spirit") — Dragon Stage 25 (~line 415). Also says
+  *"Spirit is WEAK at Dragon Stage 20 (Force)"* which is backwards (Spirit is **strong** vs
+  Force).
+- **Richtoff the Bold** (Legendary / "Spirit") — Dragon Stage 25 (~line 575).
+
+Stage-label error (independent of champion affinity, affects all the above + the
+`dungeon_stages` notes at seed 06 lines 34-37): **Dragon Stage 25 is labelled "Force" but
+the rotation puts it at Void** (seed 32/35: Magic→Spirit→Force→Void from stage 10; 25 ≡ 1
+mod 4 → Void, where everyone is neutral). Repo Dragon affinities are only seeded for stages
+10-20; **21-25 are extrapolated and NOT confirmed** — verify Stage 25 (and Dragon Hard
+Stage 10, FLAG-24) in-game before rewriting the Force/Void label. The Artak Stage 25 entry
+already uses "Void (extrapolated, verify)", which currently disagrees with seed 06 line 37
+("Force") — reconcile once verified.
 
 ### Sustain gear assumption
 The app assumes no player champion runs Lifesteal, Regeneration, or Immortal gear.
