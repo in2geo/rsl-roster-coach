@@ -3,7 +3,7 @@
 Operational gaps and known-wrong/low-confidence areas. Findable and scannable when
 debugging a wrong verdict. Delete entries as gaps close — don't leave stale notes.
 
-Last updated: 2026-07-01 (battle-data-pipeline branch).
+Last updated: 2026-07-07 (video-skill-screenshots branch).
 
 ## Data gaps
 
@@ -44,6 +44,34 @@ skills are a minority (mostly passives), so the list grows slowly. A `--skills` 
 reader was prototyped and **shelved** — even working it needs ownership and hit an object-
 graph wall (the `ISettableContext<Params>` struct is consumed on set, not heap-scannable).
 The nested-class resolver from that effort (`Il2CppClassResolver.ResolveNested`) was kept.
+
+### champion_solo_profiles affinity mislabels in seeds/06 (audit — verify per champion from in-game)
+Artak was seeded as **Spirit** in `seeds/06_solo_carry_proposals.sql` but the in-game
+detail screen shows he is **Magic** (blue affinity icon). Fixed for Artak (seed 41 creates
+his champions row as Magic; his 7 solo entries in seed 06 were corrected). While fixing it,
+the **same pattern was found on other champions in seed 06 and NOT yet corrected** — they
+need per-champion in-game affinity verification before touching (the wrong-affinity premise
+is exactly what produced the bad reasoning, so don't trust seed 06's own labels):
+
+- **Teodor the Savant** (Legendary / "Spirit") — Dragon Stage 25 entry (~line 415). Says
+  *"Spirit is WEAK at Dragon Stage 20"* (backwards — Spirit is **strong** vs Force) and
+  *"Spirit ADVANTAGED at Force Stage 25"*.
+- **Richtoff the Bold** (Legendary / "Spirit") — Dragon Stage 25 entry (~line 575).
+- **Ezio Auditore** (Legendary / "Spirit") — Dragon Stage 25 (~line 597) and Dragon Hard
+  Stage 10 (~line 770, *"Spirit ADVANTAGED at Force per FLAG-24"*).
+
+Two recurring errors in these entries:
+1. **Dragon Stage 25 is mislabelled "Force" — it is Void** (per the repo's own Dragon
+   affinity rotation, seed 32/35: Magic→Spirit→Force→Void from stage 10; 25 ≡ 1 mod 4 →
+   Void). At the real Stage 25 a Spirit champion is **neutral**, not advantaged.
+2. At least one **Spirit-vs-Force relationship stated backwards** (Teodor). Correct wheel
+   (repo-anchored, seed 35 line 65): Magic > Spirit > Force > Magic; Void neutral. So Spirit
+   is strong vs Force, weak vs Magic.
+
+Whether Teodor/Richtoff/Ezio are even Spirit is itself unverified — confirm each champion's
+affinity from the in-game Index (as done for Artak) before rewriting, then apply the wheel
+to each stage's real affinity. Repo Dragon affinities are only seeded for stages 10-20;
+21-25 are extrapolated from the rotation and should be verified too.
 
 ### Sustain gear assumption
 The app assumes no player champion runs Lifesteal, Regeneration, or Immortal gear.
