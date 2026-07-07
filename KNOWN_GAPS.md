@@ -3,7 +3,7 @@
 Operational gaps and known-wrong/low-confidence areas. Findable and scannable when
 debugging a wrong verdict. Delete entries as gaps close — don't leave stale notes.
 
-Last updated: 2026-07-07 (video-skill-screenshots branch).
+Last updated: 2026-07-07 (video-skill-screenshots branch — Dragon affinity rotation corrected).
 
 ## Data gaps
 
@@ -62,20 +62,33 @@ seed 06 were corrected). Verified from video since then:
   `where name = 'Ezio'` → `'Ezio Auditore'` (previously bound to NULL). Ezio proposed tags
   added in seed 42. Only the shared Stage-25 label question below still applies to Ezio.
 
-Still UNVERIFIED (need their own videos before touching — don't trust seed 06's labels):
-- **Teodor the Savant** (Legendary / "Spirit") — Dragon Stage 25 (~line 415). Also says
-  *"Spirit is WEAK at Dragon Stage 20 (Force)"* which is backwards (Spirit is **strong** vs
-  Force).
-- **Richtoff the Bold** (Legendary / "Spirit") — Dragon Stage 25 (~line 575).
+- **Michelangelo** — icon is **green = Spirit** (not Force as seeded). FIXED 2026-07-07:
+  affinity Force→Spirit + faction Shadowkin→Banner Lords (seed 07 + seed 46 UPDATE); solo
+  reasoning corrected. Skill tags in seed 46.
 
-Stage-label error (independent of champion affinity, affects all the above + the
-`dungeon_stages` notes at seed 06 lines 34-37): **Dragon Stage 25 is labelled "Force" but
-the rotation puts it at Void** (seed 32/35: Magic→Spirit→Force→Void from stage 10; 25 ≡ 1
-mod 4 → Void, where everyone is neutral). Repo Dragon affinities are only seeded for stages
-10-20; **21-25 are extrapolated and NOT confirmed** — verify Stage 25 (and Dragon Hard
-Stage 10, FLAG-24) in-game before rewriting the Force/Void label. The Artak Stage 25 entry
-already uses "Void (extrapolated, verify)", which currently disagrees with seed 06 line 37
-("Force") — reconcile once verified.
+Still UNVERIFIED — champion AFFINITY not confirmed from a video (don't trust seed 06's label):
+- **Teodor the Savant** (Legendary / "Spirit") — Dragon Stage 25 (~line 415).
+- **Richtoff the Bold** (Legendary / "Spirit") — Dragon Stage 25 (~line 575).
+  Their Stage-25 entries are now STAGE-correct (25 = Force, confirmed below), so a Spirit
+  champion would indeed be advantaged there — but whether these two ARE Spirit is unverified.
+
+### Dragon's Lair Normal affinity rotation — CONFIRMED from in-game (2026-07-07), repo was wrong
+Read directly off the in-game stage list. The real rotation is **Magic → Force → Spirit →
+Void** for floors 1–19 (i.e. (N−1) mod 4 = 0:M, 1:F, 2:S, 3:V), then **irregular** from 20:
+
+| 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 |
+|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|
+| F  | S  | V  | M  | F  | S  | V  | M  | F  | S  | **M** | F | **M** | V | S | **F** |
+
+The repo previously had Force/Spirit **swapped** (it listed 10=Magic, 12=Force, 13=Void…) and
+Stage 20 = Force. FIXED 2026-07-07 in **seed 32** (stage notes), **seed 35** (boss_exceptions
+notes), and **seed 06** (dungeon_stages notes + the Artak/Michelangelo solo reasoning). Key
+corrections: **Stage 20 = Magic** (was Force) and **Stage 25 = Force** (an earlier KNOWN_GAPS
+note wrongly said Void — that was based on extrapolating a clean cycle that doesn't hold past
+floor 19; the in-game list confirms Force). Floors 1–9 also follow the clean cycle
+(1=M,2=F,3=S,4=V…); 6/7 not individually re-read but within the confirmed clean run.
+STILL UNVERIFIED: **Dragon HARD-mode** affinities (FLAG-24, Hard Stage 10) — Normal-mode data
+above does not necessarily apply to Hard.
 
 ### Xenomorph pending-review tag decisions (seed 45)
 Xenomorph (Legendary / Magic / Dark Elves, Alien: Earth collab) was seeded in

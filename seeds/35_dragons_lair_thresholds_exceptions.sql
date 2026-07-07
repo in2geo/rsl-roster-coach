@@ -59,28 +59,31 @@ select ds.id, e.e_desc,
 from dungeon_stages ds
 join dungeons d on d.id = ds.dungeon_id
 join (values
+  -- Affinities corrected 2026-07-07 from the in-game stage list (video): the rotation
+  -- is Magic->Force->Spirit->Void (floors 1-19); prior notes had Force/Spirit swapped
+  -- and Stage 20 wrong (Force -> actually Magic).
   ('Stage 10',
-   'Magic affinity. Scorch mechanic active from stage 7: Inhale sets all team TM to 50%, team gets one attack before Scorch fires (massive DEF-ignoring AoE + unresistable Stun). Dragon is immune to Decrease Turn Meter and Decrease SPD. Poison and HP Burn bypass the Scorch window and deal consistent damage every turn — the recommended damage approach for this stage range. Stage 21+ passives (Almighty Strength, Almighty Persistence) do NOT apply here.'),
+   'Force affinity. Scorch mechanic active from stage 7: Inhale sets all team TM to 50%, team gets one attack before Scorch fires (massive DEF-ignoring AoE + unresistable Stun). Dragon is immune to Decrease Turn Meter and Decrease SPD. Poison and HP Burn bypass the Scorch window and deal consistent damage every turn — the recommended damage approach for this stage range. Stage 21+ passives (Almighty Strength, Almighty Persistence) do NOT apply here.'),
   ('Stage 11',
-   'Spirit affinity. All Stage 10 mechanics apply. No affinity disadvantage for Magic champions.'),
+   'Spirit affinity. All Stage 10 mechanics apply. No affinity disadvantage for Magic champions (Magic is strong vs Spirit).'),
   ('Stage 12',
-   'Force affinity. All Stage 10 mechanics apply. Void champions neutral, non-Force champions no bonus.'),
+   'Void affinity. All Stage 10 mechanics apply. No affinity penalty for any champion — good benchmark stage.'),
   ('Stage 13',
-   'Void affinity. No affinity penalty for any champion — good benchmark stage for testing team compositions before affinity-disadvantage stages.'),
+   'Magic affinity. All Stage 10 mechanics apply. Force champions hit weak here.'),
   ('Stage 14',
-   'Magic affinity. All Stage 10 mechanics apply. Last stage before ACC floor increases meaningfully.'),
+   'Force affinity. All Stage 10 mechanics apply. Last stage before ACC floor increases meaningfully.'),
   ('Stage 15',
    'Spirit affinity. ACC floor increases at this tier — 150 ACC that was sufficient at stages 10-14 may no longer reliably land debuffs. Recommend verifying ACC before enabling auto-farm.'),
   ('Stage 16',
-   'Force affinity. All Stage 15 mechanics apply.'),
+   'Void affinity. All Stage 15 mechanics apply. No affinity penalty for any champion.'),
   ('Stage 17',
-   'Void affinity. No affinity penalty. Good benchmark for testing whether a team is ready for stages 18-20.'),
+   'Magic affinity. Force champions hit weak here. Good benchmark for testing whether a team is ready for stages 18-20.'),
   ('Stage 18',
-   'Magic affinity. Hellrazor HP and stats scale significantly. Decrease DEF and Weaken become more important to reliably clear the Scorch bar. Teams that cleared stage 15-17 on raw Poison stacking may need debuff amplifiers here.'),
+   'Force affinity. Hellrazor HP and stats scale significantly. Decrease DEF and Weaken become more important to reliably clear the Scorch bar. Teams that cleared stage 15-17 on raw Poison stacking may need debuff amplifiers here.'),
   ('Stage 19',
    'Spirit affinity. All Stage 18 mechanics apply.'),
   ('Stage 20',
-   'Force affinity. Primary farming stage for Speed, Accuracy, and Lifesteal gear. Dragon confirmed 200 RES — ACC 225+ required to land debuffs reliably (HellHades confirmed). Stage 21+ passives (Almighty Strength: HP-scaling damage capped at 10% boss Max HP; Almighty Persistence: TM reduction 50% less effective) do NOT apply here — Coldheart, HP-scalers, and TM reduction champions work normally at stage 20 but will underperform at stage 21+.')
+   'Magic affinity. Primary farming stage for Speed, Accuracy, and Lifesteal gear. Dragon confirmed 200 RES — ACC 225+ required to land debuffs reliably (HellHades confirmed). Stage 21+ passives (Almighty Strength: HP-scaling damage capped at 10% boss Max HP; Almighty Persistence: TM reduction 50% less effective) do NOT apply here — Coldheart, HP-scalers, and TM reduction champions work normally at stage 20 but will underperform at stage 21+.')
 ) as e(e_stage_lbl, e_desc) on ds.label = e.e_stage_lbl
 where d.name = 'Dragon''s Lair'
 and not exists (select 1 from boss_exceptions x where x.dungeon_stage_id = ds.id and x.description = e.e_desc);

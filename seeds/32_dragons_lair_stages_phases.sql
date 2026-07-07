@@ -7,17 +7,19 @@ insert into dungeon_stages (dungeon_id, stage_number, label, notes)
 select d.id, s.num, s.lbl, s.note
 from dungeons d
 cross join (values
-  (10, 'Stage 10', 'Magic affinity. Scorch mechanic active (from stage 7). No stage 21+ passives.'),
+  -- Affinities corrected 2026-07-07 from the in-game stage list (video). Prior values
+  -- had Force/Spirit swapped (real rotation is Magic->Force->Spirit->Void, floors 1-19).
+  (10, 'Stage 10', 'Force affinity. Scorch mechanic active (from stage 7). No stage 21+ passives.'),
   (11, 'Stage 11', 'Spirit affinity. Scorch mechanic active.'),
-  (12, 'Stage 12', 'Force affinity. Scorch mechanic active.'),
-  (13, 'Stage 13', 'Void affinity. No affinity penalty for any champion.'),
-  (14, 'Stage 14', 'Magic affinity. Scorch mechanic active.'),
+  (12, 'Stage 12', 'Void affinity. No affinity penalty for any champion. Scorch mechanic active.'),
+  (13, 'Stage 13', 'Magic affinity. Scorch mechanic active.'),
+  (14, 'Stage 14', 'Force affinity. Scorch mechanic active.'),
   (15, 'Stage 15', 'Spirit affinity. Scorch mechanic active.'),
-  (16, 'Stage 16', 'Force affinity. Scorch mechanic active.'),
-  (17, 'Stage 17', 'Void affinity. No affinity penalty.'),
-  (18, 'Stage 18', 'Magic affinity. Scorch mechanic active.'),
+  (16, 'Stage 16', 'Void affinity. No affinity penalty for any champion. Scorch mechanic active.'),
+  (17, 'Stage 17', 'Magic affinity. Scorch mechanic active.'),
+  (18, 'Stage 18', 'Force affinity. Scorch mechanic active.'),
   (19, 'Stage 19', 'Spirit affinity. Scorch mechanic active.'),
-  (20, 'Stage 20', 'Force affinity. Primary farming stage. Boss has 200 RES — ACC 225+ recommended. No stage 21+ passives.')
+  (20, 'Stage 20', 'Magic affinity. Primary farming stage. Boss has 200 RES — ACC 225+ recommended. No stage 21+ passives.')
 ) as s(num, lbl, note)
 where d.name = 'Dragon''s Lair'
 on conflict (dungeon_id, label) do nothing;

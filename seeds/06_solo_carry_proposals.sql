@@ -32,8 +32,8 @@ select d.id, v.sn, v.lbl, v.notes
 from dungeons d
 cross join (values
   (19, 'Stage 19',      'Spirit affinity — Spirit champions advantaged, Force champions hit weak.'),
-  (20, 'Stage 20',      'Force affinity — Force champions advantaged, Magic and Spirit hit weak.'),
-  (23, 'Stage 23',      'Spirit affinity — Spirit champions advantaged, Force champions hit weak.'),
+  (20, 'Stage 20',      'Magic affinity — Force champions advantaged, Spirit champions hit weak, Magic and Void neutral.'),
+  (23, 'Stage 23',      'Void affinity — no affinity penalty for any champion.'),
   (25, 'Stage 25',      'Force affinity — Spirit champions advantaged, Magic champions hit weak, Force and Void neutral.'),
   (4,  'Hard Stage 4',  'Dragon Hard mode.'),
   (7,  'Hard Stage 7',  'Dragon Hard mode.'),
@@ -78,7 +78,7 @@ on conflict (dungeon_id, label) do nothing;
 
 
 -- ============================================================================
--- DRAGON'S LAIR — Stage 20 (Force affinity)
+-- DRAGON'S LAIR — Stage 20 (Magic affinity — corrected 2026-07-07 from in-game; was mislabelled Force)
 -- Force champions advantaged. Magic and Spirit hit weak.
 -- General stat thresholds (non-Force affinity): HP 55k+, DEF 2500+,
 --   SPD 210+, ACC 220+ (if using Poison/HP Burn/Bombs), RES 220+ (optional)
@@ -151,7 +151,7 @@ values (
 );
 */
 
--- ── Michelangelo (Legendary / Spirit) — Dragon Stage 20 (Force stage — Spirit ADVANTAGED) — TIME-LIMITED ──
+-- ── Michelangelo (Legendary / Spirit) — Dragon Stage 20 (Magic stage — Spirit WEAK) — TIME-LIMITED ──
 insert into champion_solo_profiles
   (champion_id, dungeon_stage_id, required_set, required_stats,
    ai_settings, mechanism, source_note,
@@ -161,11 +161,11 @@ values (
   (select ds.id from dungeon_stages ds join dungeons d on d.id = ds.dungeon_id
    where d.name = 'Dragon''s Lair' and ds.label = 'Stage 20'),
   'Toxic + Merciless or Savage',
-  '{"note": "Toxic set required — Poison spread mechanic is the core of the solo. At or below general thresholds because Spirit is advantaged at the Force-affinity Stage 20 (Spirit strong vs Force)."}',
+  '{"note": "Toxic set required — Poison spread mechanic is the core of the solo. Stage 20 is Magic affinity, so Spirit hits WEAK here (Magic strong vs Spirit) — needs a bit more gear to offset the penalty; carried by Poison-spread damage volume plus his Evade/Shield self-sustain."}',
   'Toxic set must be equipped. Poison spread via A2 is the primary damage source.',
   'Evasion passive reduces incoming damage; Shield passive on every hit self-sustains; Leech on A3 heals; Toxic set procs spread Poisons through A2 debuff propagation.',
   'Multiple Reddit threads and YouTube Shorts confirmed Dragon 20 and Ice Golem Normal solo. Stage 20 cap confirmed.',
-  null,
+  'Spirit hits weak at Dragon Stage 20 (Magic affinity, in-game confirmed 2026-07-07). Confirmed solo despite the penalty via Poison-spread volume and Evade/Shield sustain.',
   'TMNT crossover champion (Aug–Nov 2025). Not currently obtainable.',
   'High',
   'proposed',
@@ -235,11 +235,11 @@ values (
   'claude-code-solo-research-pass'
 );
 
--- ── Artak (Legendary / Magic) — Dragon Stage 20 (Force stage — Magic WEAK) ──
--- Magic is WEAK vs Force, so Artak is disadvantaged at Dragon Stage 20 (Force
--- affinity, repo-confirmed seed 32/35). Confirmed solo despite the penalty;
--- affinity warning included. Best Dragon stages for Artak: 19 and 23 (Spirit
--- affinity — Magic is strong vs Spirit, so advantaged).
+-- ── Artak (Legendary / Magic) — Dragon Stage 20 (Magic stage — NEUTRAL) ──
+-- Stage 20 is MAGIC affinity (in-game confirmed 2026-07-07; the repo previously
+-- had it as Force). Magic vs Magic = neutral — no penalty, no bonus. Best Dragon
+-- stage for Artak: 19 (Spirit — Magic strong, advantaged). Worst: 25 (Force —
+-- Magic weak).
 insert into champion_solo_profiles
   (champion_id, dungeon_stage_id, required_set, required_stats,
    ai_settings, mechanism, source_note,
@@ -253,7 +253,7 @@ values (
   'A3 must be turned ON manually — AI does not activate it by default. Without this the solo fails.',
   'Scorch passive deals bonus damage through Toxic set procs against Dragon''s large HP pool; Toxic set is required for the passive to trigger at full frequency.',
   'HellHades solo Dragon article (Jun 2023). Confirmed viable at Stage 20; noted as capable of Stage 24 with very good stats.',
-  'Magic affinity hits weak at Dragon Stage 20 (Force). Best Dragon stages for Artak: 19 and 23 (Spirit affinity — Magic advantaged). Stage 25 (Void) also viable at neutral.',
+  'Magic vs Magic at Dragon Stage 20 = neutral — no affinity penalty. Best Dragon stage for Artak: 19 (Spirit — Magic advantaged). Stage 25 (Force) is a weak-hit stage for Magic — avoid.',
   null,
   'High',
   'proposed',
@@ -284,10 +284,9 @@ values (
   'claude-code-solo-research-pass'
 );
 
--- ── Artak (Legendary / Magic) — Dragon Stage 23 (Spirit stage — Magic ADVANTAGED) ──
--- Magic is strong vs Spirit, so Artak is advantaged at Stage 23. Stage-23
--- affinity = Spirit is EXTRAPOLATED from the Dragon rotation (Magic→Spirit→
--- Force→Void from stage 10); repo seeds only cover stages 10-20 — verify.
+-- ── Artak (Legendary / Magic) — Dragon Stage 23 (Void stage — NEUTRAL) ──
+-- Stage 23 is VOID affinity (in-game confirmed 2026-07-07). Magic vs Void =
+-- neutral — no penalty, no bonus.
 insert into champion_solo_profiles
   (champion_id, dungeon_stage_id, required_set, required_stats,
    ai_settings, mechanism, source_note,
@@ -297,10 +296,10 @@ values (
   (select ds.id from dungeon_stages ds join dungeons d on d.id = ds.dungeon_id
    where d.name = 'Dragon''s Lair' and ds.label = 'Stage 23'),
   'Toxic + Speed',
-  '{"hp_min": 50000, "spd_min": 190, "note": "Toxic set required. Magic affinity advantaged at Stage 23 (Spirit stage). Slightly higher gear floor than Stage 19 due to boss scaling."}',
+  '{"hp_min": 50000, "spd_min": 190, "note": "Toxic set required. Stage 23 is Void affinity — Magic is neutral (no bonus, no penalty). Slightly higher gear floor than Stage 19 due to boss scaling."}',
   'A3 must be turned ON manually — AI does not activate it by default. Without this the solo fails.',
-  'Scorch passive deals bonus damage through Toxic set Poison procs; Magic affinity is advantaged at Dragon Stage 23 (Spirit affinity stage — Magic strong vs Spirit) — strong hits, no weak-hit penalty.',
-  'HellHades solo Dragon article (Jun 2023) confirms Artak, noted as capable of Stage 24 with very good stats. Stage 23 is a Spirit-affinity stage (extrapolated from the rotation) — advantaged for Magic Artak and within confirmed capability range.',
+  'Scorch passive deals bonus damage through Toxic set Poison procs; Stage 23 is Void affinity — Magic is neutral (no affinity bonus or penalty).',
+  'HellHades solo Dragon article (Jun 2023) confirms Artak, noted as capable of Stage 24 with very good stats. Stage 23 is a Void-affinity stage (in-game confirmed) — Magic neutral, within confirmed capability range.',
   null,
   null,
   'High',
@@ -428,7 +427,7 @@ values (
   'Spirit Haste mastery gives +24 SPD when food dies — essential for speed-gated clear times.',
   'Applies Poisons and HP Burns then activates and detonates them for the fastest solo clear times in the game (~1:30 Dragon 25); Regen + Immortal sustains 18% Max HP per turn; Spirit affinity is ADVANTAGED at Force Stage 25.',
   'Named "best soloer in the game" in multiple forum posts. ~1:30 Dragon 25 clear confirmed. YouTube Shorts and BlueStacks guide. Corroborated by AI Overview (Jun 2026).',
-  'Spirit affinity hits weak at Dragon Stage 20 (Force). Stage 25 is also Force — Spirit is ADVANTAGED at Stage 25, not weak. Preferred stage for Teodor.',
+  'Spirit affinity hits weak at Dragon Stage 20 (Magic). Stage 25 is Force — Spirit is ADVANTAGED at Stage 25, not weak. Preferred stage for Teodor.',
   null,
   'High',
   'proposed',
@@ -479,11 +478,10 @@ values (
   'claude-code-solo-research-pass'
 );
 
--- ── Artak (Legendary / Magic) — Dragon Stage 25 (Void stage — NEUTRAL) ──────
--- CORRECTED: Stage 25 is a VOID affinity stage (extrapolated from the Dragon
--- rotation Magic→Spirit→Force→Void; this file previously mislabelled it "Force").
--- Magic is neutral vs Void — no strong-hit bonus, no weak-hit penalty. Cleared
--- on the Scorch mechanic alone. (Repo seeds only cover 10-20 — verify 21-25.)
+-- ── Artak (Legendary / Magic) — Dragon Stage 25 (Force stage — Magic WEAK) ──
+-- Stage 25 is FORCE affinity (in-game confirmed 2026-07-07). Magic is weak vs
+-- Force, so Artak is disadvantaged here — confirmed solo despite the penalty,
+-- carried by Scorch/Toxic damage volume. Affinity warning included.
 insert into champion_solo_profiles
   (champion_id, dungeon_stage_id, required_set, required_stats,
    ai_settings, mechanism, source_note,
@@ -495,9 +493,9 @@ values (
   'Toxic + Speed',
   '{"hp_min": 50000, "spd_min": 190, "note": "Toxic set required. Noted as capable of Stage 24 with very good stats."}',
   'A3 must be turned ON manually — AI does not activate it by default. Without this the solo fails.',
-  'Scorch passive deals bonus damage through Toxic set procs; Dragon''s large HP pool amplifies the damage; Stage 25 is a Void affinity stage — Magic is neutral (no strong-hit bonus, no weak-hit penalty).',
-  'HellHades solo Dragon article (Jun 2023). Confirmed Stage 24 capability; Stage 25 is a Void affinity stage (rotation; previously mislabelled Force) — Magic neutral, cleared on the Scorch mechanic alone.',
-  null,
+  'Scorch passive deals bonus damage through Toxic set procs; Dragon''s large HP pool amplifies the damage; Stage 25 is a Force affinity stage — Magic hits weak (Force strong vs Magic), so output relies on Scorch/Toxic damage volume to offset the penalty.',
+  'HellHades solo Dragon article (Jun 2023). Confirmed Stage 24 capability; Stage 25 is a Force affinity stage (in-game confirmed 2026-07-07) — Magic hits weak; confirmed solo despite the penalty.',
+  'Magic hits weak at Dragon Stage 25 (Force). Confirmed solo despite the penalty — Stage 19 (Spirit) is the cleaner stage for Artak.',
   null,
   'Medium',
   'proposed',
@@ -587,7 +585,7 @@ values (
   'Spirit Haste mastery gives +24 SPD when food dies.',
   'A2 applies multiple Poisons and extends their duration; high-resistance build sustains through the fight and blocks debuffs from waves; Spirit affinity ADVANTAGED at Force Stage 25; Poison accumulation melts Dragon''s HP pool in ~2-3 minutes.',
   'AI Overview (Jun 2026): described as "exceptional solo farmer" for Dragon 25, 2-3 min clear time. 3 sources cited.',
-  'Spirit affinity hits weak at Dragon Stage 20 (Force). Stage 25 is also Force — Spirit is ADVANTAGED at Stage 25.',
+  'Spirit affinity hits weak at Dragon Stage 20 (Magic). Stage 25 is Force — Spirit is ADVANTAGED at Stage 25.',
   null,
   'High',
   'proposed',
@@ -611,7 +609,7 @@ values (
   'Spirit Haste mastery gives +24 SPD when food dies.',
   'Un-resistable Poisons placed under Veil bypass Dragon''s high resistance — ACC floor effectively lower than other Poison champions; Spirit affinity ADVANTAGED at Force Stage 25; Regen + Immortal sustains 18% Max HP per turn.',
   'AI Overview (Jun 2026): explicitly confirmed Dragon Stage 25 solo under Veil mechanic. 3 sources cited. Note: disqualified for Ice Golem HARD only (Poison immune boss) — not a Dragon concern.',
-  'Spirit affinity hits weak at Dragon Stage 20 (Force). Stage 25 is also Force — Spirit is ADVANTAGED at Stage 25.',
+  'Spirit affinity hits weak at Dragon Stage 20 (Magic). Stage 25 is Force — Spirit is ADVANTAGED at Stage 25.',
   'Collaboration champion — may not be in all game versions.',
   'High',
   'proposed',
