@@ -34,7 +34,7 @@ const TEST_CHAMPIONS = [
   { name: 'Fayne',            faction: 'Dark Elves',     affinity: 'Void',   rarity: 'Legendary', base_hp: 17835, base_atk: 1344, base_def: 1068, base_spd: 101, base_acc: 0,  base_res: 30,  tags: ['AoE Damage', 'Decrease Defense', 'Poison'] },
   { name: 'Kael',             faction: 'Dark Elves',     affinity: 'Magic',  rarity: 'Epic',      base_hp: 15690, base_atk: 1155, base_def: 804,  base_spd: 100, base_acc: 0,  base_res: 30,  tags: ['AoE Damage', 'Decrease Defense', 'Poison'] },
   { name: 'Coldheart',        faction: 'High Elves',     affinity: 'Void',   rarity: 'Epic',      base_hp: 15855, base_atk: 1288, base_def: 870,  base_spd: 98,  base_acc: 0,  base_res: 30,  tags: ['AoE Damage'] },
-  { name: 'Deacon Armstrong', faction: 'Banner Lords',   affinity: 'Spirit', rarity: 'Legendary', base_hp: 18660, base_atk: 1013, base_def: 1057, base_spd: 105, base_acc: 0,  base_res: 30,  tags: ['AoE Damage', 'Decrease Defense', 'Speed Aura'] },
+  { name: 'Deacon Armstrong', faction: 'Banner Lords',   affinity: 'Spirit', rarity: 'Legendary', base_hp: 18660, base_atk: 1013, base_def: 1057, base_spd: 105, base_acc: 0,  base_res: 30,  tags: ['AoE Damage', 'Decrease Defense', 'SPD Aura'] },
   // Healers / tanks
   { name: 'Miscreated Monster', faction: 'Knight Revenant', affinity: 'Void', rarity: 'Rare',    base_hp: 21150, base_atk: 694,  base_def: 1013, base_spd: 92,  base_acc: 0,  base_res: 30,  tags: ['Healer', 'Shield'] },
   { name: 'Rector Drath',     faction: 'Undead Hordes',  affinity: 'Force',  rarity: 'Legendary', base_hp: 21615, base_atk: 1068, base_def: 1123, base_spd: 96,  base_acc: 0,  base_res: 30,  tags: ['Healer', 'Revive'] },

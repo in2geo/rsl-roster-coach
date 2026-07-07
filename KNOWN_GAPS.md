@@ -78,15 +78,23 @@ Related gaps:
   verified against the `tags` table). Verified via a `buildStunMatrix` harness: a team with
   a Decrease Attack/Defense champion as the predicted stun target now fires both warnings.
 
-### Aura tag naming inconsistency (cosmetic — vocabulary cleanup)
-The aura tag set mixes spelled-out and abbreviated stat names: `Attack Aura`,
-`Defense Aura`, `Speed Aura` (spelled out) vs `HP Aura`, `RES Aura`, `ACC Aura`
-(abbreviated). No matching-engine impact — auras are not yet auto-applied to
-threshold calcs, and nothing keys on these strings programmatically. Standardize
-in a SINGLE pass once the aura tag set is more complete (renaming approved tags
-piecemeal mid-sprint is unnecessary risk). Decide one convention (e.g. all
-spelled-out: `Accuracy Aura`/`Resistance Aura`) and update the `tags` rows plus
-any source_note references together. Added 2026-07-07.
+### Aura tag naming inconsistency — RESOLVED 2026-07-07 (seed 63)
+Standardized to the abbreviated convention: `Attack Aura`→`ATK Aura`,
+`Defense Aura`→`DEF Aura`, `Speed Aura`→`SPD Aura` (renamed via `tags.name`
+UPDATE — champion_tags follow `tag_id`, unchanged). `ACC/HP/RES Aura` were already
+abbreviated; `C.Rate Aura` added. Descriptions now encode flat-vs-% (ATK/DEF/HP/SPD
+= % of base stat; ACC/RES/C.Rate = flat). Coordinated code change: `match-engine.js`
+`REQUIREMENT_TAGS.speed_aura` and the `test-matching.js` fixture updated to `SPD Aura`.
+
+### Aura placement / faction restrictions not modeled in schema
+Some auras are placement- or faction-restricted — e.g. Seeker's DEF Aura is
+**Arena-only**, Aria's SPD Aura is **Spirit-faction-only**. The `tags` vocabulary
+captures only the aura TYPE, not where it applies or to whom. Currently the
+placement/restriction detail lives in `source_note` on each `champion_tags` row, so
+the matching engine can't evaluate it (it would over-credit a Dungeon team with an
+Arena-only aura, or a mixed team with a faction-locked aura). Future enhancement:
+add `placement` and `faction_restriction` columns to `champion_tags` for aura rows
+(a schema addition, not a new tag type). Added 2026-07-07.
 
 ## Code gaps
 
