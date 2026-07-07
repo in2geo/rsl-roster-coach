@@ -78,6 +78,16 @@ Related gaps:
   verified against the `tags` table). Verified via a `buildStunMatrix` harness: a team with
   a Decrease Attack/Defense champion as the predicted stun target now fires both warnings.
 
+### Aura tag naming inconsistency (cosmetic — vocabulary cleanup)
+The aura tag set mixes spelled-out and abbreviated stat names: `Attack Aura`,
+`Defense Aura`, `Speed Aura` (spelled out) vs `HP Aura`, `RES Aura`, `ACC Aura`
+(abbreviated). No matching-engine impact — auras are not yet auto-applied to
+threshold calcs, and nothing keys on these strings programmatically. Standardize
+in a SINGLE pass once the aura tag set is more complete (renaming approved tags
+piecemeal mid-sprint is unnecessary risk). Decide one convention (e.g. all
+spelled-out: `Accuracy Aura`/`Resistance Aura`) and update the `tags` rows plus
+any source_note references together. Added 2026-07-07.
+
 ## Code gaps
 
 ### Clan Boss battle-log outcomes — hero capture + dungeon ID FIXED; only DIFFICULTY still blocks the flag
