@@ -57,9 +57,11 @@ values ('Teodor the Savant', 'High Elves', 'Spirit', 'Legendary',
 on conflict (name) do nothing;
 
 -- ── Michelangelo ─────────────────────────────────────────────────────────────
--- Legendary / Force / Shadowkin (TMNT collab, Aug–Nov 2025 — not currently obtainable)
+-- Legendary / Spirit / Banner Lords (TMNT collab, Aug–Nov 2025 — not currently obtainable)
+-- Affinity corrected Force -> Spirit (green icon) and faction Shadowkin -> Banner Lords
+-- (in-game detail screen, video 2026-07-07).
 insert into champions (name, faction, affinity, rarity, source_citation)
-values ('Michelangelo', 'Shadowkin', 'Force', 'Legendary',
+values ('Michelangelo', 'Banner Lords', 'Spirit', 'Legendary',
         'in-game Index — TMNT collab, not currently obtainable; base stats to be populated by scraper')
 on conflict (name) do nothing;
 

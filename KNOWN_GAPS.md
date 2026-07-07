@@ -101,6 +101,30 @@ Stun/Infest/True Fear are unresistable ONLY while he is under [Perfect Veil], bu
 the `True Fear` tag is unconditionally `bypasses_accuracy_check=true`. He self-veils
 on A1/A3 so it is usually up; flagged in case the engine over-credits the bypass.
 
+### Michelangelo pending-review tag decisions (seed 46)
+Michelangelo (Legendary / Spirit / Banner Lords, TMNT collab) had his affinity
+corrected (Force -> Spirit) and faction (Shadowkin -> Banner Lords) in seeds/07 +
+seeds/46, and his solo-profile reasoning fixed in seeds/06. Solid tags were seeded
+(Decrease Defense, Stun, AoE Damage, Decrease Attack, Provoke, Increase Attack,
+Shield). Four effects were left untagged pending a vocabulary decision — no tag
+exists for any of them:
+
+- **Leech** (A3 Shell Cyclone) — a real, reasonably common RAID debuff (heals the
+  attacker for a % of damage dealt to the leeched enemy). Strongest candidate for a
+  new vocab tag; would also apply to other Leech champions.
+- **Debuff Spread** (A2 Express Delivery) — takes all debuffs from the target and
+  copies them to all enemies. Signature turtle mechanic; niche but distinctive.
+- **Ally Attack** (Party Dude passive) — when he attacks, ally Leonardo/Donatello/
+  Michelangelo/Raphael join the attack. TMNT-set synergy; overlaps with the
+  Clan Boss "Ally Attack" concept (Fahrakin/Cardiel) which is currently handled
+  outside the tag vocabulary — decide whether Ally Attack should become a tag.
+- **Evade** (Party Dude passive) — 15% chance to evade an enemy skill (30% under
+  Taunt). Survival mechanic; no tag.
+
+(The seeded self-buffs — Increase ATK, Shield, self-Taunt/Provoke — are tagged but
+noted as SELF-only in their source_notes; relevant for solo/survival, not team
+support. Reviewer may downgrade if the tag is meant for ally-facing effects only.)
+
 ### Sustain gear assumption
 The app assumes no player champion runs Lifesteal, Regeneration, or Immortal gear.
 All sustain must come from champion skills. This is enforced in the global sustain

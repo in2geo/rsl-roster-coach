@@ -151,7 +151,7 @@ values (
 );
 */
 
--- ── Michelangelo (Legendary / Force) — TIME-LIMITED ──────────────────────────
+-- ── Michelangelo (Legendary / Spirit) — Dragon Stage 20 (Force stage — Spirit ADVANTAGED) — TIME-LIMITED ──
 insert into champion_solo_profiles
   (champion_id, dungeon_stage_id, required_set, required_stats,
    ai_settings, mechanism, source_note,
@@ -161,7 +161,7 @@ values (
   (select ds.id from dungeon_stages ds join dungeons d on d.id = ds.dungeon_id
    where d.name = 'Dragon''s Lair' and ds.label = 'Stage 20'),
   'Toxic + Merciless or Savage',
-  '{"note": "Toxic set required — Poison spread mechanic is the core of the solo. At or below general thresholds due to Force affinity."}',
+  '{"note": "Toxic set required — Poison spread mechanic is the core of the solo. At or below general thresholds because Spirit is advantaged at the Force-affinity Stage 20 (Spirit strong vs Force)."}',
   'Toxic set must be equipped. Poison spread via A2 is the primary damage source.',
   'Evasion passive reduces incoming damage; Shield passive on every hit self-sustains; Leech on A3 heals; Toxic set procs spread Poisons through A2 debuff propagation.',
   'Multiple Reddit threads and YouTube Shorts confirmed Dragon 20 and Ice Golem Normal solo. Stage 20 cap confirmed.',
@@ -655,8 +655,9 @@ values (
 --   (passive heal on every hit — essential for Hard mode survivability).
 -- ============================================================================
 
--- ── Michelangelo (Legendary / Force) — Dragon Hard Stage 4 ───────────────────
--- Force neutral at Hard Stage 4 (affinity unconfirmed but Force generally safe).
+-- ── Michelangelo (Legendary / Spirit) — Dragon Hard Stage 4 ───────────────────
+-- Hard Stage 4 stage-affinity unconfirmed; Michelangelo is Spirit — no warning
+-- applied pending in-game verification of the Hard-mode affinity.
 -- Budget entry point: confirmed even on young accounts with basic 5★ tank gear.
 insert into champion_solo_profiles
   (champion_id, dungeon_stage_id, required_set, required_stats,
@@ -671,7 +672,7 @@ values (
   'Brimstone Blessing mandatory. Toxic set must be equipped.',
   'Evasion passive reduces incoming damage; Shield passive on every hit self-sustains; Leech heals; Toxic Poison spread allows Hard Stage 4 clear even with below-endgame stats.',
   'AI Overview (Jun 2026): explicitly described as viable for Hard Stage 4 on young/low-investment accounts. 2 sources cited.',
-  'Force affinity neutral at Hard Stage 4.',
+  'Spirit champion; Dragon Hard Stage 4 stage-affinity unconfirmed — no warning applied pending verification.',
   'TMNT crossover champion (Aug–Nov 2025). Not currently obtainable.',
   'High',
   'proposed',
@@ -1007,7 +1008,7 @@ values (
   'claude-code-solo-research-pass'
 );
 
--- ── Michelangelo (Legendary / Force) — Ice Golem Stage 20 ────────────────────
+-- ── Michelangelo (Legendary / Spirit) — Ice Golem Stage 20 (Spirit stage — NEUTRAL) ──
 insert into champion_solo_profiles
   (champion_id, dungeon_stage_id, required_set, required_stats,
    ai_settings, mechanism, source_note,
@@ -1017,11 +1018,11 @@ values (
   (select ds.id from dungeon_stages ds join dungeons d on d.id = ds.dungeon_id
    where d.name = 'Ice Golem''s Peak' and ds.label = 'Stage 20'),
   'Toxic + Merciless or Savage',
-  '{"note": "Toxic set required. Force affinity hits weak at Ice Golem Stage 20 (Spirit — Magic advantaged). Confirmed solo despite penalty."}',
+  '{"note": "Toxic set required. Spirit is neutral at Ice Golem Stage 20 (Spirit stage) — no affinity penalty."}',
   'Toxic set must be equipped.',
-  'Evasion passive reduces incoming damage; Shield passive on every hit self-sustains; Leech heals; Toxic Poison spread offsets the Force affinity weak-hit penalty through volume of damage.',
+  'Evasion passive reduces incoming damage; Shield passive on every hit self-sustains; Leech heals; Toxic Poison spread is the damage engine (Spirit vs Spirit is neutral — no affinity penalty to offset).',
   'Multiple Reddit threads and YouTube Shorts confirmed Ice Golem Normal solo. Stage 20 cap per spec section 6.',
-  'Force affinity hits weak at Ice Golem Stage 20 (Spirit stage — Magic champions are advantaged here). Confirmed solo despite the penalty.',
+  'Spirit vs Spirit at Ice Golem Stage 20 = neutral — no affinity penalty.',
   'TMNT crossover champion (Aug–Nov 2025). Not currently obtainable.',
   'High',
   'proposed',
