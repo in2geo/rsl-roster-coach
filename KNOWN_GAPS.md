@@ -77,6 +77,30 @@ Stage 10, FLAG-24) in-game before rewriting the Force/Void label. The Artak Stag
 already uses "Void (extrapolated, verify)", which currently disagrees with seed 06 line 37
 ("Force") — reconcile once verified.
 
+### Xenomorph pending-review tag decisions (seed 45)
+Xenomorph (Legendary / Magic / Dark Elves, Alien: Earth collab) was seeded in
+`seeds/45` with the SOLID tags (Poison, Perfect Veil, Stun, True Fear). Three
+effects were deliberately left untagged pending a human decision:
+
+- **Infest** (A2 Infestation) — no tag exists in the vocabulary. Its only
+  mechanical hook is Xenomorph's OWN self-revive ("revives this Champion when an
+  enemy under [Infest] dies"), so reuse is single-champion and niche. Decision
+  needed: create an `Infest` vocab tag, or leave it as flavour/untagged?
+- **Self-revive** (A2 passive) — the existing `Revive` tag means reviving a dead
+  ALLY. Xenomorph's revive is SELF-only. Tagging `Revive` would wrongly surface
+  him as a team reviver in matching. Decision needed: leave untagged (current), or
+  add a distinct self-revive/survivability concept?
+- **−20% DEF** (Caustic Blood passive) — a PASSIVE, CONDITIONAL DEF reduction that
+  applies only to enemies already under a Poison HE placed. Not a placed
+  `[Decrease DEF]` debuff. Decision needed: tag it `Decrease Defense` (it is a real
+  DEF shred relevant to matching) with a conditional note, or keep `Decrease
+  Defense` meaning "placed debuff only" and leave it untagged?
+
+Also noted (not a decision, just a caveat baked into the seed-45 source_note): his
+Stun/Infest/True Fear are unresistable ONLY while he is under [Perfect Veil], but
+the `True Fear` tag is unconditionally `bypasses_accuracy_check=true`. He self-veils
+on A1/A3 so it is usually up; flagged in case the engine over-credits the bypass.
+
 ### Sustain gear assumption
 The app assumes no player champion runs Lifesteal, Regeneration, or Immortal gear.
 All sustain must come from champion skills. This is enforced in the global sustain
