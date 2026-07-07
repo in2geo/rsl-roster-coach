@@ -49,11 +49,11 @@
 --     TAGGED (existing vocab): Decrease Defense (A1), AoE Damage (A2), Poison
 --     (A2), Bomb (A2, conditional), Perfect Veil (A3 passive, self).
 --
---     NOT TAGGED — surfaced explicitly rather than dropped:
---       * Poison Sensitivity (A2) — NO tag in the vocabulary. Needs a new
---         'Poison Sensitivity' tag proposed in seeds/01|14 and approved first.
---       * Steal Buffs (A3) — NO tag in the vocabulary. Needs a new 'Steal Buffs'
---         tag proposed and approved first.
+--     NOT TAGGED HERE — surfaced explicitly rather than dropped:
+--       * Poison Sensitivity (A2) — no vocab tag at the time of this seed; the
+--         'Poison Sensitivity' tag + Ezio's link are now added in seeds/43.
+--       * Steal Buffs (A3) — no vocab tag at the time of this seed; the
+--         'Steal Buffs' tag + Ezio's link are now added in seeds/43.
 --       * Counterattack (Full Synchronization passive) — Ezio has a PASSIVE 35%
 --         self-counter chance, NOT a placed [Counterattack] buff. The existing
 --         'Counterattack' tag means "places [Counterattack] buff on allies", so
