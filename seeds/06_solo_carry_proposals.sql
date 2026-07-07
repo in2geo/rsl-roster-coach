@@ -603,7 +603,7 @@ insert into champion_solo_profiles
    ai_settings, mechanism, source_note,
    affinity_warning, availability_note, research_confidence, status, proposed_by)
 values (
-  (select id from champions where name = 'Ezio'),
+  (select id from champions where name = 'Ezio Auditore'),
   (select ds.id from dungeon_stages ds join dungeons d on d.id = ds.dungeon_id
    where d.name = 'Dragon''s Lair' and ds.label = 'Stage 25'),
   'Regeneration + Immortal',
@@ -759,7 +759,7 @@ insert into champion_solo_profiles
    ai_settings, mechanism, source_note,
    affinity_warning, availability_note, research_confidence, status, proposed_by)
 values (
-  (select id from champions where name = 'Ezio'),
+  (select id from champions where name = 'Ezio Auditore'),
   (select ds.id from dungeon_stages ds join dungeons d on d.id = ds.dungeon_id
    where d.name = 'Dragon''s Lair' and ds.label = 'Hard Stage 10'),
   'Regeneration + Immortal',

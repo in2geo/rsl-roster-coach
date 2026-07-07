@@ -56,11 +56,11 @@ Artak was seeded as Spirit in `seeds/06_solo_carry_proposals.sql` but his in-gam
 seed 06 were corrected). Verified from video since then:
 
 - **Ezio Auditore** — icon is **green = Spirit**, so seed 07's `affinity='Spirit'` is
-  CORRECT (no change needed; an earlier draft wrongly read the green icon as Force). BUT two
-  other Ezio issues remain: (a) seed 07 has `faction='Shadowkin'` while the in-game screen
-  reads **"Sacred Order"** — verify/fix; (b) the seed 06 solo lookups use
-  `where name = 'Ezio'` but the champions row is named **'Ezio Auditore'**, so those
-  profiles bind to NULL — fix the name.
+  CORRECT (no change needed; an earlier draft wrongly read the green icon as Force). FIXED
+  2026-07-07: (a) faction `Shadowkin` → `Sacred Order` (seed 07 at source + idempotent
+  UPDATE in seed 42 for live rows) per the in-game detail screen; (b) seed 06 solo lookups
+  `where name = 'Ezio'` → `'Ezio Auditore'` (previously bound to NULL). Ezio proposed tags
+  added in seed 42. Only the shared Stage-25 label question below still applies to Ezio.
 
 Still UNVERIFIED (need their own videos before touching — don't trust seed 06's labels):
 - **Teodor the Savant** (Legendary / "Spirit") — Dragon Stage 25 (~line 415). Also says

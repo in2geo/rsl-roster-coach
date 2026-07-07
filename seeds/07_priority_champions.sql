@@ -35,9 +35,10 @@ values ('Gnishak Verminlord', 'Ogryn Tribes', 'Force', 'Legendary',
 on conflict (name) do nothing;
 
 -- ── Ezio Auditore ────────────────────────────────────────────────────────────
--- Legendary / Spirit / Shadowkin (Assassin's Creed collab)
+-- Legendary / Spirit / Sacred Order (Assassin's Creed collab)
+-- Faction corrected Shadowkin -> Sacred Order (in-game detail screen, video 2026-07-06).
 insert into champions (name, faction, affinity, rarity, source_citation)
-values ('Ezio Auditore', 'Shadowkin', 'Spirit', 'Legendary',
+values ('Ezio Auditore', 'Sacred Order', 'Spirit', 'Legendary',
         'in-game Index — collab champion; base stats to be populated by scraper')
 on conflict (name) do nothing;
 
