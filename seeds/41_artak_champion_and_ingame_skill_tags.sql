@@ -14,7 +14,7 @@
 --     file creates it so the DB is reconstructable from committed seeds alone.
 --
 --     AFFINITY = Magic (blue affinity icon on the in-game detail screen; RAID
---     colour map: Magic=blue, Force=green, Spirit=yellow, Void=purple). NOTE:
+--     colour map: Magic=blue, Force=red, Spirit=green, Void=purple). NOTE:
 --     seeds/06 previously labelled Artak "Spirit" and built his Dragon/Spider
 --     affinity-matchup reasoning on that — corrected to Magic in the same
 --     commit as this file. Faction = Orcs, Rarity = Legendary (both read off
