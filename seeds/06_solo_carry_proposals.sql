@@ -235,10 +235,11 @@ values (
   'claude-code-solo-research-pass'
 );
 
--- ── Artak (Legendary / Spirit) — Stage 20 ────────────────────────────────────
--- Spirit is WEAK at Dragon Stage 20 (Force affinity). Artak confirmed solo
--- despite the penalty. Affinity warning included.
--- Best Dragon stages for Artak: 19 and 23 (Spirit affinity — he has the advantage).
+-- ── Artak (Legendary / Magic) — Dragon Stage 20 (Force stage — Magic WEAK) ──
+-- Magic is WEAK vs Force, so Artak is disadvantaged at Dragon Stage 20 (Force
+-- affinity, repo-confirmed seed 32/35). Confirmed solo despite the penalty;
+-- affinity warning included. Best Dragon stages for Artak: 19 and 23 (Spirit
+-- affinity — Magic is strong vs Spirit, so advantaged).
 insert into champion_solo_profiles
   (champion_id, dungeon_stage_id, required_set, required_stats,
    ai_settings, mechanism, source_note,
@@ -252,16 +253,17 @@ values (
   'A3 must be turned ON manually — AI does not activate it by default. Without this the solo fails.',
   'Scorch passive deals bonus damage through Toxic set procs against Dragon''s large HP pool; Toxic set is required for the passive to trigger at full frequency.',
   'HellHades solo Dragon article (Jun 2023). Confirmed viable at Stage 20; noted as capable of Stage 24 with very good stats.',
-  'Spirit affinity hits weak at Dragon Stage 20 (Force). Best Dragon stages for Artak: 19 and 23 (Spirit affinity — advantage). Stage 25 (Void) also viable at neutral.',
+  'Magic affinity hits weak at Dragon Stage 20 (Force). Best Dragon stages for Artak: 19 and 23 (Spirit affinity — Magic advantaged). Stage 25 (Void) also viable at neutral.',
   null,
   'High',
   'proposed',
   'claude-code-solo-research-pass'
 );
 
--- ── Artak (Legendary / Spirit) — Dragon Stage 19 (Spirit — ADVANTAGE) ───────
--- Spirit affinity is advantaged at Stage 19 (Spirit affinity stage).
--- This is Artak's best Dragon stage — no affinity penalty, full strong-hit bonus.
+-- ── Artak (Legendary / Magic) — Dragon Stage 19 (Spirit stage — Magic ADVANTAGED) ──
+-- Magic is strong vs Spirit, so Artak is advantaged at Stage 19 (Spirit
+-- affinity, repo-confirmed seed 32/35). One of Artak's best Dragon stages —
+-- full strong-hit bonus, no weak-hit penalty.
 insert into champion_solo_profiles
   (champion_id, dungeon_stage_id, required_set, required_stats,
    ai_settings, mechanism, source_note,
@@ -271,10 +273,10 @@ values (
   (select ds.id from dungeon_stages ds join dungeons d on d.id = ds.dungeon_id
    where d.name = 'Dragon''s Lair' and ds.label = 'Stage 19'),
   'Toxic + Speed',
-  '{"hp_min": 50000, "spd_min": 190, "note": "Toxic set required. Spirit affinity advantaged at Stage 19 — lower stat thresholds than Stage 20."}',
+  '{"hp_min": 50000, "spd_min": 190, "note": "Toxic set required. Magic affinity advantaged at Stage 19 (Spirit stage) — lower stat thresholds than Stage 20."}',
   'A3 must be turned ON manually — AI does not activate it by default. Without this the solo fails.',
-  'Scorch passive deals bonus damage through Toxic set Poison procs; Spirit affinity is advantaged at Dragon Stage 19 (Spirit affinity stage) — strong hits and increased damage output vs. Stage 20.',
-  'HellHades solo Dragon article (Jun 2023) confirms Artak as a Dragon solo champion. Stage 19 is a Spirit-affinity stage and is Artak''s preferred Dragon stage per affinity rotation.',
+  'Scorch passive deals bonus damage through Toxic set Poison procs; Magic affinity is advantaged at Dragon Stage 19 (Spirit affinity stage — Magic strong vs Spirit) — strong hits and increased damage output vs. Stage 20.',
+  'HellHades solo Dragon article (Jun 2023) confirms Artak as a Dragon solo champion. Stage 19 is a Spirit-affinity stage — advantaged for Magic Artak and among his preferred Dragon stages.',
   null,
   null,
   'High',
@@ -282,8 +284,10 @@ values (
   'claude-code-solo-research-pass'
 );
 
--- ── Artak (Legendary / Spirit) — Dragon Stage 23 (Spirit — ADVANTAGE) ───────
--- Spirit affinity is advantaged at Stage 23 (Spirit affinity stage).
+-- ── Artak (Legendary / Magic) — Dragon Stage 23 (Spirit stage — Magic ADVANTAGED) ──
+-- Magic is strong vs Spirit, so Artak is advantaged at Stage 23. Stage-23
+-- affinity = Spirit is EXTRAPOLATED from the Dragon rotation (Magic→Spirit→
+-- Force→Void from stage 10); repo seeds only cover stages 10-20 — verify.
 insert into champion_solo_profiles
   (champion_id, dungeon_stage_id, required_set, required_stats,
    ai_settings, mechanism, source_note,
@@ -293,10 +297,10 @@ values (
   (select ds.id from dungeon_stages ds join dungeons d on d.id = ds.dungeon_id
    where d.name = 'Dragon''s Lair' and ds.label = 'Stage 23'),
   'Toxic + Speed',
-  '{"hp_min": 50000, "spd_min": 190, "note": "Toxic set required. Spirit affinity advantaged at Stage 23. Slightly higher gear floor than Stage 19 due to boss scaling."}',
+  '{"hp_min": 50000, "spd_min": 190, "note": "Toxic set required. Magic affinity advantaged at Stage 23 (Spirit stage). Slightly higher gear floor than Stage 19 due to boss scaling."}',
   'A3 must be turned ON manually — AI does not activate it by default. Without this the solo fails.',
-  'Scorch passive deals bonus damage through Toxic set Poison procs; Spirit affinity is advantaged at Dragon Stage 23 (Spirit affinity stage) — strong hits, no weak-hit penalty.',
-  'HellHades solo Dragon article (Jun 2023) confirms Artak, noted as capable of Stage 24 with very good stats. Stage 23 is a Spirit-affinity stage and falls within confirmed capability range.',
+  'Scorch passive deals bonus damage through Toxic set Poison procs; Magic affinity is advantaged at Dragon Stage 23 (Spirit affinity stage — Magic strong vs Spirit) — strong hits, no weak-hit penalty.',
+  'HellHades solo Dragon article (Jun 2023) confirms Artak, noted as capable of Stage 24 with very good stats. Stage 23 is a Spirit-affinity stage (extrapolated from the rotation) — advantaged for Magic Artak and within confirmed capability range.',
   null,
   null,
   'High',
@@ -475,7 +479,11 @@ values (
   'claude-code-solo-research-pass'
 );
 
--- ── Artak (Legendary / Spirit) — Stage 25 (Force = ADVANTAGED) ──────────────
+-- ── Artak (Legendary / Magic) — Dragon Stage 25 (Void stage — NEUTRAL) ──────
+-- CORRECTED: Stage 25 is a VOID affinity stage (extrapolated from the Dragon
+-- rotation Magic→Spirit→Force→Void; this file previously mislabelled it "Force").
+-- Magic is neutral vs Void — no strong-hit bonus, no weak-hit penalty. Cleared
+-- on the Scorch mechanic alone. (Repo seeds only cover 10-20 — verify 21-25.)
 insert into champion_solo_profiles
   (champion_id, dungeon_stage_id, required_set, required_stats,
    ai_settings, mechanism, source_note,
@@ -487,8 +495,8 @@ values (
   'Toxic + Speed',
   '{"hp_min": 50000, "spd_min": 190, "note": "Toxic set required. Noted as capable of Stage 24 with very good stats."}',
   'A3 must be turned ON manually — AI does not activate it by default. Without this the solo fails.',
-  'Scorch passive deals bonus damage through Toxic set procs; Dragon''s large HP pool amplifies the damage; Spirit affinity is ADVANTAGED at Force Stage 25 — strong hits and reduced incoming damage.',
-  'HellHades solo Dragon article (Jun 2023). Confirmed Stage 24 capability; Stage 25 (Force) is Artak''s best Dragon stage — Spirit advantage on top of Scorch mechanic.',
+  'Scorch passive deals bonus damage through Toxic set procs; Dragon''s large HP pool amplifies the damage; Stage 25 is a Void affinity stage — Magic is neutral (no strong-hit bonus, no weak-hit penalty).',
+  'HellHades solo Dragon article (Jun 2023). Confirmed Stage 24 capability; Stage 25 is a Void affinity stage (rotation; previously mislabelled Force) — Magic neutral, cleared on the Scorch mechanic alone.',
   null,
   null,
   'Medium',
@@ -844,9 +852,11 @@ values (
 -- SPIDER'S DEN — Stage 20 (Spirit affinity — Force advantaged, Magic weak)
 -- ============================================================================
 
--- ── Artak (Legendary / Spirit) — Spider 20 ───────────────────────────────────
--- Spirit vs Spirit at Spider Stage 20 = NEUTRAL. No affinity penalty.
--- Artak is in his element here — clean solo, no warning needed.
+-- ── Artak (Legendary / Magic) — Spider 20 (Spirit stage — Magic ADVANTAGED) ──
+-- Spider Stage 20 is a Spirit-affinity stage; Magic is strong vs Spirit, so
+-- Artak is ADVANTAGED here (was mislabelled "Spirit vs Spirit neutral"). Clean
+-- solo, no warning needed. (Spider stage affinity per file 06's own label —
+-- not independently repo-confirmed; verify.)
 insert into champion_solo_profiles
   (champion_id, dungeon_stage_id, required_set, required_stats,
    ai_settings, mechanism, source_note,
@@ -858,7 +868,7 @@ values (
   'Toxic + Speed',
   '{"hp_min": 50000, "spd_min": 190, "note": "Toxic set required. Stat thresholds approximate — verify from video builds."}',
   'A3 must be turned ON manually — AI does not activate it by default. Without this the solo fails.',
-  'Scorch passive deals bonus damage through Toxic set Poison procs; Spirit affinity is neutral at Spider Stage 20 (Spirit stage) — no weak-hit penalty.',
+  'Scorch passive deals bonus damage through Toxic set Poison procs; Magic affinity is advantaged at Spider Stage 20 (Spirit stage — Magic strong vs Spirit) — strong hits, no weak-hit penalty.',
   'Multiple YouTube videos confirmed: "Spider 20 Artak Dungeon Solo" and "ARTAK SOLO SPIDER 20 & 25" (May 2023).',
   null,
   null,
@@ -893,8 +903,9 @@ values (
 -- SPIDER'S DEN — Stage 25 (Magic affinity — Magic advantaged, Force weak)
 -- ============================================================================
 
--- ── Artak (Legendary / Spirit) — Spider 25 ───────────────────────────────────
--- Spirit is WEAK at Spider Stage 25 (Magic affinity). Still confirmed solo.
+-- ── Artak (Legendary / Magic) — Spider 25 (Magic stage — NEUTRAL) ───────────
+-- Magic vs Magic at Spider Stage 25 = NEUTRAL — no affinity penalty (was
+-- mislabelled "Spirit weak"). Confirmed solo.
 insert into champion_solo_profiles
   (champion_id, dungeon_stage_id, required_set, required_stats,
    ai_settings, mechanism, source_note,
@@ -904,11 +915,11 @@ values (
   (select ds.id from dungeon_stages ds join dungeons d on d.id = ds.dungeon_id
    where d.name = 'Spider''s Den' and ds.label = 'Stage 25'),
   'Toxic + Speed',
-  '{"hp_min": 50000, "spd_min": 190, "note": "Toxic set required. Spirit affinity weak at Spider Stage 25 (Magic) — confirmed solo despite penalty."}',
+  '{"hp_min": 50000, "spd_min": 190, "note": "Toxic set required. Magic vs Magic at Spider Stage 25 = neutral — no affinity penalty."}',
   'A3 must be turned ON manually — AI does not activate it by default.',
-  'Scorch passive deals bonus damage through Toxic set Poison procs; output sufficient to clear Spider Stage 25 despite Spirit weak-hit penalty against Magic stage.',
+  'Scorch passive deals bonus damage through Toxic set Poison procs; output sufficient to clear Spider Stage 25; Magic is neutral vs the Magic-affinity stage (no penalty).',
   'YouTube confirmed: "ARTAK SOLO SPIDER 20 & 25" (May 2023). High confidence from multiple videos.',
-  'Spirit affinity hits weak at Spider Stage 25 (Magic). Confirmed solo despite the penalty — Stage 20 (Spirit, neutral) is the cleaner stage for Artak.',
+  null,
   null,
   'High',
   'proposed',
@@ -941,9 +952,9 @@ values (
 -- SPIDER'S DEN — Hard Stage 5
 -- ============================================================================
 
--- ── Artak (Legendary / Spirit) — Spider Hard Stage 5 — NOT SEEDED (FLAG-12: RESOLVED — pending in-game verify) ─
+-- ── Artak (Legendary / Magic) — Spider Hard Stage 5 — NOT SEEDED (FLAG-12: RESOLVED — pending in-game verify) ─
 -- FLAG-12 RESOLVED: Spider Hard Stage 5 = Void (mirrors Normal Stage 5 affinity).
--- Artak (Spirit) is neutral at Void stage — affinity_warning = null.
+-- Artak (Magic) is neutral at Void stage — affinity_warning = null.
 -- Uncomment after in-game confirmation that Hard mode mirrors Normal affinity rotation.
 /*
 insert into champion_solo_profiles
