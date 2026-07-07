@@ -76,6 +76,14 @@ create table champion_tags (
                 check (source_type in ('in_game_index','patch_notes','fandom_wiki','human_observation')),
   source_note   text,
 
+  -- Ascension level (0-6) at which the tagged skill/effect unlocks; 0 = base.
+  -- The matching engine ignores a tag until the owned champion is ascended to
+  -- this level. Sourced manually from the in-game Index (see KNOWN_GAPS.md and
+  -- seeds/31_ascension_overrides.sql). Backfill DDL for pre-existing live DBs:
+  -- migrations/2026-07-07_champion_tags_ascension_required.sql.
+  ascension_required int not null default 0
+                check (ascension_required between 0 and 6),
+
   proposed_by   text,
   proposed_at   timestamptz not null default now(),
   approved_by   text,
