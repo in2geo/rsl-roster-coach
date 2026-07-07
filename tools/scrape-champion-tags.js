@@ -3,10 +3,9 @@
  * raid.guide champion-tags + aura scraper — RSL Roster Coach
  *
  * Fetches per-champion pages (/en/shadow-legends/<slug>/) and emits PROPOSED
- * champion_tags from the verbatim skill descriptions, plus auras to a separate
- * file (auras aren't a settled schema yet). Skills/debuffs only — per the
- * 2026-07-01 CLAUDE.md carve-out, raid.guide skill DESCRIPTIONS are Plarium's
- * literal text (allowed for proposed tags); ratings/strategy are not.
+ * champion_tags from the verbatim skill descriptions AND from the aura panel —
+ * per the 2026-07-01 CLAUDE.md carve-out, raid.guide skill/aura DESCRIPTIONS are
+ * Plarium's literal text (allowed for proposed tags); ratings/strategy are not.
  *
  * Usage:
  *   node --env-file=.env.local tools/scrape-champion-tags.js --priority
@@ -15,18 +14,25 @@
  *   node --env-file=.env.local tools/scrape-champion-tags.js --validate   # Kael only, print parse
  *
  * Outputs (output/):
- *   champion-tags-proposed.sql     proposed champion_tags INSERTs (idempotent, NOT EXISTS)
- *   auras.sql                      aura data (stat/pct/placement) as comments — schema TBD
- *   missing_from_raid_guide.txt    DB champions with no raid.guide page (404/empty)
- *   missing_tags.txt               debuffs with no matching row in tags
- *   progress.txt                   checkpoint — completed champion names (skipped on rerun)
+ *   champion-tags-proposed.sql      proposed champion_tags INSERTs (idempotent, NOT EXISTS)
+ *   champion-aura-tags-proposed.sql proposed aura champion_tags INSERTs (Speed/Attack/
+ *                                   Defense/HP/RES/ACC Aura), idempotent — HUMAN REVIEW
+ *   auras.sql                       raw aura stat/pct/placement as comments (provenance)
+ *   missing_from_raid_guide.txt     DB champions with no raid.guide page (404/empty)
+ *   missing_tags.txt                debuffs with no matching row in tags
+ *   missing_auras.txt               auras with no tag (crit auras) or tag not yet in DB
+ *   progress.txt                    checkpoint — completed champion names (skipped on rerun)
  *
  * Notes:
  *  - Unbooked chance = booked (described) chance − Σ(Buff/Debuff chance book rows).
  *  - ascension_required defaults 0 (static HTML doesn't flag ascension). Known
  *    corrections applied from ASCENSION_OVERRIDES; anything uncertain stays 0 and
  *    is the reviewer's job — do NOT guess (a wrong value silently breaks matching).
- *  - Auras go to auras.sql only (Part 7 of spec). No aura rows in champion_tags.
+ *  - Auras: one proposed aura tag per champion (leader skill), stat mapped via
+ *    AURA_TAG. Magnitude/placement stay in source_note (per seeds/20 & 47), NOT on
+ *    the tag; the raw parsed string is carried verbatim for the reviewer to verify
+ *    (raid.guide may render flat ACC/RES auras as a bare number). Only the six aura
+ *    stats with a real vocabulary tag are emitted — crit auras go to missing_auras.txt.
  */
 import fs from 'fs';
 import path from 'path';
@@ -70,8 +76,13 @@ const TAG_MAP = {
 // Normalize a raid.guide bracket to a TAG_MAP key: lowercase, collapse ". " → "."
 // so "Increase C. RATE" and "Increase C.DMG" match ("increase c.rate"/"c.dmg").
 const nk = (s) => s.toLowerCase().replace(/\s*\.\s*/g, '.').replace(/\s+/g, ' ').trim();
-// stat auras raid.guide encodes → note only (not tags). placement normalization.
+// stat auras raid.guide encodes. placement normalization.
 const AURA_STAT = { hp: 'hp', atk: 'atk', def: 'def', spd: 'spd', 'c.rate': 'crit_rate', 'c.dmg': 'crit_dmg', res: 'res', acc: 'acc', accuracy: 'acc', resist: 'res' };
+// AURA_STAT code → the champion_tags aura tag name. Only the six stats that have a
+// real vocabulary tag are emittable as proposed rows; crit_rate/crit_dmg have no aura
+// tag (→ missing_auras.txt, note only). Keep in sync with the aura tags in seeds/01,
+// 20 (RES) and 47 (ACC).
+const AURA_TAG = { hp: 'HP Aura', atk: 'Attack Aura', def: 'Defense Aura', spd: 'Speed Aura', res: 'RES Aura', acc: 'ACC Aura' };
 // AoE-variant tags that actually exist (so we only prefix when the tag is real).
 const AOE_TAGS = new Set(['AoE Stun', 'AoE Freeze', 'AoE Sleep', 'AoE Decrease Turn Meter', 'AoE Damage']);
 // Ascension corrections confirmed from the in-game Index (raid.guide can't flag these,
@@ -176,7 +187,7 @@ async function main() {
   const done = fs.existsSync(progressFile) && MODE === 'all'
     ? new Set(fs.readFileSync(progressFile, 'utf8').split('\n').map(s => s.trim()).filter(Boolean)) : new Set();
 
-  const tagSql = [], auraSql = [], missPage = [], missTag = [];
+  const tagSql = [], auraSql = [], auraTagSql = [], missPage = [], missTag = [], missAura = [];
   let processed = 0;
 
   for (const champ of worklist) {
@@ -201,7 +212,26 @@ async function main() {
     if (html == null) { missPage.push(`${champ} | ${champ} | ${slug} | ${fail}`); continue; }
 
     const aura = parseAura(html);
-    if (aura) auraSql.push(`-- ${champ}: ${aura.stat} ${(aura.pct * 100)}% place=${aura.placement}\n--   (raw: ${aura.raw})`);
+    if (aura) {
+      auraSql.push(`-- ${champ}: ${aura.stat} ${(aura.pct * 100)}% place=${aura.placement}\n--   (raw: ${aura.raw})`);
+      const auraTag = AURA_TAG[aura.stat];
+      if (auraTag && tagSet.has(auraTag)) {
+        // Magnitude/placement live in source_note (per seeds/20 & 47), NOT on the tag.
+        // Carry the raw parsed string verbatim so the reviewer can confirm the value —
+        // raid.guide may render flat ACC/RES auras as a bare number rather than a %.
+        const note = `raid.guide Aura → ${auraTag}. Leader skill. Raw parsed: "${aura.raw}" (stat=${aura.stat}, placement=${aura.placement}). VERIFY magnitude on review (flat ACC/RES auras may be mis-rendered as a percentage by raid.guide).`;
+        auraTagSql.push(
+`insert into champion_tags (champion_id, tag_id, status, source_type, source_note, proposed_by, proposed_at, ascension_required)
+select ch.id, t.id, 'proposed', 'raid_guide', '${esc(note)}', 'raid-guide-scraper', now(), 0
+from champions ch join tags t on t.name = '${esc(auraTag)}'
+where ch.game_id = 'raid_shadow_legends' and ch.name = '${esc(champ)}'
+  and not exists (select 1 from champion_tags x where x.champion_id = ch.id and x.tag_id = t.id);`);
+      } else if (auraTag) {
+        missAura.push(`${champ} | ${auraTag} | tag not in DB vocabulary (add it, then re-run)`);
+      } else {
+        missAura.push(`${champ} | ${aura.stat} aura | no aura tag exists (e.g. C.RATE/C.DMG auras)`);
+      }
+    }
 
     const skills = parseSkills(html);
     if (MODE === 'validate') { console.log(`\n=== ${champ} (${slug}) ===`); console.log('aura:', aura); skills.forEach(s => console.log(s.slot, s.name, '| aoe', s.aoe, '| book+', s.bookChance, '| brackets', s.brackets, '| cd', s.cooldown)); }
@@ -237,11 +267,14 @@ where ch.game_id = 'raid_shadow_legends' and ch.name = '${esc(champ)}'
   }
 
   const header = `-- Proposed champion_tags from raid.guide skill descriptions (source_type=raid_guide,\n-- status=proposed). HUMAN REVIEW REQUIRED. Generated ${new Date().toISOString()}.\n\n`;
+  const auraHeader = `-- Proposed aura champion_tags from the raid.guide aura panel (source_type=raid_guide,\n-- status=proposed). HUMAN REVIEW REQUIRED — the engine reads only approved tags, and\n-- the aura MAGNITUDE in each source_note is raid.guide's raw string (verify it). One\n-- row per champion (leader skill). Idempotent (NOT EXISTS). Generated ${new Date().toISOString()}.\n\n`;
   fs.writeFileSync(path.join(OUT, 'champion-tags-proposed.sql'), header + tagSql.join('\n\n') + '\n');
-  fs.writeFileSync(path.join(OUT, 'auras.sql'), `-- Aura data (stat/pct/placement) — schema TBD, review only. Generated ${new Date().toISOString()}.\n\n` + auraSql.join('\n') + '\n');
+  fs.writeFileSync(path.join(OUT, 'champion-aura-tags-proposed.sql'), auraHeader + auraTagSql.join('\n\n') + '\n');
+  fs.writeFileSync(path.join(OUT, 'auras.sql'), `-- Raw aura provenance (stat/pct/placement) — review only. Generated ${new Date().toISOString()}.\n\n` + auraSql.join('\n') + '\n');
   fs.writeFileSync(path.join(OUT, 'missing_from_raid_guide.txt'), missPage.join('\n') + '\n');
   fs.writeFileSync(path.join(OUT, 'missing_tags.txt'), missTag.join('\n') + '\n');
-  console.log(`\nDone. ${processed} champion(s) processed → ${tagSql.length} proposed tag(s), ${auraSql.length} aura(s), ${missPage.length} missing page(s), ${missTag.length} unmapped debuff(s).`);
+  fs.writeFileSync(path.join(OUT, 'missing_auras.txt'), missAura.join('\n') + '\n');
+  console.log(`\nDone. ${processed} champion(s) processed → ${tagSql.length} proposed skill tag(s), ${auraTagSql.length} proposed aura tag(s), ${auraSql.length} aura(s) parsed, ${missPage.length} missing page(s), ${missTag.length} unmapped debuff(s), ${missAura.length} unmapped aura(s).`);
   console.log(`Output in ${OUT}/`);
 }
 main().catch(e => { console.error(e); process.exit(1); });

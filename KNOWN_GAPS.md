@@ -3,7 +3,7 @@
 Operational gaps and known-wrong/low-confidence areas. Findable and scannable when
 debugging a wrong verdict. Delete entries as gaps close — don't leave stale notes.
 
-Last updated: 2026-07-07 (video-skill-screenshots branch — Dragon affinity rotation corrected).
+Last updated: 2026-07-07 (aura sweep — ACC Aura vocab added; auras found uncaptured project-wide).
 
 ## Data gaps
 
@@ -44,6 +44,36 @@ skills are a minority (mostly passives), so the list grows slowly. A `--skills` 
 reader was prototyped and **shelved** — even working it needs ownership and hit an object-
 graph wall (the `ISettableContext<Params>` struct is consumed on set, not heap-scannable).
 The nested-class resolver from that effort (`Il2CppClassResolver.ResolveNested`) was kept.
+
+### Champion auras almost entirely uncaptured — incl. ALL Accuracy auras (high priority, systemic)
+Auras are modeled as tags (`Speed Aura`, `Attack Aura`, `Defense Aura`, `HP Aura`,
+`RES Aura`, and now `ACC Aura` — seed 47). The **vocabulary is complete** (all six aura
+stats), but **assignments are almost entirely missing**: only **5 of ~486 champions**
+have any aura tagged —
+- Diabolist → Speed Aura, Spirithost → Attack Aura, Rearguard Sergeant → Defense Aura
+  (seed 04, manual in-game),
+- Pelops → RES Aura (seed 21, +60 all battles),
+- **Venomage → ACC Aura (seed 47, +45 all battles) — the ONLY Accuracy aura tagged.**
+
+Root cause: the raid.guide bulk scrape (`seeds/15`, **479 champions**) emitted **zero**
+aura rows. `tools/scrape-champion-tags.js` **parses** the aura (`parseAura`, and
+`AURA_STAT` already maps `acc`/`accuracy` → `acc`) but routes it to `auras.sql` **as
+comments only** — "auras aren't a settled schema yet" (Part 7 of its spec). That schema
+IS settled now (aura tags exist; magnitude/placement live in `champion_tags.source_note`
+per the seed 20 / seed 47 convention), so the scraper's aura output is stale.
+
+A sweep for missing Accuracy auras **cannot be data-driven from this cloud session** —
+outbound web egress is blocked here (raid.guide, Fandom, even Wikipedia all 403), and
+CLAUDE.md forbids tagging auras from memory (literal skill text from an allowed source
+only). Two compliant paths to close it:
+1. **Upgrade the scraper to emit proposed aura `champion_tags` rows** (all six stats, via
+   `AURA_STAT` → tag name), then re-run it from a web-enabled machine (where seed 15 was
+   made). One run sweeps all 479 raid.guide champions for ACC (and every other) aura →
+   `status='proposed'` for human review. This is the scalable fix.
+2. **In-game re-capture** for the handful already recorded on video but not yet tagged:
+   seeds 40–46 (Coldheart, Artak, Ezio, Xenomorph, Michelangelo) each had an on-screen
+   AURA panel during capture, but only Venomage's aura (seed 47) was recorded. Their
+   auras — several of which are Accuracy auras — are the highest-confidence quick wins.
 
 ### champion_solo_profiles affinity / stage-label errors in seeds/06 (audit — verify per champion from in-game)
 Reference — RAID affinity colour map (icon next to the champion name):
