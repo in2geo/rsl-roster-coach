@@ -24,6 +24,9 @@
  *   progress.txt                    checkpoint — completed champion names (skipped on rerun)
  *
  * Notes:
+ *  - AoE Damage is derived from the phrase "attacks all enemies" (not from a
+ *    bracketed debuff), so AoE-damage-only skills get tagged too. Conditional
+ *    cleave and pure-utility AoE are excluded — see parseSkills `aoeDamage`.
  *  - Unbooked chance = booked (described) chance − Σ(Buff/Debuff chance book rows).
  *  - ascension_required defaults 0 (static HTML doesn't flag ascension). Known
  *    corrections applied from ASCENSION_OVERRIDES; anything uncertain stays 0 and
@@ -139,7 +142,13 @@ function parseSkills(html) {
     const cdReduce = rows.filter(r => /cooldown/i.test(r.type)).length;
     const cdMatch = desc.match(/cooldown[:\s]+(\d+)/i);
     const cooldown = cdMatch ? +cdMatch[1] : (slot === 1 ? 0 : null);
-    skills.push({ name, slot: `A${slot}`, desc, brackets, bookChance, cdReduce, cooldown, aoe: /all enemies/i.test(desc) });
+    // aoe: any reference to all enemies (used to prefix AoE-variant debuff tags).
+    // aoeDamage: the STRICTER "attacks all enemies" phrasing — Plarium's canonical
+    // wording for a skill that deals DAMAGE to every enemy. Deliberately excludes
+    // conditional cleave ("attack all REMAINING enemies … if the target is killed")
+    // and pure-utility AoE ("places [X] on all enemies" with no attack).
+    skills.push({ name, slot: `A${slot}`, desc, brackets, bookChance, cdReduce, cooldown,
+      aoe: /all enemies/i.test(desc), aoeDamage: /attacks\s+all\s+enemies/i.test(desc) });
   }
   return skills;
 }
@@ -234,7 +243,7 @@ where ch.game_id = 'raid_shadow_legends' and ch.name = '${esc(champ)}'
     }
 
     const skills = parseSkills(html);
-    if (MODE === 'validate') { console.log(`\n=== ${champ} (${slug}) ===`); console.log('aura:', aura); skills.forEach(s => console.log(s.slot, s.name, '| aoe', s.aoe, '| book+', s.bookChance, '| brackets', s.brackets, '| cd', s.cooldown)); }
+    if (MODE === 'validate') { console.log(`\n=== ${champ} (${slug}) ===`); console.log('aura:', aura); skills.forEach(s => console.log(s.slot, s.name, '| aoe', s.aoe, '| aoeDmg', s.aoeDamage, '| book+', s.bookChance, '| brackets', s.brackets, '| cd', s.cooldown)); }
 
     const emitted = new Set();
     for (const sk of skills) {
@@ -260,6 +269,24 @@ from champions ch join tags t on t.name = '${esc(tag)}'
 where ch.game_id = 'raid_shadow_legends' and ch.name = '${esc(champ)}'
   and not exists (select 1 from champion_tags x where x.champion_id = ch.id and x.tag_id = t.id);`);
       }
+    }
+
+    // AoE Damage — NOT a bracketed [debuff]/[buff], so the bracket loop above never
+    // emits it. Derive it from the canonical "attacks all enemies" phrasing
+    // (sk.aoeDamage). One row per champion, citing every AoE-damage skill. Guarded by
+    // tagSet + the per-champion `emitted` dedup. This closes the systemic gap where
+    // AoE-damage-only skills went untagged across all raid.guide-scraped champions.
+    const aoeSkills = skills.filter(sk => sk.aoeDamage);
+    if (aoeSkills.length && tagSet.has('AoE Damage') && !emitted.has(`${champ}|AoE Damage`)) {
+      emitted.add(`${champ}|AoE Damage`);
+      const cites = aoeSkills.map(sk => `${sk.slot} ${sk.name}`).join(', ');
+      const note = `raid.guide: "Attacks all enemies" on ${cites} => AoE damage. Derived from the attack phrasing, not a bracketed debuff (the reason the earlier raid.guide scrape omitted AoE Damage). Excludes conditional cleave ("all remaining enemies … if killed") and pure-utility AoE.`;
+      tagSql.push(
+`insert into champion_tags (champion_id, tag_id, status, source_type, source_note, proposed_by, proposed_at, ascension_required)
+select ch.id, t.id, 'proposed', 'raid_guide', '${esc(note)}', 'raid-guide-scraper', now(), 0
+from champions ch join tags t on t.name = 'AoE Damage'
+where ch.game_id = 'raid_shadow_legends' and ch.name = '${esc(champ)}'
+  and not exists (select 1 from champion_tags x where x.champion_id = ch.id and x.tag_id = t.id);`);
     }
     processed++;
     if (MODE === 'all') fs.appendFileSync(progressFile, champ + '\n');
