@@ -3,7 +3,7 @@
  * Fandom wiki champion-tags scraper — RSL Roster Coach
  *
  * Companion to tools/scrape-champion-tags.js (raid.guide). Fandom is CC-BY-SA and
- * an explicit Tier-1 primary source (SOURCE_HIERARCHY.md) — verbatim Plarium skill
+ * an explicit Tier-1 primary source (CLAUDE.md source hierarchy) — verbatim Plarium skill
  * text, allowed for PROPOSED tags. Uses the MediaWiki API (action=parse&prop=wikitext),
  * NOT HTML scraping (the rendered site 403s generic clients; the API serves the
  * licensed content directly).
@@ -32,8 +32,8 @@
  *   progress-fandom.txt                 checkpoint — completed names (skipped on rerun)
  *
  * Back-calc: unbooked = booked − Σ(Buff/Debuff Chance book increases).
- * ascension_required: active skills → 0; passives & auras → 3 (SOURCE_HIERARCHY
- *   default, 2026-07-06); ASCENSION_OVERRIDES wins. Uncertain stays default — never
+ * ascension_required: active skills → 0; passives & auras → 3 (CLAUDE.md
+ *   star-color rule, 2026-07-06); ASCENSION_OVERRIDES wins. Uncertain stays default — never
  *   guessed. A Fandom-shown ascended variant is noted for the reviewer, not auto-gated.
  */
 import fs from 'fs';

@@ -126,9 +126,11 @@ order by d.name, ds.label;
 
 ## Data sourcing — hard rules
 - CANONICAL, detailed hierarchy (Tier 1–3 sources, unbooked back-calculation
-  formula, ascension-gate default rule `=3` for passives/gated auras, and the
-  `source_type` value mapping) lives in SOURCE_HIERARCHY.md (2026-07-06). The
-  bullets below are the summary; SOURCE_HIERARCHY.md governs on any conflict.
+  formula, the in-game Index star-color ascension rule + default `=3` for
+  passives/auras, and the `source_type` value mapping) is the "## Source
+  hierarchy for skill data (champion tags)" section below — that section governs
+  on any conflict. (SOURCE_HIERARCHY.md was consolidated into this file and
+  removed 2026-07-07.)
 - NEVER build an automated scraper targeting HellHades, Gestal, AyumiLove,
   InTeleria, or any other "all rights reserved" community site. Their ToS
   explicitly prohibit automated scraping.
