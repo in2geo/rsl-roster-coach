@@ -125,26 +125,160 @@ order by d.name, ds.label;
 ```
 
 ## Data sourcing — hard rules
-- NEVER scrape or write a scraper targeting HellHades, Gestal, AyumiLove,
-  InTeleria, or any other "all rights reserved" community site.
+- CANONICAL, detailed hierarchy (Tier 1–3 sources, unbooked back-calculation
+  formula, ascension-gate default rule `=3` for passives/gated auras, and the
+  `source_type` value mapping) lives in SOURCE_HIERARCHY.md (2026-07-06). The
+  bullets below are the summary; SOURCE_HIERARCHY.md governs on any conflict.
+- NEVER build an automated scraper targeting HellHades, Gestal, AyumiLove,
+  InTeleria, or any other "all rights reserved" community site. Their ToS
+  explicitly prohibit automated scraping.
 - NEVER scrape YouTube (videos, transcripts, or comments).
-- DO use: in-game Index/Compendium (skill text), official Plarium patch
-  notes, Fandom wiki (CC-BY-SA).
-- DO use raid.guide (https://raid.guide/en/stats/) for champion base stats,
-  and (carve-out, 2026-07-01) for verbatim champion SKILL DESCRIPTIONS on the
-  per-champion pages (https://raid.guide/en/shadow-legends/<slug>/) — these are
-  Plarium's literal skill text, not editorial. Confirmed accurate, not on the
-  no-scrape list. STILL off-limits from raid.guide: tier ratings, star grades,
-  "best build"/strategy opinions, and any recommendation — those are editorial.
-- Tag champions from literal skill text only — never from guides' tier lists
-  or opinions. raid.guide's verbatim skill descriptions COUNT as literal skill
-  text (same words as the in-game Index); a guide's ratings/strategy do not.
-  Tags sourced this way are `source_type='raid_guide'`, `status='proposed'` and
-  MUST be human-reviewed before they go live (the engine only reads approved
-  tags). Guides' meta bias lives in ratings/picks, not the skill descriptions.
-- Every new tag or rule gets proposed in structured form, then reviewed
-  and approved by a human before it's considered live. No auto-merge.
+- The restriction on community sites is specifically about their EDITORIAL
+  CONTENT — tier lists, champion ratings, "best champions" guides, build
+  recommendations, dungeon strategies. This content represents their expertise
+  and work product and must not be copied into seed files or used as the basis
+  for tag/recommendation logic.
+- FACTUAL GAME DATA is not restricted — champion names, factions, affinities,
+  rarities, base stats, skill names, skill descriptions, ascension unlock
+  information. These are facts about the game that Plarium publishes. Reading
+  these facts from any source (including HellHades, AyumiLove, etc.) as a human
+  researcher is fine — the restriction is on automated scraping and on using
+  their editorial judgment as a source of truth for recommendations.
+- DO use as primary sources: the game's own in-game Index/Compendium (skill
+  text for any champion, owned or not), official Plarium patch notes, and the
+  Fandom wiki (CC-BY-SA).
+- DO use raid.guide (https://raid.guide/en/stats/) for champion base stats, and
+  for verbatim champion SKILL DESCRIPTIONS on the per-champion pages
+  (https://raid.guide/en/shadow-legends/<slug>/) — Plarium's literal skill text,
+  confirmed accurate, not on the no-scrape list. raid.guide's tier ratings /
+  "best build" opinions remain off-limits (editorial).
+- Tag champions from literal skill text only — never from tier lists or "best
+  champions" guides. Those are biased toward Legendary/Epic and miss exactly the
+  Common/Uncommon/Rare champions this audience actually owns. Tags sourced from
+  skill text are `status='proposed'` and human-reviewed before they go live.
+- Every new tag or rule gets proposed in structured form, then reviewed and
+  approved by a human before it's considered live. No auto-merge.
 - Zero-tag champions must surface explicitly — never silently exclude.
+
+## Source hierarchy for skill data (champion tags)
+
+When proposing champion_tags rows, use the following hierarchy in order
+of preference:
+
+### Tier 1 — Primary sources (use these first)
+- **In-game Index / Compendium**: exact unbooked skill text, ascension
+  gate confirmation (padlock visible on unascended champion), cooldowns.
+  This is the only reliable source for ascension gate status.
+- **Official Plarium patch notes**: new champion card images with full
+  skill text. Booked or unbooked status must be noted — patch cards
+  typically show base values.
+- **Fandom wiki (CC-BY-SA)**: verbatim skill text acceptable.
+- **raid.guide**: verbatim Plarium skill descriptions and base stats.
+  Confirmed accurate for base stats. Booked values shown — back-calculate
+  unbooked using book progression table.
+
+### Tier 2 — Acceptable for factual game data (human reading only)
+HellHades, AyumiLove, InTeleria, and similar community sites may be read
+by hand to extract factual game data — skill names, descriptions,
+percentages, book progressions, cooldowns. These are Plarium's numbers,
+not the site's editorial content.
+
+**Permitted**: reading booked skill percentages and book progression tables
+by hand to back-calculate unbooked values.
+
+**Formula**: `unbooked_chance = booked_value - sum(Buff/Debuff Chance
+increases in book progression)`
+
+Example — Alice the Wanderer A2 Clockwork Cyclone:
+- Booked value (from any source): 75%
+- Book progression: +10% (Lvl 4) + +15% (Lvl 5) = +25%
+- Unbooked: 75% - 25% = 50%
+
+**Never permitted**:
+- Automated scraping of any community site (ToS violation)
+- Using their tier lists, ratings, or build recommendations as the basis
+  for tag/recommendation logic
+- Treating "best champion" picks from guides as our source of truth
+
+### Tier 3 — Not acceptable as source of truth
+- Editorial content from any community site: tier lists, champion ratings,
+  "best champions" rankings, build guides, dungeon strategy opinions
+- YouTube video content (videos, transcripts, comments)
+
+### In-game Index star color rule (ascension verification)
+
+Star color on the champion detail screen indicates ascension status:
+- **MAGENTA/PINK stars** = champion shown at max ascension
+- **YELLOW stars** = champion shown unascended (base skill values only)
+
+#### Critical constraint
+- **Owned champions**: shown at their ACTUAL current ascension level.
+  If you have ascended a champion, the Index shows the ascended version.
+  You cannot see their unascended state from your own account after
+  ascending them.
+- **Unowned champions**: always shown at MAX ascension in the Index
+  regardless of gate. Always magenta. Cannot be used to determine
+  unascended skill text.
+
+#### Implication
+The ONLY way to see unascended skill text from the in-game Index is to
+own the champion AND not yet have ascended them past the gate you are
+trying to verify.
+
+#### Verification windows
+| Scenario | Can verify unascended state? |
+|---|---|
+| Own champion, not yet 3-star ascended | ✅ YES — screenshot now before ascending |
+| Own champion, already ascended | ❌ NO — need second account or YouTube |
+| Don't own champion | ❌ NO — Index always shows max ascension |
+| New champion just obtained | ✅ YES — screenshot all skills before ascending |
+
+#### Standing rule
+Because most owned champions are already ascended and unowned champions
+always show max ascension, passive and aura ascension gates CANNOT be
+confirmed from the in-game Index in most cases.
+
+Default: `ascension_required = 3` for ALL passives and auras. Override only
+when a yellow-star screenshot explicitly shows no padlock on the passive or
+aura slot.
+
+Confirmed ascension-gated:
+- Yellow-star screenshot confirmed:
+  - Criodan the Blue — Snow Dancer [P]: ascension_required = 3
+  - Pelops the Victor — Master of Games [P]: ascension_required = 3
+- Prior in-game screenshot (confirmed before the star-color standard;
+  re-verify to yellow-star when the champion is next unascended):
+  - Skeletor — Master of Evil [P]: ascension_required = 3
+  - Seeker — DEF Aura: ascension_required = 3
+  - Glorious Pallas — Shield of the Argolades [P]: ascension_required = 3
+
+Confirmed ascension upgrade (magenta-star shows new debuff vs yellow
+would show less):
+- Fayne A2 — Decrease ATK: ascension_required = 3 (magenta shows both
+  Poison + Decrease ATK; unascended A2 has Poison only)
+
+Confirmed NOT gated (yellow-star screenshot showed no padlock):
+- None confirmed yet — default to 3 until proven otherwise
+
+#### Action rule
+Every time a new champion is obtained: screenshot all skill slots from
+the in-game Index BEFORE ascending. This is the primary source window
+for unascended skill text. Once ascended, that window closes permanently
+on your account.
+
+### source_type values for champion_tags
+| Source used | source_type value |
+|---|---|
+| In-game Index screenshot | `in_game_index` |
+| Patch notes card image | `in_game_index` |
+| raid.guide scraper | `raid_guide` |
+| Fandom wiki | `fandom_wiki` |
+| Hand-read from HellHades/AyumiLove | `human_observation` |
+| Back-calculated from booked + books | `human_observation` |
+
+Always document the back-calculation in source_note:
+`'AyumiLove (human read): 75% booked. Books: +10% Lvl4, +15% Lvl5.
+Unbooked = 50%. Back-calculated per project source hierarchy.'`
 
 ## Core architecture principles
 - The AI is not the source of truth. The champion table and the
