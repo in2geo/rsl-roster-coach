@@ -229,6 +229,21 @@ asserted from the primary in-game source. She has **no aura**.
   Decrease-SPD chance at Level 1 (→ 75% booked); `seeds/15` recorded "25% unbooked". The
   in-game Index is primary; seed 52 uses 50% → 75%.
 
+### Ruella notes (seed 54) — no pending decisions
+Ruella (Epic / Spirit / Sylvan Watchers, Attack) was seeded in `seeds/54` with an all-
+SOLID, team-relevant kit (Decrease Turn Meter, Decrease Defense, Weaken, Decrease Speed,
+Increase Turn Meter, Increase C.Rate, ACC Aura). She was absent from every prior seed
+(not even `seeds/15`), so there were no mis-tags to reconcile. Reviewer notes only:
+
+- **Ascension-3 gating** — Increase Turn Meter and Increase C.Rate come from Timed
+  Offensive, which UNLOCKS AT ASCENSION 3 (`ascension_required=3`). A pre-Asc-3 Ruella
+  does not provide the ally TM fill / C.RATE buff — the matching engine should respect
+  the ascension gate before crediting these team buffs.
+- **Aura placement** — her ACC Aura is DUNGEONS-only (+40), not all-battles; noted in the
+  tag source_note (magnitude/placement are not stored on the tag itself).
+- **Decrease Turn Meter is conditional** — A1's 5% TM steal triggers only on a critical
+  hit (80% chance), not every hit; captured in the source_note.
+
 ### Sustain gear assumption
 The app assumes no player champion runs Lifesteal, Regeneration, or Immortal gear.
 All sustain must come from champion skills. This is enforced in the global sustain
