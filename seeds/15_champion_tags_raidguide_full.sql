@@ -4023,17 +4023,12 @@ from champions ch join tags t on t.name = 'Provoke'
 where ch.game_id = 'raid_shadow_legends' and ch.name = 'Jurojin'
   and not exists (select 1 from champion_tags x where x.champion_id = ch.id and x.tag_id = t.id);
 
-insert into champion_tags (champion_id, tag_id, status, source_type, source_note, proposed_by, proposed_at, ascension_required)
-select ch.id, t.id, 'proposed', 'raid_guide', 'raid.guide A3 True Smite: [Unkillable] no explicit chance in description. single-target. Cooldown 4 unbooked, 3 fully booked.', 'raid-guide-scraper', now(), 0
-from champions ch join tags t on t.name = 'Unkillable'
-where ch.game_id = 'raid_shadow_legends' and ch.name = 'Jurojin'
-  and not exists (select 1 from champion_tags x where x.champion_id = ch.id and x.tag_id = t.id);
-
-insert into champion_tags (champion_id, tag_id, status, source_type, source_note, proposed_by, proposed_at, ascension_required)
-select ch.id, t.id, 'proposed', 'raid_guide', 'raid.guide A3 True Smite: [Block Damage] no explicit chance in description. single-target. Cooldown 4 unbooked, 3 fully booked.', 'raid-guide-scraper', now(), 0
-from champions ch join tags t on t.name = 'Block Damage'
-where ch.game_id = 'raid_shadow_legends' and ch.name = 'Jurojin'
-  and not exists (select 1 from champion_tags x where x.champion_id = ch.id and x.tag_id = t.id);
+-- [REMOVED 2026-07-08] Jurojin [Unkillable] and [Block Damage] raid.guide auto-tags
+-- were MIS-TAGS: A3 True Smite "will also ignore [Unkillable] and [Block Damage]
+-- buffs" — Jurojin BYPASSES those enemy buffs when attacking, he does NOT place
+-- them. The scraper pattern-matched the buff names in the skill text. Confirmed
+-- from the in-game Index (see seeds/50). Deleted so a clean rebuild never proposes
+-- them; seeds/50 also defensively rejects them on any live DB where they landed.
 
 insert into champion_tags (champion_id, tag_id, status, source_type, source_note, proposed_by, proposed_at, ascension_required)
 select ch.id, t.id, 'proposed', 'raid_guide', 'raid.guide A2 Contemptuous Blow: [Provoke] 25% unbooked (50% booked − 25% book). single-target. Cooldown 3 unbooked, 2 fully booked.', 'raid-guide-scraper', now(), 0

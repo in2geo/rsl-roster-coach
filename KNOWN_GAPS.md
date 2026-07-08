@@ -174,6 +174,31 @@ pending a human decision:
   scaling (+5%/debuff up to 50%, Ignore DEF +3%/debuff up to 30%). No vocabulary; self-
   only. Left untagged.
 
+### Jurojin pending-review tag decisions (seed 50)
+Jurojin (Epic / Spirit / Shadowkin, HP-based) was seeded in `seeds/50` with the SOLID
+tags (Decrease Attack, Provoke, Shield [self], HP Aura). His champions row was missing
+from every committed seed even though `seeds/15` referenced him, so those raid.guide
+tags had been silently no-opping — the row is created in seed 50 and the tags asserted
+from the primary in-game source.
+
+- **seed-15 mis-tag CORRECTED** — `seeds/15` auto-tagged Jurojin with **Unkillable** and
+  **Block Damage** from A3 True Smite's text "will also ignore [Unkillable] and [Block
+  Damage] buffs". That is a BYPASS of enemy buffs — he does NOT grant them. Tagging them
+  would falsely surface him as an Unkillable/Block-Damage granter and could fool the team
+  sustain check. Both seed-15 insert blocks were deleted; seed 50 also defensively rejects
+  the rows on any live DB. No decision needed — this is a correction, logged for the trail.
+- **Shield is SELF-only** (A2 Fated Duel, 25% of his MAX HP 2t) — tagged `Shield` with a
+  self-only note (same treatment as Michelangelo's self-Shield, seed 46). Reviewer may
+  downgrade if `Shield` is meant to mean ally-facing shields only.
+- **Ignore [Unkillable]/[Block Damage] on enemies** (A3 True Smite) — a notable anti-tank /
+  anti-revive tech (also ignores 25% enemy DEF). No vocab exists for "ignores enemy buff
+  X". Decision: introduce an anti-buff/penetration concept, or leave as flavour?
+- **Smiles at Death** (passive, Ascension 3) — 25% less damage taken when HP ≤ 50%. Self
+  damage mitigation; no vocab. Left untagged.
+- **Chance discrepancy (reviewer note)** — in-game A1 Monk's Spade shows a **45%**
+  Decrease-ATK chance at Level 1 (→ 60% booked); `seeds/15` recorded "30% unbooked (45%
+  booked)". The in-game Index is primary; seed 50's note uses 45% → 60%.
+
 ### Sustain gear assumption
 The app assumes no player champion runs Lifesteal, Regeneration, or Immortal gear.
 All sustain must come from champion skills. This is enforced in the global sustain
