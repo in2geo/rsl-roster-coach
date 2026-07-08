@@ -268,16 +268,22 @@ the in-game Index BEFORE ascending. This is the primary source window
 for unascended skill text. Once ascended, that window closes permanently
 on your account.
 
-### Tagging convention — conditional debuffs are NOT tagged
-A debuff that only lands when a SPECIFIC other debuff is already on the target is
-NOT given its own `champion_tags` row — the champion can't deliver it unaided, so
-the matching engine must never count it as a capability. Document the conditional
-effect in the `source_note` of the champion's PRIMARY tag row instead.
+### Tagging convention — conditional debuffs
+DEFAULT (do not tag): a debuff that only lands when a SPECIFIC OTHER DEBUFF is
+already on the target is NOT given its own `champion_tags` row — the champion
+can't deliver it unaided, so the matching engine must never count it as a
+capability. Document the conditional effect in the `source_note` of the
+champion's PRIMARY tag row instead.
 - Example: Pharsalas (DB name `Pharsalas`; a.k.a. Pharsalas Gravedirt) A1 places
   Decrease ATK only if the target is already under Fear/True Fear → do NOT add a
   Decrease Attack tag; note the condition on his Provoke row.
 - Same principle already applied to Staltus's conditional A1 Turn Meter decrease
   (fires only if the target already has a debuff) — rejected in seed 64.
+
+EXCEPTION — crit-conditional debuffs ARE tagged. A debuff placed "on a critical
+hit" DOES get a normal tag row: Crit Rate is a player-controlled gear stat and a
+widely understood mechanic, so the player can make it reliable. Tag it at 100%
+unbooked, with a `source_note` flagging "places on critical hit."
 
 ### source_type values for champion_tags
 | Source used | source_type value |
