@@ -199,6 +199,36 @@ from the primary in-game source.
   Decrease-ATK chance at Level 1 (→ 60% booked); `seeds/15` recorded "30% unbooked (45%
   booked)". The in-game Index is primary; seed 50's note uses 45% → 60%.
 
+### Dark Elhain pending-review tag decisions (seed 52)
+Dark Elhain (Epic / Magic / Undead Hordes, Attack; NOT the base High-Elves Elhain) was
+seeded in `seeds/52` with the SOLID tags (Decrease Speed, AoE Damage, Increase Attack
+[self], Increase C.Rate [self, Ascension 3], Increase C.DMG [self, Ascension 3]). Her
+champions row was missing from every committed seed though `seeds/15` referenced her, so
+those raid.guide tags had been no-opping — the row is created in seed 52 and the tags
+asserted from the primary in-game source. She has **no aura**.
+
+- **seed-15 mis-tag CORRECTED** — `seeds/15` auto-tagged her with **Freeze** from Lethal
+  Winter's text "whenever this Champion or an ally RECEIVES a [Freeze] debuff". Her kit
+  REACTS to being frozen (TM fill + Veins-of-Ice buff conversion) — she does NOT place
+  [Freeze]. Tagging it would falsely surface her as a Freeze/CC champion. Deleted from
+  seed 15; seed 52 also defensively rejects it. Correction, logged for the trail.
+- **Self-only buffs** — Increase Attack (A2) and the Ascension-3 Veins-of-Ice buffs
+  (Increase C.Rate, Increase C.DMG) are all SELF, tagged with self-only + ascension notes
+  (cf. Michelangelo self-buffs). Reviewer may downgrade if these tags are meant to be
+  ally-facing only. `seeds/15` recorded ascension_required=0 for the C.Rate/C.DMG rows;
+  seed 52 corrects them to ascension_required=3.
+- **Strengthen** (Veins of Ice, 15% self, Ascension 3) — no `Strengthen` tag exists in
+  the vocab. It's a common RSL buff but self-only here. Decision: create the vocab tag
+  (would also apply to other Strengthen champions), or leave untagged?
+- **Increase Turn Meter** (Lethal Winter) — the tag means "fills an ALLY's Turn Meter";
+  hers is SELF (25%, on Freeze). Left untagged (cf. Kosk seed 47).
+- **MAX-HP destroy** (A1 Necrotic Bolt, 30% of damage) and **Death's-Majesty
+  auto-activation on Freeze** (Lethal Winter) — neither is a placed debuff/standard
+  effect; no vocab (cf. Venomage MAX-HP/Poison-activation, seed 44). Left untagged.
+- **Chance discrepancy (reviewer note)** — in-game A2 Death's Majesty shows a **50%**
+  Decrease-SPD chance at Level 1 (→ 75% booked); `seeds/15` recorded "25% unbooked". The
+  in-game Index is primary; seed 52 uses 50% → 75%.
+
 ### Sustain gear assumption
 The app assumes no player champion runs Lifesteal, Regeneration, or Immortal gear.
 All sustain must come from champion skills. This is enforced in the global sustain
