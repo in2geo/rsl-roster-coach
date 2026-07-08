@@ -28,10 +28,9 @@
 --         places a [Shield] buff on that ally = 20% of their MAX HP 1t. Fills the
 --         Turn Meters of ALL allies by 15% at the end of this Champion's turn."
 --
---     >>> AURA NOT CAPTURED: the recording used the collection / Total-Stats inspect
---         view, which does NOT display the aura panel. Her aura (if any) is UNKNOWN
---         from this clip — deliberately NOT guessed. Needs a follow-up skills-screen
---         shot; Aura Status stays Pending. <<<
+--     Aura: +50 [RES] to all allies in all Battles (RES Aura). The original recording
+--         used the collection / Total-Stats view (no aura panel); aura confirmed from
+--         Mike's follow-up on 2026-07-08.
 --
 -- (2) TAGS ADDED (existing vocab; all SOLID and genuinely ALLY-FACING — she is a
 --     dedicated Support). ascension_required = 0 for all:
@@ -46,6 +45,8 @@
 --         the first genuinely ally-facing Shield — cf. the SELF-only shields on
 --         Jurojin/Michelangelo).
 --       * Increase Turn Meter — passive (fills ALL allies' TM by 15% at end of turn).
+--       * RES Aura         — leader aura, +50 [RES] to all allies in all Battles
+--         (vocab from seeds/20; confirmed 2026-07-08).
 --
 -- (3) NOT TAGGED — logged in KNOWN_GAPS.md ("Glorious Pallas pending-review tag
 --     decisions"), no vocabulary exists:
@@ -83,7 +84,9 @@ from (values
   ('Shield',
    'Passive Shield of the Argolades [P]: whenever an ally receives a debuff, places a [Shield] buff on THAT ALLY = 20% of their MAX HP 1t. Genuinely ally-facing (not self-only). Verbatim in-game Index text, Level 1, captured 2026-07-08.'),
   ('Increase Turn Meter',
-   'Passive Shield of the Argolades [P]: fills the Turn Meters of ALL allies by 15% at the end of Glorious Pallas''s turn (ally-facing team TM). Verbatim in-game Index text, Level 1, captured 2026-07-08.')
+   'Passive Shield of the Argolades [P]: fills the Turn Meters of ALL allies by 15% at the end of Glorious Pallas''s turn (ally-facing team TM). Verbatim in-game Index text, Level 1, captured 2026-07-08.'),
+  ('RES Aura',
+   'Leader aura: +50 [RES] to all allies in all Battles. Only applies when Glorious Pallas is the team leader. Confirmed 2026-07-08 (original recording used the Total-Stats view which omits the aura panel). Magnitude/placement per the in-game Index.')
 ) as v(tag, note)
 join champions ch on ch.game_id = 'raid_shadow_legends' and ch.name = 'Glorious Pallas'
 join tags t on t.name = v.tag

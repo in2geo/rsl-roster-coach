@@ -251,10 +251,9 @@ Strengthen, Shield, Increase Turn Meter). She's the first champion whose Shield 
 Increase Turn Meter are genuinely team-facing (contrast the self-only versions on
 Jurojin/Michelangelo/Kosk). Open items:
 
-- **AURA NOT CAPTURED** — the recording used the collection / Total-Stats inspect view,
-  which doesn't show the aura panel, so her aura is unknown from this clip (deliberately
-  not guessed). Needs a follow-up skills-screen screenshot; her worksheet Aura Status
-  stays Pending until then.
+- **Aura RESOLVED** — the original recording used the collection / Total-Stats view (no
+  aura panel); Mike confirmed the aura on 2026-07-08: **+50 [RES] to all allies in all
+  Battles** (RES Aura, vocab from seeds/20). Added to seeds/56.
 - **Ally Attack** (A1 Spear of Serenity — 1 random Argonites ally joins the attack) — no
   vocab tag. This is the **second** occurrence (Michelangelo, seed 46, was the first), so
   like Debuff Spread it's now a strong candidate to promote to a real tag. Decision needed.
