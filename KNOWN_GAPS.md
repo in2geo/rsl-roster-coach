@@ -127,6 +127,8 @@ exists for any of them:
   new vocab tag; would also apply to other Leech champions.
 - **Debuff Spread** (A2 Express Delivery) — takes all debuffs from the target and
   copies them to all enemies. Signature turtle mechanic; niche but distinctive.
+  RESOLVED (seed 48): `Debuff Spread` is now a vocab tag and Michelangelo carries it
+  (approved).
 - **Ally Attack** (Party Dude passive) — when he attacks, ally Leonardo/Donatello/
   Michelangelo/Raphael join the attack. TMNT-set synergy; overlaps with the
   Clan Boss "Ally Attack" concept (Fahrakin/Cardiel) which is currently handled
@@ -158,8 +160,9 @@ pending a human decision:
   HIMSELF 2t before attacking. No `Increase Accuracy` tag exists, and it is self-scoped
   anyway (feeds his own debuff landing, not team support). Decision: add vocab, or skip?
 - **Debuff Spread** (A2) — takes all [Poison] debuffs and the [Poison Sensitivity]
-  debuff from the target and copies them to all other enemies. Same untagged mechanic
-  as Michelangelo (seed 46) and Karnage — resolve once, apply to all.
+  debuff from the target and copies them to all other enemies. RESOLVED (seed 48):
+  `Debuff Spread` is now a vocab tag and Kosk carries it (approved), alongside
+  Michelangelo. (Karnage still worksheet-only — tag him if he enters the repo.)
 - **Debuff-duration extension** (A1) and **Poison ACTIVATION/detonation** (A1 & A3) —
   A1 can extend all enemy debuffs by 1 turn / instantly activate Poisons; A3 instantly
   activates all Poisons AoE. Neither is a placed debuff, so no tag fits (cf. Venomage
