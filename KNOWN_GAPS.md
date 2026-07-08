@@ -244,6 +244,23 @@ Increase Turn Meter, Increase C.Rate, ACC Aura). She was absent from every prior
 - **Decrease Turn Meter is conditional** — A1's 5% TM steal triggers only on a critical
   hit (80% chance), not every hit; captured in the source_note.
 
+### Glorious Pallas pending-review tag decisions (seed 56)
+Glorious Pallas (Legendary / Magic / Argonites, Support) was seeded in `seeds/56` with a
+rich, all-ally-facing SOLID kit (Healer, Cleanse, Block Debuffs, Revive, Increase Speed,
+Strengthen, Shield, Increase Turn Meter). She's the first champion whose Shield / Revive /
+Increase Turn Meter are genuinely team-facing (contrast the self-only versions on
+Jurojin/Michelangelo/Kosk). Open items:
+
+- **AURA NOT CAPTURED** — the recording used the collection / Total-Stats inspect view,
+  which doesn't show the aura panel, so her aura is unknown from this clip (deliberately
+  not guessed). Needs a follow-up skills-screen screenshot; her worksheet Aura Status
+  stays Pending until then.
+- **Ally Attack** (A1 Spear of Serenity — 1 random Argonites ally joins the attack) — no
+  vocab tag. This is the **second** occurrence (Michelangelo, seed 46, was the first), so
+  like Debuff Spread it's now a strong candidate to promote to a real tag. Decision needed.
+- **Fervor** (A2 Gift of Thalass) — no `Fervor` vocab tag. Common RSL buff (boosts Turn-
+  Meter gain). Decision: create the vocab tag, or leave untagged?
+
 ### Sustain gear assumption
 The app assumes no player champion runs Lifesteal, Regeneration, or Immortal gear.
 All sustain must come from champion skills. This is enforced in the global sustain
