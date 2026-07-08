@@ -138,6 +138,39 @@ exists for any of them:
 noted as SELF-only in their source_notes; relevant for solo/survival, not team
 support. Reviewer may downgrade if the tag is meant for ally-facing effects only.)
 
+### Kosk of Two Skins pending-review tag decisions (seed 47)
+Kosk of Two Skins (Legendary / Force / Lizardmen) was seeded in `seeds/47` with the
+SOLID tags (Poison, Poison Sensitivity, Decrease Attack, AoE Damage, ACC Aura — the
+last a new vocab tag mirroring seeds/20 RES Aura). Several effects were left untagged
+pending a human decision:
+
+- **Increase Turn Meter** (A3 Toxic Vitriol) — the existing tag means "fills an
+  ALLY's Turn Meter". Kosk's +20% per [Decrease ATK] placed is SELF-only (self-
+  acceleration off his own AoE). Tagging it would wrongly surface him as a team TM-
+  booster (cf. Xenomorph self-revive, Michelangelo self-buffs). Decision needed: leave
+  untagged (current), or add a self-scoped TM variant?
+- **Counterattack** (Imbibed Immunity passive) — the existing tag means "places a
+  [Counterattack] BUFF on allies". Kosk's passive is that HE counterattacks any enemy
+  that hits him while under a debuff he placed — a self/passive counter, not an ally
+  buff. Tagging `Counterattack` would mis-surface him as a Counterattack enabler.
+  Decision needed: leave untagged (current), or add a self-counter concept?
+- **Increase ACC self-buff** (A2 They Will Regret...) — a 50% [Increase ACC] buff on
+  HIMSELF 2t before attacking. No `Increase Accuracy` tag exists, and it is self-scoped
+  anyway (feeds his own debuff landing, not team support). Decision: add vocab, or skip?
+- **Debuff Spread** (A2) — takes all [Poison] debuffs and the [Poison Sensitivity]
+  debuff from the target and copies them to all other enemies. Same untagged mechanic
+  as Michelangelo (seed 46) and Karnage — resolve once, apply to all.
+- **Debuff-duration extension** (A1) and **Poison ACTIVATION/detonation** (A1 & A3) —
+  A1 can extend all enemy debuffs by 1 turn / instantly activate Poisons; A3 instantly
+  activates all Poisons AoE. Neither is a placed debuff, so no tag fits (cf. Venomage
+  Poison-activation, seed 44). Decision: introduce a "detonation/activation" concept?
+- **Innate immunity** (passive) — permanent immunity to [Poison], [Stun], and
+  [Decrease SPD]. This is NOT the [Block Debuffs] buff (which is placed/temporary), so
+  it should not carry that tag. No vocab exists for innate debuff immunities.
+- **Damage-dealt increase + Ignore DEF per enemy debuff** (passive) — self damage-
+  scaling (+5%/debuff up to 50%, Ignore DEF +3%/debuff up to 30%). No vocabulary; self-
+  only. Left untagged.
+
 ### Sustain gear assumption
 The app assumes no player champion runs Lifesteal, Regeneration, or Immortal gear.
 All sustain must come from champion skills. This is enforced in the global sustain
