@@ -130,9 +130,9 @@ exists for any of them:
   RESOLVED (seed 48): `Debuff Spread` is now a vocab tag and Michelangelo carries it
   (approved).
 - **Ally Attack** (Party Dude passive) — when he attacks, ally Leonardo/Donatello/
-  Michelangelo/Raphael join the attack. TMNT-set synergy; overlaps with the
-  Clan Boss "Ally Attack" concept (Fahrakin/Cardiel) which is currently handled
-  outside the tag vocabulary — decide whether Ally Attack should become a tag.
+  Michelangelo/Raphael join the attack. TMNT-set synergy. RESOLVED (seed 57):
+  `Ally Attack` is now a vocab tag; Michelangelo carries it (proposed, with his other
+  seed-46 tags, pending his review). Fahrakin/Cardiel can migrate to this tag later.
 - **Evade** (Party Dude passive) — 15% chance to evade an enemy skill (30% under
   Taunt). Survival mechanic; no tag.
 
@@ -254,11 +254,12 @@ Jurojin/Michelangelo/Kosk). Open items:
 - **Aura RESOLVED** — the original recording used the collection / Total-Stats view (no
   aura panel); Mike confirmed the aura on 2026-07-08: **+50 [RES] to all allies in all
   Battles** (RES Aura, vocab from seeds/20). Added to seeds/56.
-- **Ally Attack** (A1 Spear of Serenity — 1 random Argonites ally joins the attack) — no
-  vocab tag. This is the **second** occurrence (Michelangelo, seed 46, was the first), so
-  like Debuff Spread it's now a strong candidate to promote to a real tag. Decision needed.
-- **Fervor** (A2 Gift of Thalass) — no `Fervor` vocab tag. Common RSL buff (boosts Turn-
-  Meter gain). Decision: create the vocab tag, or leave untagged?
+- **Ally Attack** (A1 Spear of Serenity — 1 random Argonites ally joins the attack) —
+  RESOLVED (seed 57): `Ally Attack` is now a vocab tag; Glorious Pallas carries it
+  (approved) and Michelangelo carries it (proposed). Fahrakin/Cardiel (Clan Boss Ally
+  Attack, handled via strategy modifiers) are candidates to migrate to this tag later.
+- **Fervor** (A2 Gift of Thalass) — RESOLVED (seed 57): `Fervor` is now a vocab tag and
+  Glorious Pallas carries it (approved).
 
 ### Sustain gear assumption
 The app assumes no player champion runs Lifesteal, Regeneration, or Immortal gear.
