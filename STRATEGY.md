@@ -161,7 +161,7 @@ within RSL is:
 | Fire Knight | Medium | Turn meter control focused, different tag set |
 | Arena (Bronze-Gold) | Medium | Different recommendation model — see below |
 | Faction Wars | Low | Faction-locked teams, niche audience |
-| Doom Tower | Low | Deep endgame, out of target audience scope |
+| Doom Tower | Now in scope | Full modeling started 2026-07-06 (reverses the earlier "deep endgame / out of target audience scope" call, per owner decision). Floors 1-120 Normal+Hard, waves, mid-bosses, rotation bosses, secret-room bosses. |
 ### Arena — the exception to the fixed-content model
 Arena is the one piece of content that requires a fundamentally
 different recommendation approach. Every other content type is

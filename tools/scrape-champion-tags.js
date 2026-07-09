@@ -16,6 +16,7 @@
  *
  * Outputs (output/):
  *   champion-tags-proposed.sql     proposed champion_tags INSERTs (idempotent, NOT EXISTS)
+ *   skill-text-raidguide.json      raw verbatim skill text per champion/slot (review corpus; resume-merged)
  *   auras.sql                      aura data (stat/pct/placement) as comments — schema TBD
  *   missing_from_raid_guide.txt    DB champions with no raid.guide page (404/empty)
  *   missing_tags.txt               debuffs with no matching row in tags
@@ -94,6 +95,11 @@ const LIMIT = flag('--limit') ? parseInt(flag('--limit'), 10) : Infinity;
 const strip = (h) => h.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
 const esc = (s) => s.replace(/'/g, "''");
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+// Derive raid.guide's slug convention from a champion name: lowercase, drop
+// apostrophes/periods, non-alphanumeric runs → single hyphen (e.g. "Ash'nar" →
+// "ashnar", "Ambassador Lethelin" → "ambassador-lethelin"). Used only as a fallback
+// when the name isn't in the /stats/ slug dictionary.
+const guessSlug = (name) => name.toLowerCase().replace(/['’.]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 // ── Parsers ──────────────────────────────────────────────────────────────────
 function parseAura(html) {
@@ -154,7 +160,11 @@ async function main() {
   if (!process.env.SUPABASE_DB_URL) { console.error('Needs SUPABASE_DB_URL. Run with --env-file=.env.local'); process.exit(1); }
   const client = new pg.Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } });
   await client.connect();
-  const dbChamps = (await client.query("select name from champions where game_id='raid_shadow_legends' order by name")).rows.map(r => r.name);
+  // Scope: Rare and above only. The app's audience owns Rare+; Common/Uncommon are
+  // out of scope (product decision 2026-07-02) — don't scrape or tag them.
+  const dbChamps = (await client.query(
+    "select name from champions where game_id='raid_shadow_legends' " +
+    "and coalesce(rarity,'') not in ('Common','Uncommon') order by name")).rows.map(r => r.name);
   const tagSet = new Set((await client.query('select name from tags')).rows.map(r => r.name));
   await client.end();
 
@@ -176,14 +186,16 @@ async function main() {
   const done = fs.existsSync(progressFile) && MODE === 'all'
     ? new Set(fs.readFileSync(progressFile, 'utf8').split('\n').map(s => s.trim()).filter(Boolean)) : new Set();
 
-  const tagSql = [], auraSql = [], missPage = [], missTag = [];
+  const tagSql = [], auraSql = [], missPage = [], missTag = [], rawText = [];
   let processed = 0;
 
   for (const champ of worklist) {
     if (processed >= LIMIT) break;
     if (done.has(champ)) continue;
-    const slug = slugByName.get(champ.toLowerCase());
-    if (!slug) { missPage.push(`${champ} | ${champ} | (no slug) | not-on-raid.guide`); continue; }
+    // Prefer the /stats/ dictionary slug; fall back to a derived slug for champions
+    // absent from that (curated) table — some still HAVE a per-champion page (e.g.
+    // Aeshma → /en/shadow-legends/aeshma/). A real 404 below confirms genuine absence.
+    const slug = slugByName.get(champ.toLowerCase()) ?? guessSlug(champ);
 
     // Fetch with retry — raid.guide rate-limits the tail of a long batch, so a
     // transient "fetch failed" must be retried (with backoff) before giving up.
@@ -208,6 +220,9 @@ async function main() {
 
     const emitted = new Set();
     for (const sk of skills) {
+      // Raw verbatim skill text dump (Plarium's literal description per the carve-out).
+      // Human-review corpus — NOT auto-tagged. Keyed champion|slot for resume-merge.
+      rawText.push({ champion: champ, slug, slot: sk.slot, skill: sk.name, description: sk.desc, aoe: sk.aoe, cooldown: sk.cooldown });
       for (const br of sk.brackets) {
         const tag = mapTag(br, sk.aoe, tagSet);
         if (!tag) { if (TAG_MAP[nk(br)] === undefined) missTag.push(`${champ} | ${sk.name} (${sk.slot}) | [${br}] | (no mapping)`); continue; }
@@ -241,6 +256,20 @@ where ch.game_id = 'raid_shadow_legends' and ch.name = '${esc(champ)}'
   fs.writeFileSync(path.join(OUT, 'auras.sql'), `-- Aura data (stat/pct/placement) — schema TBD, review only. Generated ${new Date().toISOString()}.\n\n` + auraSql.join('\n') + '\n');
   fs.writeFileSync(path.join(OUT, 'missing_from_raid_guide.txt'), missPage.join('\n') + '\n');
   fs.writeFileSync(path.join(OUT, 'missing_tags.txt'), missTag.join('\n') + '\n');
+  // Raw skill-text corpus. Merge with any prior run (resume-safe) keyed champion|slot.
+  const rawPath = path.join(OUT, 'skill-text-raidguide.json');
+  const byKey = new Map();
+  try { for (const r of JSON.parse(fs.readFileSync(rawPath, 'utf8')).entries ?? []) byKey.set(`${r.champion}|${r.slot}`, r); } catch { /* first run */ }
+  for (const r of rawText) byKey.set(`${r.champion}|${r.slot}`, r);
+  const merged = [...byKey.values()];
+  fs.writeFileSync(rawPath, JSON.stringify({
+    source: 'raid.guide per-champion pages (verbatim skill descriptions)',
+    extracted_at: new Date().toISOString(),
+    champions: new Set(merged.map(r => r.champion)).size,
+    skills: merged.length,
+    note: 'Plarium literal skill text (2026-07-01 carve-out). Human-review corpus; NOT auto-tagged.',
+    entries: merged,
+  }, null, 2));
   console.log(`\nDone. ${processed} champion(s) processed → ${tagSql.length} proposed tag(s), ${auraSql.length} aura(s), ${missPage.length} missing page(s), ${missTag.length} unmapped debuff(s).`);
   console.log(`Output in ${OUT}/`);
 }
