@@ -3,7 +3,7 @@
 Operational gaps and known-wrong/low-confidence areas. Findable and scannable when
 debugging a wrong verdict. Delete entries as gaps close — don't leave stale notes.
 
-Last updated: 2026-07-01 (battle-data-pipeline branch).
+Last updated: 2026-07-07 (video-skill-screenshots branch — Dragon affinity rotation corrected).
 
 ## Data gaps
 
@@ -44,6 +44,99 @@ skills are a minority (mostly passives), so the list grows slowly. A `--skills` 
 reader was prototyped and **shelved** — even working it needs ownership and hit an object-
 graph wall (the `ISettableContext<Params>` struct is consumed on set, not heap-scannable).
 The nested-class resolver from that effort (`Il2CppClassResolver.ResolveNested`) was kept.
+
+### champion_solo_profiles affinity / stage-label errors in seeds/06 (audit — verify per champion from in-game)
+Reference — RAID affinity colour map (icon next to the champion name):
+**Magic = blue, Force = red, Spirit = green, Void = purple.** Affinity wheel
+(repo-anchored, seed 35 line 65): **Magic > Spirit > Force > Magic; Void neutral**
+(Magic strong vs Spirit, Spirit strong vs Force, Force strong vs Magic).
+
+Artak was seeded as Spirit in `seeds/06_solo_carry_proposals.sql` but his in-game icon is
+**blue = Magic**. Fixed (seed 41 creates his champions row as Magic; his 7 solo entries in
+seed 06 were corrected). Verified from video since then:
+
+- **Ezio Auditore** — icon is **green = Spirit**, so seed 07's `affinity='Spirit'` is
+  CORRECT (no change needed; an earlier draft wrongly read the green icon as Force). FIXED
+  2026-07-07: (a) faction `Shadowkin` → `Sacred Order` (seed 07 at source + idempotent
+  UPDATE in seed 42 for live rows) per the in-game detail screen; (b) seed 06 solo lookups
+  `where name = 'Ezio'` → `'Ezio Auditore'` (previously bound to NULL). Ezio proposed tags
+  added in seed 42. Only the shared Stage-25 label question below still applies to Ezio.
+
+- **Michelangelo** — icon is **green = Spirit** (not Force as seeded). FIXED 2026-07-07:
+  affinity Force→Spirit + faction Shadowkin→Banner Lords (seed 07 + seed 46 UPDATE); solo
+  reasoning corrected. Skill tags in seed 46.
+
+Still UNVERIFIED — champion AFFINITY not confirmed from a video (don't trust seed 06's label):
+- **Teodor the Savant** (Legendary / "Spirit") — Dragon Stage 25 (~line 415).
+- **Richtoff the Bold** (Legendary / "Spirit") — Dragon Stage 25 (~line 575).
+  Their Stage-25 entries are now STAGE-correct (25 = Force, confirmed below), so a Spirit
+  champion would indeed be advantaged there — but whether these two ARE Spirit is unverified.
+
+### Dragon's Lair Normal affinity rotation — CONFIRMED from in-game (2026-07-07), repo was wrong
+Read directly off the in-game stage list. The real rotation is **Magic → Force → Spirit →
+Void** for floors 1–19 (i.e. (N−1) mod 4 = 0:M, 1:F, 2:S, 3:V), then **irregular** from 20:
+
+| 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 |
+|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|
+| F  | S  | V  | M  | F  | S  | V  | M  | F  | S  | **M** | F | **M** | V | S | **F** |
+
+The repo previously had Force/Spirit **swapped** (it listed 10=Magic, 12=Force, 13=Void…) and
+Stage 20 = Force. FIXED 2026-07-07 in **seed 32** (stage notes), **seed 35** (boss_exceptions
+notes), and **seed 06** (dungeon_stages notes + the Artak/Michelangelo solo reasoning). Key
+corrections: **Stage 20 = Magic** (was Force) and **Stage 25 = Force** (an earlier KNOWN_GAPS
+note wrongly said Void — that was based on extrapolating a clean cycle that doesn't hold past
+floor 19; the in-game list confirms Force). Floors 1–9 also follow the clean cycle
+(1=M,2=F,3=S,4=V…); 6/7 not individually re-read but within the confirmed clean run.
+STILL UNVERIFIED: **Dragon HARD-mode** affinities (FLAG-24, Hard Stage 10) — Normal-mode data
+above does not necessarily apply to Hard.
+
+### Xenomorph pending-review tag decisions (seed 45)
+Xenomorph (Legendary / Magic / Dark Elves, Alien: Earth collab) was seeded in
+`seeds/45` with the SOLID tags (Poison, Perfect Veil, Stun, True Fear). Three
+effects were deliberately left untagged pending a human decision:
+
+- **Infest** (A2 Infestation) — no tag exists in the vocabulary. Its only
+  mechanical hook is Xenomorph's OWN self-revive ("revives this Champion when an
+  enemy under [Infest] dies"), so reuse is single-champion and niche. Decision
+  needed: create an `Infest` vocab tag, or leave it as flavour/untagged?
+- **Self-revive** (A2 passive) — the existing `Revive` tag means reviving a dead
+  ALLY. Xenomorph's revive is SELF-only. Tagging `Revive` would wrongly surface
+  him as a team reviver in matching. Decision needed: leave untagged (current), or
+  add a distinct self-revive/survivability concept?
+- **−20% DEF** (Caustic Blood passive) — a PASSIVE, CONDITIONAL DEF reduction that
+  applies only to enemies already under a Poison HE placed. Not a placed
+  `[Decrease DEF]` debuff. Decision needed: tag it `Decrease Defense` (it is a real
+  DEF shred relevant to matching) with a conditional note, or keep `Decrease
+  Defense` meaning "placed debuff only" and leave it untagged?
+
+Also noted (not a decision, just a caveat baked into the seed-45 source_note): his
+Stun/Infest/True Fear are unresistable ONLY while he is under [Perfect Veil], but
+the `True Fear` tag is unconditionally `bypasses_accuracy_check=true`. He self-veils
+on A1/A3 so it is usually up; flagged in case the engine over-credits the bypass.
+
+### Michelangelo pending-review tag decisions (seed 46)
+Michelangelo (Legendary / Spirit / Banner Lords, TMNT collab) had his affinity
+corrected (Force -> Spirit) and faction (Shadowkin -> Banner Lords) in seeds/07 +
+seeds/46, and his solo-profile reasoning fixed in seeds/06. Solid tags were seeded
+(Decrease Defense, Stun, AoE Damage, Decrease Attack, Provoke, Increase Attack,
+Shield). Four effects were left untagged pending a vocabulary decision — no tag
+exists for any of them:
+
+- **Leech** (A3 Shell Cyclone) — a real, reasonably common RAID debuff (heals the
+  attacker for a % of damage dealt to the leeched enemy). Strongest candidate for a
+  new vocab tag; would also apply to other Leech champions.
+- **Debuff Spread** (A2 Express Delivery) — takes all debuffs from the target and
+  copies them to all enemies. Signature turtle mechanic; niche but distinctive.
+- **Ally Attack** (Party Dude passive) — when he attacks, ally Leonardo/Donatello/
+  Michelangelo/Raphael join the attack. TMNT-set synergy; overlaps with the
+  Clan Boss "Ally Attack" concept (Fahrakin/Cardiel) which is currently handled
+  outside the tag vocabulary — decide whether Ally Attack should become a tag.
+- **Evade** (Party Dude passive) — 15% chance to evade an enemy skill (30% under
+  Taunt). Survival mechanic; no tag.
+
+(The seeded self-buffs — Increase ATK, Shield, self-Taunt/Provoke — are tagged but
+noted as SELF-only in their source_notes; relevant for solo/survival, not team
+support. Reviewer may downgrade if the tag is meant for ally-facing effects only.)
 
 ### Sustain gear assumption
 The app assumes no player champion runs Lifesteal, Regeneration, or Immortal gear.
