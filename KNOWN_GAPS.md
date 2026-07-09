@@ -261,6 +261,28 @@ Jurojin/Michelangelo/Kosk). Open items:
 - **Fervor** (A2 Gift of Thalass) — RESOLVED (seed 57): `Fervor` is now a vocab tag and
   Glorious Pallas carries it (approved).
 
+### Keberon the Underflame pending-review tag decisions (seed 58)
+Keberon the Underflame (Legendary / Force / Argonites, Attack) was seeded in `seeds/58`
+with SOLID tags (Decrease Defense, AoE Damage, HP Burn, True Fear). An HP-Burn-centric
+nuker with self-sustain. Open items:
+
+- **AURA NOT CAPTURED** — same as Glorious Pallas: the clip used the collection /
+  Total-Stats view (no aura panel). Aura unknown, not guessed; worksheet Aura Status
+  stays Pending pending a skills-screen shot.
+- **Increase ACC** (A3 Pyrenei Power — 50% [Increase ACC] on ALL allies 2t) — genuinely
+  ally-facing team buff, but there's no `Increase Accuracy` vocab tag. Also seen SELF on
+  Kosk (seed 47). Now that it's appeared ally-facing, it's a strong candidate to promote
+  to a real tag (cf. how Ally Attack/Fervor were promoted). Decision needed.
+- **Deathbrand** (A2 Searing Brand) — a unique/signature debuff; no vocab. Decision:
+  create the tag or leave untagged?
+- **Ignore [Unkillable]/[Shield] + 25% DEF** (A2) — anti-buff/penetration tech; he
+  BYPASSES those enemy buffs, does NOT grant them (same pattern as Jurojin's seed-50
+  Unkillable/Block-Damage). No vocab. Flagged so any future raid.guide scrape isn't
+  mis-tagged as granting Unkillable/Shield.
+- **[Delay] cheat-death** (passive Active — Delay on fatal hit), **self-heal** (20% MAX
+  HP on HP-Burn activation), and **self Turn-Meter fills** (A2/A3) — all SELF-scoped or
+  no-vocab; left untagged (the Healer / Increase Turn Meter tags are ally-facing).
+
 ### Sustain gear assumption
 The app assumes no player champion runs Lifesteal, Regeneration, or Immortal gear.
 All sustain must come from champion skills. This is enforced in the global sustain
