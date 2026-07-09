@@ -157,8 +157,8 @@ pending a human decision:
   buff. Tagging `Counterattack` would mis-surface him as a Counterattack enabler.
   Decision needed: leave untagged (current), or add a self-counter concept?
 - **Increase ACC self-buff** (A2 They Will Regret...) — a 50% [Increase ACC] buff on
-  HIMSELF 2t before attacking. No `Increase Accuracy` tag exists, and it is self-scoped
-  anyway (feeds his own debuff landing, not team support). Decision: add vocab, or skip?
+  HIMSELF 2t before attacking. RESOLVED (seed 59): `Increase ACC` is now a vocab tag;
+  Kosk carries it (approved, with a SELF-only note — feeds his own debuff landing).
 - **Debuff Spread** (A2) — takes all [Poison] debuffs and the [Poison Sensitivity]
   debuff from the target and copies them to all other enemies. RESOLVED (seed 48):
   `Debuff Spread` is now a vocab tag and Kosk carries it (approved), alongside
@@ -269,10 +269,9 @@ nuker with self-sustain. Open items:
 - **Aura RESOLVED** — the clip used the collection / Total-Stats view (no aura panel);
   Mike confirmed the aura on 2026-07-09: **+28% [ATK] to all allies in all Battles**
   (ATK Aura, vocab from seeds/01). Added to seeds/58.
-- **Increase ACC** (A3 Pyrenei Power — 50% [Increase ACC] on ALL allies 2t) — genuinely
-  ally-facing team buff, but there's no `Increase Accuracy` vocab tag. Also seen SELF on
-  Kosk (seed 47). Now that it's appeared ally-facing, it's a strong candidate to promote
-  to a real tag (cf. how Ally Attack/Fervor were promoted). Decision needed.
+- **Increase ACC** (A3 Pyrenei Power — 50% [Increase ACC] on ALL allies 2t) — RESOLVED
+  (seed 59): `Increase ACC` is now a vocab tag (paired with `Decrease ACC`); Keberon
+  carries it (approved, ally-facing) and Kosk carries it (approved, self-noted).
 - **Deathbrand** (A2 Searing Brand) — a unique/signature debuff; no vocab. Decision:
   create the tag or leave untagged?
 - **Ignore [Unkillable]/[Shield] + 25% DEF** (A2) — anti-buff/penetration tech; he
