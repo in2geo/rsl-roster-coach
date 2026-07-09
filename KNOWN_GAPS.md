@@ -127,16 +127,161 @@ exists for any of them:
   new vocab tag; would also apply to other Leech champions.
 - **Debuff Spread** (A2 Express Delivery) — takes all debuffs from the target and
   copies them to all enemies. Signature turtle mechanic; niche but distinctive.
+  RESOLVED (seed 48): `Debuff Spread` is now a vocab tag and Michelangelo carries it
+  (approved).
 - **Ally Attack** (Party Dude passive) — when he attacks, ally Leonardo/Donatello/
-  Michelangelo/Raphael join the attack. TMNT-set synergy; overlaps with the
-  Clan Boss "Ally Attack" concept (Fahrakin/Cardiel) which is currently handled
-  outside the tag vocabulary — decide whether Ally Attack should become a tag.
+  Michelangelo/Raphael join the attack. TMNT-set synergy. RESOLVED (seed 57):
+  `Ally Attack` is now a vocab tag; Michelangelo carries it (proposed, with his other
+  seed-46 tags, pending his review). Fahrakin/Cardiel can migrate to this tag later.
 - **Evade** (Party Dude passive) — 15% chance to evade an enemy skill (30% under
   Taunt). Survival mechanic; no tag.
 
 (The seeded self-buffs — Increase ATK, Shield, self-Taunt/Provoke — are tagged but
 noted as SELF-only in their source_notes; relevant for solo/survival, not team
 support. Reviewer may downgrade if the tag is meant for ally-facing effects only.)
+
+### Kosk of Two Skins pending-review tag decisions (seed 47)
+Kosk of Two Skins (Legendary / Force / Lizardmen) was seeded in `seeds/47` with the
+SOLID tags (Poison, Poison Sensitivity, Decrease Attack, AoE Damage, ACC Aura — the
+last a new vocab tag mirroring seeds/20 RES Aura). Several effects were left untagged
+pending a human decision:
+
+- **Increase Turn Meter** (A3 Toxic Vitriol) — the existing tag means "fills an
+  ALLY's Turn Meter". Kosk's +20% per [Decrease ATK] placed is SELF-only (self-
+  acceleration off his own AoE). Tagging it would wrongly surface him as a team TM-
+  booster (cf. Xenomorph self-revive, Michelangelo self-buffs). Decision needed: leave
+  untagged (current), or add a self-scoped TM variant?
+- **Counterattack** (Imbibed Immunity passive) — the existing tag means "places a
+  [Counterattack] BUFF on allies". Kosk's passive is that HE counterattacks any enemy
+  that hits him while under a debuff he placed — a self/passive counter, not an ally
+  buff. Tagging `Counterattack` would mis-surface him as a Counterattack enabler.
+  Decision needed: leave untagged (current), or add a self-counter concept?
+- **Increase ACC self-buff** (A2 They Will Regret...) — a 50% [Increase ACC] buff on
+  HIMSELF 2t before attacking. No `Increase Accuracy` tag exists, and it is self-scoped
+  anyway (feeds his own debuff landing, not team support). Decision: add vocab, or skip?
+- **Debuff Spread** (A2) — takes all [Poison] debuffs and the [Poison Sensitivity]
+  debuff from the target and copies them to all other enemies. RESOLVED (seed 48):
+  `Debuff Spread` is now a vocab tag and Kosk carries it (approved), alongside
+  Michelangelo. (Karnage still worksheet-only — tag him if he enters the repo.)
+- **Debuff-duration extension** (A1) and **Poison ACTIVATION/detonation** (A1 & A3) —
+  A1 can extend all enemy debuffs by 1 turn / instantly activate Poisons; A3 instantly
+  activates all Poisons AoE. Neither is a placed debuff, so no tag fits (cf. Venomage
+  Poison-activation, seed 44). Decision: introduce a "detonation/activation" concept?
+- **Innate immunity** (passive) — permanent immunity to [Poison], [Stun], and
+  [Decrease SPD]. This is NOT the [Block Debuffs] buff (which is placed/temporary), so
+  it should not carry that tag. No vocab exists for innate debuff immunities.
+- **Damage-dealt increase + Ignore DEF per enemy debuff** (passive) — self damage-
+  scaling (+5%/debuff up to 50%, Ignore DEF +3%/debuff up to 30%). No vocabulary; self-
+  only. Left untagged.
+
+### Jurojin pending-review tag decisions (seed 50)
+Jurojin (Epic / Spirit / Shadowkin, HP-based) was seeded in `seeds/50` with the SOLID
+tags (Decrease Attack, Provoke, Shield [self], HP Aura). His champions row was missing
+from every committed seed even though `seeds/15` referenced him, so those raid.guide
+tags had been silently no-opping — the row is created in seed 50 and the tags asserted
+from the primary in-game source.
+
+- **seed-15 mis-tag CORRECTED** — `seeds/15` auto-tagged Jurojin with **Unkillable** and
+  **Block Damage** from A3 True Smite's text "will also ignore [Unkillable] and [Block
+  Damage] buffs". That is a BYPASS of enemy buffs — he does NOT grant them. Tagging them
+  would falsely surface him as an Unkillable/Block-Damage granter and could fool the team
+  sustain check. Both seed-15 insert blocks were deleted; seed 50 also defensively rejects
+  the rows on any live DB. No decision needed — this is a correction, logged for the trail.
+- **Shield is SELF-only** (A2 Fated Duel, 25% of his MAX HP 2t) — tagged `Shield` with a
+  self-only note (same treatment as Michelangelo's self-Shield, seed 46). Reviewer may
+  downgrade if `Shield` is meant to mean ally-facing shields only.
+- **Ignore [Unkillable]/[Block Damage] on enemies** (A3 True Smite) — a notable anti-tank /
+  anti-revive tech (also ignores 25% enemy DEF). No vocab exists for "ignores enemy buff
+  X". Decision: introduce an anti-buff/penetration concept, or leave as flavour?
+- **Smiles at Death** (passive, Ascension 3) — 25% less damage taken when HP ≤ 50%. Self
+  damage mitigation; no vocab. Left untagged.
+- **Chance discrepancy (reviewer note)** — in-game A1 Monk's Spade shows a **45%**
+  Decrease-ATK chance at Level 1 (→ 60% booked); `seeds/15` recorded "30% unbooked (45%
+  booked)". The in-game Index is primary; seed 50's note uses 45% → 60%.
+
+### Dark Elhain pending-review tag decisions (seed 52)
+Dark Elhain (Epic / Magic / Undead Hordes, Attack; NOT the base High-Elves Elhain) was
+seeded in `seeds/52` with the SOLID tags (Decrease Speed, AoE Damage, Increase Attack
+[self], Increase C.Rate [self, Ascension 3], Increase C.DMG [self, Ascension 3]). Her
+champions row was missing from every committed seed though `seeds/15` referenced her, so
+those raid.guide tags had been no-opping — the row is created in seed 52 and the tags
+asserted from the primary in-game source. She has **no aura**.
+
+- **seed-15 mis-tag CORRECTED** — `seeds/15` auto-tagged her with **Freeze** from Lethal
+  Winter's text "whenever this Champion or an ally RECEIVES a [Freeze] debuff". Her kit
+  REACTS to being frozen (TM fill + Veins-of-Ice buff conversion) — she does NOT place
+  [Freeze]. Tagging it would falsely surface her as a Freeze/CC champion. Deleted from
+  seed 15; seed 52 also defensively rejects it. Correction, logged for the trail.
+- **Self-only buffs** — Increase Attack (A2) and the Ascension-3 Veins-of-Ice buffs
+  (Increase C.Rate, Increase C.DMG) are all SELF, tagged with self-only + ascension notes
+  (cf. Michelangelo self-buffs). Reviewer may downgrade if these tags are meant to be
+  ally-facing only. `seeds/15` recorded ascension_required=0 for the C.Rate/C.DMG rows;
+  seed 52 corrects them to ascension_required=3.
+- **Strengthen** (Veins of Ice, 15% self, Ascension 3) — no `Strengthen` tag exists in
+  the vocab. It's a common RSL buff but self-only here. Decision: create the vocab tag
+  (would also apply to other Strengthen champions), or leave untagged?
+- **Increase Turn Meter** (Lethal Winter) — the tag means "fills an ALLY's Turn Meter";
+  hers is SELF (25%, on Freeze). Left untagged (cf. Kosk seed 47).
+- **MAX-HP destroy** (A1 Necrotic Bolt, 30% of damage) and **Death's-Majesty
+  auto-activation on Freeze** (Lethal Winter) — neither is a placed debuff/standard
+  effect; no vocab (cf. Venomage MAX-HP/Poison-activation, seed 44). Left untagged.
+- **Chance discrepancy (reviewer note)** — in-game A2 Death's Majesty shows a **50%**
+  Decrease-SPD chance at Level 1 (→ 75% booked); `seeds/15` recorded "25% unbooked". The
+  in-game Index is primary; seed 52 uses 50% → 75%.
+
+### Ruella notes (seed 54) — no pending decisions
+Ruella (Epic / Spirit / Sylvan Watchers, Attack) was seeded in `seeds/54` with an all-
+SOLID, team-relevant kit (Decrease Turn Meter, Decrease Defense, Weaken, Decrease Speed,
+Increase Turn Meter, Increase C.Rate, ACC Aura). She was absent from every prior seed
+(not even `seeds/15`), so there were no mis-tags to reconcile. Reviewer notes only:
+
+- **Ascension-3 gating** — Increase Turn Meter and Increase C.Rate come from Timed
+  Offensive, which UNLOCKS AT ASCENSION 3 (`ascension_required=3`). A pre-Asc-3 Ruella
+  does not provide the ally TM fill / C.RATE buff — the matching engine should respect
+  the ascension gate before crediting these team buffs.
+- **Aura placement** — her ACC Aura is DUNGEONS-only (+40), not all-battles; noted in the
+  tag source_note (magnitude/placement are not stored on the tag itself).
+- **Decrease Turn Meter is conditional** — A1's 5% TM steal triggers only on a critical
+  hit (80% chance), not every hit; captured in the source_note.
+
+### Glorious Pallas pending-review tag decisions (seed 56)
+Glorious Pallas (Legendary / Magic / Argonites, Support) was seeded in `seeds/56` with a
+rich, all-ally-facing SOLID kit (Healer, Cleanse, Block Debuffs, Revive, Increase Speed,
+Strengthen, Shield, Increase Turn Meter). She's the first champion whose Shield / Revive /
+Increase Turn Meter are genuinely team-facing (contrast the self-only versions on
+Jurojin/Michelangelo/Kosk). Open items:
+
+- **Aura RESOLVED** — the original recording used the collection / Total-Stats view (no
+  aura panel); Mike confirmed the aura on 2026-07-08: **+50 [RES] to all allies in all
+  Battles** (RES Aura, vocab from seeds/20). Added to seeds/56.
+- **Ally Attack** (A1 Spear of Serenity — 1 random Argonites ally joins the attack) —
+  RESOLVED (seed 57): `Ally Attack` is now a vocab tag; Glorious Pallas carries it
+  (approved) and Michelangelo carries it (proposed). Fahrakin/Cardiel (Clan Boss Ally
+  Attack, handled via strategy modifiers) are candidates to migrate to this tag later.
+- **Fervor** (A2 Gift of Thalass) — RESOLVED (seed 57): `Fervor` is now a vocab tag and
+  Glorious Pallas carries it (approved).
+
+### Keberon the Underflame pending-review tag decisions (seed 58)
+Keberon the Underflame (Legendary / Force / Argonites, Attack) was seeded in `seeds/58`
+with SOLID tags (Decrease Defense, AoE Damage, HP Burn, True Fear). An HP-Burn-centric
+nuker with self-sustain. Open items:
+
+- **Aura RESOLVED** — the clip used the collection / Total-Stats view (no aura panel);
+  Mike confirmed the aura on 2026-07-09: **+28% [ATK] to all allies in all Battles**
+  (ATK Aura, vocab from seeds/01). Added to seeds/58.
+- **Increase ACC** (A3 Pyrenei Power — 50% [Increase ACC] on ALL allies 2t) — genuinely
+  ally-facing team buff, but there's no `Increase Accuracy` vocab tag. Also seen SELF on
+  Kosk (seed 47). Now that it's appeared ally-facing, it's a strong candidate to promote
+  to a real tag (cf. how Ally Attack/Fervor were promoted). Decision needed.
+- **Deathbrand** (A2 Searing Brand) — a unique/signature debuff; no vocab. Decision:
+  create the tag or leave untagged?
+- **Ignore [Unkillable]/[Shield] + 25% DEF** (A2) — anti-buff/penetration tech; he
+  BYPASSES those enemy buffs, does NOT grant them (same pattern as Jurojin's seed-50
+  Unkillable/Block-Damage). No vocab. Flagged so any future raid.guide scrape isn't
+  mis-tagged as granting Unkillable/Shield.
+- **[Delay] cheat-death** (passive Active — Delay on fatal hit), **self-heal** (20% MAX
+  HP on HP-Burn activation), and **self Turn-Meter fills** (A2/A3) — all SELF-scoped or
+  no-vocab; left untagged (the Healer / Increase Turn Meter tags are ally-facing).
 
 ### Sustain gear assumption
 The app assumes no player champion runs Lifesteal, Regeneration, or Immortal gear.
