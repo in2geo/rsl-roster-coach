@@ -282,6 +282,24 @@ nuker with self-sustain. Open items:
   HP on HP-Burn activation), and **self Turn-Meter fills** (A2/A3) — all SELF-scoped or
   no-vocab; left untagged (the Healer / Increase Turn Meter tags are ally-facing).
 
+### Stonebound Thisbe pending-review tag decisions (seed 60)
+Stonebound Thisbe (Epic / Spirit / Argonites, Support) was seeded in `seeds/60` with
+SOLID tags (Decrease Attack, Decrease Turn Meter, AoE Damage, Hex, Block Buffs, Healer,
+Increase Turn Meter, ACC Aura). Open items:
+
+- **WORKSHEET AFFINITY + ROLE CORRECTION** — the master worksheet row C000500 lists her
+  as **Magic / Attack**, but the in-game Index (champion header + Argonites collection
+  card) shows **Spirit / Support**. seed 60 uses the correct Spirit affinity; the
+  worksheet Champions row needs Affinity Magic→Spirit and Role Attack→Support (Ayumi code
+  AR-EAM→AR-ESS). Same class of AyumiLove-sourced error as Michelangelo (seed 46). The
+  champions table has no role column, so the repo carries only the affinity fix.
+- **Debuff-duration reduction** (A3 Heart Of Flint — "decreases the duration of all ally
+  debuffs by 1 turn") — a partial cleanse, distinct from `Cleanse` (which removes debuffs
+  entirely). No vocab. Decision: create a "reduce debuff duration" concept or leave it?
+- **Team damage amplification** (passive Heir Of The Gorgoa — allies deal +10% damage to
+  enemies under her debuffs) — no vocab. A recurring "damage amp vs debuffed enemies"
+  concept worth considering as a tag.
+
 ### Sustain gear assumption
 The app assumes no player champion runs Lifesteal, Regeneration, or Immortal gear.
 All sustain must come from champion skills. This is enforced in the global sustain
