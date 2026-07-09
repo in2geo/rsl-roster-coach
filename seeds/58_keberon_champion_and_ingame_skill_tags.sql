@@ -31,10 +31,9 @@
 --         SELF 20% MAX HP whenever a [HP Burn] is activated on an enemy; when a
 --         [HP Burn] on an enemy expires/is removed, places a [True Fear] 1t on it.
 --
---     >>> AURA NOT CAPTURED: like the Glorious Pallas clip, this recording used the
---         collection / Total-Stats view (no aura panel). Aura UNKNOWN from this clip
---         — not guessed. Needs a follow-up skills-screen shot; Aura Status stays
---         Pending. <<<
+--     Aura: +28% [ATK] to all allies in all Battles (ATK Aura). The original recording
+--         used the collection / Total-Stats view (no aura panel); aura confirmed from
+--         Mike's follow-up on 2026-07-09.
 --
 -- (2) TAGS ADDED (existing vocab; the SOLID ones). ascension_required = 0 for all:
 --       * Decrease Defense — A1 Fiery Rend (60%, 75% chance, 2t, single-target).
@@ -42,6 +41,8 @@
 --       * HP Burn          — A3 Pyrenei Power (75% chance, ALL enemies, 2t).
 --       * True Fear        — passive: places [True Fear] 1t on an enemy when its
 --         [HP Burn] expires or is removed.
+--       * ATK Aura         — leader aura, +28% [ATK] to all allies in all Battles
+--         (vocab from seeds/01; confirmed 2026-07-09).
 --
 -- (3) NOT TAGGED — logged in KNOWN_GAPS.md ("Keberon pending-review tag decisions"),
 --     no vocabulary / self-scoped:
@@ -80,7 +81,9 @@ from (values
   ('HP Burn',
    'A3 Pyrenei Power (cd 4t): 75% chance (unbooked) of placing a [HP Burn] debuff on ALL enemies 2t; books raise the chance (+10% L4, +15% L5). His kit is HP-Burn-centric (A1 extra attack, passive heal + True Fear all key off HP Burn). Verbatim in-game Index text, Level 1 unbooked, captured 2026-07-08.'),
   ('True Fear',
-   'Passive Underflame''s Protection [P]: whenever a [HP Burn] debuff on an enemy expires or is removed, places a [True Fear] debuff 1t on that enemy. Verbatim in-game Index text, Level 1, captured 2026-07-08.')
+   'Passive Underflame''s Protection [P]: whenever a [HP Burn] debuff on an enemy expires or is removed, places a [True Fear] debuff 1t on that enemy. Verbatim in-game Index text, Level 1, captured 2026-07-08.'),
+  ('ATK Aura',
+   'Leader aura: +28% [ATK] to all allies in all Battles. Only applies when Keberon is the team leader. Confirmed 2026-07-09 (original recording used the Total-Stats view which omits the aura panel). Magnitude/placement per the in-game Index.')
 ) as v(tag, note)
 join champions ch on ch.game_id = 'raid_shadow_legends' and ch.name = 'Keberon the Underflame'
 join tags t on t.name = v.tag

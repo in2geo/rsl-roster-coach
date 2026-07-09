@@ -266,9 +266,9 @@ Keberon the Underflame (Legendary / Force / Argonites, Attack) was seeded in `se
 with SOLID tags (Decrease Defense, AoE Damage, HP Burn, True Fear). An HP-Burn-centric
 nuker with self-sustain. Open items:
 
-- **AURA NOT CAPTURED** — same as Glorious Pallas: the clip used the collection /
-  Total-Stats view (no aura panel). Aura unknown, not guessed; worksheet Aura Status
-  stays Pending pending a skills-screen shot.
+- **Aura RESOLVED** — the clip used the collection / Total-Stats view (no aura panel);
+  Mike confirmed the aura on 2026-07-09: **+28% [ATK] to all allies in all Battles**
+  (ATK Aura, vocab from seeds/01). Added to seeds/58.
 - **Increase ACC** (A3 Pyrenei Power — 50% [Increase ACC] on ALL allies 2t) — genuinely
   ally-facing team buff, but there's no `Increase Accuracy` vocab tag. Also seen SELF on
   Kosk (seed 47). Now that it's appeared ally-facing, it's a strong candidate to promote
