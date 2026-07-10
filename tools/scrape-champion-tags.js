@@ -101,6 +101,24 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 // when the name isn't in the /stats/ slug dictionary.
 const guessSlug = (name) => name.toLowerCase().replace(/['’.]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
+// A [Bracket] is a real capability only if the skill PLACES it. Skip brackets that
+// appear only in non-placement context — "ignore/remove [X]", "steal", or a condition
+// reference ("if the target is under [X]", "targets with [X]", bare "under [X]" list
+// form). These reference the debuff but don't apply it (see the 2026-07-09 hygiene
+// sweeps that rejected 280 ignore/remove + 16 condition-reference false positives).
+// Emitting per placement-skill also keeps slot attribution correct.
+const NONPLACE_CTX = /(ignore|remov(e|es|ing)|steal|immune to|cannot|except|under|that (have|are)|affected by|(targets?|enemies|allies) with|instead of|transfer|cleanse)/i;
+const PLACE_CTX = /(plac(e|es|ing)|inflict|appl(y|ies|ying)|grant|gain|replac(e|es|ing)|gives?)/i;
+const placesBracket = (desc, name) => {
+  const re = new RegExp('\\[' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\]', 'g');
+  let m, sawPlace = false, sawNon = false;
+  while ((m = re.exec(desc))) {
+    const ctx = desc.slice(Math.max(0, m.index - 45), m.index);
+    if (PLACE_CTX.test(ctx)) sawPlace = true; else if (NONPLACE_CTX.test(ctx)) sawNon = true;
+  }
+  return sawPlace || !sawNon; // keep if placed anywhere, or never clearly non-placement
+};
+
 // ── Parsers ──────────────────────────────────────────────────────────────────
 function parseAura(html) {
   // "HP 15 % Place:All battles"  (stat, pct, placement)
@@ -139,7 +157,18 @@ function parseSkills(html) {
   return skills;
 }
 
-// booked chance for a bracket = nearest "N% chance" before it in the description
+// booked chance for a bracket = nearest "N% chance" before it in the description.
+//
+// MAGNITUDE-PREFIX RULE (do not relax the "% chance" requirement): a percentage
+// written DIRECTLY before a debuff bracket is its STRENGTH, not its placement
+// chance — e.g. "30% [Decrease SPD]" means a 30%-magnitude Decrease SPD, and
+// "50% [Decrease DEF]" a 50%-magnitude Decrease DEF. The placement chance is a
+// SEPARATE clause containing the literal word "chance" ("has a 75% chance of
+// placing a 30% [Decrease SPD]"). So only match "N% chance"; never take the bare
+// "N%" adjacent to the bracket. Example that bit us: Lady Kimi A2 "...places a
+// 50% [Decrease ACC] and a 30% [Decrease SPD]..." — the 30% is magnitude; her
+// real Decrease SPD placement chance is 50% unbooked (from a different reading).
+// A naive "nearest %" fallback would wrongly record 30% as the chance.
 function bookedChanceFor(desc, bracketName) {
   const idx = desc.indexOf(`[${bracketName}]`);
   if (idx < 0) return null;
@@ -157,8 +186,12 @@ function mapTag(bracketName, aoe, tagSet) {
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
-  if (!process.env.SUPABASE_DB_URL) { console.error('Needs SUPABASE_DB_URL. Run with --env-file=.env.local'); process.exit(1); }
-  const client = new pg.Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } });
+  // Prefer the aws-1 pooler (IPv4). The direct host in SUPABASE_DB_URL is IPv6-only
+  // and fails with ENOTFOUND from most networks — see the supabase-db-access memory.
+  // Fall back to SUPABASE_DB_URL only if the pooler var is unset.
+  const dbUrl = process.env.SUPABASE_POOLER_URL || process.env.SUPABASE_DB_URL;
+  if (!dbUrl) { console.error('Needs SUPABASE_POOLER_URL or SUPABASE_DB_URL. Run with --env-file=.env.local'); process.exit(1); }
+  const client = new pg.Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
   await client.connect();
   // Scope: Rare and above only. The app's audience owns Rare+; Common/Uncommon are
   // out of scope (product decision 2026-07-02) — don't scrape or tag them.
@@ -226,6 +259,7 @@ async function main() {
       for (const br of sk.brackets) {
         const tag = mapTag(br, sk.aoe, tagSet);
         if (!tag) { if (TAG_MAP[nk(br)] === undefined) missTag.push(`${champ} | ${sk.name} (${sk.slot}) | [${br}] | (no mapping)`); continue; }
+        if (!placesBracket(sk.desc, br)) { missTag.push(`${champ} | ${sk.name} (${sk.slot}) | [${br}] | (skipped: reference/ignore only — not placed here)`); continue; }
         if (emitted.has(`${champ}|${tag}`)) continue;   // one row per distinct tag
         emitted.add(`${champ}|${tag}`);
         const booked = bookedChanceFor(sk.desc, br);
