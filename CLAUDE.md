@@ -7,7 +7,7 @@ should apply in every session.
 ## What this is
 A mobile-first PWA that gives new/limited-roster Raid: Shadow Legends
 players a personalized "what should I do next" recommendation, based on
-their manually-entered roster. Not a tool for veteran players with deep
+their manually-entered roster. Not necessarily a tool for veteran players with deep
 rosters — that segment is already served by other tools.
 
 ## Stack
@@ -131,9 +131,6 @@ order by d.name, ds.label;
   hierarchy for skill data (champion tags)" section below — that section governs
   on any conflict. (SOURCE_HIERARCHY.md was consolidated into this file and
   removed 2026-07-07.)
-- NEVER build an automated scraper targeting HellHades, Gestal, AyumiLove,
-  InTeleria, or any other "all rights reserved" community site. Their ToS
-  explicitly prohibit automated scraping.
 - NEVER scrape YouTube (videos, transcripts, or comments).
 - The restriction on community sites is specifically about their EDITORIAL
   CONTENT — tier lists, champion ratings, "best champions" guides, build
@@ -197,7 +194,6 @@ Example — Alice the Wanderer A2 Clockwork Cyclone:
 - Unbooked: 75% - 25% = 50%
 
 **Never permitted**:
-- Automated scraping of any community site (ToS violation)
 - Using their tier lists, ratings, or build recommendations as the basis
   for tag/recommendation logic
 - Treating "best champion" picks from guides as our source of truth
@@ -298,6 +294,45 @@ unbooked, with a `source_note` flagging "places on critical hit."
 Always document the back-calculation in source_note:
 `'AyumiLove (human read): 75% booked. Books: +10% Lvl4, +15% Lvl5.
 Unbooked = 50%. Back-calculated per project source hierarchy.'`
+
+## Tag Review Policies
+Standing rules for deciding whether a skill effect earns its own `champion_tags`
+row. Established across advisor batch reviews; canonical reference for all future
+tag work. "REJECT" = do not create a tag row; note the mechanic in the
+`source_note` of the champion's primary/related tag row instead.
+
+1. **Conditional debuffs** — a debuff that lands only if a SPECIFIC OTHER DEBUFF
+   is already on the target → REJECT. Note the condition in `source_note`.
+   (See "Tagging convention — conditional debuffs" above.)
+2. **Random pool placers** — a skill that places 1 random debuff from a pool per
+   hit → REJECT all the individual debuffs. Note the mechanic in `source_note`.
+3. **Books-only tags (0% unbooked)** — seed with `status='proposed'`, and flag
+   `source_note` with "Books-only — not functional pre-books." Do NOT mark
+   approved even if the effect appears in an approved batch.
+4. **Crit-conditional debuffs** — APPROVE. Tag at guaranteed (100% unbooked)
+   chance; note "places on critical hit" in `source_note`. (Crit Rate is a
+   player-controlled gear stat.)
+5. **Stat-comparison conditionals** — APPROVE. Note the condition in
+   `source_note` (e.g. "places on enemies whose ATK > DEF").
+6. **Kill-conditional debuffs** — APPROVE if the champion controls the kill
+   (e.g. Block Revive on kill, Freeze on kill). Same logic as crit-conditional.
+7. **Passive `ascension_required` default** — `ar=3` unless a yellow-star
+   screenshot confirms `ar=0`.
+8. **Aura `ascension_required` default** — `ar=3` unless a yellow-star screenshot
+   confirms `ar=0`.
+9. **Counterattack tag** — buff-only: qualifies ONLY when the champion places a
+   `[Counterattack]` buff. Innate counterattack mechanics do NOT qualify.
+10. **Immunity clauses** — "immune to [X]" → REJECT. The champion does not place
+    the debuff.
+11. **Duration extension** — "increases the duration of [X]" → REJECT. Not a
+    placement.
+12. **Debuff activation** — "activates [X] debuffs" → REJECT. Not a placement.
+13. **Transfer/redirect mechanics** — "transfer [X] to" / "redirect [X]" → REJECT.
+14. **Exclusion clause** — an effect that appears only inside an "except [X]" /
+    "transfers all debuffs except [X]" phrase → REJECT.
+15. **Synergy-dependent skills** — a skill that only becomes available/activates
+    when a specific ally is on the team → REJECT (e.g. Tallia's Bomb requires
+    Fenax).
 
 ## Core architecture principles
 - The AI is not the source of truth. The champion table and the
