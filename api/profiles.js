@@ -4,9 +4,12 @@
 // 'gestal' (an rsl_accounts row scoped by profile_id). Anonymous device users
 // have no profiles — they use the single implicit device roster instead.
 //
-// GET  /api/profiles                         → { profiles: [...] }  (auth)
-// POST /api/profiles { name, method? }        → { profile }          (auth)
+// GET   /api/profiles                        → { profiles: [...] }  (auth)
+// POST  /api/profiles { name, method? }       → { profile }          (auth)
 //   method defaults to 'manual'. The first profile becomes the default.
+// PATCH /api/profiles { id, gear_tier?, account_development?, masteries_default? } → { profile }
+//   updates account-level gear context (gear tier + Great Hall/Arena bundle + masteries)
+//   used by the recommendation engine's stat estimator for manual rosters.
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -34,7 +37,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const { data: profiles, error } = await service
       .from('profiles')
-      .select('id, name, population_method, is_default, created_at')
+      .select('id, name, population_method, is_default, created_at, gear_tier, account_development, masteries_default')
       .eq('user_id', user.id)
       .eq('game_id', 'raid_shadow_legends')
       .order('is_default', { ascending: false })
@@ -63,6 +66,49 @@ export default async function handler(req, res) {
       .select('id, name, population_method, is_default, created_at')
       .single();
     if (error) return json(res, 500, { error: error.message });
+    return json(res, 200, { profile: data });
+  }
+
+  // ── PATCH: update account-level gear context on one of the user's profiles ──
+  if (req.method === 'PATCH') {
+    const id = String(req.body?.id ?? '').trim();
+    if (!id) return json(res, 400, { error: 'id required' });
+
+    const GEAR_TIERS  = ['starter', 'fair', 'good', 'endgame'];
+    const ACCOUNT_DEV = ['poor', 'fair', 'good'];
+    const MASTERIES   = ['none', 'partial', 'full'];
+    const update = {};
+    if ('gear_tier' in (req.body ?? {})) {
+      if (!GEAR_TIERS.includes(req.body.gear_tier)) {
+        return json(res, 400, { error: `gear_tier must be one of ${GEAR_TIERS.join('/')}` });
+      }
+      update.gear_tier = req.body.gear_tier;
+    }
+    if ('account_development' in (req.body ?? {})) {
+      if (!ACCOUNT_DEV.includes(req.body.account_development)) {
+        return json(res, 400, { error: `account_development must be one of ${ACCOUNT_DEV.join('/')}` });
+      }
+      update.account_development = req.body.account_development;
+    }
+    if ('masteries_default' in (req.body ?? {})) {
+      if (!MASTERIES.includes(req.body.masteries_default)) {
+        return json(res, 400, { error: `masteries_default must be one of ${MASTERIES.join('/')}` });
+      }
+      update.masteries_default = req.body.masteries_default;
+    }
+    if (!Object.keys(update).length) return json(res, 400, { error: 'nothing to update' });
+
+    // Owner-scoped: the eq(user_id) makes it impossible to patch another user's profile.
+    const { data, error } = await service
+      .from('profiles')
+      .update(update)
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .eq('game_id', 'raid_shadow_legends')
+      .select('id, name, population_method, is_default, created_at, gear_tier, account_development, masteries_default')
+      .single();
+    if (error) return json(res, 500, { error: error.message });
+    if (!data)  return json(res, 404, { error: 'Profile not found.' });
     return json(res, 200, { profile: data });
   }
 

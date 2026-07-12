@@ -829,6 +829,7 @@ footer a { color: var(--muted); text-decoration: underline; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .verify-stars { color: #FFB700; font-size: 0.8rem; flex-shrink: 0; letter-spacing: 1px; }
+.verify-stars .star-ascended { color: #F24BA0; }
 .verify-meta { font-size: 0.8rem; color: var(--muted); }
 
 .verify-empty { text-align: center; color: var(--muted); padding: 2rem 1rem; }

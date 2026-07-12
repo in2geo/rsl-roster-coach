@@ -890,14 +890,23 @@ function buildVerifyCard(c) {
   name.textContent = c.name;
   const stars = document.createElement('span');
   stars.className = 'verify-stars';
-  stars.textContent = '★'.repeat(Math.max(1, Math.min(6, c.stars)));
+  // Match the game: ascended stars are magenta, the rest gold. ascension_level
+  // magenta stars fill from the left, remaining rank stars stay gold.
+  const rank = Math.max(1, Math.min(6, c.stars));
+  const asc  = Math.max(0, Math.min(rank, c.ascension_level ?? 0));
+  if (asc > 0) {
+    const ascStar = document.createElement('span');
+    ascStar.className = 'star-ascended';
+    ascStar.textContent = '★'.repeat(asc);
+    stars.appendChild(ascStar);
+  }
+  if (rank - asc > 0) stars.appendChild(document.createTextNode('★'.repeat(rank - asc)));
   top.append(name, stars);
 
   const meta = document.createElement('span');
   meta.className = 'verify-meta';
+  // Ascension is shown by the magenta stars; gear is account-level. Meta = level only.
   const bits = [`Lv ${c.level}`];
-  if (c.ascension_level > 0) bits.push(`Ascension ${c.ascension_level}`);
-  bits.push(`${c.gear_tier} gear`);
   meta.textContent = bits.join('  |  ');
 
   info.append(top, meta);
@@ -926,6 +935,61 @@ function openContentSheet() {
 function closeContentSheet() {
   document.getElementById('content-sheet')?.classList.remove('open');
   document.getElementById('content-sheet-backdrop')?.classList.add('hidden');
+}
+
+// ── Account-level gear context (gear tier + Great Hall/Arena + masteries) ───────
+// One setting for the whole roster (not per-champion). Stored in localStorage for
+// the immediate UI, and best-effort persisted to the profile when signed in.
+const GEAR_CTX_KEY = 'rsl_gear_ctx';
+const GEAR_CTX_DEFAULTS = { gear_tier: 'starter', account_development: 'poor', masteries: 'none' };
+
+function loadGearCtx() {
+  try { return { ...GEAR_CTX_DEFAULTS, ...JSON.parse(localStorage.getItem(GEAR_CTX_KEY) || '{}') }; }
+  catch { return { ...GEAR_CTX_DEFAULTS }; }
+}
+
+function readGearCtx(sheet) {
+  return {
+    gear_tier:           qs('#ctx-gear .pill.active', sheet)?.dataset.gear      ?? GEAR_CTX_DEFAULTS.gear_tier,
+    account_development: qs('#ctx-account .pill.active', sheet)?.dataset.account ?? GEAR_CTX_DEFAULTS.account_development,
+    masteries:           qs('#ctx-mastery .pill.active', sheet)?.dataset.mastery ?? GEAR_CTX_DEFAULTS.masteries,
+  };
+}
+
+function saveGearCtx(ctx) {
+  localStorage.setItem(GEAR_CTX_KEY, JSON.stringify(ctx));
+  if (session?.access_token && activeProfileId) {
+    fetch('/api/profiles', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({
+        id: activeProfileId, gear_tier: ctx.gear_tier,
+        account_development: ctx.account_development, masteries_default: ctx.masteries,
+      }),
+    }).catch(() => {});
+  }
+}
+
+function wireGearCtx(sheet) {
+  const ctx = loadGearCtx();
+  const groups = [
+    ['#ctx-gear', 'gear', 'gear_tier'],
+    ['#ctx-account', 'account', 'account_development'],
+    ['#ctx-mastery', 'mastery', 'masteries'],
+  ];
+  for (const [sel, attr, field] of groups) {
+    const grp = qs(sel, sheet);
+    if (!grp) continue;
+    const pills = [...grp.querySelectorAll('.pill')];
+    pills.forEach(p => {
+      p.classList.toggle('active', p.dataset[attr] === ctx[field]);
+      p.onclick = () => {
+        pills.forEach(x => x.classList.remove('active'));
+        p.classList.add('active');
+        saveGearCtx(readGearCtx(sheet));
+      };
+    });
+  }
 }
 
 function wireContentSheet(sheet) {
@@ -981,6 +1045,8 @@ function wireContentSheet(sheet) {
     });
   });
 
+  wireGearCtx(sheet);
+
   qs('#btn-content-cancel', sheet)?.addEventListener('click', closeContentSheet);
   if (recBtn) recBtn.onclick = () => { closeContentSheet(); requestRecommendation(sheet); };
 }
@@ -1007,6 +1073,9 @@ async function requestRecommendation(sheet) {
   } else {
     return; // unknown content tab
   }
+
+  // Account-level gear context → engine options (gear_tier / account_development / masteries).
+  Object.assign(options, readGearCtx(sheet));
 
   // Dispatch to existing match flow in app.js via a custom event.
   // When auto-populated from Gestal, carry the real roster + battle-history context
