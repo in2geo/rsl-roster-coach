@@ -1000,6 +1000,29 @@ footer a { color: var(--muted); text-decoration: underline; }
   border-radius: 0 var(--radius) var(--radius) 0;
 }
 
+.leader-badge {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--accent2);
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.leader-note {
+  font-size: 0.9rem;
+  color: var(--text);
+  margin-top: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border-left: 3px solid var(--accent2);
+  background: rgba(245, 166, 35, 0.06);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
 .not-ready-note {
   font-size: 0.85rem;
   color: var(--muted);

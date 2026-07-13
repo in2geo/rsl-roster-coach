@@ -21,9 +21,9 @@ import { normalizeBattle, chestTierFor } from '../lib/clan-boss.js';
 // meaningless here. A CB outcome is written ONLY when total_damage_dealt was captured;
 // the chest tier comes from clan_boss_chest_tiers (see lib/clan-boss.js chestTierFor).
 // This supersedes the old blanket HOLD_CLAN_BOSS_OUTCOMES flag: the gate is now damage
-// presence. The reader does not emit total_damage_dealt yet (deferred per-hero-stats
-// capture — see KNOWN_GAPS), so real CB runs are held today; only rows carrying a damage
-// figure (e.g. a manual backfill) resolve to a chest tier.
+// presence. The reader emits totalDamageDealt for CB runs (read from the result dialog's
+// view-model in game memory — see RslBattleReader CbDamageReader), so real CB runs now
+// resolve to a chest tier; rows still lacking a damage figure are held.
 
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
   console.error('Needs DB access. Run: node --env-file=.env.local tools/upload-battles.js');

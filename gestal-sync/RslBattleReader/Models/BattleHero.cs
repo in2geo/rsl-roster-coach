@@ -37,4 +37,8 @@ internal sealed record BattleHero
 
     /// <summary>Enemies this champion killed (summed across rounds). Null if unread.</summary>
     public int? Kills { get; init; }
+
+    /// <summary>Damage dealt this battle, from the Clan Boss result dialog (joined by slot).
+    /// Null for non-CB battles or when the result dialog wasn't readable.</summary>
+    public long? Damage { get; init; }
 }

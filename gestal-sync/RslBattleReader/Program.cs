@@ -52,6 +52,79 @@ if (args.Contains("--gear"))
     }
 }
 
+// Diagnostic: find a STABLE pointer chain from a fixed root (module static / AppModel) to
+// the runtime address a prior --scan reported for the damage cluster. See PointerScanner.cs.
+// Usage: --ptrscan <targetHex> [maxDepth=6] [maxOffsetHex=800]
+{
+    int pi = Array.IndexOf(args, "--ptrscan");
+    if (pi >= 0 && pi + 1 < args.Length)
+    {
+        static long ParseAddr(string s)
+        {
+            s = s.Trim();
+            if (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) s = s[2..];
+            return long.TryParse(s, System.Globalization.NumberStyles.HexNumber,
+                System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : 0;
+        }
+        long target = ParseAddr(args[pi + 1]);
+        if (target == 0) { Console.WriteLine("Usage: --ptrscan <targetHex> [maxDepth=6] [maxOffsetHex=800]"); return; }
+        int depth  = (pi + 2 < args.Length && int.TryParse(args[pi + 2], out var d)) ? d : 6;
+        int maxOff = (pi + 3 < args.Length) ? (int)ParseAddr(args[pi + 3]) : 0x800;
+        RslBattleReader.PointerScanner.Run(target, depth, maxOff);
+        return;
+    }
+}
+
+// Read per-hero battle-result damage/defense/heal from the BattleFinishDialog VM.
+// Usage: --cbdamage  (result screen must be open)
+if (args.Contains("--cbdamage"))
+{
+    RslBattleReader.CbDamageReader.Run();
+    return;
+}
+
+// Diagnostic: find all locations pointing at an object + their containing class.
+// Usage: --refs <hexObjAddr> [maxBackHex=600]
+{
+    int ri = Array.IndexOf(args, "--refs");
+    if (ri >= 0 && ri + 1 < args.Length)
+    {
+        static long ParseAddr(string s)
+        {
+            s = s.Trim();
+            if (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) s = s[2..];
+            return long.TryParse(s, System.Globalization.NumberStyles.HexNumber,
+                System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : 0;
+        }
+        long addr = ParseAddr(args[ri + 1]);
+        if (addr == 0) { Console.WriteLine("Usage: --refs <hexObjAddr> [maxBackHex=600]"); return; }
+        int maxBack = (ri + 2 < args.Length) ? (int)ParseAddr(args[ri + 2]) : 0x600;
+        RslBattleReader.RefFinder.Run(addr, maxBack);
+        return;
+    }
+}
+
+// Diagnostic: inspect an IL2CPP object (class name + annotated field dump).
+// Usage: --inspect <hexAddr> [slotCount=32]
+{
+    int ii = Array.IndexOf(args, "--inspect");
+    if (ii >= 0 && ii + 1 < args.Length)
+    {
+        static long ParseAddr(string s)
+        {
+            s = s.Trim();
+            if (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) s = s[2..];
+            return long.TryParse(s, System.Globalization.NumberStyles.HexNumber,
+                System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : 0;
+        }
+        long addr = ParseAddr(args[ii + 1]);
+        if (addr == 0) { Console.WriteLine("Usage: --inspect <hexAddr> [slotCount=32]"); return; }
+        int slots = (ii + 2 < args.Length && int.TryParse(args[ii + 2], out var s2)) ? s2 : 32;
+        RslBattleReader.ObjectInspector.Run(addr, slots);
+        return;
+    }
+}
+
 // Diagnostic: parse an existing battle dump offline (no game needed). Verifies the
 // file-parse path against a captured dump — handy after a game-format change.
 // Usage: --parse <path-to-file_HHMMSS.bin>

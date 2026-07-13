@@ -25,6 +25,18 @@ internal sealed class ProcessMemory : IDisposable
     private static extern uint GetModuleFileNameEx(
         nint hProcess, nint hModule, System.Text.StringBuilder lpFilename, uint nSize);
 
+    [DllImport("psapi.dll", SetLastError = true)]
+    private static extern bool GetModuleInformation(
+        nint hProcess, nint hModule, out MODULEINFO lpmodinfo, uint cb);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MODULEINFO
+    {
+        public nint lpBaseOfDll;
+        public uint SizeOfImage;
+        public nint EntryPoint;
+    }
+
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern nint VirtualQueryEx(
         nint hProcess, nint lpAddress, out MEMORY_BASIC_INFORMATION lpBuffer, nint dwLength);
@@ -46,6 +58,7 @@ internal sealed class ProcessMemory : IDisposable
     private const uint MEM_COMMIT  = 0x1000;
     private const uint MEM_PRIVATE = 0x20000;
     private const uint MEM_MAPPED  = 0x40000;
+    private const uint MEM_IMAGE   = 0x1000000;
     private const uint PAGE_GUARD    = 0x100;
     private const uint PAGE_NOACCESS = 0x001;
 
@@ -106,6 +119,52 @@ internal sealed class ProcessMemory : IDisposable
                 yield return (mbi.BaseAddress, size);
 
             addr = (nint)((long)mbi.BaseAddress + size);
+        }
+    }
+
+    /// <summary>Like <see cref="EnumerateReadableRegions"/> but also includes MEM_IMAGE
+    /// regions (loaded module sections). The pointer scanner needs these because a stable
+    /// root is typically a static global living in a module's writable .data/.bss.</summary>
+    public IEnumerable<(nint baseAddr, long size)> EnumerateAllReadableRegions()
+    {
+        nint addr = 0x10000;
+        const long max = 0x7FFF_FFFE_0000;
+        while ((long)addr < max)
+        {
+            if (VirtualQueryEx(_handle, addr, out var mbi, Marshal.SizeOf<MEMORY_BASIC_INFORMATION>()) == 0)
+                break;
+            long size = (long)mbi.RegionSize;
+            if (size <= 0) break;
+
+            bool committed = mbi.State == MEM_COMMIT;
+            bool readable  = (mbi.Protect & 0xEE) != 0 && (mbi.Protect & PAGE_GUARD) == 0 && (mbi.Protect & PAGE_NOACCESS) == 0;
+            bool wanted    = mbi.Type == MEM_PRIVATE || mbi.Type == MEM_MAPPED || mbi.Type == MEM_IMAGE;
+            if (committed && readable && wanted)
+                yield return (mbi.BaseAddress, size);
+
+            addr = (nint)((long)mbi.BaseAddress + size);
+        }
+    }
+
+    /// <summary>Yields loaded modules as (fileName, base, imageSize) — used to classify a
+    /// pointer-field location as a stable static root (module + RVA).</summary>
+    public IEnumerable<(string name, nint baseAddr, uint size)> EnumerateModules()
+    {
+        var handles = new nint[1024];
+        if (!EnumProcessModules(_handle, handles, (uint)(handles.Length * nint.Size), out var needed))
+            yield break;
+
+        int count = (int)(needed / nint.Size);
+        var sb = new System.Text.StringBuilder(260);
+        for (int i = 0; i < count; i++)
+        {
+            if (!GetModuleInformation(_handle, handles[i], out var mi, (uint)Marshal.SizeOf<MODULEINFO>()))
+                continue;
+            sb.Clear();
+            GetModuleFileNameEx(_handle, handles[i], sb, (uint)sb.Capacity);
+            var full = sb.ToString();
+            var name = full.Length == 0 ? $"module@0x{(long)handles[i]:X}" : Path.GetFileName(full);
+            yield return (name, mi.lpBaseOfDll, mi.SizeOfImage);
         }
     }
 

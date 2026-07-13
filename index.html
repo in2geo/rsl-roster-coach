@@ -342,14 +342,8 @@
             <button class="pill" data-account="good">Good</button>
           </div>
         </div>
-        <div class="sheet-field">
-          <label>Masteries</label>
-          <div class="pill-group" id="ctx-mastery">
-            <button class="pill active" data-mastery="none">None</button>
-            <button class="pill" data-mastery="partial">Partial</button>
-            <button class="pill" data-mastery="full">Full</button>
-          </div>
-        </div>
+        <!-- Masteries are per-champion now (Warmaster/Giant Slayer, asked on the champion
+             detail sheet for level-60 champs) — the account-wide selector was removed. -->
       </div>
     </div>
 
@@ -395,12 +389,13 @@
         <label>Ascension</label>
         <input type="number" id="sheet-ascension" min="0" max="6" value="0" />
       </div>
-      <div class="sheet-field" style="display:none">
-        <label>Mastery</label>
+      <!-- Shown only for level-60 champions (Warmaster/Giant Slayer unlock at 60). The two
+           boss masteries are the only ones that meaningfully affect boss-fight damage. -->
+      <div class="sheet-field" id="sheet-mastery-row" style="display:none">
+        <label>Full masteries? (Warmaster / Giant Slayer)</label>
         <div id="sheet-mastery" class="pill-group">
-          <button class="pill active" data-mastery="None">None</button>
-          <button class="pill" data-mastery="Basic">Basic</button>
-          <button class="pill" data-mastery="Complete">Complete</button>
+          <button class="pill active" data-mastery="None">No</button>
+          <button class="pill" data-mastery="Complete">Yes</button>
         </div>
       </div>
       <div class="sheet-field" id="sheet-lore-row" style="display:none">

@@ -109,6 +109,8 @@ export default async function handler(req, res) {
       solo_carries:            matchResult.solo_carries,
       solo_carries_locked:     matchResult.solo_carries_locked,
       team:                   matchResult.team,
+      leader:                 matchResult.leader ?? null,
+      synergies:              matchResult.synergies ?? [],
       stun_matrix:            matchResult.stun_matrix,
       gaps:                   matchResult.gaps,
       threshold_results:      matchResult.threshold_results,

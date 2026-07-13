@@ -42,6 +42,11 @@ internal sealed class BattleResultSnapshot
     public BattleSetupSnapshot? Setup { get; init; }
     public List<HeroStatSnapshot> HeroStats { get; init; } = [];
 
+    // Total damage dealt (Σ per-hero), read from the Clan Boss result dialog's view-model
+    // in process memory (see CbDamageReader). Null for non-CB battles or when the result
+    // dialog wasn't readable. Settable: stamped by the watcher after the file parse.
+    public long? TotalDamageDealt { get; set; }
+
     // Per-hero identity recovered from the battleResults file (file-parse path).
     // Settable: the parser fills raw candidates; the watcher validates + names them
     // against the resolved account's roster.

@@ -49,14 +49,20 @@ internal static class MemoryScanner
         }
         Console.WriteLine($"[scan] {regions} regions, {scanned / (1024 * 1024)} MB, {hits.Count} raw hit(s).");
 
-        // Cluster: windows (≤512 bytes) holding ≥2 distinct target values — the per-hero struct/array.
         hits.Sort((a, b) => a.addr.CompareTo(b.addr));
-        Console.WriteLine("\n[scan] clusters (≥2 distinct values within 512 bytes):");
+        Console.WriteLine("\n[scan] raw hits (feed one of these addresses to --ptrscan):");
+        foreach (var h in hits)
+            Console.WriteLine($"  0x{h.addr:X}  = {h.val}");
+
+        // Cluster: windows (≤2048 bytes) holding ≥2 distinct target values — the per-hero
+        // array is ~5×0xD0=1040 bytes wide, so 512 was too tight to catch adjacent heroes.
+        const int WindowBytes = 2048;
+        Console.WriteLine($"\n[scan] clusters (≥2 distinct values within {WindowBytes} bytes):");
         int clusters = 0;
         for (int i = 0; i < hits.Count; i++)
         {
             var window = new List<(long addr, int val)> { hits[i] };
-            for (int j = i + 1; j < hits.Count && hits[j].addr - hits[i].addr <= 512; j++)
+            for (int j = i + 1; j < hits.Count && hits[j].addr - hits[i].addr <= WindowBytes; j++)
                 window.Add(hits[j]);
             int distinct = window.Select(h => h.val).Distinct().Count();
             if (distinct >= 2)

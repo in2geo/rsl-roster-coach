@@ -76,6 +76,19 @@ internal static class Il2CppOffsets
     public const int BS_KindId                = 0x24; // int (BattleKindId enum)
     public const int BS_StageId               = 0x38; // int
 
+    // ── BattleState (BattleResult.FinalState) → per-hero survival ────────────
+    // FinalState (BR_FinalState) is a SharedModel.Battle.Core.State.BattleState. Its ally
+    // BattleTeam holds a List<BattleHero>; each BattleHero's current HP (a Fixed long at 0x58,
+    // 0 = dead) gives survival. This is the working survival source — BattleStatistics.
+    // StatisticsByHero is empty post-battle. Verified live 2026-07-12 (Pallas died → curHP 0,
+    // all survivors nonzero). Offsets from the live object graph (BattleState/BattleTeam/
+    // BattleHero class names confirmed via Il2Cpp klass).
+    public const int BState_AllyTeam = 0x28; // BattleTeam* (ally); 0x30 is the enemy team
+    public const int BTeam_Heroes    = 0x18; // List<BattleHero>
+    public const int BHero_TypeId    = 0x18; // int (baseTypeId)
+    public const int BHero_Slot      = 0x1C; // int (0-based team slot, screen left-to-right)
+    public const int BHero_CurrentHp = 0x58; // Fixed (long) current HP — 0 = dead
+
     // ── BattleStatistics fields (dump.cs TypeDefIndex: 12495) ───────────────
 
     public const int BStats_StatisticsByHero  = 0x10; // Dictionary<int, HeroStatistics>*

@@ -3,7 +3,7 @@
 Operational gaps and known-wrong/low-confidence areas. Findable and scannable when
 debugging a wrong verdict. Delete entries as gaps close — don't leave stale notes.
 
-Last updated: 2026-07-07 (video-skill-screenshots branch — Dragon affinity rotation corrected).
+Last updated: 2026-07-10 (stale pre-rework champion kits gap added — Tormin the Cold).
 
 ## Data gaps
 
@@ -188,6 +188,30 @@ the matching engine can't evaluate it (it would over-credit a Dungeon team with 
 Arena-only aura, or a mixed team with a faction-locked aura). Future enhancement:
 add `placement` and `faction_restriction` columns to `champion_tags` for aura rows
 (a schema addition, not a new tag type). Added 2026-07-07.
+
+### Stale pre-rework champion kits (high priority — silent, no automated detection)
+Some champions in the master DB / worksheet carry their **pre-rework skill kit** — the
+version from before an in-game rework. This is a data-**freshness** problem, not a parse
+error: the stale kit is internally coherent, so no consistency/QA check can flag it.
+
+Confirmed case: **Tormin the Cold (C000857)** held its entire pre-rework kit (Frost-Bolt /
+Rime-Shield / old Blizzard Rage / Winter's Wind) until corrected 2026-07-10 to the reworked
+kit (**Rimefire / Iceberg Crush / new Blizzard Rage / Wintry Wind**). The stale data even
+produced a WRONG tag adjudication — Tormin's A1 Freeze was rejected as a "false tag" because
+the old A1 placed no Freeze; the reworked A1 Rimefire does (15%→25%). That rejection was
+reversed. Related but distinct (scraper *mangling*, not a rework): **Sentinel (C000240)** and
+**Grizzled Jarl (C000369)** — skill mis-slotting + unbooked-captured-as-booked chances, both
+corrected 2026-07-10.
+
+USER TODO: research Plarium patch/rework history to enumerate which champions have been
+reworked, then re-verify each against current in-game skill text and update stale kits
+(skills, cooldowns, chances, tags). **No automated signal exists** — requires external
+patch-history research. Also mirrored in the master worksheet `Review_Queue` as **REV-0009**.
+
+Related caveat: because Skills_Raw (the raid.guide scrape tab) has now shown three systematic
+error classes — slot collapse, unbooked-captured-as-booked chances, cross-champion tag
+leakage — it should be **archived after the book/cooldown capture pass**, not trusted
+wholesale in future joins. The Skills tab is the source of truth.
 
 ## Code gaps
 

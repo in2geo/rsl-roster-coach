@@ -51,6 +51,9 @@ internal sealed class BattleWatcher(string outputPath)
     private (Dictionary<int, HeroStatSnapshot> stats, DateTime at)? _latestMemHeroStats;
     private bool _pendingHeroStats;   // a battle is present but its stats dict hasn't filled yet
     private int  _heroStatsTries;
+    // Per-hero survival read from BattleResult.FinalState → ally BattleTeam (current HP 0 = dead),
+    // keyed by team slot. StatisticsByHero is empty post-battle, so this is the survival source.
+    private (Dictionary<int, (int typeId, bool survived)> map, DateTime at)? _latestSurvival;
 
     // ── Entry point ───────────────────────────────────────────────────────────
 
@@ -206,17 +209,29 @@ internal sealed class BattleWatcher(string outputPath)
                 if (setup is { } s) _latestMemSetup = (s.stageId, s.kindId, DateTime.UtcNow);
                 _pendingHeroStats = true;       // new battle — start trying to grab stats
                 _heroStatsTries = 0;
-                if (!_finalStateDumped) { DumpFinalState(); _finalStateDumped = true; }
+                // Opt-in per-battle memory diagnostics (RSL_DEBUG_HEROES=1) for future offset work.
+                if (_debugHeroes)
+                {
+                    _debugBattle = true;
+                    _finalStateDumpedThisBattle = false;
+                    try { File.AppendAllText(HeroDebugPath, $"\n===== NEW BATTLE stageId={setup?.stageId.ToString() ?? "?"} kindId={setup?.kindId.ToString() ?? "?"} count={count} @{DateTime.Now:HH:mm:ss.fff} =====\n"); } catch { }
+                }
             }
             // Per-hero statistics populate lazily (a beat after the result is cached),
             // so keep retrying each tick while the result is present until the dict
             // fills — instead of reading once at the empty moment.
             if (_pendingHeroStats && count > 0)
             {
-                var hs = ReadLatestHeroStatsDirect();
+                // Survival from FinalState → ally BattleTeam (the working source) — snapshot as
+                // soon as it reads, before the result cache is cleared.
+                var surv = ReadAllySurvivalDirect();
+                if (surv.Count > 0) _latestSurvival = (surv, DateTime.UtcNow);
+
+                if (_debugBattle && !_finalStateDumpedThisBattle) _finalStateDumpedThisBattle = DumpFinalState();
+                var hs = ReadLatestHeroStatsDirect(_debugBattle);
                 _heroStatsTries++;
-                if (hs.Count > 0) { _latestMemHeroStats = (hs, DateTime.UtcNow); _pendingHeroStats = false; }
-                else if (_heroStatsTries > 20) _pendingHeroStats = false;  // ~2s give-up
+                if (hs.Count > 0) { _latestMemHeroStats = (hs, DateTime.UtcNow); _pendingHeroStats = false; _debugBattle = false; }
+                else if (_heroStatsTries > 20) { _pendingHeroStats = false; _debugBattle = false; }
             }
             if (count == 0) _pendingHeroStats = false;  // result gone from cache
             _lastMemBattleCount = count;   // also moves down on cache clear/reset
@@ -227,31 +242,33 @@ internal sealed class BattleWatcher(string outputPath)
     private static readonly string HeroDebugPath =
         Path.Combine(AppContext.BaseDirectory, "hero-debug.txt");
 
-    private bool _finalStateDumped;
+    private bool _debugBattle;                 // dump survival diagnostics for the current battle
+    private bool _finalStateDumpedThisBattle;  // FinalState probe succeeded for the current battle
+    private readonly bool _debugHeroes = Environment.GetEnvironmentVariable("RSL_DEBUG_HEROES") == "1";
 
     /// <summary>
     /// One-shot probe of BattleResult.FinalState (0x28) — the end-of-battle state,
     /// which (unlike the empty StatisticsByHero) should hold per-hero alive/dead.
     /// Dumps the object layout + candidate hero collections so the format can be mapped.
     /// </summary>
-    private void DumpFinalState()
+    private bool DumpFinalState()
     {
         var mem = _mem; var nav = _nav;
-        if (mem is null || nav is null) return;
+        if (mem is null || nav is null) return false;
         void Dbg(string m) { try { File.AppendAllText(HeroDebugPath, $"{DateTime.Now:HH:mm:ss.fff} {m}\n"); } catch { } }
         try
         {
             var appModel = nav.ResolveAppModelInstance();
-            if (!ProcessMemory.IsValidPointer(appModel)) return;
+            if (!ProcessMemory.IsValidPointer(appModel)) return false;
             int count = nav.ReadBattleResultCount(appModel);
-            if (count <= 0) return;
+            if (count <= 0) return false;
             var ptrs = nav.ReadBattleResultPointers(appModel, count - 1);
-            if (ptrs.Count == 0) return;
+            if (ptrs.Count == 0) return false;
             var br = ptrs[^1];
 
             var fs = mem.ReadPointer(br + BR_FinalState);
             Dbg($"=== FinalState probe: br=0x{br:X} FinalState=0x{fs:X} valid={ProcessMemory.IsValidPointer(fs)} ===");
-            if (!ProcessMemory.IsValidPointer(fs)) return;
+            if (!ProcessMemory.IsValidPointer(fs)) return false;
 
             // FinalState object slots — find collection pointers.
             for (int o = 0x10; o <= 0x80; o += 8)
@@ -280,16 +297,22 @@ internal sealed class BattleWatcher(string outputPath)
                         {
                             var ep = mem.ReadPointer(arr + Array_DataOffset + e * 8);
                             if (!ProcessMemory.IsValidPointer(ep)) continue;
-                            var sb = new System.Text.StringBuilder($"    [{e}] @0x{ep:X}:");
-                            for (int fo = 0x10; fo <= 0x50; fo += 4)
+                            // int32s (ids/typeId/flags) then int64s (HP is a Fixed long, /1000)
+                            var sb = new System.Text.StringBuilder($"    [{e}] @0x{ep:X} i32:");
+                            for (int fo = 0x10; fo <= 0x70; fo += 4)
                                 sb.Append($" +{fo:X2}={mem.ReadInt32(ep + fo)}");
                             Dbg(sb.ToString());
+                            var sb2 = new System.Text.StringBuilder($"        i64:");
+                            for (int fo = 0x10; fo <= 0x70; fo += 8)
+                                sb2.Append($" +{fo:X2}={mem.ReadInt64(ep + fo)}");
+                            Dbg(sb2.ToString());
                         }
                     }
                 }
             }
+            return true;
         }
-        catch (Exception ex) { Dbg("FinalState EX " + ex.Message); }
+        catch (Exception ex) { Dbg("FinalState EX " + ex.Message); return false; }
     }
 
     /// <summary>heroId → per-hero stats for the latest BattleResult (allies + enemies).</summary>
@@ -371,6 +394,90 @@ internal sealed class BattleWatcher(string outputPath)
         if (_latestMemHeroStats is { } mh && (DateTime.UtcNow - mh.at).TotalSeconds < 15)
             return mh.stats;
         return ReadLatestHeroStatsDirect();
+    }
+
+    /// <summary>
+    /// Per-hero survival for the latest battle, keyed by team slot: BattleResult.FinalState →
+    /// ally BattleTeam → List&lt;BattleHero&gt;, survived = current HP (Fixed @0x58) is nonzero.
+    /// The combat-side survival source (StatisticsByHero is empty post-battle).
+    /// </summary>
+    private Dictionary<int, (int typeId, bool survived)> ReadAllySurvivalDirect()
+    {
+        var result = new Dictionary<int, (int, bool)>();
+        var mem = _mem; var nav = _nav;
+        if (mem is null || nav is null) return result;
+        try
+        {
+            var appModel = nav.ResolveAppModelInstance();
+            if (!ProcessMemory.IsValidPointer(appModel)) return result;
+            int count = nav.ReadBattleResultCount(appModel);
+            if (count <= 0) return result;
+            var ptrs = nav.ReadBattleResultPointers(appModel, count - 1);
+            if (ptrs.Count == 0) return result;
+
+            var fs = mem.ReadPointer(ptrs[^1] + BR_FinalState);
+            if (!ProcessMemory.IsValidPointer(fs)) return result;
+            var team = mem.ReadPointer(fs + BState_AllyTeam);
+            if (!ProcessMemory.IsValidPointer(team)) return result;
+            var list = mem.ReadPointer(team + BTeam_Heroes);
+            if (!ProcessMemory.IsValidPointer(list)) return result;
+            var arr = mem.ReadPointer(list + List_BackingArray);
+            int size = mem.ReadInt32(list + List_Size);
+            if (!ProcessMemory.IsValidPointer(arr) || size is <= 0 or > 10) return result;
+
+            for (int i = 0; i < size; i++)
+            {
+                var hero = mem.ReadPointer(arr + Array_DataOffset + i * Array_ElementSize);
+                if (!ProcessMemory.IsValidPointer(hero)) continue;
+                int typeId = mem.ReadInt32(hero + BHero_TypeId);
+                int slot   = mem.ReadInt32(hero + BHero_Slot);
+                long hp    = mem.ReadInt64(hero + BHero_CurrentHp);
+                result[slot] = (typeId, hp != 0);
+            }
+        }
+        catch { }
+        return result;
+    }
+
+    private Dictionary<int, (int typeId, bool survived)> ReadLatestSurvival()
+    {
+        if (_latestSurvival is { } s && (DateTime.UtcNow - s.at).TotalSeconds < 15)
+            return s.map;
+        return ReadAllySurvivalDirect();
+    }
+
+    /// <summary>
+    /// For a Clan Boss capture, reads total + per-hero damage from the live result dialog's
+    /// view-model (CbDamageReader — the file and combat StatisticsByHero carry no damage) and
+    /// stamps the snapshot. The dialog can appear a beat after the file write, so it retries
+    /// briefly. No-op for non-CB battles.
+    /// </summary>
+    private void TryAttachClanBossDamage(BattleResultSnapshot snapshot)
+    {
+        if (snapshot.Dungeon != "Clan Boss") return;
+        var mem = _mem;
+        if (mem is null) return;
+
+        CbDamageReader.CbResult? res = null;
+        for (int attempt = 0; attempt < 3 && res is null; attempt++)
+        {
+            res = CbDamageReader.Capture(mem);
+            if (res is null) Thread.Sleep(200);
+        }
+        if (res is null) { Console.WriteLine("[cbdamage] CB battle but result dialog not readable"); return; }
+
+        snapshot.TotalDamageDealt = res.TotalDamage;
+
+        // Join per-hero damage by slot — both the file heroes and the dialog hero list are
+        // in screen left-to-right order.
+        if (snapshot.Heroes.Count > 0)
+        {
+            var bySlot = res.Heroes.ToDictionary(h => h.Slot, h => h.Damage);
+            snapshot.Heroes = snapshot.Heroes
+                .Select(h => bySlot.TryGetValue(h.Slot, out var d) ? h with { Damage = d } : h)
+                .ToList();
+        }
+        Console.WriteLine($"[cbdamage] total damage dealt = {res.TotalDamage} over {res.Heroes.Count} hero(es)");
     }
 
     // ── BattleResult reader ───────────────────────────────────────────────────
@@ -592,8 +699,8 @@ internal sealed class BattleWatcher(string outputPath)
                     if (snapshot.Heroes.Count > 0)
                         snapshot.Heroes[0] = snapshot.Heroes[0] with { IsLeader = true };
 
-                    // Enrich with survival + kills from the in-memory hero statistics
-                    // (joined by heroId). Leaves them null when the stats weren't read.
+                    // Enrich with kills from the in-memory hero statistics (joined by heroId).
+                    // Leaves them null when the stats weren't read.
                     var memHeroStats = ReadLatestHeroStats();
                     if (memHeroStats.Count > 0)
                         snapshot.Heroes = snapshot.Heroes
@@ -601,6 +708,22 @@ internal sealed class BattleWatcher(string outputPath)
                                 ? h with { Survived = !st.IsDead, Kills = st.KilledEnemiesCount }
                                 : h)
                             .ToList();
+
+                    // Survival from FinalState → ally BattleTeam (current HP 0 = dead), joined by
+                    // team slot with a typeId low-byte identity check (ascension-tolerant). This is
+                    // the working survival source — StatisticsByHero above is empty post-battle.
+                    var survival = ReadLatestSurvival();
+                    if (survival.Count > 0)
+                        snapshot.Heroes = snapshot.Heroes
+                            .Select(h => survival.TryGetValue(h.Slot, out var sv) && (sv.typeId & 0xFF) == (h.TypeId & 0xFF)
+                                ? h with { Survived = sv.survived }
+                                : h)
+                            .ToList();
+
+                    // Clan Boss total damage — read from the result dialog's view-model in
+                    // memory (the file/StatisticsByHero carry no damage). Gated to CB; feeds
+                    // the chest-tier pipeline.
+                    TryAttachClanBossDamage(snapshot);
 
                     var entry = BattleLogEntry.From(snapshot);
 

@@ -28,7 +28,9 @@ const RARITY_COLOR = {
   Rare:      '#2196F3',
 };
 const GEAR_TIERS   = ['Starter', 'Dungeon', 'Strong', 'God Tier'];
-const MASTERY_TIERS = ['None', 'Basic', 'Complete'];
+// Per-champion boss-mastery answer maps to mastery_tier: 'Complete' = has Warmaster/Giant
+// Slayer, 'None' = doesn't. (resolveBossMastery bridges 'Complete' + level 60 → has_boss_mastery.)
+const MASTERY_TIERS = ['None', 'Complete'];
 const CB_DIFFICULTIES = ['Easy', 'Normal', 'Hard', 'Brutal', 'Nightmare', 'UNM'];
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -621,6 +623,12 @@ function openDetailSheet(champ, rarity) {
   const bookedChk = qs('#sheet-booked', sheet);
   if (bookedChk) bookedChk.checked = existing?.is_booked ?? false;
 
+  // Masteries only matter for level-60 champs (Warmaster/Giant Slayer unlock at 60): show the
+  // boss-mastery question only then, and re-evaluate when the level input changes.
+  updateMasteryVisibility(sheet);
+  const lvlEl = qs('#sheet-level', sheet);
+  if (lvlEl) lvlEl.oninput = () => updateMasteryVisibility(sheet);
+
   // Lore of Steel (only show if mastery = Complete)
   updateLoreVisibility(sheet);
   const masteryBtns = sheet.querySelectorAll('[data-mastery]');
@@ -720,6 +728,18 @@ function updateLoreVisibility(root) {
   if (!loreRow) return;
   const mastery = getMastery(root);
   loreRow.classList.toggle('hidden', mastery !== 'Complete');
+}
+
+// The boss-mastery question is only meaningful for level-60 champions (Warmaster/Giant Slayer
+// require level 60). Below 60 we hide the row and force mastery to 'None' so a champ can't be
+// credited with a mastery it can't have.
+function updateMasteryVisibility(root) {
+  const row = qs('#sheet-mastery-row', root);
+  if (!row) return;
+  const level = parseInt(qs('#sheet-level', root)?.value, 10) || 1;
+  const show = level >= 60;
+  row.style.display = show ? '' : 'none';
+  if (!show) { renderMastery(root, 'None'); updateLoreVisibility(root); }
 }
 
 async function saveChampion(champ, rarity, sheet) {

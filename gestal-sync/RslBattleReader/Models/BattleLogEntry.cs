@@ -39,6 +39,9 @@ internal sealed class BattleLogEntry
 
     public bool ManualSkillUsed { get; init; }
 
+    /// <summary>Total damage dealt (Clan Boss only) — feeds the chest-tier pipeline.</summary>
+    public long? TotalDamageDealt { get; init; }
+
     public List<BattleHero> Heroes { get; init; } = [];
 
     public static BattleLogEntry From(BattleResultSnapshot s) => new()
@@ -56,6 +59,7 @@ internal sealed class BattleLogEntry
         BattleKindId    = s.BattleKindId,
         FinishCause     = s.FinishCause,
         ManualSkillUsed = s.ManualSkillUsed,
+        TotalDamageDealt = s.TotalDamageDealt,
         Heroes          = s.Heroes,
     };
 }

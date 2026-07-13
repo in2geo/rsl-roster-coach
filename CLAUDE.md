@@ -333,6 +333,26 @@ tag work. "REJECT" = do not create a tag row; note the mechanic in the
 15. **Synergy-dependent skills** — a skill that only becomes available/activates
     when a specific ally is on the team → REJECT (e.g. Tallia's Bomb requires
     Fenax).
+16. **Ignore-mechanic false positives** — a bracket tag appearing after "ignore",
+    "ignores", or "will ignore" in skill text is NOT a placement; it describes
+    what the attack BYPASSES → REJECT. Example: "ignores [Shield] and [Strengthen]
+    buffs" → neither Shield nor Strengthen is placed by this skill. (Root cause of
+    a 2026-07-12 sweep that found 31 such false positives across 19 champions —
+    bracket-token extraction with no negation awareness.)
+17. **Resistance bypass ≠ conditional placement** — language like "cannot be
+    resisted if this Champion is under [Veil]" or "this debuff cannot be resisted
+    if the target is under [Decrease DEF]" modifies RESISTANCE only. The debuff is
+    still placed at its normal chance → APPROVE (do NOT reject as a conditional
+    debuff). This is distinct from policy #1 (a debuff that only LANDS when another
+    debuff is present). (Root cause of 7 false negatives in the same sweep — e.g.
+    Ezio's Decrease DEF / Poison were wrongly rejected as "conditional".)
+18. **Tag analysis reconciliation** — any tag ruling made via screenshot, seed
+    SQL, or manual analysis MUST be written back to `DB_Champion_Tags` in the
+    master worksheet in the SAME session. Tag analysis that lives only in seed
+    files or conversation history is considered ORPHANED and will be lost — this
+    is the exact failure that let a careful hand-analysis (seeds 42/43) be silently
+    overwritten by an automated bracket-extraction pass. Same principle as the
+    "screenshot all skills before ascending" action rule, applied to tags.
 
 ## Core architecture principles
 - The AI is not the source of truth. The champion table and the

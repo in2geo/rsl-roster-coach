@@ -403,14 +403,31 @@ function renderResults(data) {
 
   const teamList = document.getElementById('team-list');
   teamList.innerHTML = '';
+  const leaderName = data.leader?.name ?? null;
   (data.team || []).forEach(champ => {
     const li = document.createElement('li');
     const dot = document.createElement('span');
     dot.className = `rarity-dot ${champ.rarity || ''}`;
     li.appendChild(dot);
     li.append(`${champ.name} — Lv ${champ.level} ★${champ.stars}`);
+    if (champ.name === leaderName) {
+      const badge = document.createElement('span');
+      badge.className = 'leader-badge';
+      badge.textContent = 'Leader';
+      li.appendChild(badge);
+    }
     teamList.appendChild(li);
   });
+
+  // Leader skill (aura) — in RSL only the leader's aura is active for the team.
+  document.querySelector('.leader-note')?.remove();
+  if (data.leader?.aura_summary) {
+    const l = data.leader;
+    const summary = String(l.aura_summary).replace(/\bin in\b/gi, 'in').trim();
+    const restr = l.restriction ? ` (${l.restriction})` : '';
+    teamList.insertAdjacentHTML('afterend',
+      `<p class="leader-note"><strong>Leader skill:</strong> put <strong>${leaderName}</strong> in the leader slot — ${summary}${restr}</p>`);
+  }
 
   const confDisplay = document.getElementById('confidence-display');
   const confValue   = document.getElementById('confidence-pct-value');
