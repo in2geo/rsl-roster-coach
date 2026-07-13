@@ -35,6 +35,9 @@ internal sealed class BattleWatcher(string outputPath)
     private readonly object _captureLock = new();
 
     private DateTime _lastFileWrite = DateTime.MinValue;
+    // Last-write-time (ticks) of the battleResults file already processed by the fast
+    // poller — the change-detection gate that stops it re-parsing the same result.
+    private long _lastWriteTicks = 0;
 
     // Shared with the file-capture path so it can read the authoritative StageId
     // from the live game's BattleSetup at capture time. Set while attached.
@@ -598,6 +601,11 @@ internal sealed class BattleWatcher(string outputPath)
     private async Task FastFilePollerAsync(CancellationToken ct)
     {
         const int EmptySize = 11;
+        // Skip the battle already sitting in the file at startup — it's already in the
+        // loaded log; we only want NEW battles from here on.
+        if (File.Exists(BattleResultsFile))
+            try { _lastWriteTicks = File.GetLastWriteTimeUtc(BattleResultsFile).Ticks; } catch { }
+
         while (!ct.IsCancellationRequested)
         {
             try
@@ -607,15 +615,29 @@ internal sealed class BattleWatcher(string outputPath)
 
                 if (File.Exists(BattleResultsFile))
                 {
-                    // Read bytes immediately while file is open — game clears it within ~200ms
-                    using var fs = new FileStream(BattleResultsFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    if (fs.Length > EmptySize)
+                    // Only touch the file when its CONTENT changed. The game rewrites this
+                    // single-slot file once per battle, so last-write-time is a reliable
+                    // change signal. Without this the poller re-read + re-parsed the SAME
+                    // result every 100ms whenever the game left the file un-cleared —
+                    // spinning forever (the [FAST] flood that dropped a whole Spider run
+                    // 2026-07-12) and burning CPU. Now we process each write exactly once.
+                    long ticks;
+                    try { ticks = File.GetLastWriteTimeUtc(BattleResultsFile).Ticks; }
+                    catch { ticks = _lastWriteTicks; }
+
+                    if (ticks != _lastWriteTicks)
                     {
-                        var bytes = new byte[fs.Length];
-                        fs.ReadExactly(bytes);
-                        var ts = DateTime.Now.ToString("HH:mm:ss.fff");
-                        Console.WriteLine($"[FAST] file is {bytes.Length} bytes at {ts}");
-                        TryCaptureFromFile(bytes);
+                        _lastWriteTicks = ticks;
+                        // Read bytes immediately while file is open — game clears it within ~200ms
+                        using var fs = new FileStream(BattleResultsFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        if (fs.Length > EmptySize)
+                        {
+                            var bytes = new byte[fs.Length];
+                            fs.ReadExactly(bytes);
+                            var ts = DateTime.Now.ToString("HH:mm:ss.fff");
+                            Console.WriteLine($"[FAST] new result: {bytes.Length} bytes at {ts}");
+                            TryCaptureFromFile(bytes);
+                        }
                     }
                 }
             }
