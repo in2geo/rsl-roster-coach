@@ -56,6 +56,12 @@ internal static class DungeonId
         [2059] = "Arcane Keep",
         [2069] = "Dragon's Lair",
         [2079] = "Ice Golem's Peak",
+        [2099] = "Spider's Den",          // 2099017 = Spider stage 17, user-confirmed 2026-07-13.
+                                          // CRITICAL: without this, the Clan Boss stage-fingerprint
+                                          // (added 2026-07-02) FALSE-MATCHES Spider stage 17 and the
+                                          // run is mislabeled "Clan Boss" (8 runs polluted the CB set).
+                                          // The stageId-prefix override here is authoritative and
+                                          // corrects the false fingerprint whenever StageId is present.
         [2109] = "Minotaur's Labyrinth",  // 2109015 = Minotaur stage 15, confirmed 2026-07-01
         // Event Dungeon rotates. The reader only tags the run "Event Dungeon" (prefix 2189).
         // DEPENDENCY: cross-referencing event runs must go through the matching engine's
