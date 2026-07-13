@@ -39,21 +39,25 @@ work lives in session memory (see the memory index); this is the snapshot. Run t
 ### Dungeon content coverage (live 2026-07-13)
 | Dungeon | stages | actionable goals | approved solutions | thresholds |
 |---|---|---|---|---|
-| Clan Boss | 6 difficulties | 34 | 56 | 10 |
-| Dragon's Lair | 17 | 66 | 132 | 17 |
-| Fire Knight's Castle | 25 (full 1-25) | 149 | 117 | 50 |
-| Ice Golem's Peak | 14 | 57 | 69 | 29 |
-| Spider's Den | 8 | 6 | 12 | 1 |
+| Clan Boss | 6 difficulties | 26 | 56 | 10 |
+| Dragon's Lair | 25 (full 1-25) | 100 | 386 | 50 |
+| Fire Knight's Castle | 25 (full 1-25) | 113 | 326 | 50 |
+| Ice Golem's Peak | 25 (full 1-25) | 73 | 169 | 62 |
+| Spider's Den | 9 (3 strategy tiers) | 12 | 33 | 3 |
 | Campaign | 1 | 2 | 3 | 0 |
 | Doom Tower | 24 seeded | **0 — content TODO** | 0 | 0 |
 | Event Dungeon (Generic) | template row only; no stages/goals seeded |
 
-- Totals: 216 actionable + 98 informational goals; goal_solutions 389 approved /
-  174 proposed / 4 rejected.
-- Fire Knight extended to the full 1-25 ladder 2026-07-13 (a parallel session); the
-  new 1-9 & 21-25 rows are `status='proposed'` pending approval. Boss mechanics for
-  FK/IG (shield 10-hits/round, Frigid Vengeance, Numbing Chill, etc.) live in the
-  `boss_exceptions` + `explanation_style_notes` tables and their seeds.
+- Totals: goal_solutions **973 approved / 0 proposed / 4 rejected** — all four core
+  dungeons (Fire Knight, Spider, Ice Golem, Dragon) now have the **full Normal 1-25
+  ladder built AND approved** (2026-07-13). Nothing is left in `proposed`.
+- All four dungeons **auto-scan for the best clearable stage** (no stage picker) via
+  `scanDungeonStages` / `scanSpiderStages` in the match engine. Boss mechanics
+  (FK shield 10-hits/round, IG Frigid Vengeance, Dragon Inhale→Scorch, etc.) live in
+  the `boss_exceptions` + `explanation_style_notes` tables and their seeds.
+- **Remaining dungeon work:** Hard mode for all four (Tainted bosses); Doom Tower
+  content (24 floor stubs, zero goals). All stat floors are CALIBRATION-NEEDED
+  placeholders (see the Stat estimation notes section).
 
 ### Engine & tooling — BUILT
 - Deterministic match engine (`lib/match-engine.js`): solo-carry-first, team
@@ -492,6 +496,24 @@ was stated as fact, propagated through memory, and skewed a reconciliation.
 - formulas.js must implement DEF diminishing returns, True Speed
   calculation, tick formula, and stun priority matrix before estimation
   engine is meaningful for Clan Boss
+- **DUNGEON STAT FLOORS = CALIBRATION NEEDED (all placeholders).** Every ACC /
+  RES / HP / SPD threshold in `stat_threshold_checks` is a JUDGMENT CALL, not a
+  measured value (the source docs' stat tables are images). They are directional
+  starting floors to recalibrate against real battle-outcome data. Known
+  placeholder examples: Fire Knight ACC stage×10 (10-14 = 120) → 170 (15-20) →
+  210 (21-25); Spider ACC stage×10 + a separate ~10% margin; Ice Golem 1-9
+  (ACC 80 / HP 5,000), 10-13 (ACC 120 / HP 8,000), 14-20 (ACC 200 / RES 200 /
+  HP 40,000), 21-25 (ACC 210 / RES 210 / HP 45,000); Dragon 1-6 (ACC ~100, no
+  Scorch), 7-9 (ACC ~130 / RES ~200), 10-14 (RES ~250), 15-20 (RES ~300 — the
+  doc's one concrete number), 21-25 (ACC ~250 / RES ~300). Do NOT treat any of
+  these as authoritative; recalibrate per content once outcome data accumulates.
+- **Dragon (and generally): ACC and RES are TWO DIFFERENT JOBS — never conflate.**
+  ACC = YOUR team LANDING debuffs ON the boss (Decrease DEF / Weaken / Poison) —
+  offense; a nuker/debuffer needs it. RES = RESISTING the boss's OWN debuffs
+  (Hellrazor's Decrease ATK / Poison / Weaken / Scorch Stun) — defense; supports
+  want it. Do not tell a player to raise ACC to avoid a boss's debuffs (that's
+  RES) or RES to land their own (that's ACC). Captured live in the
+  explanation_style_notes topic "Dragon's Lair — ACC vs RES are two different jobs".
 
 ## Known open questions — do not assume answers
 1. Mythical champion access for beginners — unconfirmed whether starter
