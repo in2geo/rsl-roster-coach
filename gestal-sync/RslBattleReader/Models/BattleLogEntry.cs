@@ -39,6 +39,13 @@ internal sealed class BattleLogEntry
 
     public bool ManualSkillUsed { get; init; }
 
+    /// <summary>Wall-clock battle duration (seconds) + the speed multiplier it ran at.
+    /// TIME is the audience's real success metric (a win inside a time budget is good
+    /// regardless of turns); BattleSpeed normalizes 1x vs 2x/3x runs. Read from game
+    /// memory (BattleResult+0x3C / +0x40) — previously captured but dropped from the log.</summary>
+    public float  DurationSeconds { get; init; }
+    public float? BattleSpeed     { get; init; }
+
     /// <summary>Total damage dealt (Clan Boss only) — feeds the chest-tier pipeline.</summary>
     public long? TotalDamageDealt { get; init; }
 
@@ -59,6 +66,8 @@ internal sealed class BattleLogEntry
         BattleKindId    = s.BattleKindId,
         FinishCause     = s.FinishCause,
         ManualSkillUsed = s.ManualSkillUsed,
+        DurationSeconds = s.DurationSeconds,
+        BattleSpeed     = s.BattleSpeed,
         TotalDamageDealt = s.TotalDamageDealt,
         Heroes          = s.Heroes,
     };

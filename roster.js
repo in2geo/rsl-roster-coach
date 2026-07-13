@@ -52,7 +52,7 @@ const championDetails = new Map();
 let sheetReturnTo = 'rarity';
 const RARITY_WEIGHT = { Mythical: 6, Legendary: 5, Epic: 4, Rare: 3, Uncommon: 2, Common: 1 };
 // Content options shown but not yet recommendable (no stage data seeded).
-// Fire Knight / Ice Golem are now seeded (stages 10-20) and recommendable.
+// Fire Knight seeded + approved stages 1-25; Ice Golem seeded stages 10-20. Both recommendable.
 const CONTENT_UNAVAILABLE = new Set();
 
 // Populates championDetails from the loaded champion list (covers the manual path;
@@ -1054,16 +1054,8 @@ function wireContentSheet(sheet) {
   setContent('spider');
   tabs.forEach(t => { t.onclick = () => setContent(t.dataset.content); });
 
-  // Stage pickers for the multi-stage dungeons (Fire Knight / Ice Golem 10-20):
-  // single-select the chosen stage within each section.
-  ['ice_golem', 'fire_knight'].forEach(key => {
-    const section = qs('#content-' + key, sheet);
-    const stageBtns = section ? [...section.querySelectorAll('.stage-num-btn')] : [];
-    stageBtns.forEach(b => b.onclick = () => {
-      stageBtns.forEach(x => x.classList.remove('active'));
-      b.classList.add('active');
-    });
-  });
+  // Fire Knight / Ice Golem have no stage picker — the engine auto-scans for the
+  // highest clearable stage (same as Spider's Den).
 
   wireGearCtx(sheet);
 
@@ -1086,10 +1078,8 @@ async function requestRecommendation(sheet) {
   } else if (key === 'event_dungeon') {
     contentKey = 'event_dungeon';
   } else if (key === 'ice_golem' || key === 'fire_knight') {
+    // No stage picker — the engine auto-scans for the highest clearable stage.
     contentKey = key;
-    const activeStage = qs(`#content-${key} .stage-num-btn.active`, sheet);
-    options.stage = Number(activeStage?.dataset.stage);
-    if (!options.stage) return; // no stage selected
   } else {
     return; // unknown content tab
   }

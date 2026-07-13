@@ -17,95 +17,73 @@ rosters — that segment is already served by other tools.
 - AI: Anthropic API (separate from claude.ai — console.anthropic.com)
 - Monetization: rewarded video ads. First daily recommendation always free.
 
-## Current project state (updated end of session June 30 2026)
+## Current project state (data-grounded refresh — 2026-07-13)
 
-### In the DB and verified
-- Spider's Den stages 9-10 — goals, solutions, stat thresholds, RES row
-- Clan Boss all six difficulties — goals, solutions, stat thresholds,
-  boss exceptions, explanation style notes
-- Fire Knight's Castle stages 10-20 (was 15-20) — goals, solutions, stat
-  thresholds, boss exceptions. 15-20: wave phase (AoE CC goals/solutions to
-  deny dangerous minion skills), boss phase (shield-breaking at 10 hits/round,
-  Turn Meter control, Dazzling Flames SPD-debuff counter, Decrease DEF/Weaken
-  damage window), tags added (Multi-Hit A1, Decrease SPD, Decrease Turn Meter,
-  Heal Reduction, Counterattack, Block Cooldowns, Increase SPD, Ally Attack,
-  Block Revive), ACC/SPD stat checks per stage, boss exceptions per stage,
-  explanation style note for the shield mechanic. Stages 1-9 deliberately out
-  of scope.
-- Ice Golem's Peak stages 10-20 (was 15-20) — goals, solutions, stat
-  thresholds, boss exceptions, with a confirmed difficulty cliff at stage 14
-  (relaxed floors 10-13: ACC 120+/HP 25000+, burst-survivable; stage-15-
-  equivalent floors at 14+: ACC 200+/HP 40000+/RES 200+). 15-20: wave phase
-  (kill both minions before boss phase, target the more dangerous one first),
-  boss phase (avoid triggering Frigid Vengeance via Poison/HP Burn instead of
-  burst, minion management via Block Revive, Numbing Chill ACC counter), ACC/
-  RES/HP stat checks per stage, boss exceptions per stage including Frigid
-  Vengeance and Counterattack warnings, champion_ai_notes (Underpriest Brogni
-  flagged — reflect damage can proc Frigid Vengeance), explanation style notes
-  for Frigid Vengeance/Counterattack. Stages 1-9 deliberately out of scope.
-- Block Revive tag corrected: bypasses_accuracy_check is now false (was
-  incorrectly true) — requires a normal ACC check to land; affects matching
-  logic for Ice Golem at ALL stages, not just 10-14.
-- Both Fire Knight and Ice Golem seeded with status = 'proposed' per
-  no-auto-merge rule — nothing auto-approved.
-- NOT yet done for Fire Knight/Ice Golem: champion_strategy_modifiers (no
-  dungeon-specific overrides seeded yet — Ally Attack champions like Fahrakin/
-  Cardiel only exist for Clan Boss so far)
-- Champion solo profiles — Dragon, Spider, Ice Golem, Fire Knight across
-  Normal and Hard stages
-- Champion AI notes — Elder Skarg, Fayne, Mavara, Folan, Sabrael, Fimo,
-  Nson, Jorad, Polar Fireheart, Underpriest Brogni (Ice Golem)
-- Champions table — priority starter-pack champions plus recent meta
-  champions with base stats from raid.guide
-- Schema migrations applied — role, mastery_tier, ascension_level,
-  has_lore_of_steel, threshold_type, speed_set_bonuses,
-  boss_stun_priority all documented
-- base_crit_rate / base_crit_dmg DDL migration — flagged, confirm applied
-- game_id architecture applied — games table, game_id on all key tables
-- recommendation_outcomes table — feedback loop schema, not yet wired to UI
-- profiles layer — BUILT (this session): profiles spine over the existing
-  multi-account model. A profile is a named roster populated by either manual
-  entry (user_champions scoped by profile_id) or Gestal import (rsl_accounts
-  scoped by profile_id); anonymous device users keep a single implicit roster.
-  Switcher UI + magic-link sign-in control wired; signed-in users no longer get
-  the dev box's local Gestal fallback. See migrations/2026-06-30_profiles_layer.sql
-  and the [[profiles-architecture]] memory. roster_shares still not built.
-- Clan Boss content — remediated (this session): the six-difficulty solutions
-  were skeleton rows (proposed + untagged). Now tagged + approved via
-  seeds/09_clan_boss.sql (Hard+) and seeds/10_clan_boss_easy_normal.sql
-  (Easy/Normal, deduped goals). Sustain goals at Hard+ remain gaps until
-  champions get Leech/Ally Protection/Continuous Heal tags (coverage, not a bug).
-- Direct game-memory roster extractor (Option B) — PARTIALLY BUILT. Champion
-  reader (--roster) validated CLEAN vs Gestal (109/109, every field); gear scalar
-  reader (--gear) clean (slot/set/rank/rarity/level/ascension), counts reconcile
-  to in-game (816 gear + 181 acc unequipped + 64 equipped = 1061 owned). Remaining:
-  owned-artifact filter + nested main-stat/substats/equippedOnHeroId, then swap
-  import-upload.js off Gestal. Re-dump confirmed current build == v11.60.0 (zero
-  offset shifts). Plan/offsets: gestal-sync/option-b-roster-extractor-plan.md.
-- champion_names table — localization layer, English seeded
-- daily_sessions + ad gate spec — schema done, UI wiring pending
-- Event dungeon architecture (is_event/active_from/active_until) — schema
-  done, generic fallback template seeded
+Counts below are from a live DB query on 2026-07-13. Detailed provenance for recent
+work lives in session memory (see the memory index); this is the snapshot. Run the
+"Content coverage check" query below to refresh dungeon numbers before relying on them.
 
-### Next for Claude Code (in order)
-1. Run the dungeon coverage verification query (see "Content coverage check"
-   below) to get an accurate current picture before continuing
-2. Build formulas.js — DEF diminishing returns, True Speed, tick formula,
-   stun priority matrix
-3. Build stat estimation engine against formulas.js
-4. Build matching engine with solo carry check first, then team
-   recommendation — include the Spider's Den highest-confidence-stage scan
-   logic (stage 10→1, return highest at ≥80% confidence)
-5. Run raid.guide base stats scraper for remaining champions
-6. Build champion selection UI (spec already written — see session notes)
-7. Build roster verification screen (spec already written)
-8. Build AI explanation layer (two-part output, confidence percentage not
-   binary verdict)
-9. Wire ad gate logic (daily_sessions, gate checks, placeholder ad flow)
-10. Wire feedback UI (recommendation_outcomes, 👍/👎)
-11. Wire waitlist form to Supabase
-12. Build post-failure diagnosis flow (three yes/no questions)
-13. champion_strategy_modifiers for Fire Knight/Ice Golem (not started)
+### Champions & skill data (live)
+- **1,021 champions** — Legendary 419, Epic 309, Rare 243, Mythical 40; plus 10
+  Common/Uncommon that are OUT OF SCOPE and carry no tags (Rare+ in scope = 1,011).
+- **champion_skills**: 934 champions have verbatim `skill_summary` (~92% of Rare+).
+  ~78 Rare+ have NO skill text — a data gap needing fresh capture (the raid.guide
+  scrape is exhausted). **champion_auras**: 656.
+- **champion_tags**: 4,525 approved / 107 proposed / 178 rejected. **Tag vocab: 103.**
+  The tag layer was REGENERATED from `skill_summary` via LLM on 2026-07-13 — see the
+  "Tag source of truth" note under Tag Review Policies (bracket-scraping is deprecated).
+- **champion_solo_profiles**: 45 (Dragon/Spider/Ice Golem/Fire Knight, Normal+Hard).
+- **champion_aliases**: 420 (generator + live resolver exist — extend, don't rebuild).
+- champion_names localization table: English seeded.
+
+### Dungeon content coverage (live 2026-07-13)
+| Dungeon | stages | actionable goals | approved solutions | thresholds |
+|---|---|---|---|---|
+| Clan Boss | 6 difficulties | 34 | 56 | 10 |
+| Dragon's Lair | 17 | 66 | 132 | 17 |
+| Fire Knight's Castle | 25 (full 1-25) | 149 | 117 | 50 |
+| Ice Golem's Peak | 14 | 57 | 69 | 29 |
+| Spider's Den | 8 | 6 | 12 | 1 |
+| Campaign | 1 | 2 | 3 | 0 |
+| Doom Tower | 24 seeded | **0 — content TODO** | 0 | 0 |
+| Event Dungeon (Generic) | template row only; no stages/goals seeded |
+
+- Totals: 216 actionable + 98 informational goals; goal_solutions 389 approved /
+  174 proposed / 4 rejected.
+- Fire Knight extended to the full 1-25 ladder 2026-07-13 (a parallel session); the
+  new 1-9 & 21-25 rows are `status='proposed'` pending approval. Boss mechanics for
+  FK/IG (shield 10-hits/round, Frigid Vengeance, Numbing Chill, etc.) live in the
+  `boss_exceptions` + `explanation_style_notes` tables and their seeds.
+
+### Engine & tooling — BUILT
+- Deterministic match engine (`lib/match-engine.js`): solo-carry-first, team
+  selection (**usability-gated as of 2026-07-13** — see the selectTeam ordering),
+  Spider highest-confidence-stage scan, Clan Boss stun matrix, leader-aura
+  selection, global sustain / CC-sustain / team-requirement checks, verdict bands.
+- `lib/formulas.js`, `lib/estimate-stats.js` + `lib/effective-stats.js`,
+  `lib/masteries.js` (Warmaster/Giant Slayer boss model), `lib/cb-damage-model.js`
+  (%maxHP/DoT source model), `lib/synergies.js` (2+-champ combo layer).
+- Data pipeline: master worksheet (`RAID Master Database … .xlsx`) -> committed
+  `seeds/*.sql` -> live via `tools/apply-seed-pooler.mjs`; read live via
+  `tools/live_db_read.mjs` (REST). Seeds committed through 116.
+- Gestal sync + RslBattleReader (roster/gear/battle capture; CB damage capture
+  solved); engine feedback/calibration loop (`tools/calibrate-engine.mjs`).
+- Profiles layer (multi-roster over rsl_accounts + user_champions); event-dungeon
+  architecture (is_event/active_until + generic fallback).
+
+### Known gaps / next
+- **Doom Tower**: 24 stages seeded but zero goals/solutions/thresholds — needs boss
+  kits + content.
+- **~78 Rare+ champions have no skill text** (capture task); 107 tags still proposed.
+- **~82 stat/constraint goals** are mis-modeled as tag-coverage — need a non-tag
+  mechanism (see the goal-solution-skeleton-fix memory).
+- `champion_strategy_modifiers` for Fire Knight / Ice Golem: not seeded.
+- Direct game-memory roster extractor (Option B): partially built (see memory).
+- Frontend/monetization (ad gate, feedback UI, waitlist): wiring status per memory;
+  prod is AT Vercel's 12-function cap (see the vercel-deploy-cap memory) — any new
+  `/api/*` route re-breaks deploys.
+- **Synergy layer** is the natural next lever now that tags support it (Pallas's
+  Argonite ally-attack, Fahrakin's team beatdown, etc.).
 
 ### Content coverage check (run before assuming any dungeon is complete)
 ```sql
@@ -302,8 +280,18 @@ tag work. "REJECT" = do not create a tag row; note the mechanic in the
 `source_note` of the champion's primary/related tag row instead.
 
 1. **Conditional debuffs** — a debuff that lands only if a SPECIFIC OTHER DEBUFF
-   is already on the target → REJECT. Note the condition in `source_note`.
+   is already on the target → REJECT **only when the prerequisite must come from an
+   ALLY or external source**. Note the condition in `source_note`.
    (See "Tagging convention — conditional debuffs" above.)
+   - **SELF-COMBO EXCEPTION (APPROVE):** if the SAME champion reliably places the
+     prerequisite debuff itself, the champion delivers the whole chain unaided
+     (across turns) and IS a carrier → APPROVE, noting the self-combo in
+     `source_note`. Ruling 2026-07-12. Examples: **Frozen Banshee** — A1 Poison
+     requires [Poison Sensitivity], which her A3 places → tag Poison. **Coldheart**
+     — A2 Poison requires [Heal Reduction], which her A1 places → tag Poison.
+   - RE-REVIEW under this rule: prior REJECTs made before this ruling where the
+     champion self-provides the prerequisite (e.g. Pharsalas's Decrease ATK vs his
+     own Fear; Staltus's TM decrease, seed 64) should be re-checked, not assumed.
 2. **Random pool placers** — a skill that places 1 random debuff from a pool per
    hit → REJECT all the individual debuffs. Note the mechanic in `source_note`.
 3. **Books-only tags (0% unbooked)** — seed with `status='proposed'`, and flag
@@ -353,8 +341,102 @@ tag work. "REJECT" = do not create a tag row; note the mechanic in the
     is the exact failure that let a careful hand-analysis (seeds 42/43) be silently
     overwritten by an automated bracket-extraction pass. Same principle as the
     "screenshot all skills before ascending" action rule, applied to tags.
+19. **Buff-strip / removal ≠ placement** — a `[Bracket]` buff token after
+    "removes", "remove all … buffs", or "strips" describes a buff being taken OFF
+    an ENEMY, not one the champion places → REJECT it as a placement (a policy-#16
+    sibling: the bracket sits after a removal verb, not a placement verb). Tag the
+    removal ACTION itself instead: **Buff Strip** (delete enemy buffs) or **Steal
+    Buffs** (take them for the caster's side). Example: "removes all [Increase DEF],
+    [Ally Protection], and [Strengthen] buffs from all enemies" places NONE of the
+    three — it earns one Buff Strip tag. BOUNDARY: this fires ONLY on buffs removed
+    from ENEMIES. "removes all debuffs from allies" is **Cleanse** (a real tag);
+    "steals all buffs" is **Steal Buffs**. (Root cause: the 2026-07-12 pilot found
+    Vitrius mis-tagged with Increase DEF / Ally Protection / Strengthen — buffs he
+    STRIPS from enemies — because a bracket scraper can't tell strip from place.)
+
+### Tag source of truth — regenerate from skill_summary, NOT bracket-scraping
+The `champion_tags` layer is derived from `champion_skills.skill_summary` (verbatim
+Plarium skill text) by applying the Tag Review Policies above, extracted via LLM
+(claude-sonnet-5, tool-use, human-reviewed) and landed as `status='proposed'` →
+advisor-approved. The full corpus was regenerated this way 2026-07-13.
+- **`[bracket]`-token scraping of skill text is DEPRECATED — do not re-run it to
+  (re)generate tags.** It cannot read prose mechanics (Revive / Ally Attack / heal
+  / Turn Meter, written as verbs not brackets) and it systematically mis-reads
+  negation / condition / removal / trigger-list contexts. It is the direct cause of
+  policies #16–#19 and of the ignore / veil / buff-strip / debuff-list-in-passive
+  error classes. Regenerate from `skill_summary` + the policies instead.
+- **Scope: Rare+ only.** Live must carry NO Common/Uncommon `champion_tags`
+  (`seeds/05` was superseded by `seeds/116`).
+- **Write path:** worksheet `DB_Champion_Tags` → committed `seeds/*.sql` → live via
+  `tools/apply-seed-pooler.mjs`. Live champion NAMES can differ from worksheet names
+  (e.g. live "Vitrius" vs worksheet "Vitrius the Anointed") — resolve via
+  `champion_aliases` when reconciling, never by exact name alone.
+- Current counts / provenance / the reusable runner live in session memory
+  (`tag-regen-pilot-2026-07-12`, `tag-sweep-ignore-veil-2026-07-12`), not here.
+
+## Reasoning discipline (guardrails against snap decisions & assumptions)
+The code has guardrails (e.g. `lib/battle-gaps.js` spec-margin classifier); these
+are the equivalent for how conclusions get drawn. They exist because a wrong
+assumption ("Don$Gnut is a developed account" — it is young/slightly-developed)
+was stated as fact, propagated through memory, and skewed a reconciliation.
+1. **Label every claim's status** — observed (you queried/measured it), inherited
+   (from memory, context, or the user — NOT yet verified), or inferred. Never
+   launder an inherited or inferred claim into a stated fact.
+2. **Verify load-bearing facts before building on them.** If a conclusion depends
+   on a fact (account maturity, a champion's kit, a stat margin), confirm it
+   first. Recalled memory can be wrong or stale — it reflects what was believed
+   when written.
+3. **No "that's the answer" on a single data point.** When reality ≠ prediction,
+   enumerate MANY candidate causes and ask questions before ranking one. One lens
+   is rarely the whole story.
+4. **A single battle can change a tag-of-fact (a champion's kit) at most — never a
+   model rule.** Relaxing/adding a goal, threshold, or solution needs an ON-SPEC
+   win with a COMPUTED margin, and ideally corroboration beyond one account.
 
 ## Core architecture principles
+- **Recommend for AUTO-BATTLE, judged by TIME not turns.** ~99% of the
+  audience runs content on auto, so every recommendation, confidence score,
+  and calibration target answers "will this team clear on AUTO, within an
+  acceptable TIME budget?" — not turn count, and not what a manual player
+  could squeeze out. A win that finishes inside the time budget (e.g. ~5 min)
+  is a good result regardless of turns. Consequences: (a) captured auto
+  battles are the primary calibration signal, and an auto loss means "doesn't
+  work for the audience"; (b) manual battles (`manualSkillUsed=true`) are less
+  representative — a manual win may not reproduce on auto, where the AI fires
+  skills off-cooldown in slot order; (c) clear quality is measured in
+  wall-clock seconds (`DurationInSeconds` + `BattleSpeed`), not turns; (d) a
+  capability that needs manual timing is worth less than one that works
+  passively under the AI.
+- **Auto-battle skill reliability is a ranking factor.** Tag matching tells
+  you what a champion *can* do — it does not tell you whether the game AI
+  will reliably fire that skill in a given content run. Each skill carries an
+  `auto_reliable` attribute (boolean, default true). Known problem cases are
+  annotated: e.g. "AI never prioritizes this unless enemy HP > 75%", "wasted
+  AoE on single-target phases", "A3 on cooldown never triggers in time."
+  Champions whose key skill is not auto-reliable rank lower for that role.
+  This is a multiplier on the ranking score, not a binary filter — a
+  champion with the right tag but unreliable AI still surfaces, but deprioritised.
+- **Speed roles in content requirements, not exact SPD values.** The app
+  collects gear tier, not individual SPD values, so precise speed tuning is
+  out of scope. Content requirements encode a speed role expectation
+  (fast / medium / slow) where turn order matters. Ranking uses each
+  champion's base SPD + gear-tier SPD estimate to satisfy the role. This is
+  enough to prefer a naturally fast debuffer over a slow one for a role that
+  requires moving first — without asking players for exact stat values.
+- **Speed tuning guidance lives in the AI explanation layer, not the
+  matching logic.** The explanation layer surfaces the concept to players who
+  don't know it: "For this comp to work on auto, your Decrease DEF champion
+  should be faster than your damage dealers. At Good gear tier, target 170+
+  SPD for that role." This is the primary value-add for most users, who are
+  not speed tuning yet. The matching engine does not attempt to validate a
+  full speed tune.
+- **Clan Boss precise speed tuning is explicitly out of scope for v1.**
+  Unkillable and speed-tune CB comps require knowing every champion's exact
+  SPD and the relationships between them. The app cannot support this without
+  per-champion stat collection. For CB, recommend team composition and flag
+  that speed tuning matters, then defer to community resources for the exact
+  tune. Do not attempt to validate or generate a CB speed tune from gear-tier
+  estimates alone.
 - The AI is not the source of truth. The champion table and the
   dungeon-requirements table are. The AI's job is (1) turning matching
   engine output into plain-language explanations and (2) running
