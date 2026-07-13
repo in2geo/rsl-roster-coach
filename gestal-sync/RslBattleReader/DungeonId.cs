@@ -56,6 +56,9 @@ internal static class DungeonId
         [2059] = "Arcane Keep",
         [2069] = "Dragon's Lair",
         [2079] = "Ice Golem's Peak",
+        [2089] = "Fire Knight's Castle",  // 2089012 = Fire Knight stage 12, user-confirmed 2026-07-13
+                                          // (screenshot). Labeled "unknown" before this — no CB
+                                          // false-match, just an unmapped prefix.
         [2099] = "Spider's Den",          // 2099017 = Spider stage 17, user-confirmed 2026-07-13.
                                           // CRITICAL: without this, the Clan Boss stage-fingerprint
                                           // (added 2026-07-02) FALSE-MATCHES Spider stage 17 and the
