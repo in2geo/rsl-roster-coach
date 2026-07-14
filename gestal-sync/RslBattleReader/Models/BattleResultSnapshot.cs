@@ -18,10 +18,15 @@ internal sealed class BattleResultSnapshot
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public BattleFinishCause FinishCause { get; init; }
 
-    public float DurationSeconds { get; init; }
-    public int?  AllyTurns       { get; init; }
-    public float? BattleSpeed    { get; init; }
-    public bool  ManualSkillUsed { get; init; }
+    // DurationSeconds/BattleSpeed carry the battle's wall-clock time + speed multiplier —
+    // the audience's real success metric. The file has no timing, so they are read from
+    // the live BattleResult object in memory (BR+0x3C / +0x40) and stamped by the watcher
+    // after the file parse. Settable for the same reason as StageId/TotalDamageDealt.
+    // AllyTurns comes from the file parse (init).
+    public float  DurationSeconds { get; set; }
+    public int?   AllyTurns       { get; init; }
+    public float? BattleSpeed     { get; set; }
+    public bool   ManualSkillUsed { get; init; }
 
     // Stage identified via byte-signature fingerprint (no explicit id in file).
     // Dungeon/StageNumber/StageLabel are settable so the watcher can override them

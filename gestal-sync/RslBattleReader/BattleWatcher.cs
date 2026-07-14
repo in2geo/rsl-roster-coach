@@ -49,6 +49,9 @@ internal sealed class BattleWatcher(string outputPath)
     // StageId the instant it appears, instead of racing it only at file-capture time.
     private int _lastMemBattleCount = -1;
     private (int stageId, int kindId, DateTime at)? _latestMemSetup;
+    // Wall-clock timing snapshotted from the live BattleResult before the game clears its
+    // cache (same reason as _latestMemSetup). duration/speed feed the <5-min success metric.
+    private (float duration, float? speed, int? turns, DateTime at)? _latestMemTiming;
     // Per-hero stats (survival, kills, …) keyed by inventory heroId, snapshotted the
     // moment the battle appears in the cache. Joined to the file-built hero list.
     private (Dictionary<int, HeroStatSnapshot> stats, DateTime at)? _latestMemHeroStats;
@@ -191,6 +194,39 @@ internal sealed class BattleWatcher(string outputPath)
         catch { return null; }
     }
 
+    /// <summary>Wall-clock timing (duration seconds, speed multiplier, ally turns) from the
+    /// latest BattleResult. Prefers the poller's cached snapshot (the cache can clear before
+    /// file capture runs); falls back to a direct read. Mirrors ReadLatestBattleSetup.</summary>
+    private (float duration, float? speed, int? turns)? ReadLatestBattleTiming()
+    {
+        if (_latestMemTiming is { } t && (DateTime.UtcNow - t.at).TotalSeconds < 15)
+            return (t.duration, t.speed, t.turns);
+        return ReadLatestBattleTimingDirect();
+    }
+
+    private (float duration, float? speed, int? turns)? ReadLatestBattleTimingDirect()
+    {
+        var mem = _mem; var nav = _nav;
+        if (mem is null || nav is null) return null;
+        try
+        {
+            var appModel = nav.ResolveAppModelInstance();
+            if (!ProcessMemory.IsValidPointer(appModel)) return null;
+            int count = nav.ReadBattleResultCount(appModel);
+            if (count <= 0) return null;
+
+            var ptrs = nav.ReadBattleResultPointers(appModel, count - 1);
+            if (ptrs.Count == 0) return null;
+
+            var brPtr = ptrs[^1];
+            float duration        = mem.ReadFloat(brPtr + BR_DurationSeconds);
+            var (speed, hasSpeed) = mem.ReadNullableFloat(brPtr, BR_BattleSpeed);
+            var (turns, hasTurns) = mem.ReadNullableInt(brPtr, BR_AllyTurns);
+            return (duration, hasSpeed ? speed : (float?)null, hasTurns ? turns : (int?)null);
+        }
+        catch { return null; }
+    }
+
     /// <summary>
     /// Polls the in-memory results cache (called every 100ms from the file loop).
     /// When a new result appears, snapshots its StageId/KindId before the game can
@@ -210,6 +246,8 @@ internal sealed class BattleWatcher(string outputPath)
             if (count > _lastMemBattleCount)
             {
                 if (setup is { } s) _latestMemSetup = (s.stageId, s.kindId, DateTime.UtcNow);
+                if (ReadLatestBattleTimingDirect() is { } t0)
+                    _latestMemTiming = (t0.duration, t0.speed, t0.turns, DateTime.UtcNow);
                 _pendingHeroStats = true;       // new battle — start trying to grab stats
                 _heroStatsTries = 0;
                 // Opt-in per-battle memory diagnostics (RSL_DEBUG_HEROES=1) for future offset work.
@@ -229,6 +267,12 @@ internal sealed class BattleWatcher(string outputPath)
                 // soon as it reads, before the result cache is cleared.
                 var surv = ReadAllySurvivalDirect();
                 if (surv.Count > 0) _latestSurvival = (surv, DateTime.UtcNow);
+
+                // Duration can finalize a beat after the result is cached — keep refreshing
+                // until a non-zero duration is seen (mirrors the lazy hero-stats read).
+                if ((_latestMemTiming?.duration ?? 0f) <= 0f
+                    && ReadLatestBattleTimingDirect() is { duration: > 0f } t1)
+                    _latestMemTiming = (t1.duration, t1.speed, t1.turns, DateTime.UtcNow);
 
                 if (_debugBattle && !_finalStateDumpedThisBattle) _finalStateDumpedThisBattle = DumpFinalState();
                 var hs = ReadLatestHeroStatsDirect(_debugBattle);
@@ -663,6 +707,9 @@ internal sealed class BattleWatcher(string outputPath)
                 // Authoritative stage id from the live game's BattleSetup (the file
                 // has no stage number for shared-id dungeons). Read once per capture.
                 var memSetup = ReadLatestBattleSetup();
+                // Wall-clock timing from the live BattleResult (the file carries none). TIME is
+                // the audience's real success metric, so this is stamped onto every entry.
+                var memTiming = ReadLatestBattleTiming();
 
                 bool any = false;
                 foreach (var snapshot in snapshots)
@@ -671,6 +718,11 @@ internal sealed class BattleWatcher(string outputPath)
                     snapshot.DisplayName  = account.DisplayName;
                     snapshot.StageId      = memSetup?.stageId;
                     snapshot.BattleKindId = memSetup?.kindId;
+                    if (memTiming is { } tm)
+                    {
+                        snapshot.DurationSeconds = tm.duration;
+                        snapshot.BattleSpeed     = tm.speed;
+                    }
 
                     // Authoritative stage number from the in-memory StageId: the last
                     // 3 digits are the stage (verified Ice Golem 8/9/10 = 2079008/009/
