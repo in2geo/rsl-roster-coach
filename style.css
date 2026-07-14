@@ -622,7 +622,10 @@ footer a { color: var(--muted); text-decoration: underline; }
   display: flex;
   flex-direction: column;
   max-height: 90dvh;
-  overflow-y: auto;
+  /* The sheet itself must NOT scroll — otherwise .sheet-actions (submit button)
+     scrolls into the hidden overflow and is unreachable on short screens. Only
+     .sheet-body scrolls; the header and action bar stay pinned. */
+  overflow: hidden;
 }
 
 .detail-sheet.open {
@@ -663,6 +666,12 @@ footer a { color: var(--muted); text-decoration: underline; }
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+  /* Scrollable middle: takes the leftover height and scrolls internally so the
+     pinned action bar below always stays visible. min-height:0 lets a flex
+     child shrink below its content size (required for the scroll to engage). */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .sheet-field {
@@ -753,10 +762,16 @@ footer a { color: var(--muted); text-decoration: underline; }
 
 .sheet-actions {
   padding: 0.75rem 1.25rem 1.5rem;
+  /* Extra bottom room so the submit button clears the OS taskbar / home bar. */
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   border-top: 1px solid rgba(255,255,255,0.07);
+  /* Pinned footer: never shrinks, solid background so scrolled content can't
+     show through, always visible at the bottom of the sheet. */
+  flex-shrink: 0;
+  background: var(--surface);
 }
 
 /* ── Screen R4: Content Selection ── */
@@ -788,7 +803,6 @@ footer a { color: var(--muted); text-decoration: underline; }
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  padding-bottom: 7rem; /* clear the sticky footer */
 }
 
 .verify-card {
@@ -834,15 +848,15 @@ footer a { color: var(--muted); text-decoration: underline; }
 
 .verify-empty { text-align: center; color: var(--muted); padding: 2rem 1rem; }
 
+/* In-flow (not fixed): sits at the END of the roster, always reachable by
+   scrolling. A fixed bottom:0 footer gets eaten by the OS taskbar on laptops. */
 .verify-footer {
-  position: fixed;
-  bottom: 0; left: 50%; transform: translateX(-50%);
+  margin: 14px auto 0;
   width: 100%; max-width: 480px;
   background: var(--bg);
   border-top: 1px solid rgba(255,255,255,0.08);
-  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+  padding: 0.9rem 1rem calc(1.25rem + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; gap: 0.5rem;
-  z-index: 50;
 }
 .verify-count { font-size: 0.8rem; color: var(--muted); text-align: center; }
 
