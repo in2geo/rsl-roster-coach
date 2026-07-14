@@ -73,6 +73,13 @@ internal static class DungeonId
         // as fallback — NOT resolveDungeonStage's exact-name match. Note the reader's
         // "Event Dungeon" label also does NOT exact-match the DB row "Event Dungeon (Generic)".
         [2189] = "Event Dungeon",   // rotating event content (2189012 = Event stage 12, confirmed 2026-07-01)
+        [4019] = "Clan Boss",       // Clan Boss stageId form (4019001=Easy … 4019013=Brutal … 4019017=NM,
+                                    // last 3 digits = difficulty tier, not a stage#). Confirmed 2026-07-01.
+                                    // WITHOUT this the reader relied on the fragile demon-record fingerprint
+                                    // to label CB — when it missed (e.g. DonBrogni Brutal 2026-07-14) the run
+                                    // logged dungeon=null, so TryAttachClanBossDamage was skipped and total
+                                    // damage never captured. Labeling from the reliably-read StageId is
+                                    // authoritative; lib/clan-boss.js maps the difficulty downstream.
     };
 
     /// <summary>Dungeon name from a StageId's prefix (stageId / 1000), or null if unmapped.</summary>
