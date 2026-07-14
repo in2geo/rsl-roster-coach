@@ -961,7 +961,7 @@ function closeContentSheet() {
 // One setting for the whole roster (not per-champion). Stored in localStorage for
 // the immediate UI, and best-effort persisted to the profile when signed in.
 const GEAR_CTX_KEY = 'rsl_gear_ctx';
-const GEAR_CTX_DEFAULTS = { gear_tier: 'starter', account_development: 'poor', masteries: 'none' };
+const GEAR_CTX_DEFAULTS = { gear_tier: 'fair', account_development: 'fair', masteries: 'none' };
 
 function loadGearCtx() {
   try { return { ...GEAR_CTX_DEFAULTS, ...JSON.parse(localStorage.getItem(GEAR_CTX_KEY) || '{}') }; }
@@ -1039,6 +1039,7 @@ function wireContentSheet(sheet) {
     clan_boss:     'content-clan-boss',
     ice_golem:     'content-ice_golem',
     fire_knight:   'content-fire_knight',
+    dragon:        'content-dragon',
     event_dungeon: 'content-event_dungeon',
   };
   const tabs   = [...sheet.querySelectorAll('.content-tab')];
@@ -1077,7 +1078,7 @@ async function requestRecommendation(sheet) {
     options.boss_affinity = null;
   } else if (key === 'event_dungeon') {
     contentKey = 'event_dungeon';
-  } else if (key === 'ice_golem' || key === 'fire_knight') {
+  } else if (key === 'ice_golem' || key === 'fire_knight' || key === 'dragon') {
     // No stage picker — the engine auto-scans for the highest clearable stage.
     contentKey = key;
   } else {
