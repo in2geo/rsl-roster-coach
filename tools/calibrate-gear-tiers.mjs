@@ -63,7 +63,10 @@ for (const tier of ['starter', 'fair', 'good', 'endgame']) {
   for (const stat of ['hp', 'atk', 'def', 'spd', 'acc', 'res', 'crate', 'cdmg']) {
     const pct = PCT.has(stat);
     const emp = median(s[stat] ?? []);
-    console.log(`  ${stat.padEnd(6)} ${String(fmt(emp, pct)).padEnd(18)} ${fmt(CURRENT[tier][stat], pct)}`);
+    // crate/cdmg are stored as fractions but the estimator applies them as gear.crate*100
+    // (flat crit points), so the placeholder's real contribution is CURRENT*100.
+    const cur = (stat === 'crate' || stat === 'cdmg') ? CURRENT[tier][stat] * 100 : CURRENT[tier][stat];
+    console.log(`  ${stat.padEnd(6)} ${String(fmt(emp, pct)).padEnd(18)} ${fmt(cur, pct)}`);
   }
   console.log('');
 }
