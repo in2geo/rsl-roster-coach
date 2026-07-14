@@ -148,6 +148,82 @@ base_stats (from champions table) + level/star/ascension scaling + gear_tier mod
 - Trust the player's self-reported gear tier over account-level inference.
   A level 35 spender may have God Tier gear.
 
+## 5b. Contribution model — the recommendation engine's target architecture
+
+The current match engine scores by tag COVERAGE (does a champ have the tag? yes/no).
+Coverage cannot express magnitude or interaction — how much a debuff is worth, to
+THIS team, given its damage type, over this many survival turns. The damage-mechanics
+rules (`lib/damage-mechanics.js`, and the "Damage mechanics — interaction rules"
+section in CLAUDE.md) are exactly those magnitude/interaction facts, so factoring them
+in means evolving from **coverage-scoring → contribution-scoring**. Build it in layers;
+do not flip selection to it until the validation gate below is met.
+
+### Layer 0 — Rules as facts (DONE)
+`lib/damage-mechanics.js`: source⇄debuff interaction matrix, saturation caps,
+reliability/uptime, sustain-is-multiplicative, and the Layer 1 audit. Facts (allowed
+to be model rules); magnitudes nominal until the feedback loop calibrates them.
+
+### Layer 1 — Guardrail + honest explanation (DONE — no selection change)
+- `battle-gaps.js` emits `debuff_type_mismatch` / `debuff_low_reliability` (right tag,
+  wrong reason) and `debuff_reliability` (data-missing) via `auditTeamDebuffs`.
+- `explain.js` surfaces damage-type mismatches so the coach credits a champion's real
+  role (Uugo's heal), never a mismatched debuff (her Decrease DEF on a poison team).
+- Changes what we SAY, not who we pick. Low risk, ships honesty now.
+
+### Layer 2 — The contribution model (BUILD — generalize cb-damage-model.js)
+`lib/contribution-model.js`: per-champion contribution for any content —
+
+```
+champ_contribution =
+    own_damage(by source) × saturation(source)                       // §6 stack caps
+  × Π debuff_multipliers the TEAM grants that source                 // §2/§5 interaction matrix
+  × reliability_factor(each debuff term)                             // §7 chance × uptime/fight × auto_reliable — REQUIRED
+  + Σ ( multiplier granted to allies × reliability_factor )          // credit supports for what they grant others
+  + Σ ( survival_turns granted × team_per_turn_output )              // §3 sustain is MULTIPLICATIVE, not additive
+```
+
+- **The `reliability_factor` term is mandatory on every debuff contribution** (own and
+  granted). Without it Layer 2 just trades the current overvaluation for a new one —
+  full-crediting a Decrease DEF that lands 45% on a 4-turn cooldown. When reliability
+  inputs aren't captured, `reliabilityFactor` returns `confidence:'unknown'`; the model
+  must treat that as REDUCED CONFIDENCE, never silently as 1.0.
+- Team output = **two-sided confidence**: `P(kill-speed beats survival-time within the
+  time budget)`. Sustain shifts the survival side (multiplicative). Supports get
+  credited for granted multipliers + granted survival, not their own damage bar (§4).
+- Runs ALONGSIDE coverage first — to RANK and EXPLAIN and to be validated — not to
+  override selection.
+
+### Layer 3 — Selection consumes contribution (BUILD, GATED)
+`selectTeam` + the verdict band read contribution scores instead of coverage counts.
+Role-aware team selection, poison-saturation ("healer over the 4th poisoner"), and
+not-demoting-supports all fall out of the math automatically.
+
+**HARD VALIDATION GATE — Layer 3 does NOT go live until:**
+> the contribution model's team rankings match observed battle outcomes in **at least
+> 20 captured runs across at least 2 different dungeons** (measured via
+> `run_reconciliations`: predicted verdict/ranking vs actual result), AND gear-tier
+> multipliers have been calibrated against real accounts first.
+
+Until BOTH conditions are met, Layer 2 may inform explanation and ranking display, but
+the deterministic coverage engine remains the source of truth for the recommended team.
+This gate is a named condition, not advice — the temptation to flip early is the risk
+it exists to stop.
+
+### Two hard dependencies (sequenced BEFORE trusting Layer 2 numbers)
+1. **Gear-tier calibration comes first.** Placeholder stats feeding a precise
+   contribution formula = false precision, worse than the honest binary. (See §5 and
+   the gear-tier-work memory.)
+2. **Incoming-damage-per-stage is missing data.** The survival half of the two-sided
+   calc needs "how hard does stage N hit?" — not captured yet. Until it is, the
+   survival side is estimated and the confidence must say so.
+
+### Data gap opened by Layer 1 (capture task)
+Reliability scoring needs, per debuff: `chance_unbooked` (populated on only ~3% of
+`champion_tags`), debuff DURATION (not structured — lives in prose skill text), and an
+`auto_reliable` attribute (described in CLAUDE.md but NOT yet a `champion_skills`
+column). `cooldown_base` exists (~72%). Capturing these three is what upgrades the
+Layer 1 reliability guardrail from "unknown" to a real score.
+
 ## 6. Failure diagnosis flow
 
 When a player reports a failed run, surface three yes/no questions only:

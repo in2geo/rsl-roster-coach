@@ -472,6 +472,39 @@ was stated as fact, propagated through memory, and skewed a reconciliation.
   by the global sustain check in match-engine.js (checkTeamSustain); see
   the champion_team_requirements table for per-champion dependencies.
 
+## Damage mechanics — interaction rules (authoritative: lib/damage-mechanics.js)
+These are GAME FACTS about Raid's damage formula, encoded in `lib/damage-mechanics.js`.
+Every team-scoring, contribution, or explanation decision that touches damage MUST
+consult them — do not re-derive from intuition (that produced a wrong Uugo/Decrease-DEF
+explanation on 2026-07-14). Because they are facts, they ARE allowed to be a model rule
+(reasoning-discipline #4 does not block them); only the nominal multiplier *magnitudes*
+in that file stay uncalibrated until many captures exist.
+
+1. **DEF shred only boosts ATTACK damage.** Poison, HP Burn, and Warmaster/Giant
+   Slayer all scale off the target's MAX HP and are **DEF-INDEPENDENT** — Decrease DEF
+   and [DEF-ignore] do **NOTHING** to them. Only direct-attack (ATK-vs-DEF) skills are
+   boosted by DEF shred. Never credit Decrease DEF against a Poison/HP-Burn team's DoT.
+2. **A debuff's value is CONDITIONAL on the team's damage type.** Decrease DEF is a
+   top multiplier for an attack/nuke team and ~worthless for a DoT team. A DoT team
+   scales with more DoT stacks + more survival turns, NOT DEF shred.
+   (`debuffValueForTeam(tag, teamSources)`.)
+3. **Sustain is MULTIPLICATIVE, not additive.** Keeping the team alive N extra turns
+   multiplies every per-turn source (DoT + attack turns) by those turns. A support's
+   damage contribution ≈ (added survival turns) × (team per-turn output). This is the
+   survival side of the two-sided confidence calc. Evidence: DonBrogni CB 2026-07-14 —
+   swapping the sustain support (Bad-el-Kazar, 10.66M/135t) for a nuker (Ninja,
+   9.19M/115t) LOST damage, because −20 turns cut ~2.17M of Xenomorph Poison.
+4. **Per-hero captured damage UNDERSTATES support value.** A support's debuff
+   multipliers, sustain, and CC appear in OTHER champions' damage bars, never its own
+   (Uugo ~2%). Never rank or judge a support by its raw damage bar; attribute the
+   granted multiplier/survival back to it. The engine can pick a support for the right
+   tag but the wrong reason (Uugo picked for Decrease DEF on a Poison team, where her
+   real value is her heal) — the contribution model must value what actually helps.
+
+The granular contribution model (per-champion contribution = own damage + debuff
+multipliers granted + sustain granted) is the intended consumer; `cb-damage-model.js`
+already imports `damageSourceIgnoresDef` and enforces the §1 invariant at load.
+
 ## Champion selection UI spec (ready to build)
 - Screen 1: Four large rarity buttons (Mythical=red #E53935,
   Legendary=gold #FFB700, Epic=purple #9C27B0, Rare=blue #2196F3).
