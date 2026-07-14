@@ -10,7 +10,7 @@ const supabase = createClient(
 
 function json(res, status, body) { res.status(status).json(body); }
 
-const VALID_CONTENT = ['campaign', 'spider', 'spider_hard', 'clan_boss', 'event_dungeon', 'fire_knight', 'ice_golem'];
+const VALID_CONTENT = ['campaign', 'spider', 'spider_hard', 'clan_boss', 'event_dungeon', 'fire_knight', 'ice_golem', 'dragon'];
 
 // ── Daily session helpers ─────────────────────────────────────────────────────
 
@@ -63,7 +63,16 @@ export default async function handler(req, res) {
     let session = null;
     if (user_id) {
       session = await getSession(user_id);
-      if (session.free_recommendation_used && session.free_content_key !== contentKey) {
+      // Gate a DIFFERENT-content recommendation once the free one is used — UNLESS the
+      // user has watched an ad today (verify-ad increments ad_views_today). This ad check
+      // is what actually clears the gate: without it the condition could never become
+      // false, so after verify-ad the client re-ran /api/match, got requiresAd again, and
+      // in test mode auto-retried forever (an infinite match⇄verify-ad loop). Interim rule:
+      // one ad unlocks further recs for the day; the 30-min ad_unlocked_until window is the
+      // planned refinement (see monetization-recommendation-tiers).
+      if (session.free_recommendation_used
+          && session.free_content_key !== contentKey
+          && !(session.ad_views_today > 0)) {
         const label = contentKey.replace(/_/g, ' ');
         return json(res, 200, {
           requiresAd: true,

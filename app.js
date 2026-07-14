@@ -591,7 +591,7 @@ async function runGatedAction(action) {
     }).catch(() => {});
   }
   if (action.type === 'match') {
-    await runRosterMatch(action.params);
+    await runRosterMatch(action.params, true); // post-ad retry — cap at one to prevent gate loops
   } else if (action.type === 'deeper') {
     revealGate1();
     showScreen('results');
@@ -717,7 +717,7 @@ document.addEventListener('rsl:request-recommendation', async e => {
   }
 });
 
-async function runRosterMatch(params) {
+async function runRosterMatch(params, adRetried = false) {
   const { contentKey, options, deviceId, userChampions, context } = params;
 
   const res = await fetch('/api/match', {
@@ -737,6 +737,16 @@ async function runRosterMatch(params) {
 
   // Gate hit — show ad modal over the verification screen
   if (body.requiresAd) {
+    // Loop guard: if we ALREADY satisfied the ad and the server still gates us, do NOT
+    // re-trigger — that recursion (match → verify-ad → match → …) is the infinite loop
+    // that flickered the roster screen. Surface it instead of spinning forever.
+    if (adRetried) {
+      showRosterScreen('screen-verify');
+      document.getElementById('error-msg').textContent =
+        'The ad gate could not be cleared. Please refresh and try again.';
+      showScreen('error');
+      return;
+    }
     showRosterScreen('screen-verify');
     showAdModal(body.message || 'Watch a short video to unlock this recommendation.', {
       type: 'match',
