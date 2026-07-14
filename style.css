@@ -848,15 +848,16 @@ footer a { color: var(--muted); text-decoration: underline; }
 
 .verify-empty { text-align: center; color: var(--muted); padding: 2rem 1rem; }
 
-/* In-flow (not fixed): sits at the END of the roster, always reachable by
-   scrolling. A fixed bottom:0 footer gets eaten by the OS taskbar on laptops. */
+/* In-flow at the TOP of the verify screen, above the champion list — always
+   visible on load without scrolling, and never eaten by the OS taskbar (the old
+   fixed bottom:0 footer was). Bottom border separates it from the roster below. */
 .verify-footer {
-  margin: 14px auto 0;
+  margin: 2px auto 10px;
   width: 100%; max-width: 480px;
   background: var(--bg);
-  border-top: 1px solid rgba(255,255,255,0.08);
-  padding: 0.9rem 1rem calc(1.25rem + env(safe-area-inset-bottom));
-  display: flex; flex-direction: column; gap: 0.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 0.2rem 0 0.95rem;
+  display: flex; flex-direction: column-reverse; gap: 0.5rem;
 }
 .verify-count { font-size: 0.8rem; color: var(--muted); text-align: center; }
 
