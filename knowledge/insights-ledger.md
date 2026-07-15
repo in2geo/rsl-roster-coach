@@ -13,6 +13,87 @@ Every insight cites EVIDENCE (a game mechanic and/or a captured run) — never a
 
 ---
 
+## INS-0015 — Boss affinity is a first-order, two-sided factor the engine was blind to
+- **Status:** `encoded` (Phase 1: data + confidence) · magnitude `nominal` · selection `TODO` — 2026-07-15
+- **Class:** game-mechanic fact (→ allowed as a model rule) + a content-reconciliation fix.
+- **Claim:** A champion WEAK vs the boss's affinity suffers Weak Hits (less damage, crits
+  suppressed) AND takes extra crits — so weak affinity hurts BOTH kill-speed and survival.
+  The engine ignored it entirely for dungeons: selection and confidence never saw affinity.
+- **Root cause (a reconciliation failure, cf. policy #18):** the per-stage affinities WERE
+  captured (corrected 2026-07-07 from the in-game list) but stored only as prose — the lead
+  phrase of `dungeon_stages.notes` ("Force affinity. …") for Dragon/IG/FK, and a bare SQL
+  comment for Spider (whose rows are 3 TIERS, not 25 stages). Queryable to no code = invisible.
+- **Evidence:** DonBrogni live Spider run. Stage 11 = **Force** → both Magic champs
+  (Brogni + Uugo = the entire sustain/control backbone) weak → **near loss**. Stage 13 =
+  **Void** (neutral to all) → the "neutral affinity" the user reported; its slow clear was
+  difficulty/ACC, not affinity. The team is affinity-lopsided (sustain-on-Magic /
+  damage-on-Spirit, no Void), so it is weak at BOTH Force stages (sustain weak) and Magic
+  stages (damage weak) — just in different roles.
+- **Encoded in:**
+  - `migrations/2026-07-15_dungeon_stage_affinities.sql` + `seeds/130` — new table
+    `dungeon_stage_affinities(dungeon_id, stage_number, affinity)`, 100 rows (4×25), keyed by
+    stage NUMBER so Spider's per-stage rotation works despite tier-granular goal rows.
+  - `lib/formulas.js` — `affinityMatchup()` (strong/weak/neutral; Void & same = neutral) +
+    `AFFINITY_FACTORS` (nominal: weak offense ×0.70 / survival ×0.85; strong ×1.20 / ×1.10).
+  - `lib/match-engine.js` — `applyAffinityToConfidence()`: a SOFT factor like the ACC floor
+    (INS-0014). **Asymmetric: only WEAK champs penalize (−10%/champ, floor 0.55); STRONG earns
+    NO confidence bonus** — survival is a floor (strong DPS can't rescue a weak sustain), and
+    the measurement spine shows confidence already runs over-optimistic. Wired into both scans;
+    surfaced as `result.affinity` for explain.js.
+- **Verified (directional):** the scan now DODGES affinity-bad stages — every DonBrogni pick
+  (Spider 5 Void, IG 13 Spirit, Dragon 4 Void, FK 6 Spirit) has 0 weak champs. Spider went
+  Stage 7→5 because Stage 7 (Force, 2 weak) now scores ~65% and the highest affinity-safe +
+  ACC-clean stage is 5 (Void). Matches reality: safe to farm low, risky/slow higher.
+- **Calibration target:** the −10%/weak magnitude and the AFFINITY_FACTORS are game-knowledge
+  nominals. One datapoint (near-loss at 2 weak champs) suggests they're roughly right. Tune
+  against more known-affinity captures. The two soft floors (ACC × affinity) now STACK
+  multiplicatively — legitimate (independent effects) but watch for over-penalty as data grows.
+- **Open — Phase 2 (the real "better team" lever):** affinity-aware SELECTION. Today affinity
+  only adjusts confidence on an already-picked team; it does NOT yet make selectTeam PREFER
+  Void / same-affinity / strong champs for the target stage. That is the change the user asked
+  for ("better team options") but it is a selectTeam change — per [[INS-0013]] it must go
+  through the measurement harness (model-vs-winning-teams diff) and prove it helps before trust.
+  Chicken-and-egg: selection needs a target stage to know the affinity; needs a 2-pass or
+  affinity-blended approach.
+
+---
+
+## INS-0014 — ACC floors are SOFT (land-chance), not stage gates — degrade, don't hard-cap
+- **Status:** `encoded` · magnitude `nominal` (penalty curve uncalibrated) — 2026-07-15
+- **Class:** model-rule fix (application of the floors-are-not-gates principle).
+- **Claim:** A stage's ACC floor (`stage×10` for Spider, etc.) is the ACC where an
+  accuracy-gated debuff lands **reliably** — it is NOT a pass/fail gate. A carrier below
+  the floor still lands the debuff, just less often, so the clear is **slower (grindier),
+  not lost**. The scan must therefore DEGRADE confidence in proportion to how far below the
+  floor the weakest ACC-dependent debuff sits — never hard-fail the stage on ACC alone.
+  (Coverage gaps — no carrier at all — stay HARD; that is a real capability hole, not a floor.)
+- **Evidence:** DonBrogni Spider scan. Recommended team's only Decrease-TM carrier is Lord
+  Entertainer Fabian at ACC 47; the "Deny Skavag her turn" goal is ACC-gated on that debuff.
+  Old behavior: floor 40 (Stage 4) passed, floor 50 (Stage 5) hard-failed → `stats_failing`
+  band (40-54%) → below the 80% scan threshold → **hard-capped at Stage 4** (95%). The user
+  ran the SAME team well past Stage 3/4, proving the floor is not a gate (corroborates the
+  [[floors-are-not-gates]] memory: Don$Gnut cleared Spider 17 at 85-96 turns below floor).
+- **Encoded in:** `lib/match-engine.js` —
+  - `evaluateAccThreshold` now returns `soft: true` + `acc_reliability` (weakest-link
+    `bestAcc / floor` across ACC-dependent goals, 1 = at/above floor) and a soft-floor note
+    ("the debuff still lands, just less often — expect slower clears, not a loss").
+  - `computeVerdictBand` excludes `soft` results from the hard-fail band + pass-ratio, then
+    multiplies confidence by `0.55 + 0.45 × acc_reliability` (0.55 floor keeps a far-below
+    stage recommendable-but-low, never 0).
+- **Verified (N=1, directional):** DonBrogni Spider **Stage 4 (95%, hard cap) → Stage 7
+  (81%, "ready")**. Curve: Stage 7 floor 70, Fabian 47 → reliability 0.67 → ×0.85 → 81%;
+  Stage 8 drops below the 80% scan threshold. Degrades smoothly instead of cliff-stopping.
+- **Calibration target:** the `0.55 + 0.45×rel` penalty curve is a game-knowledge nominal,
+  NOT battle-tuned. The user is running the recommended team past its stage right now — that
+  ON-SPEC wall (which stage, and *how* it fails: died vs Skavag outgrew vs debuffs whiffing)
+  is the calibration signal for how steep the penalty should be. General across all dungeons
+  with ACC floors (Spider/Dragon/IG/FK), not Spider-specific.
+- **Open:** other floors (HP/RES/SPD survival) are still HARD — likely also partly soft
+  (memory: won at 0.44 HP floor), but survival failure is more gate-like (AoE wipe) so it was
+  left hard pending its own evidence. Per-debuff ACC floors (higher-RES enemies) still not modeled.
+
+---
+
 ## INS-0002 — Speed / Turn-Meter buffs are multiplicative team-turn multipliers
 - **Status:** `encoded` (structure) · magnitude `nominal` (uncalibrated) — 2026-07-14
 - **Class:** game-mechanic fact (→ allowed to be a model rule, per CLAUDE.md discipline #4)
@@ -70,6 +151,13 @@ Every insight cites EVIDENCE (a game mechanic and/or a captured run) — never a
   Representation-only hook today; the reliability path MUST consult it when plumbed.
 - **Open / needs approval:** amend the CLAUDE.md "booked defaults No" rule for Rares; set the
   manual roster UI to default Rares to booked. Not done unilaterally (edits a stated project rule).
+- **CORRECTION (Mike, 2026-07-15): LEVEL ≠ BOOKED.** A "book all max-level champs" bulk assumption is
+  WRONG — especially for Legendaries: Legendary books are SCARCE, so most Lv60 Legendaries are NOT booked.
+  Booking is rarity-conditional: Rare = usually booked (cheap books, safe to bulk), Epic = sometimes,
+  Legendary = usually NOT. UI (2026-07-15): per-card 📖 badge on the roster grid (tap to toggle, gold=booked)
+  + a rarity-SCOPED bulk "Book all Rares" (NOT level-based); Epics/Legendaries flagged individually.
+  is_booked stored via /api/user-champions. NOTE still: the ENGINE does not consume is_booked yet (the
+  UI half only) — booked→cooldown→reliability wiring is unbuilt ([[ai-settings-manual-entry]] sibling gap).
 
 ---
 
