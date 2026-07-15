@@ -8,9 +8,10 @@
 -- TWO INTENTIONAL ODDITIES (verified against the source image — do NOT "correct" as typos):
 --   1. RES/ACC is NON-MONOTONIC at high stages: 150 (16-18), 200 (19-20), 150 (21-23),
 --      200 (24-25). A stage*N formula would be wrong here — this is why real capture matters.
---   2. Stage 19 Skavag ATK = 5,988 is FLAGGED-ANOMALOUS: it dips below st18 (8,337) and st20
---      (11,947) and equals the Spiderling's ATK, breaking the ~0.6 add:boss ATK ratio that
---      holds on every other row. Seeded as-shown pending Mike's re-check of that one cell.
+--   2. Stage 19 Skavag ATK: the source Spider table showed a glitched 5,988 (it had leaked
+--      the Spiderling's value). CORRECTED to 9,980 — confirmed by the Dragon table (seed 133),
+--      whose enemy ATK/DEF share Spider Skavag's per-stage scaling and reads 9,980 at st19
+--      (on-trend: 8,337 → 9,980 → 11,947). Spiderling st19 ATK 5,988 = 0.6 × 9,980, consistent.
 
 insert into dungeon_stage_enemies (dungeon_id, stage_number, enemy_name, enemy_role, hp, atk, def, spd, res, acc, crit_rate, crit_dmg)
 select d.id, v.* from dungeons d
@@ -22,7 +23,7 @@ cross join (values
   (17,'Spiderling','add',     95280,  4179,  799, 150, 150, 150, 15, 50),
   (18,'Skavag',    'boss',  3226410,  8337, 4002,  95, 150, 150, 15, 50),
   (18,'Spiderling','add',    129060,  5002,  800, 150, 150, 150, 15, 50),
-  (19,'Skavag',    'boss',  4311330,  5988, 3992,  95, 200, 200, 15, 50),   -- ATK anomaly: verify
+  (19,'Skavag',    'boss',  4311330,  9980, 3992,  95, 200, 200, 15, 50),   -- ATK corrected 5988->9980 (Dragon-confirmed)
   (19,'Spiderling','add',    172455,  5988,  798, 150, 200, 200, 15, 50),
   (20,'Skavag',    'boss',  5555175, 11947, 3982,  95, 200, 200, 15, 50),
   (20,'Spiderling','add',    222210,  7168,  796, 150, 200, 200, 15, 50),
