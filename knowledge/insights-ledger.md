@@ -14,7 +14,13 @@ Every insight cites EVIDENCE (a game mechanic and/or a captured run) — never a
 ---
 
 ## INS-0017 — Real captures prove DoT is a FIRST-ORDER damage term, not a footnote
-- **Status:** `diagnosed` — 2026-07-15 · `tools/calibrate-power.mjs`
+- **Status:** `diagnosed` + `fixed` — 2026-07-15 · `tools/calibrate-power.mjs`
+- **RESOLUTION (same day):** added the DoT term to `teamDamagePerTurn` (`champDotPerTurn`,
+  reusing cb-damage-model `SOURCE_COEFF`). The scale spread collapsed **90× → 4.6×** (0.17-0.79),
+  and a single calibrated `DAMAGE_SCALE = 0.25` (nominal model runs ~4× hot) now validates to
+  median **1.00** across 34 captures, mean fit error **~33 turns**. The kill model is now on a
+  REAL turn scale — the "386-turn budget" blocker is gone. Residual spread (0.68-3.16) = team/
+  gear/turns noise + crude "each DoT tag = 2.5%/turn" (poison cooldowns/chance not modelled).
 - **Class:** model gap, surfaced by calibration against real battles (the Deep Blue loop working).
 - **Claim:** Calibrating the power model's absolute damage scale against 34 captured dungeon wins
   (`run_reconciliations`: real turns + fielded team + frozen effective stats) does NOT yield a

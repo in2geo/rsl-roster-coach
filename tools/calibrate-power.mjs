@@ -14,10 +14,17 @@ const BASE = (env.SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
 const H = { apikey: env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}` };
 const rest = async (p) => (await fetch(`${BASE}/rest/v1/${p}`, { headers: H })).json();
 
-// champion name -> best damage multiplier (max numeric in champion_skills.damage_multiplier)
+// champion name -> best damage multiplier, and name -> DoT tags (Poison/HP Burn/Enemy Max HP).
 const skills = await rest('champion_skills?select=champion_id,damage_multiplier&damage_multiplier=not.is.null');
-const champs = await rest('champions?select=id,name&game_id=eq.raid_shadow_legends');
+const champs = await rest('champions?select=id,name,champion_tags(status,tags(name))&game_id=eq.raid_shadow_legends');
 const nameById = Object.fromEntries(champs.map(c => [c.id, c.name]));
+const DOT_TAGS = new Set(['Poison', 'HP Burn', 'Enemy Max HP Damage']);
+const tagsByName = {};
+for (const c of champs) {
+  tagsByName[c.name] = (c.champion_tags ?? [])
+    .filter(ct => ct.status === 'approved' && DOT_TAGS.has(ct.tags?.name))
+    .map(ct => ct.tags.name);
+}
 const multByName = {};
 for (const s of skills) {
   const nums = (String(s.damage_multiplier).match(/[0-9]+\.?[0-9]*/g) || []).map(Number);
@@ -49,7 +56,7 @@ for (const r of runs) {
   if (!r.turns || !Array.isArray(r.team_fielded) || !Array.isArray(r.frozen_effective_stats)) continue;
   const statsByName = Object.fromEntries(r.frozen_effective_stats.map(c => [c.name, c.effective_stats]));
   const team = r.team_fielded
-    .map(c => ({ name: c.name, estimated_stats: statsByName[c.name], damage_multiplier: multByName[c.name] ?? null, tags: [] }))
+    .map(c => ({ name: c.name, estimated_stats: statsByName[c.name], damage_multiplier: multByName[c.name] ?? null, tags: tagsByName[c.name] ?? [] }))
     .filter(c => c.estimated_stats);                          // must have real stats to score
   if (team.length < 2) continue;
   const dptModel = pm.teamDamagePerTurn(team, boss);
