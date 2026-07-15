@@ -11,3 +11,4 @@ output/
 # Deep Blue loop generated output (regenerate with `node tools/loop.mjs`)
 knowledge/loop-state.json
 knowledge/pending-review.md
+knowledge/model-accuracy.md

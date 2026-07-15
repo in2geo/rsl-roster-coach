@@ -147,15 +147,16 @@ const keyOf = (b) => `${b.accountId}|${b.capturedAt}`;
 // ── the loop over new captures ───────────────────────────────────────────────
 const log = JSON.parse(fs.readFileSync(path.join(REPO, 'gestal-sync/RslBattleReader/output/battle-log.json'), 'utf8'));
 const reports = [];
+const measure = []; // per-capture model-prediction-vs-reality records (accumulated over ALL captures)
 let processed = 0, skipped = 0;
 
 for (const b of (Array.isArray(log) ? log : [])) {
-  if (!ALL && seen.has(keyOf(b))) continue;
   const contentKey = CONTENT_KEY[b.dungeon];
   if (!contentKey) { skipped++; continue; }
   if (!(b.heroes ?? []).length) { skipped++; continue; } // nothing to evaluate (old/empty capture)
   const acc = await mappedRosterFor(b.accountId);
   if (!acc) { skipped++; continue; }
+  const isNew = ALL || !seen.has(keyOf(b)); // MEASUREMENT runs on ALL captures; review-detection only on NEW
 
   const won = b.result === 'Victory';
   const dur = b.durationSeconds ?? 0, turns = b.turns ?? null;
@@ -173,18 +174,30 @@ for (const b of (Array.isArray(log) ? log : [])) {
     team_match: (b.heroes ?? []).filter(h => recBase.recNames.has(norm(h.name))).length } : null;
 
   // EVALUATE — phase-aware constructor's "build next" answer (dungeons only, needs a stage number).
-  let topBuild = null;
+  let topBuild = null, constructorTeam = null;
   const needsInfo = (contentKey !== 'clan_boss' && b.stageNumber != null) ? await needsFor(b.dungeon, b.stageNumber) : null;
   if (needsInfo) {
     try {
       const eligible = (c) => me.usabilityTier(c) >= 2;
-      const { team: builtTeam } = constructTeam(acc.mapped, needsInfo.needs, { contentKey, eligible, tagMeta, accFloor: needsInfo.accFloor });
-      topBuild = potentialBuilds(acc.mapped, needsInfo.needs, builtTeam, { isBuilt: eligible, contentKey, tagMeta, accFloor: needsInfo.accFloor })[0] ?? null;
+      const built = constructTeam(acc.mapped, needsInfo.needs, { contentKey, eligible, tagMeta, accFloor: needsInfo.accFloor });
+      constructorTeam = built.team;
+      topBuild = potentialBuilds(acc.mapped, needsInfo.needs, built.team, { isBuilt: eligible, contentKey, tagMeta, accFloor: needsInfo.accFloor })[0] ?? null;
     } catch {}
   }
 
   const classification = !won ? (allDied ? 'loss_wipe' : 'loss')
     : (dur > 0 && dur > BUDGET_SEC) ? 'slow_win' : 'win';
+
+  // ── MEASUREMENT — each model's PREDICTION vs REALITY, over ALL captures (self-populating
+  //    scoreboard). This is the evidence that either promotes the models to "trusted" or shows
+  //    exactly where they're wrong — the Layer 3 gate instrument. ────────────────────────────
+  const isCB = contentKey === 'clan_boss';
+  const constrOverlap = constructorTeam ? constructorTeam.filter(c => fielded.some(f => f.name === c.name)).length : null;
+  measure.push({ content: contentKey, isCB, won, classification,
+    cov_conf: rec?.confidence ?? null, cov_match: rec?.team_match ?? null, constr_overlap: constrOverlap });
+
+  // Review-detection + queue only for NEW captures (measurement already accumulated above).
+  if (!isNew) { seen.add(keyOf(b)); continue; }
 
   // DETECT — only signals worth a human's eye. Philosophy: a WIN that matched expectations
   // needs no review; surface LOSSES, model BLINDNESS, CALIBRATION divergence, and data gaps.
@@ -195,9 +208,7 @@ for (const b of (Array.isArray(log) ? log : [])) {
   for (const s of (wd?.scores ?? []).filter(s => s.fielded && s.composite <= 0.02))
     signals.push({ kind: 'possible_blindness', subject: `${s.name} @ ${contentKey}`, detail: `${s.name} scored ~0 contribution (dmg=${s.damage} sus=${s.sustain} grant=${s.grant} ctrl=${s.control ?? 0}) but was fielded on ${contentKey} — model may be undervaluing its kit (tag gap?)` });
   // Clan Boss is chest-tier scored — a "Defeat" (team wipes) is the NORMAL end of a key, not a
-  // failure, so win/loss-based signals are meaningless for CB (its real reconciliation is
-  // damage-vs-chest, a separate TODO). Only non-CB content gets loss/calibration signals.
-  const isCB = contentKey === 'clan_boss';
+  // failure, so win/loss-based signals are meaningless for CB (isCB computed above).
   // Mispick ONLY explains a LOSS — on a win the fielded team worked, so "a better bench option
   // exists" is player choice, not a model bug (this was the noise source). One line, top flag.
   if (!won && !isCB && wd?.flags?.length)
@@ -256,11 +267,45 @@ const summary = `# Pending Review — loop output (machine-drafted; NOT yet enco
   + `\`unresolved_hero\` (capture name → no DB champ). Clan Boss loss-signals suppressed (chest-scored).\n\n`
   + (queue.length ? queue.map(renderItem).join('\n') : '_No divergence signals — model and reality agree on all new captures._\n');
 
+// ── MODEL ACCURACY — the self-populating evidence scoreboard (over ALL captures) ─────────────
+const nonCB = measure.filter(m => !m.isCB), cb = measure.filter(m => m.isCB);
+const dungeons = new Set(nonCB.map(m => m.content));
+const wins = nonCB.filter(m => m.won), losses = nonCB.filter(m => !m.won);
+const avg = (arr, f) => { const v = arr.map(f).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+const f2 = (x) => x == null ? 'n/a' : (Math.round(x * 100) / 100).toFixed(2);
+const calRows = [[0, 60], [60, 80], [80, 95], [95, 101]].map(([lo, hi]) => {
+  const inB = nonCB.filter(m => m.cov_conf != null && m.cov_conf >= lo && m.cov_conf < hi);
+  const w = inB.filter(m => m.won).length;
+  return `| ${lo}–${hi === 101 ? 100 : hi - 1}% | ${inB.length} | ${inB.length ? Math.round(w / inB.length * 100) + '%' : 'n/a'} |`;
+}).join('\n');
+const gateMet = nonCB.length >= 20 && dungeons.size >= 2;
+const accuracy = `# Model Accuracy — self-populating (generated by tools/loop.mjs)\n\n`
+  + `Generated ${new Date().toISOString()} over ALL ${measure.length} evaluable captures (${nonCB.length} non-CB, ${cb.length} CB).\n`
+  + `The EVIDENCE spine: measures each model's prediction vs captured reality, so the shadow models can\n`
+  + `eventually be PROMOTED to "trusted" or refuted. Recomputed from scratch each run (no state drift).\n\n`
+  + `## Layer 3 gate progress\n`
+  + `**${nonCB.length}** non-CB reconciled runs across **${dungeons.size}** dungeon(s) (${[...dungeons].join(', ') || 'none'}).\n`
+  + `Gate = ≥20 runs / ≥2 dungeons → **${gateMet ? 'MET' : 'NOT MET'}**. Real throttle is data volume from >1 account\n`
+  + `(DonBrogni is young/unrepresentative of the new-player audience).\n\n`
+  + `## Coverage-engine confidence calibration\n`
+  + `Is the engine's confidence honest? Ideal: higher predicted confidence → higher actual win rate.\n\n`
+  + `| predicted confidence | runs | actual win rate |\n|---|---|---|\n${calRows}\n\n`
+  + `## Model agreement with outcomes\n`
+  + `How many of each model's recommended 5 the player actually FIELDED, split by win/loss. A model that\n`
+  + `agrees with WINNING teams more than LOSING ones is tracking what works.\n\n`
+  + `| model | avg on WINS (/5) | avg on LOSSES (/5) |\n|---|---|---|\n`
+  + `| coverage rec | ${f2(avg(wins, m => m.cov_match))} | ${f2(avg(losses, m => m.cov_match))} |\n`
+  + `| constructor  | ${f2(avg(wins, m => m.constr_overlap))} | ${f2(avg(losses, m => m.constr_overlap))} |\n\n`
+  + `_Caveat: with one account fielding similar teams regardless of RNG outcome, agreement signals are weak\n`
+  + `until more captures / more accounts. The instrument is the point; it sharpens as data accumulates._\n`;
+
 if (!DRY) {
   fs.mkdirSync(KNOW, { recursive: true });
   fs.writeFileSync(path.join(KNOW, 'pending-review.md'), summary);
+  fs.writeFileSync(path.join(KNOW, 'model-accuracy.md'), accuracy);
   fs.writeFileSync(STATE_FILE, JSON.stringify({ processed: [...seen], updated_at: new Date().toISOString() }, null, 2));
 }
 
-console.log(`loop: ${processed} evaluated, ${queue.length} distinct review items, ${skipped} skipped${DRY ? ' (dry — nothing written)' : ''}`);
+console.log(`loop: ${measure.length} measured (${processed} new reviewed), ${queue.length} review items, ${skipped} skipped${DRY ? ' (dry)' : ''}`);
+console.log(`gate: ${nonCB.length}/20 non-CB runs, ${dungeons.size}/2 dungeons → ${gateMet ? 'MET' : 'not met'}`);
 for (const it of queue) console.log(`  ⚑ [${it.kind}] ${it.subject} ×${it.count}`);
