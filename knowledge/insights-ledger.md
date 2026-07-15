@@ -135,8 +135,11 @@ Every insight cites EVIDENCE (a game mechanic and/or a captured run) — never a
   → per-champ AI config for THIS team. Conflict types: REDUNDANCY (two same debuff → keep higher
   reliability×uptime, disable other), DEPENDENCY ORDERING (DEF Down before dealers — flag if speed tune
   wrong; can't fix), SATURATION (two poisoners — both needed for stacks?), BUFF-EXTENSION collisions.
-- **Layer 3 — validation:** add `ai_config_used` (jsonb snapshot of actual settings run) to
-  `run_reconciliations`; compare outcomes across config variants for the same team → promote validated=true.
+- **Layer 3 — validation:** `ai_config_used` (jsonb) on `run_reconciliations` stores the actual settings
+  run; compare outcomes across config variants for the same team → promote validated=true. **The battle
+  reader CANNOT read in-game AI skill settings (Mike, confirmed 2026-07-15) — so `ai_config_used` is MANUAL
+  entry: ASK the user for the AI settings of any run being validated.** Low-volume (only for config-validation
+  runs, not every capture), so manual is fine. See [[ai-settings-manual-entry]].
 - **Explanation output:** a clean per-champ skill checklist ("Xenomorph: A1 only, disable A2/A3. Kael: all
   enabled, A3 priority 1.").
 - **RECONCILIATION with existing work:**

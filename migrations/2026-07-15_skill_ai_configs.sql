@@ -29,9 +29,9 @@ create table if not exists skill_ai_configs (
 );
 create index if not exists idx_skill_ai_configs_champ_content on skill_ai_configs(champion_id, content_key);
 
--- Validation loop (Layer 3): snapshot the ACTUAL AI settings the player ran, so outcomes can be
--- compared across config variants for the same team. Cheap to add; CAPTURING it (reader reading the
--- skill-AI toggles) is a separate feasibility question — without it, "ran right" vs "wrong config,
--- cleared anyway" is indistinguishable.
+-- Validation loop (Layer 3): the ACTUAL AI settings the player ran, so outcomes can be compared
+-- across config variants for the same team. NOTE: the battle reader CANNOT read in-game AI skill
+-- settings (confirmed 2026-07-15), so this is MANUAL entry — ask the player for the settings of any
+-- run being validated. Low-volume (config-validation runs only), so manual is workable.
 alter table run_reconciliations
   add column if not exists ai_config_used jsonb;
