@@ -13,6 +13,30 @@ Every insight cites EVIDENCE (a game mechanic and/or a captured run) — never a
 
 ---
 
+## INS-0017 — Real captures prove DoT is a FIRST-ORDER damage term, not a footnote
+- **Status:** `diagnosed` — 2026-07-15 · `tools/calibrate-power.mjs`
+- **Class:** model gap, surfaced by calibration against real battles (the Deep Blue loop working).
+- **Claim:** Calibrating the power model's absolute damage scale against 34 captured dungeon wins
+  (`run_reconciliations`: real turns + fielded team + frozen effective stats) does NOT yield a
+  single scale — it ranges **0.43 (Ice Golem) → 38.5 (Spider)**, median 3.75. The spread is
+  systematic by content, not noise: the attack-only kill model is ~right on IG (attack clears)
+  and **~10× too low on Spider** (Skavag 1M+ HP dies in ~78t, but attack-DPT implies ~800t).
+- **Root cause:** the kill model omits **DoT (%maxHP Poison / HP-Burn)**, which is the DOMINANT
+  kill source on high-HP content (Spider 15-25 = %maxHP/Poison/HP-Burn by design; Dragon too).
+  A single scale can never reconcile it because **DoT scales with boss HP; attacks don't** — so
+  the required scale climbs with stage/HP exactly as observed.
+- **Evidence:** per-capture scale rises with Spider stage (S10 ~5.7 → S17-19 ~20-38) as Skavag's
+  HP grows; IG stays ~1. cf. [[cb-damage-estimator-blocked]] (%maxHP/DoT source model) and
+  `lib/cb-damage-model.js` `SOURCE_COEFF`, which already model this for Clan Boss.
+- **Next:** add a DoT term to `teamDamagePerTurn` — Σ(%maxHP/turn) × bossHP from the team's
+  Poison/HP-Burn tags + Warmaster, reusing cb-damage-model's coefficients — THEN re-run
+  `calibrate-power.mjs`; the scale should collapse toward one consistent value across content.
+- **Caveat:** captured `turns` is a noisy proxy (includes survival/setup; same-stage S17 wins
+  span 77-134t across teams/gear). Per-champ damage is NOT captured (0/43), so turns is the only
+  signal — good enough to expose a 90× structural gap, not for fine tuning.
+
+---
+
 ## INS-0016 — Power model built + validated: dungeons are gated by DIFFERENT walls
 - **Status:** `built` (kill-speed) · survival `first-pass` · magnitude `nominal` — 2026-07-15
 - **Class:** architecture — the missing Layer 0 (power sufficiency), now real.
