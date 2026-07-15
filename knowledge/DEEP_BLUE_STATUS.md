@@ -125,6 +125,8 @@ Layer 2 contribution model · AI-config resolver · sustain-mechanism weighting.
 
 ## How to resume next session
 
+**→ Cold-start runbook with exact commands + first tasks: `knowledge/NEXT_SESSION_HANDOFF.md`.**
+
 1. Read this file, then skim `insights-ledger.md` INS-0014→0017 (this session's arc).
 2. The agreed next action is **Track 1 step 1: calibrate the survival side** against the loss
    captures — unless Mike redirects. Track 2 (reconciliation automation, reader damage decode)
