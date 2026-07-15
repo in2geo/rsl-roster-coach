@@ -7,3 +7,7 @@ node_modules/
 
 # raid.guide scraper review artifacts (source of truth is Supabase)
 output/
+
+# Deep Blue loop generated output (regenerate with `node tools/loop.mjs`)
+knowledge/loop-state.json
+knowledge/pending-review.md
