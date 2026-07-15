@@ -33,9 +33,15 @@ Every insight cites EVIDENCE (a game mechanic and/or a captured run) — never a
   `stagePower`); real difficulty in `dungeon_stage_enemies` (seeds/131-135, migration
   2026-07-15). Data provenance: in-game enemy tables (Mike), cross-validated (shared ATK/DEF
   scaling caught the Spider S19 glitch; affinity icons confirmed seed 130).
-- **Open / next:** (1) SURVIVAL side is the priority — it's IG's actual wall and the model's
-  rough part (needs incoming-damage-per-turn from boss kits, minion handling, sustain incl.
-  Revive as the multiplier — the Sun Wukong finding). (2) DoT (%maxHP) not yet in kill-speed.
+- **Scoping (Mike 2026-07-15):** the emergent REVIVE-SPONGE case (Sun Wukong dies→revives→re-
+  tanks the poison in a loop) is NICHE — do NOT special-case it. The survival model only needs
+  to handle NORMAL teams with standard sustain (heal/shield/bounded revive); it is not obligated
+  to reproduce an emergent self-revive loop. This removes the hardest, least-general piece.
+- **Open / next:** (1) real blocker = ABSOLUTE damage-scale calibration — nominal DPT gave a
+  386-turn budget vs survival's realistic tens, so the two sides aren't on a common real-turn
+  scale (tsv≥ttk invalid). Calibrate DPT against captured battle damage (real numbers) +/or the
+  clear-time anchors (Spider-13 slow ≈ ~40-50 turns; IG-14/15 crossover). Then survival works for
+  the mainline. (2) DoT (%maxHP) not yet in kill-speed.
   (3) Wire the power ceiling as the recommendation FLOOR ([[POWER_LAYER_SCOPE]] step 3), which
   replaces the Stage-5 lowball. (4) Damage magnitudes (DEF_K, multiplier proxy) are nominal —
   the turn BUDGET is the one calibrated constant, from a reference clear. (5) FK shield
