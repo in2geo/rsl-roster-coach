@@ -13,6 +13,36 @@ Every insight cites EVIDENCE (a game mechanic and/or a captured run) — never a
 
 ---
 
+## INS-0016 — Power model built + validated: dungeons are gated by DIFFERENT walls
+- **Status:** `built` (kill-speed) · survival `first-pass` · magnitude `nominal` — 2026-07-15
+- **Class:** architecture — the missing Layer 0 (power sufficiency), now real.
+- **Claim:** With real per-stage enemy stats (`dungeon_stage_enemies`, 150 rows, all 4 dungeons)
+  the engine can finally compute the WALL it never measured: turns-to-kill (team damage/turn vs
+  boss HP) and turns-survived (enemy damage vs team bulk+sustain). `lib/power-model.js` does the
+  kill-speed half; survival is a flagged first pass.
+- **Evidence (first cross-dungeon validation, DonBrogni, budget calibrated on Spider-13 slow clear):**
+  - Spider kill-ceiling **13** = real ceiling 13 → Spider is **KILL-gated** (Skavag 1M+ HP).
+  - Ice Golem kill-ceiling **17** but real ceiling **14-15** → kill-speed is NOT the wall; IG is
+    **SURVIVAL-gated** (Frigid Vengeance + reviving minions + incoming dmg). The model correctly
+    localized that IG's binding wall is the OTHER side. Klyssus S13 kill-load 0.23 (trivial).
+  - Dragon kill-ceiling 16, FK 17 (no ground truth yet).
+- **Why it matters:** a single stat-floor can't express "Spider = kill fast / IG = survive" — this
+  two-sided model does, which is the whole contribution-model thesis. Also re-indicts the current
+  engine: it sent DonBrogni to Spider 5 (kill-load 0.14, trivial) vs the real kill wall at 13.
+- **Encoded in:** `lib/power-model.js` (`turnsToKill`, `turnsSurvived`, `calibrateBudget`,
+  `stagePower`); real difficulty in `dungeon_stage_enemies` (seeds/131-135, migration
+  2026-07-15). Data provenance: in-game enemy tables (Mike), cross-validated (shared ATK/DEF
+  scaling caught the Spider S19 glitch; affinity icons confirmed seed 130).
+- **Open / next:** (1) SURVIVAL side is the priority — it's IG's actual wall and the model's
+  rough part (needs incoming-damage-per-turn from boss kits, minion handling, sustain incl.
+  Revive as the multiplier — the Sun Wukong finding). (2) DoT (%maxHP) not yet in kill-speed.
+  (3) Wire the power ceiling as the recommendation FLOOR ([[POWER_LAYER_SCOPE]] step 3), which
+  replaces the Stage-5 lowball. (4) Damage magnitudes (DEF_K, multiplier proxy) are nominal —
+  the turn BUDGET is the one calibrated constant, from a reference clear. (5) FK shield
+  hits-to-break is a tactical gate to add on top of its (low) HP wall.
+
+---
+
 ## INS-0015 — Boss affinity is a first-order, two-sided factor the engine was blind to
 - **Status:** `encoded` (Phase 1: data + confidence) · magnitude `nominal` · selection `TODO` — 2026-07-15
 - **Class:** game-mechanic fact (→ allowed as a model rule) + a content-reconciliation fix.
