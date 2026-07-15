@@ -154,6 +154,30 @@ Every insight cites EVIDENCE (a game mechanic and/or a captured run) — never a
 
 ---
 
+## INS-0013 — A contribution-BLEND selectTeam fix FAILED (measured, reverted 2026-07-15)
+- **Status:** `proposed` — experiment result; do not retry the naive version.
+- **Attempt:** made `selectTeam` value a per-champ `soloContribution` (safe DoT + attack + sustain×threat +
+  CC×ccEff + turn-buffs) blended with coverage, to fix the Brogni/support undervaluation (INS-0012).
+- **Result (measured against the loop diff):** it RELOCATED errors, didn't reduce them. At full weight it
+  fixed the headline bugs (Brogni bench ×24→0, Sun Wukong over-field ×23→0) BUT introduced Gnut ×27 bench +
+  Narma ×19 / Glorious Pallas ×17 over-fields (Pallas FLIPPED under→over). Agreement flat-to-worse
+  (3.68→3.65), discrimination narrowed. Tuning the weight DOWN un-fixed Brogni (back to ×14, agreement
+  3.49). No single weight cleanly wins. **Reverted to baseline.**
+- **Diagnosis (why a greedy-sort fix can't do it):** (1) a flat per-champ blend ignores team STRUCTURE
+  (1–2 carriers + supports, INS-0006) → boosting supports benched a CARRIER (Gnut); (2) the contribution
+  SCORING has its own errors — OVER-credits sustain-stacked champs (Glorious Pallas: Shield/Ally Protection/
+  DEF → high sustain score, but NOT in winning teams) and UNDER-credits carriers (Gnut). A selection weight
+  can't fix scoring errors or enforce structure.
+- **Real path:** (a) fix the contribution SCORING errors the diff now pinpoints (Pallas over-credit, Gnut
+  under-credit) — helps BOTH constructor and any blend; (b) use the STRUCTURAL constructor (marginal +
+  saturation + carrier protection), not a greedy sort. The constructor uses the same sustain scoring so it
+  inherits the Pallas over-credit — fix scoring first.
+- **META-WIN:** the measurement infra did its job — it caught a change that FELT like a fix (Brogni back on
+  the team!) but was a lateral move. Without the diff we'd have shipped "fixed" while silently benching Gnut.
+  This is the discipline that reaches Deep Blue instead of a confident-but-wrong model.
+
+---
+
 ## INS-0011 — Ice Golem survival mechanics: Decrease ATK mitigation + trash-wave gap (cross-check)
 - **Status:** `proposed` — from a Gemini cross-check 2026-07-15 (mechanical facts extracted; editorial
   champion picks NOT copied). Two VERIFIED content gaps + refinements.
