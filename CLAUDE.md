@@ -10,6 +10,21 @@ players a personalized "what should I do next" recommendation, based on
 their manually-entered roster. Not necessarily a tool for veteran players with deep
 rosters — that segment is already served by other tools.
 
+## Deep Blue model — modeling console (READ FIRST when Mike mentions it)
+
+Mike builds this engine by *conversing to improve it* (the "Deep Blue" vision — the AI that
+beats a grandmaster, not a chatbot for players). Whenever he references **"the Deep Blue
+model"** or the work around it, the canonical, always-current reference is
+**`knowledge/DEEP_BLUE_STATUS.md`** — read it first, then `knowledge/insights-ledger.md`
+(INS-0001…, the durable brain). The loop is capture → reconcile → measure → propose → retain →
+predict; a change must be validated (shadow) before it drives live recommendations.
+
+Current one-line state (2026-07-15): the evaluator became real (kill side calibrated to real
+battles via `lib/power-model.js` + `tools/calibrate-power.mjs`); survival is half-built; it is
+**NOT yet wired** into the live recommendation. Agreed next step: calibrate the survival side
+on the loss captures, then shadow, then wire. See DEEP_BLUE_STATUS.md for the full priority
+stack, diagnostics, and how to resume.
+
 ## Stack
 - Frontend: mobile PWA, plain HTML/CSS/JS, no framework, no build step
 - Hosting: Vercel (static files + /api/* serverless functions)

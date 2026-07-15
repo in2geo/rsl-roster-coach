@@ -1,0 +1,55 @@
+<svg viewBox="0 0 900 620" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif, system-ui, sans-serif">
+  <title>Deep Blue loop status (2026-07-15)</title>
+  <desc>The capture-to-improvement loop with each stage graded: Capture, Reconcile, Propose and Retain are working; Predict and Measure are partial because the calibrated power model is built but not yet wired into live recommendations.</desc>
+  <style>
+    :root{ --card:#ffffff; --stroke:#d8dae5; --ink:#1a1a2e; --sub:#6b7280; --ok:#16a34a; --wip:#f59e0b; --ring:#7c5cff; --arrow:#98a0b0; }
+    @media (prefers-color-scheme: dark){ :root{ --card:#20202c; --stroke:#3a3a48; --ink:#eef0f6; --sub:#9aa0ac; --arrow:#5a6070; } }
+    .node{ fill:var(--card); stroke:var(--stroke); stroke-width:1.5; }
+    .t{ fill:var(--ink); font-size:15px; font-weight:700; text-anchor:middle; }
+    .s{ fill:var(--sub); font-size:11px; text-anchor:middle; }
+    .arrow{ stroke:var(--arrow); stroke-width:2.5; fill:none; }
+  </style>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--arrow)"/>
+    </marker>
+  </defs>
+  <path class="arrow" marker-end="url(#ah)" d="M521,131 L561,154"/>
+  <path class="arrow" marker-end="url(#ah)" d="M632,277 L632,323"/>
+  <path class="arrow" marker-end="url(#ah)" d="M561,446 L521,469"/>
+  <path class="arrow" marker-end="url(#ah)" d="M379,469 L339,446"/>
+  <path class="arrow" marker-end="url(#ah)" d="M268,323 L268,277"/>
+  <path class="arrow" marker-end="url(#ah)" d="M339,154 L379,131"/>
+  <rect class="node" x="340" y="255" width="220" height="92" rx="14" stroke="var(--ring)" stroke-width="2"/>
+  <text class="t" x="450" y="288" font-size="14">RECOMMENDATION ENGINE</text>
+  <text class="s" x="450" y="308">real power model built</text>
+  <text class="s" x="450" y="324" fill="var(--wip)" font-weight="700">not yet wired to output</text>
+  <rect class="node" x="375" y="61" width="150" height="58" rx="10"/>
+  <circle cx="392" cy="82" r="4.5" fill="var(--wip)"/>
+  <text class="t" x="452" y="86">PREDICT</text>
+  <text class="s" x="450" y="104">team + stage rec</text>
+  <rect class="node" x="557" y="166" width="150" height="58" rx="10"/>
+  <circle cx="574" cy="187" r="4.5" fill="var(--ok)"/>
+  <text class="t" x="634" y="191">CAPTURE</text>
+  <text class="s" x="632" y="209">real battles read</text>
+  <rect class="node" x="557" y="376" width="150" height="58" rx="10"/>
+  <circle cx="574" cy="397" r="4.5" fill="var(--ok)"/>
+  <text class="t" x="634" y="401">RECONCILE</text>
+  <text class="s" x="632" y="419">predicted vs actual</text>
+  <rect class="node" x="375" y="481" width="150" height="58" rx="10"/>
+  <circle cx="392" cy="502" r="4.5" fill="var(--wip)"/>
+  <text class="t" x="452" y="506">MEASURE</text>
+  <text class="s" x="450" y="524">accuracy scoreboard</text>
+  <rect class="node" x="193" y="376" width="150" height="58" rx="10"/>
+  <circle cx="210" cy="397" r="4.5" fill="var(--ok)"/>
+  <text class="t" x="270" y="401">PROPOSE</text>
+  <text class="s" x="268" y="419">insights → fixes</text>
+  <rect class="node" x="193" y="166" width="150" height="58" rx="10"/>
+  <circle cx="210" cy="187" r="4.5" fill="var(--ok)"/>
+  <text class="t" x="270" y="191">RETAIN</text>
+  <text class="s" x="268" y="209">durable ledger</text>
+  <circle cx="300" cy="585" r="5" fill="var(--ok)"/>
+  <text x="312" y="589" font-size="12" fill="var(--sub)">working</text>
+  <circle cx="410" cy="585" r="5" fill="var(--wip)"/>
+  <text x="422" y="589" font-size="12" fill="var(--sub)">built, not wired / thin</text>
+</svg>
