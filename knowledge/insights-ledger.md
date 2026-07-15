@@ -121,6 +121,33 @@ Every insight cites EVIDENCE (a game mechanic and/or a captured run) — never a
 
 ---
 
+## INS-0011 — Ice Golem survival mechanics: Decrease ATK mitigation + trash-wave gap (cross-check)
+- **Status:** `proposed` — from a Gemini cross-check 2026-07-15 (mechanical facts extracted; editorial
+  champion picks NOT copied). Two VERIFIED content gaps + refinements.
+- **VERIFIED GAP 1 — Decrease ATK on the IG BOSS mitigates Frigid Vengeance:** keeping Decrease ATK on
+  the boss heavily cuts his DEF-ignoring counterattack damage — a key survival lever. VERIFIED absent:
+  ZERO `Decrease Attack` in any IG solution (stages 14-20). Candidate: add a boss-phase "mitigate Frigid
+  Vengeance with Decrease ATK" goal (seed + approval). Fits wave-survival's 4 approaches (kill / DECREASE
+  ATK / CC / sustain) applied to surviving the BOSS counter, not just waves.
+- **VERIFIED GAP 2 — IG pre-boss TRASH WAVES not modeled:** real wave dealers (Seer/Zarala/Terrorbeast)
+  precede the boss, distinct from the 2 boss-minions. VERIFIED: every IG "wave phase" goal is about the
+  MINIONS ("kill both minions", "kill right minion first") — no trash-wave-clear goal. Confirms the
+  content gap flagged in INS-0007: the DB collapses trash waves into the minion need. Candidate: add IG
+  trash-wave clear goals (separate from the boss-minion goals).
+- **Refinement 3 — Decrease TM UNRELIABLE on the IG boss:** he REGAINS turn meter when minions attack
+  (not immune like Dragon, but self-refills). Per-boss caveat → discount AoE Decrease TM on the IG boss
+  (it works on adds, not the boss). Model currently would over-credit it.
+- **Refinement 4 — Max-HP-Destroy sustain nuance:** the boss permanently shrinks max HP, so SHIELDS +
+  continuous-heal + mitigation beat flat/burst heals (flat healing degrades as the pool shrinks). A
+  sustain-VALUATION nuance for IG (absorption/continuous > burst-heal), beyond the spike ranking.
+- **Refinement 5 — the "babysitter" survival support:** 2-3 of {cleanse/block-debuff, revive, continuous-
+  heal/shield, wave-control}, built HIGH RES so they resist the freeze themselves and can cleanse the team,
+  + high SPD + tanky. Validates multi-mechanism sustain; RES-for-self-freeze-immunity is the specific.
+- **Confirmed already-modeled (cross-check reassurance):** don't-burst, Poison/HP Burn safe damage, Block
+  Revive, cleanse freeze, RES advisory, kill-right-minion-first (right minion = Decrease DEF). IG content solid.
+
+---
+
 ## INS-0010 — Auto-battle SKILL AI settings (per-skill config + team-level resolver)
 - **Status:** `proposed` (Mike design, 2026-07-15) — new feature area; schema can land now, resolver later.
 - **Problem:** each skill on a champ+content has an optimal AI setting (always/never/conditional), but the
