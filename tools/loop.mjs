@@ -43,6 +43,7 @@ const gc = await import('../lib/gestal-context.js');
 const me = await import('../lib/match-engine.js');
 const mr = await import('../lib/multiplier-rank.js');
 const { runWatchdog } = await import('../lib/watchdog.js');
+const { deriveNeeds, constructTeam, potentialBuilds } = await import('../lib/team-constructor.js');
 
 const CONTENT_KEY = {
   "Ice Golem's Peak": 'ice_golem', "Fire Knight's Castle": 'fire_knight',
@@ -61,6 +62,36 @@ for (let from = 0; ; from += 1000) {
 // alias → canonical DB champion id (so capture short-names like "Deacon" resolve).
 const aliasRows = await rest('champion_aliases?select=alias,champion_id');
 const aliasToId = new Map((Array.isArray(aliasRows) ? aliasRows : []).map(a => [norm(a.alias), a.champion_id]));
+// tag metadata (ACC-gating) for the phase-aware constructor's reliability weighting.
+const tagRows = await rest('tags?select=name,is_debuff,bypasses_accuracy_check');
+const tagMeta = Object.fromEntries((Array.isArray(tagRows) ? tagRows : []).map(t => [t.name, { is_debuff: t.is_debuff, bypasses_accuracy_check: t.bypasses_accuracy_check }]));
+const evalFloor = (formula, stage) => { try { return Function('"use strict";return (' + String(formula).replace(/stage/gi, stage) + ')')(); } catch { return null; } };
+
+// Phase-aware NEEDS per (dungeon, stage) — cached (depends only on content, not the battle).
+const needsCache = {};
+async function needsFor(dungeonName, stageNumber) {
+  const k = `${dungeonName}|${stageNumber}`;
+  if (k in needsCache) return needsCache[k];
+  let result = null;
+  try {
+    const dun = await rest(`dungeons?select=id&game_id=eq.raid_shadow_legends&name=eq.${encodeURIComponent(dungeonName)}`);
+    const stages = await rest(`dungeon_stages?select=id,label,stage_number&dungeon_id=eq.${dun[0].id}`);
+    let st = stages.find(s => s.stage_number === stageNumber)
+      ?? stages.find(s => { const m = (s.label || '').match(/Stages?\s+(\d+)\s*-\s*(\d+)/i); return m && stageNumber >= +m[1] && stageNumber <= +m[2]; })
+      ?? stages.find(s => { const m = (s.label || '').match(/Stage\s+(\d+)/i); return m && +m[1] === stageNumber; });
+    if (st) {
+      const ph = await rest(`phases?select=id,phase_type&dungeon_stage_id=eq.${st.id}`);
+      const phaseGoals = []; let accFloor = null;
+      for (const p of ph) {
+        phaseGoals.push({ phase_type: p.phase_type, goals: await rest(`goals?select=description,is_informational,goal_solutions(status,goal_solution_tags(tags(name)))&phase_id=eq.${p.id}`) });
+        for (const t of (await rest(`stat_threshold_checks?select=formula&phase_id=eq.${p.id}&stat=eq.acc`) || [])) { const f = evalFloor(t.formula, stageNumber); if (f != null) accFloor = Math.max(accFloor ?? 0, f); }
+      }
+      const needs = deriveNeeds(phaseGoals);
+      if (needs.length) result = { needs, accFloor };
+    }
+  } catch {}
+  return (needsCache[k] = result);
+}
 
 const OUT_DIR = path.join(REPO, 'gestal-sync', 'output');
 const rosters = {};
@@ -141,6 +172,17 @@ for (const b of (Array.isArray(log) ? log : [])) {
   const rec = recBase ? { floor: recBase.floor, confidence: recBase.confidence, verdict: recBase.verdict,
     team_match: (b.heroes ?? []).filter(h => recBase.recNames.has(norm(h.name))).length } : null;
 
+  // EVALUATE — phase-aware constructor's "build next" answer (dungeons only, needs a stage number).
+  let topBuild = null;
+  const needsInfo = (contentKey !== 'clan_boss' && b.stageNumber != null) ? await needsFor(b.dungeon, b.stageNumber) : null;
+  if (needsInfo) {
+    try {
+      const eligible = (c) => me.usabilityTier(c) >= 2;
+      const { team: builtTeam } = constructTeam(acc.mapped, needsInfo.needs, { contentKey, eligible, tagMeta, accFloor: needsInfo.accFloor });
+      topBuild = potentialBuilds(acc.mapped, needsInfo.needs, builtTeam, { isBuilt: eligible, contentKey, tagMeta, accFloor: needsInfo.accFloor })[0] ?? null;
+    } catch {}
+  }
+
   const classification = !won ? (allDied ? 'loss_wipe' : 'loss')
     : (dur > 0 && dur > BUDGET_SEC) ? 'slow_win' : 'win';
 
@@ -165,6 +207,15 @@ for (const b of (Array.isArray(log) ? log : [])) {
     if (rec.confidence >= 80 && !won) signals.push({ kind: 'confident_but_lost', subject: `${contentKey} ${b.stageNumber ?? ''}`.trim(), detail: `engine was ${rec.confidence}% confident but the run was a Defeat — calibration or missing-threat signal` });
     if (rec.confidence < 60 && won && !allDied) signals.push({ kind: 'unsure_but_won', subject: `${contentKey} ${b.stageNumber ?? ''}`.trim(), detail: `engine was only ${rec.confidence}% confident but the run WON cleanly — engine may be too conservative` });
   }
+  // The phase-aware constructor's "BUILD NEXT" answer (INS-0007 potential layer) — surfaced from a
+  // REAL capture. Show it when it fills an UNCOVERED need or the run was a loss (e.g. "build Criodan
+  // for your Dragon-20 wave gap"). Aggregates per (champ, content) across captures.
+  if (topBuild && (!won || topBuild.fills.some(f => f.kind === 'uncovered'))) {
+    const f = topBuild.fills[0];
+    signals.push({ kind: 'potential_build', subject: `${topBuild.name} @ ${contentKey}`,
+      detail: `BUILD ${topBuild.name} — fills ${topBuild.fills.map(x => `[${x.phase}] ${x.description.slice(0, 42)}`).join('; ')}`
+        + ` (${f.kind}${f.kind === 'upgrade' ? `: str ${f.strength} vs built ${f.builtBest}` : ''})` });
+  }
 
   reports.push({
     key: keyOf(b), when: b.capturedAt, account: b.displayName, content: b.stage,
@@ -178,7 +229,7 @@ for (const b of (Array.isArray(log) ? log : [])) {
 // ── AGGREGATE signals into DISTINCT review items (not one row per capture) ────
 // A useful queue is a short list of unique issues with occurrence counts + examples — not a
 // log. Key by (kind + subject); repeats across identical teams collapse into one item.
-const SEVERITY = { unresolved_hero: 0, possible_blindness: 1, confident_but_lost: 2, mispick_may_explain_loss: 3, unsure_but_won: 4 };
+const SEVERITY = { potential_build: 0, unresolved_hero: 1, possible_blindness: 2, confident_but_lost: 3, mispick_may_explain_loss: 4, unsure_but_won: 5 };
 const items = new Map();
 for (const r of reports) for (const s of r.signals) {
   const k = `${s.kind}::${s.subject}`;
