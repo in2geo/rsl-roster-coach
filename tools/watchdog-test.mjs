@@ -83,5 +83,25 @@ const wdSpd = runWatchdog({ roster: spdRoster, team: spdRoster, contentKey: 'cla
 const spdSupport = wdSpd.scores.find(s => s.name === 'Speed Support');
 ok(spdSupport.grant > 0, 'a speed/turn-meter support gets non-zero grant credit (not benched as ~0)');
 
+// ── 6. crowd control is credited as survival, discounted on CC-immune content (INS-0004) ──
+console.log('\n[6] crowd-control support (Fabian-like) is not scored ~0');
+const ccRoster = [
+  { name: 'Poison Carrier', tags: ['Poison'], damage_multiplier_score: 4.0 },
+  { name: 'HP Burner',      tags: ['HP Burn'], damage_multiplier_score: 3.0 },
+  { name: 'Healer',         tags: ['Continuous Heal'], damage_multiplier_score: 0.5 },
+  { name: 'Nuker',          tags: ['AoE Damage'], damage_multiplier_score: 2.0 },
+  { name: 'Fabian',         tags: ['True Fear', 'Petrification', 'Decrease Turn Meter', 'AoE Damage'], damage_multiplier_score: 0.3 },
+];
+const wdIG = runWatchdog({ roster: ccRoster, team: ccRoster, contentKey: 'ice_golem', usabilityTier: built });
+const fabIG = wdIG.scores.find(s => s.name === 'Fabian');
+console.log(`    Fabian on ice_golem: composite=${fabIG.composite} control=${fabIG.control}`);
+ok(fabIG.control > 0, 'CC champ gets non-zero control sub-score on Ice Golem');
+ok(fabIG.composite > 0.05, 'CC champ is no longer scored ~0 on Ice Golem (blindness fixed)');
+// CB is CC-immune → control heavily discounted (ccEffectiveness 0.15).
+const wdCB = runWatchdog({ roster: ccRoster, team: ccRoster, contentKey: 'clan_boss', usabilityTier: built });
+const fabCB = wdCB.scores.find(s => s.name === 'Fabian');
+console.log(`    Fabian on clan_boss: composite=${fabCB.composite}`);
+ok(fabIG.composite > fabCB.composite, 'CC contributes MORE on Ice Golem (adds) than CC-immune Clan Boss (immunity guardrail)');
+
 console.log(`\n${fail === 0 ? 'ALL PASS' : 'FAILURES'} — ${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

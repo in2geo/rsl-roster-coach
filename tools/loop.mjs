@@ -151,7 +151,7 @@ for (const b of (Array.isArray(log) ? log : [])) {
   // Blindness (the Apothecary signal): a FIELDED champ the model scores ~0 — a likely tag/model
   // gap. High-value and rare; always surface. Keyed by champ+content so repeats aggregate.
   for (const s of (wd?.scores ?? []).filter(s => s.fielded && s.composite <= 0.02))
-    signals.push({ kind: 'possible_blindness', subject: `${s.name} @ ${contentKey}`, detail: `${s.name} scored ~0 contribution (dmg=${s.damage} sus=${s.sustain} grant=${s.grant}) but was fielded on ${contentKey} — model may be undervaluing its kit (tag gap?)` });
+    signals.push({ kind: 'possible_blindness', subject: `${s.name} @ ${contentKey}`, detail: `${s.name} scored ~0 contribution (dmg=${s.damage} sus=${s.sustain} grant=${s.grant} ctrl=${s.control ?? 0}) but was fielded on ${contentKey} — model may be undervaluing its kit (tag gap?)` });
   // Clan Boss is chest-tier scored — a "Defeat" (team wipes) is the NORMAL end of a key, not a
   // failure, so win/loss-based signals are meaningless for CB (its real reconciliation is
   // damage-vs-chest, a separate TODO). Only non-CB content gets loss/calibration signals.
