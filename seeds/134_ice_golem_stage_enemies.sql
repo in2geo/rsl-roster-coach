@@ -6,9 +6,9 @@
 -- Vengeance revives these, so they are modeled as minions not generic adds). Ally SPD read
 -- as 105 (source showed "105/8" — treated the trailing "/8" as a display artifact).
 --
--- FLAGGED: Stage 21 affinity — source icon reads Void but seed 130 (from the doc comment) has
--- Magic. Not reconciled here; enemy STATS below are unaffected. Confirm before trusting IG-21
--- affinity. IG has its own ATK curve (lower than Spider/Dragon at low stages; converges up top).
+-- Stage 21 affinity CONFIRMED Magic (in-game stage-select screenshot, 2026-07-15) — seed 130
+-- was correct; an earlier misread of the compressed enemy-stat icon suggested Void. No change.
+-- IG has its own ATK curve (lower than Spider/Dragon at low stages; converges up top).
 
 insert into dungeon_stage_enemies (dungeon_id, stage_number, enemy_name, enemy_role, hp, atk, def, spd, res, acc, crit_rate, crit_dmg)
 select d.id, v.* from dungeons d
