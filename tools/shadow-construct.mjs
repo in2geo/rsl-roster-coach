@@ -24,6 +24,10 @@ const SEL = 'id,name,type_id,rarity,role,affinity,faction,base_hp,base_atk,base_
 let db = [];
 for (let f = 0; ; f += 1000) { const d = await rest(`champions?select=${encodeURIComponent(SEL)}&game_id=eq.raid_shadow_legends&limit=1000&offset=${f}`); if (!Array.isArray(d) || !d.length) break; db = db.concat(d); if (d.length < 1000) break; }
 const auraByName = new Map(db.map(c => [c.name, (c.champion_auras || [])]));
+// tag metadata for ACC-gating (is_debuff / bypasses_accuracy_check).
+const tagRows = await rest('tags?select=name,is_debuff,bypasses_accuracy_check');
+const tagMeta = Object.fromEntries((tagRows || []).map(t => [t.name, { is_debuff: t.is_debuff, bypasses_accuracy_check: t.bypasses_accuracy_check }]));
+const evalFloor = (formula, stage) => { try { return Function('"use strict";return (' + String(formula).replace(/stage/gi, stage) + ')')(); } catch { return null; } };
 const snap = JSON.parse(fs.readFileSync('gestal-sync/output/DonBrogni_768ae0d91391eff5.json', 'utf8'));
 const { userChampions } = gc.buildUserChampions(snap.champions, db);
 const mapped = me.mapRoster(userChampions, { accountDev: 'fair' }).mapped;
@@ -44,21 +48,24 @@ async function stageNeeds(dungeonName, stageNumber) {
   if (!st) throw new Error(`no stage row for ${dungeonName} ${stageNumber}`);
   const ph = await rest(`phases?select=id,phase_type&dungeon_stage_id=eq.${st.id}`);
   const phaseGoals = [];
+  let accFloor = null;
   for (const p of ph) {
     const goals = await rest(`goals?select=description,is_informational,goal_solutions(status,goal_solution_tags(tags(name)))&phase_id=eq.${p.id}`);
     phaseGoals.push({ phase_type: p.phase_type, goals });
+    const thr = await rest(`stat_threshold_checks?select=stat,formula&phase_id=eq.${p.id}&stat=eq.acc`);
+    for (const t of (thr || [])) { const f = evalFloor(t.formula, stageNumber); if (f != null) accFloor = Math.max(accFloor ?? 0, f); }
   }
-  return phaseGoals;
+  return { phaseGoals, accFloor };
 }
 
 const CRIO = 'Criodan the Blue';
 for (const [dungeon, key, stage] of [["Dragon's Lair", 'dragon', 20], ["Spider's Den", 'spider', 18], ["Ice Golem's Peak", 'ice_golem', 20]]) {
-  const phaseGoals = await stageNeeds(dungeon, stage);
+  const { phaseGoals, accFloor } = await stageNeeds(dungeon, stage);
   const needs = deriveNeeds(phaseGoals);
-  const { team, leader, needCoverage } = constructTeam(mapped, needs, { contentKey: key, eligible });
-  const pot = potentialBuilds(mapped, needs, team, { isBuilt, contentKey: key });
+  const { team, leader, needCoverage } = constructTeam(mapped, needs, { contentKey: key, eligible, tagMeta, accFloor });
+  const pot = potentialBuilds(mapped, needs, team, { isBuilt, contentKey: key, tagMeta, accFloor });
 
-  console.log(`\n========== ${dungeon} — Stage ${stage} (${key}) ==========`);
+  console.log(`\n========== ${dungeon} — Stage ${stage} (${key}) — ACC floor ${accFloor ?? 'n/a'} ==========`);
   console.log('NEEDS (from DB, per phase):');
   for (const n of needCoverage) console.log(`  [${n.phase}/${n.role}] ${n.description.slice(0, 60)} ⟶ ${n.covered_by.length ? n.covered_by.join(', ') : '*** UNCOVERED ***'}`);
   console.log('REALIZED TEAM:', team.map(c => c.name).join(', '));

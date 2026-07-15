@@ -143,7 +143,16 @@ Every insight cites EVIDENCE (a game mechanic and/or a captured run) — never a
 ---
 
 ## INS-0008 — Coverage must be RELIABILITY-weighted (shadow-constructor finding, 2026-07-15)
-- **Status:** `proposed` — surfaced by the shadow team-constructor run; next build step.
+- **Status:** `encoded` (ACC-vs-floor dimension) — 2026-07-15; other dimensions still `proposed`.
+- **BUILT + VALIDATED:** ACC-reliability weighting in `lib/team-constructor.js` (`accReliability`,
+  `coverageReliability` uses the champ's BEST covering method, `needStrength` = max(reliable AoE-clear,
+  ACC-gated CC-lock)). Built coverers scored at CURRENT ACC; potential (unbuilt) candidates at built
+  potential. RESULT: Criodan the Blue now SURFACES as a wave-control upgrade for Dragon-20 (str 1.2 vs
+  built 0.5, because Ninja's AoE Freeze at ACC 48 vs the 225 floor ≈ 21% reliable) AND Spider-18, and
+  correctly does NOT surface for Ice Golem (minion need lists AoE Stun/Damage/Block Revive, not Freeze —
+  revive → need dead). The 3-dungeon Criodan test passes. `tools/shadow-construct.mjs`.
+- **STILL `proposed` (remaining reliability dimensions):** affinity (per-stage enemy affinity — data gap),
+  debuff potency by rarity, repeatability across sequential waves (INS-0009, needs tag→skill-cooldown link).
 - **Finding:** the shadow constructor (`lib/team-constructor.js` + `tools/shadow-construct.mjs`) builds
   sensible phase-aware teams from DB needs, BUT the Criodan validation exposed that BINARY (and even
   magnitude-based) coverage isn't enough — it must be weighted by RELIABILITY. Concrete: on Dragon-20 the
