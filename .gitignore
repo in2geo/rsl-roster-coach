@@ -12,3 +12,4 @@ output/
 knowledge/loop-state.json
 knowledge/pending-review.md
 knowledge/model-accuracy.md
+knowledge/calibration-proposals.md
