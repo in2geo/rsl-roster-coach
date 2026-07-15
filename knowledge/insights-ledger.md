@@ -121,6 +121,38 @@ Every insight cites EVIDENCE (a game mechanic and/or a captured run) — never a
 
 ---
 
+## INS-0010 — Auto-battle SKILL AI settings (per-skill config + team-level resolver)
+- **Status:** `proposed` (Mike design, 2026-07-15) — new feature area; schema can land now, resolver later.
+- **Problem:** each skill on a champ+content has an optimal AI setting (always/never/conditional), but the
+  optimum is TEAM-DEPENDENT (two Decrease DEF → only one should fire; which depends on speed/reliability/
+  cooldown). Team-level problem, not a data lookup. Skill-INTERACTION knowledge (e.g. Xenomorph A2/A3 break
+  his Perfect Veil window → never_use) is NOT derivable from tags/reliability — this is where it lives.
+- **Layer 1 — `skill_ai_configs` table** (per champion × skill_slot × content_key): recommended_setting
+  (always_use|never_use|conditional|default), condition, priority, ai_condition_notes, auto_reliable,
+  rationale, validated, confidence_pct. Passives = always `default` (documenting behavior). First data:
+  Xenomorph CB — A1 always_use, A2/A3 never_use (Veil window), validated=false until run data.
+- **Layer 2 — team resolver** (runs AFTER selection/constructor, BEFORE explanation): resolves conflicts
+  → per-champ AI config for THIS team. Conflict types: REDUNDANCY (two same debuff → keep higher
+  reliability×uptime, disable other), DEPENDENCY ORDERING (DEF Down before dealers — flag if speed tune
+  wrong; can't fix), SATURATION (two poisoners — both needed for stacks?), BUFF-EXTENSION collisions.
+- **Layer 3 — validation:** add `ai_config_used` (jsonb snapshot of actual settings run) to
+  `run_reconciliations`; compare outcomes across config variants for the same team → promote validated=true.
+- **Explanation output:** a clean per-champ skill checklist ("Xenomorph: A1 only, disable A2/A3. Kael: all
+  enabled, A3 priority 1.").
+- **RECONCILIATION with existing work:**
+  1. Resolver's "reliability × uptime" = our `reliabilityFactor` + ACC-vs-floor weighting (INS-0008) — reuse.
+  2. `auto_reliable`: `champion_skills.auto_reliable` = GLOBAL default (migration written); `skill_ai_configs.
+     auto_reliable` = per-content OVERRIDE (null → fall back). No duplication.
+  3. `ai_config_used` column is cheap; CAPTURING it (battle reader reading skill-AI toggles) is likely a
+     data gap (like durationSeconds was) — confirm feasibility, else can't tell "ran right" from "wrong config".
+  4. Loop can DRIVE annotation: flag recommended champs with no `skill_ai_config` for the content = the
+     on-demand annotation trigger (same philosophy as the motion surfacing blindness/gaps).
+- **Build order (Mike):** (1) schema now [small]; (2) annotate on-demand starting most-used CB champs;
+  (3) resolver for the 2 common conflicts (redundant debuffs + skill-disable ≈ 80%); (4) `ai_config_used`.
+  Full run-data-backed confidence = 6-12mo data accumulation (data is the long pole, not engineering).
+
+---
+
 ## INS-0009 — Ability economy across SEQUENTIAL waves: cooldowns carry over (Mike, 2026-07-15)
 - **Status:** `proposed` — refines INS-0007 (waves) + INS-0008 (coverage sufficiency).
 - **Claim:** Dragon has ~3 SEQUENTIAL waves before/including the boss, and **cooldowns CARRY OVER between
