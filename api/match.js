@@ -121,6 +121,8 @@ export default async function handler(req, res) {
       leader:                 matchResult.leader ?? null,
       synergies:              matchResult.synergies ?? [],
       stun_matrix:            matchResult.stun_matrix,
+      contribution:           matchResult.contribution ?? null,
+      watchdog:               matchResult.watchdog ?? null,
       gaps:                   matchResult.gaps,
       threshold_results:      matchResult.threshold_results,
       ascension_gaps:         matchResult.ascension_gaps,

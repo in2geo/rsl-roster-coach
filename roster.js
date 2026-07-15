@@ -619,9 +619,10 @@ function openDetailSheet(champ, rarity) {
   const masteryVal = existing?.mastery_tier ?? 'None';
   renderMastery(sheet, masteryVal);
 
-  // Booked toggle
+  // Booked toggle — default YES for Rares (cheap/abundant books → credit max skills, INS-0003);
+  // No for Epic/Legendary/Mythical (scarce books). A saved value always wins.
   const bookedChk = qs('#sheet-booked', sheet);
-  if (bookedChk) bookedChk.checked = existing?.is_booked ?? false;
+  if (bookedChk) bookedChk.checked = existing?.is_booked ?? (rarity === 'Rare');
 
   // Masteries only matter for level-60 champs (Warmaster/Giant Slayer unlock at 60): show the
   // boss-mastery question only then, and re-evaluate when the level input changes.

@@ -514,7 +514,9 @@ already imports `damageSourceIgnoresDef` and enforces the §1 invariant at load.
 - Screen 3: Detail sheet on tap. Required: level (1-60), stars (1-6),
   gear tier (Starter/Dungeon/Strong/God Tier). Optional behind toggle:
   ascension (defaults to stars-1), mastery (defaults to None), booked
-  (always defaults to No — never pre-checked).
+  (defaults to No for Epic/Legendary/Mythical — never pre-checked; **defaults
+  to YES for RARE**, whose books are cheap/abundant, so the engine credits
+  Rares at max skills — see INS-0003 in `knowledge/insights-ledger.md`).
 - Screen 4 (returning player): Roster grid with edit capability. "Add
   champion" button. "Get recommendation" at bottom. Content selection
   happens after, not before.
