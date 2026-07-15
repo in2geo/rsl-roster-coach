@@ -129,9 +129,18 @@ Every insight cites EVIDENCE (a game mechanic and/or a captured run) — never a
   runs test something OTHER than what the model predicts. You cannot calibrate a prediction against runs that
   never made it. (Compounded by gear-tier miscalibration: the engine's recommended STAGE is often off, so even
   a player's "best stage" won't match the engine's number.)
-- **REFRAME of the whole Deep Blue data story:** the blocker is NOT volume (corrected once already from "1
-  account" → 3) and NOT account count — it's on-spec RELEVANCE. Each on-spec run is worth ~76 passive captures
-  for calibration. Passive farming captures barely move calibration.
+- **CORRECTION (Mike, 2026-07-15):** the divergence between model picks and fielded teams is NOT neutral
+  "players farm their own way" — it's that **the model picked BAD teams, so the player fielded their own
+  BETTER ones** (coverage benched Brogni, fielded dead-CC Sun Wukong). Consequence: the "agreement with
+  winning teams" metric is NOT circular (the player did NOT field the model's picks) — the winning fielded
+  teams are INDEPENDENT EXPERT GROUND TRUTH, and the model's low agreement = the model is bad at picking.
+  Unflattering read incl. the constructor: coverage agrees with wins 3.68/5, **constructor only 2.59/5** —
+  the constructor is currently FURTHER from proven teams, NOT closer. The measurement does not support
+  "constructor is better"; possibly the opposite. (Say it plainly — that's what shadow-measurement is for.)
+- **REFRAME of the whole Deep Blue data story:** the blocker is NOT volume (corrected from "1 account" → 3)
+  and NOT account count — it's model quality measured against the winning human teams we ALREADY have. Those
+  ~76 winning teams are a TRAINING TARGET: the model must reproduce (then beat) them. On-spec runs (running
+  the model's picks) validate the FIXED picks LATER; they're not needed to start improving.
 - **The path to a calibrated/trusted model = DELIBERATE ON-SPEC VALIDATION RUNS:**
   1. the model produces a recommended TEAM + STAGE for a dungeon;
   2. the user runs EXACTLY that (recommended team, recommended stage, auto);
