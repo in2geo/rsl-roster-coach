@@ -121,6 +121,30 @@ Every insight cites EVIDENCE (a game mechanic and/or a captured run) — never a
 
 ---
 
+## INS-0012 — The calibration blocker is ON-SPEC runs, not data volume (actuator finding)
+- **Status:** `proposed` — surfaced by the calibration actuator 2026-07-15; reframes the path to Deep Blue.
+- **Finding:** the calibration actuator (loop → `knowledge/calibration-proposals.md`, report-only, guardrailed)
+  found only **1 of 76** non-CB runs is ON-SPEC (fielded ≥3 of the recommended 5 AND attempted the recommended
+  stage). We have 76 runs across 3 accounts, but players farm THEIR OWN teams at THEIR OWN stages — so ~75/76
+  runs test something OTHER than what the model predicts. You cannot calibrate a prediction against runs that
+  never made it. (Compounded by gear-tier miscalibration: the engine's recommended STAGE is often off, so even
+  a player's "best stage" won't match the engine's number.)
+- **REFRAME of the whole Deep Blue data story:** the blocker is NOT volume (corrected once already from "1
+  account" → 3) and NOT account count — it's on-spec RELEVANCE. Each on-spec run is worth ~76 passive captures
+  for calibration. Passive farming captures barely move calibration.
+- **The path to a calibrated/trusted model = DELIBERATE ON-SPEC VALIDATION RUNS:**
+  1. the model produces a recommended TEAM + STAGE for a dungeon;
+  2. the user runs EXACTLY that (recommended team, recommended stage, auto);
+  3. the user reports the outcome (+ AI settings — reader can't capture them, [[ai-settings-manual-entry]]);
+  4. the actuator calibrates on those on-spec runs (+ contribution/constructor get validated: their picks
+     were actually FIELDED, so agreement→outcome becomes a real signal, not the circular one in model-accuracy).
+  Organic version: the app being USED at scale (players run its picks) generates on-spec data for free. To get
+  there NOW: deliberate validation runs — high-value, low-volume (a handful per dungeon >> hundreds of farms).
+- **This is the last mile:** after all the machinery (knowledge, shadow models, measurement, actuator), what
+  promotes the model from shadow→trusted is a simple human-in-the-loop A/B protocol, gated on on-spec runs.
+
+---
+
 ## INS-0011 — Ice Golem survival mechanics: Decrease ATK mitigation + trash-wave gap (cross-check)
 - **Status:** `proposed` — from a Gemini cross-check 2026-07-15 (mechanical facts extracted; editorial
   champion picks NOT copied). Two VERIFIED content gaps + refinements.
