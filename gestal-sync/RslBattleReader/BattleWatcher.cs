@@ -493,25 +493,37 @@ internal sealed class BattleWatcher(string outputPath)
         return ReadAllySurvivalDirect();
     }
 
+    // Dungeons whose result screen exposes per-hero damage via BattleFinishDungeonDialogContext
+    // (same HeroBattleStatsContext structure as Clan Boss; solved 2026-07-15, verified on IG-10 loss).
+    private static readonly HashSet<string> DamageDungeons = new()
+        { "Ice Golem's Peak", "Fire Knight's Castle", "Spider's Den", "Dragon's Lair" };
+
     /// <summary>
-    /// For a Clan Boss capture, reads total + per-hero damage from the live result dialog's
-    /// view-model (CbDamageReader — the file and combat StatisticsByHero carry no damage) and
-    /// stamps the snapshot. The dialog can appear a beat after the file write, so it retries
-    /// briefly. No-op for non-CB battles.
+    /// Reads total + per-hero damage from the live result dialog's view-model and stamps the
+    /// snapshot. Clan Boss uses the AllianceBoss dialog; the four dungeons use the Dungeon dialog
+    /// (same hero-stats structure). The file/combat StatisticsByHero carry no damage. The dialog can
+    /// appear a beat after the file write, so it retries briefly. No-op for other content.
     /// </summary>
-    private void TryAttachClanBossDamage(BattleResultSnapshot snapshot)
+    private void TryAttachBattleDamage(BattleResultSnapshot snapshot)
     {
-        if (snapshot.Dungeon != "Clan Boss") return;
+        bool isCb = snapshot.Dungeon == "Clan Boss";
+        bool isDungeon = DamageDungeons.Contains(snapshot.Dungeon ?? "");
+        if (!isCb && !isDungeon) return;
         var mem = _mem;
         if (mem is null) return;
+        string tag = isCb ? "cbdamage" : "dungeondamage";
 
+        // Retry, keeping the result with the MOST heroes — the dialog can appear a beat after the
+        // file write and the per-hero stat contexts can populate progressively.
         CbDamageReader.CbResult? res = null;
-        for (int attempt = 0; attempt < 3 && res is null; attempt++)
+        for (int attempt = 0; attempt < 5; attempt++)
         {
-            res = CbDamageReader.Capture(mem);
-            if (res is null) Thread.Sleep(200);
+            var r = isCb ? CbDamageReader.Capture(mem) : CbDamageReader.CaptureDungeon(mem);
+            if (r is not null && (res is null || r.Heroes.Count > res.Heroes.Count)) res = r;
+            if (res is not null && res.Heroes.Count >= 5) break;   // full team — done
+            Thread.Sleep(200);
         }
-        if (res is null) { Console.WriteLine("[cbdamage] CB battle but result dialog not readable"); return; }
+        if (res is null) { Console.WriteLine($"[{tag}] {snapshot.Dungeon} battle but result dialog not readable"); return; }
 
         snapshot.TotalDamageDealt = res.TotalDamage;
 
@@ -523,8 +535,14 @@ internal sealed class BattleWatcher(string outputPath)
             snapshot.Heroes = snapshot.Heroes
                 .Select(h => bySlot.TryGetValue(h.Slot, out var d) ? h with { Damage = d } : h)
                 .ToList();
+            // CaptureDungeon matches EVERY HeroBattleStatsContext by class — in a dungeon boss room that
+            // also includes the BOSS (FK = 5 allies + Fyro = 6 contexts), whose "damage" is damage IT dealt
+            // to you, not team output. The boss context is the one NOT joined to a roster hero, so the TEAM
+            // total is the sum of the joined per-hero damages — NOT res.TotalDamage (which folds in the boss).
+            long teamTotal = snapshot.Heroes.Sum(h => h.Damage ?? 0);
+            if (teamTotal > 0) snapshot.TotalDamageDealt = teamTotal;
         }
-        Console.WriteLine($"[cbdamage] total damage dealt = {res.TotalDamage} over {res.Heroes.Count} hero(es)");
+        Console.WriteLine($"[{tag}] team damage = {snapshot.TotalDamageDealt} (raw {res.TotalDamage} over {res.Heroes.Count} context(s))");
     }
 
     // ── BattleResult reader ───────────────────────────────────────────────────
@@ -755,7 +773,8 @@ internal sealed class BattleWatcher(string outputPath)
                     // dumps: recovers Pelops, still rejects Seeker/Valerie). Re-slot
                     // 0..n in file order and attach the canonical name + full typeId.
                     int slot = 0;
-                    snapshot.Heroes = snapshot.Heroes
+                    var preFilter = snapshot.Heroes;   // keep the raw file list for recovery + debug
+                    snapshot.Heroes = preFilter
                         .Where(h => roster.TryGetValue(h.HeroId, out var c) && (c.TypeId & 0xFF) == (h.TypeId & 0xFF))
                         .Select(h => h with
                         {
@@ -764,6 +783,8 @@ internal sealed class BattleWatcher(string outputPath)
                             Name   = roster[h.HeroId].Name,
                         })
                         .ToList();
+                    if (_debugHeroes)
+                        try { File.AppendAllText(HeroDebugPath, $"[filter] file={preFilter.Count} kept={snapshot.Heroes.Count} dropped=[{string.Join(", ", preFilter.Where(h => !(roster.TryGetValue(h.HeroId, out var c) && (c.TypeId & 0xFF) == (h.TypeId & 0xFF))).Select(h => $"hid={h.HeroId} fileTid=0x{h.TypeId:X} inRoster={roster.ContainsKey(h.HeroId)}"))}]\n"); } catch { }
 
                     // Leader (aura source) = slot 0 = first hero in file order =
                     // left-most on the battle-result screen. Confirmed on labeled
@@ -787,17 +808,48 @@ internal sealed class BattleWatcher(string outputPath)
                     // team slot with a typeId low-byte identity check (ascension-tolerant). This is
                     // the working survival source — StatisticsByHero above is empty post-battle.
                     var survival = ReadLatestSurvival();
+
+                    // RECOVER any fielded champ the file filter dropped (the same failure its own comment
+                    // flags — "rejects Seeker/Valerie" — when the file's typeId low-byte is garbage). A
+                    // dropped file hero whose heroId IS in the roster is a valid champ: trust the heroId
+                    // (roster gives the correct name + typeId) and confirm it is a REAL ally by matching its
+                    // typeId low-byte to the combat-memory ally team (survival). Additive; identity only —
+                    // true slot + survival are assigned in the pass below.
+                    if (survival.Count > snapshot.Heroes.Count)
+                    {
+                        var have = snapshot.Heroes.Select(h => h.TypeId & 0xFF).ToHashSet();
+                        foreach (var h in preFilter)
+                        {
+                            if (!roster.TryGetValue(h.HeroId, out var c)) continue;
+                            int lb = c.TypeId & 0xFF;
+                            if (have.Contains(lb) || !survival.Values.Any(sv => (sv.typeId & 0xFF) == lb)) continue;
+                            snapshot.Heroes.Add(new BattleHero { HeroId = h.HeroId, TypeId = c.TypeId, Name = c.Name });
+                            have.Add(lb);
+                            if (_debugHeroes) try { File.AppendAllText(HeroDebugPath, $"[recover] +{c.Name} tid=0x{c.TypeId:X}\n"); } catch { }
+                        }
+                    }
+
+                    // Assign TRUE team slots + survival from the combat-memory ally team, CONSUMING each
+                    // slot once. The file's re-index (0..n) shifts every hero after a dropped one, which
+                    // corrupts the screen-order damage join AND the survival lookup; true slots fix both
+                    // and prevent a recovered hero from colliding with a re-indexed one.
                     if (survival.Count > 0)
-                        snapshot.Heroes = snapshot.Heroes
-                            .Select(h => survival.TryGetValue(h.Slot, out var sv) && (sv.typeId & 0xFF) == (h.TypeId & 0xFF)
-                                ? h with { Survived = sv.survived }
-                                : h)
-                            .ToList();
+                    {
+                        var avail = survival.OrderBy(kv => kv.Key).ToList();
+                        var used = new HashSet<int>();
+                        snapshot.Heroes = snapshot.Heroes.Select(h =>
+                        {
+                            int i = avail.FindIndex(kv => !used.Contains(kv.Key) && (kv.Value.typeId & 0xFF) == (h.TypeId & 0xFF));
+                            if (i < 0) return h;
+                            used.Add(avail[i].Key);
+                            return h with { Slot = avail[i].Key, Survived = avail[i].Value.survived };
+                        }).OrderBy(h => h.Slot).ToList();
+                    }
 
                     // Clan Boss total damage — read from the result dialog's view-model in
                     // memory (the file/StatisticsByHero carry no damage). Gated to CB; feeds
                     // the chest-tier pipeline.
-                    TryAttachClanBossDamage(snapshot);
+                    TryAttachBattleDamage(snapshot);
 
                     var entry = BattleLogEntry.From(snapshot);
 

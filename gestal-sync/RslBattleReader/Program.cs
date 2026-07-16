@@ -83,6 +83,39 @@ if (args.Contains("--cbdamage"))
     return;
 }
 
+// Diagnostic: list every Il2CppClass in a namespace (find sibling classes of a known one).
+// Usage: --nsclasses Client.ViewModel.Contextes.BattleFinishDialog
+{
+    int ni = Array.IndexOf(args, "--nsclasses");
+    if (ni >= 0 && ni + 1 < args.Length)
+    {
+        RslBattleReader.NsClassLister.Run(args[ni + 1]);
+        return;
+    }
+}
+
+// Read per-hero DUNGEON result damage (Spider/IG/Dragon/FK). Result screen must be open.
+// Usage: --dungeondamage
+if (args.Contains("--dungeondamage")) { RslBattleReader.CbDamageReader.DungeonRun(); return; }
+
+// Diagnostic: find HeroBattleStatsContext instances directly + decode damage. Usage: --herostats [max]
+{
+    int hi = Array.IndexOf(args, "--herostats");
+    if (hi >= 0) { int m = (hi + 1 < args.Length && int.TryParse(args[hi + 1], out var v)) ? v : 40; RslBattleReader.CbDamageReader.HeroStatsScan(m); return; }
+}
+
+// Diagnostic: dump the dungeon result dialog's slots to confirm the hero-list offset + spot a
+// wave/phase field. Result screen must be open. Usage: --dungeoninspect [slots=80]
+{
+    int di = Array.IndexOf(args, "--dungeoninspect");
+    if (di >= 0)
+    {
+        int slots = (di + 1 < args.Length && int.TryParse(args[di + 1], out var s)) ? s : 80;
+        RslBattleReader.CbDamageReader.DungeonInspect(slots);
+        return;
+    }
+}
+
 // Diagnostic: find all locations pointing at an object + their containing class.
 // Usage: --refs <hexObjAddr> [maxBackHex=600]
 {

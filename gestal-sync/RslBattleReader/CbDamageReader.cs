@@ -30,6 +30,7 @@ internal static class CbDamageReader
 {
     private const string Ns   = "Client.ViewModel.Contextes.BattleFinishDialog";
     private const string Dialog = "BattleFinishAllianceBossDialogContext";
+    private const string DungeonDialog = "BattleFinishDungeonDialogContext"; // Spider/IG/Dragon/FK
 
     private const int Dlg_HeroList  = 0x160; // UserContextList<HeroBattleStatsContext>*
     private const int UCL_List      = 0x078; // List<HeroBattleStatsContext>*
@@ -58,22 +59,172 @@ internal static class CbDamageReader
         proc?.Dispose();
     }
 
+    /// <summary>Diagnostic: find HeroBattleStatsContext instances directly (by class) and decode
+    /// each one's damage/defense/heal via the CB chain. The current battle's heroes show the
+    /// on-screen numbers; prints each instance's ADDRESS so we can --refs back to the container.
+    /// Passive read. Usage: --herostats [max=40]</summary>
+    public static void HeroStatsScan(int max = 40)
+    {
+        var (mem, proc) = Open();
+        if (mem is null) return;
+        using (mem)
+        {
+            var gameAsm = mem.FindModuleBase("GameAssembly.dll");
+            var klass = Il2CppClassResolver.Resolve(mem, gameAsm, 0, "HeroBattleStatsContext", Ns);
+            if (klass == nint.Zero) { Console.WriteLine("[herostats] HeroBattleStatsContext class not found."); proc?.Dispose(); return; }
+            int shown = 0;
+            var buf = new byte[8 * 1024 * 1024];
+            foreach (var (baseAddr, size) in mem.EnumerateReadableRegions())
+            {
+                for (long off = 0; off < size && shown < max; off += buf.Length)
+                {
+                    int chunk = (int)Math.Min(buf.Length, size - off);
+                    var view = chunk == buf.Length ? buf : new byte[chunk];
+                    if (!mem.TryReadBytes((nint)((long)baseAddr + off), view)) continue;
+                    for (int i = 0; i + 8 <= chunk && shown < max; i += 8)
+                    {
+                        if (BitConverter.ToInt64(view, i) != (long)klass) continue;
+                        var hero = (nint)((long)baseAddr + off + i);
+                        long dmg = ReadStat(mem, hero, HBSC_Damage);
+                        long def = ReadStat(mem, hero, HBSC_Defense);
+                        long heal = ReadStat(mem, hero, HBSC_Healing);
+                        if (dmg <= 0 && def <= 0 && heal <= 0) continue; // skip empty/stale
+                        Console.WriteLine($"  @0x{hero:X}  damage={dmg,12} defense={def,10} heal={heal,10}");
+                        shown++;
+                    }
+                }
+            }
+            if (shown == 0) Console.WriteLine("[herostats] no non-empty HeroBattleStatsContext (open a result screen).");
+        }
+        proc?.Dispose();
+    }
+
+    /// <summary>--dungeondamage: read the live dungeon result dialog (Spider/IG/Dragon/FK).</summary>
+    public static void DungeonRun()
+    {
+        var (mem, proc) = Open();
+        if (mem is null) return;
+        using (mem)
+        {
+            var res = CaptureDungeon(mem);
+            if (res is null) { Console.WriteLine("[dungeondamage] no dungeon result dialog open (or hero-list offset differs — try --dungeoninspect)."); }
+            else
+            {
+                foreach (var h in res.Heroes)
+                    Console.WriteLine($"  slot {h.Slot}: damage={h.Damage,12}  defense={h.Defense,10}  heal={h.Healing,10}");
+                Console.WriteLine($"\n[dungeondamage] {res.Heroes.Count} hero(es), total damage dealt = {res.TotalDamage}");
+            }
+        }
+        proc?.Dispose();
+    }
+
     public sealed record HeroDamage(int Slot, long Damage, long Defense, long Healing);
     public sealed record CbResult(IReadOnlyList<HeroDamage> Heroes, long TotalDamage);
 
     /// <summary>Reads the live CB result dialog, or null if none is open. Safe to poll.</summary>
-    public static CbResult? Capture(ProcessMemory mem)
+    public static CbResult? Capture(ProcessMemory mem) => CaptureFrom(mem, Dialog, Dlg_HeroList);
+
+    // The dungeon result dialog nests its hero list differently from CB (not a simple
+    // UserContextList at a dialog slot). But the 5 live HeroBattleStatsContext objects for the
+    // current battle are allocated CONTIGUOUSLY at a fixed stride, cleanly distinct from the stale/
+    // uninitialised contexts (whose damage/def/heal are sentinels: -1, 0x120000, or huge garbage).
+    // So: GATE on the dungeon dialog existing (result screen open), then read the contiguous run of
+    // valid hero contexts. Verified live on IG-10 defeat 2026-07-15 (returned the exact screen
+    // damages). Stride confirmed 0x1A0; team is stored in reverse screen order.
+    private const int Hero_Stride = 0x1A0;
+    // 0x120000 is a documented SENTINEL for an uninitialised/stale context (see the class notes). It
+    // sits inside the "sane" range and was slipping through as a phantom 6th hero (verified live: an
+    // extra 0x120000=1,179,648 context in both FK and IG captures, inflating the raw total). Exclude it.
+    private static bool ValidStat(long v) => v >= 0 && v < 1_000_000_000 && v != 0x120000;
+
+    public static CbResult? CaptureDungeon(ProcessMemory mem)
+    {
+        var gameAsm = mem.FindModuleBase("GameAssembly.dll");
+        if (gameAsm == nint.Zero) return null;
+        // Gate: a dungeon result dialog must be live (else we'd read stale contexts between battles).
+        var dlgKlass = Il2CppClassResolver.Resolve(mem, gameAsm, 0, DungeonDialog, Ns);
+        if (dlgKlass == nint.Zero || !AnyInstanceExists(mem, dlgKlass)) return null;
+
+        var heroKlass = Il2CppClassResolver.Resolve(mem, gameAsm, 0, "HeroBattleStatsContext", Ns);
+        if (heroKlass == nint.Zero) return null;
+
+        // Collect all HeroBattleStatsContext instances whose 3 stats are all in a sane range.
+        var valid = new List<(nint addr, long dmg, long def, long heal)>();
+        var buf = new byte[8 * 1024 * 1024];
+        foreach (var (baseAddr, size) in mem.EnumerateReadableRegions())
+        {
+            for (long off = 0; off < size; off += buf.Length)
+            {
+                int chunk = (int)Math.Min(buf.Length, size - off);
+                var view = chunk == buf.Length ? buf : new byte[chunk];
+                if (!mem.TryReadBytes((nint)((long)baseAddr + off), view)) continue;
+                for (int i = 0; i + 8 <= chunk; i += 8)
+                {
+                    if (BitConverter.ToInt64(view, i) != (long)heroKlass) continue;
+                    var h = (nint)((long)baseAddr + off + i);
+                    long d = ReadStat(mem, h, HBSC_Damage), df = ReadStat(mem, h, HBSC_Defense), hl = ReadStat(mem, h, HBSC_Healing);
+                    if (ValidStat(d) && ValidStat(df) && ValidStat(hl) && (d > 0 || df > 0 || hl > 0))
+                        valid.Add((h, d, df, hl));
+                }
+            }
+        }
+        if (valid.Count < 2) return null;
+        valid.Sort((a, b) => a.addr.CompareTo(b.addr));
+
+        // The current battle's heroes are the valid (non-sentinel) contexts while the dialog is
+        // open. A full team is <= 6; take them all (address-sorted = reverse screen order). If more
+        // than 6 slipped through (stale contexts not reset), fall back to the largest contiguous
+        // run at Hero_Stride — the freshly-allocated team is contiguous even when stale ones aren't.
+        List<(nint addr, long dmg, long def, long heal)> best;
+        if (valid.Count <= 6) best = valid;
+        else
+        {
+            best = new(); var run = new List<(nint addr, long dmg, long def, long heal)> { valid[0] };
+            for (int i = 1; i < valid.Count; i++)
+            {
+                if ((long)valid[i].addr - (long)valid[i - 1].addr == Hero_Stride) run.Add(valid[i]);
+                else { if (run.Count > best.Count) best = new(run); run = new() { valid[i] }; }
+            }
+            if (run.Count > best.Count) best = run;
+        }
+        if (best.Count < 2) return null;
+
+        best.Reverse(); // contexts are stored in reverse screen order → slot 0 = leader
+        var heroes = new List<HeroDamage>(best.Count);
+        long total = 0;
+        for (int i = 0; i < best.Count; i++) { heroes.Add(new HeroDamage(i, best[i].dmg, best[i].def, best[i].heal)); if (best[i].dmg > 0) total += best[i].dmg; }
+        return new CbResult(heroes, total);
+    }
+
+    private static bool AnyInstanceExists(ProcessMemory mem, nint klass)
+    {
+        var buf = new byte[8 * 1024 * 1024];
+        foreach (var (baseAddr, size) in mem.EnumerateReadableRegions())
+            for (long off = 0; off < size; off += buf.Length)
+            {
+                int chunk = (int)Math.Min(buf.Length, size - off);
+                var view = chunk == buf.Length ? buf : new byte[chunk];
+                if (!mem.TryReadBytes((nint)((long)baseAddr + off), view)) continue;
+                for (int i = 0; i + 8 <= chunk; i += 8)
+                    if (BitConverter.ToInt64(view, i) == (long)klass) return true;
+            }
+        return false;
+    }
+
+    /// <summary>Generalized capture: anchor on <paramref name="dialogClass"/>, walk the hero list at
+    /// <paramref name="heroListOffset"/>, read each hero's damage/defense/healing.</summary>
+    public static CbResult? CaptureFrom(ProcessMemory mem, string dialogClass, int heroListOffset)
     {
         var gameAsm = mem.FindModuleBase("GameAssembly.dll");
         if (gameAsm == nint.Zero) return null;
 
-        var klass = Il2CppClassResolver.Resolve(mem, gameAsm, 0, Dialog, Ns);
+        var klass = Il2CppClassResolver.Resolve(mem, gameAsm, 0, dialogClass, Ns);
         if (klass == nint.Zero) return null;
 
-        var dialog = FindLiveDialog(mem, klass);
+        var dialog = FindLiveDialog(mem, klass, heroListOffset);
         if (dialog == nint.Zero) return null;
 
-        var ucl = mem.ReadPointer(dialog + Dlg_HeroList);
+        var ucl = mem.ReadPointer(dialog + heroListOffset);
         if (!ProcessMemory.IsValidPointer(ucl)) return null;
         var list = mem.ReadPointer(ucl + UCL_List);
         if (!ProcessMemory.IsValidPointer(list)) return null;
@@ -99,7 +250,7 @@ internal static class CbDamageReader
 
     /// <summary>Scans the heap for the one live dialog instance. Prefers an instance whose
     /// hero list resolves to a non-empty size (a stale dialog's list has been torn down).</summary>
-    private static nint FindLiveDialog(ProcessMemory mem, nint klass)
+    private static nint FindLiveDialog(ProcessMemory mem, nint klass, int heroListOffset)
     {
         nint best = nint.Zero;
         var buf = new byte[8 * 1024 * 1024];
@@ -114,7 +265,7 @@ internal static class CbDamageReader
                 {
                     if (BitConverter.ToInt64(view, i) != (long)klass) continue;
                     var inst = (nint)((long)baseAddr + off + i);
-                    var ucl = mem.ReadPointer(inst + Dlg_HeroList);
+                    var ucl = mem.ReadPointer(inst + heroListOffset);
                     if (!ProcessMemory.IsValidPointer(ucl)) continue;
                     var list = mem.ReadPointer(ucl + UCL_List);
                     if (!ProcessMemory.IsValidPointer(list)) continue;
@@ -125,6 +276,80 @@ internal static class CbDamageReader
             }
         }
         return best;
+    }
+
+    /// <summary>Diagnostic: find the live dungeon dialog instance and dump its first N pointer slots
+    /// (annotated with any that resolve to a UserContextList whose List size is a plausible team
+    /// count). Used to CONFIRM the hero-list offset for BattleFinishDungeonDialogContext and to spot
+    /// a wave/phase field. Passive read. Usage: --dungeoninspect [slots=80]</summary>
+    public static void DungeonInspect(int slots = 80)
+    {
+        var (mem, proc) = Open();
+        if (mem is null) return;
+        using (mem)
+        {
+            var gameAsm = mem.FindModuleBase("GameAssembly.dll");
+            var klass = Il2CppClassResolver.Resolve(mem, gameAsm, 0, DungeonDialog, Ns);
+            if (klass == nint.Zero) { Console.WriteLine($"[dungeoninspect] class {DungeonDialog} not found."); proc?.Dispose(); return; }
+            // find ANY instance of the class (open result screen).
+            nint inst = nint.Zero;
+            var buf = new byte[8 * 1024 * 1024];
+            foreach (var (baseAddr, size) in mem.EnumerateReadableRegions())
+            {
+                for (long off = 0; off < size && inst == nint.Zero; off += buf.Length)
+                {
+                    int chunk = (int)Math.Min(buf.Length, size - off);
+                    var view = chunk == buf.Length ? buf : new byte[chunk];
+                    if (!mem.TryReadBytes((nint)((long)baseAddr + off), view)) continue;
+                    for (int i = 0; i + 8 <= chunk; i += 8)
+                        if (BitConverter.ToInt64(view, i) == (long)klass) { inst = (nint)((long)baseAddr + off + i); break; }
+                }
+                if (inst != nint.Zero) break;
+            }
+            if (inst == nint.Zero) { Console.WriteLine("[dungeoninspect] no live instance (open a dungeon result screen)."); proc?.Dispose(); return; }
+            Console.WriteLine($"[dungeoninspect] {DungeonDialog} instance @ 0x{inst:X}.");
+            // Try to POSITIVELY identify the hero list: for each slot, test it as a UserContextList
+            // (list @ +0x078) and as a direct List<> (items @ +0x10, size @ +0x18). For any list of
+            // size 3-6, decode element[0]'s damage via the CB chain (+0x090 → +0x50 → +0x28) and
+            // print it — a match to an on-screen damage confirms the hero-list offset + wrapper shape.
+            long ReadHeroDamage(nint hero) {
+                if (!ProcessMemory.IsValidPointer(hero)) return -1;
+                var sc = mem.ReadPointer(hero + HBSC_Damage); if (!ProcessMemory.IsValidPointer(sc)) return -1;
+                var pr = mem.ReadPointer(sc + StatCtx_Prop);  if (!ProcessMemory.IsValidPointer(pr)) return -1;
+                return mem.ReadInt64(pr + LongProp_Value);
+            }
+            void TryList(int o, nint listPtr, string shape) {
+                if (!ProcessMemory.IsValidPointer(listPtr)) return;
+                int sz = mem.ReadInt32(listPtr + List_Size);
+                if (sz is < 2 or > 8) return;
+                var items = mem.ReadPointer(listPtr + List_Items);
+                if (!ProcessMemory.IsValidPointer(items)) return;
+                var hero0 = mem.ReadPointer(items + Array_Data);
+                long dmg0 = ReadHeroDamage(hero0);
+                Console.WriteLine($"  +0x{o:X3} [{shape}] List size={sz}  element0.damage={dmg0}");
+            }
+            for (int o = 0; o <= slots * 8; o += 8)
+            {
+                var p = mem.ReadPointer(inst + o);
+                if (!ProcessMemory.IsValidPointer(p)) continue;
+                TryList(o, mem.ReadPointer(p + UCL_List), "UCL");   // UserContextList wrapper (CB shape)
+                TryList(o, p, "direct");                            // p is itself a List<>
+                // also: is p ITSELF a HeroBattleStatsContext held directly at this slot?
+                long d = ReadHeroDamage(p);
+                if (d is > 100 and < 100_000_000) {
+                    long def = -1, heal = -1;
+                    var sd = mem.ReadPointer(p + HBSC_Defense); if (ProcessMemory.IsValidPointer(sd)) { var pr = mem.ReadPointer(sd + StatCtx_Prop); if (ProcessMemory.IsValidPointer(pr)) def = mem.ReadInt64(pr + LongProp_Value); }
+                    var sh = mem.ReadPointer(p + HBSC_Healing);  if (ProcessMemory.IsValidPointer(sh)) { var pr = mem.ReadPointer(sh + StatCtx_Prop); if (ProcessMemory.IsValidPointer(pr)) heal = mem.ReadInt64(pr + LongProp_Value); }
+                    Console.WriteLine($"  +0x{o:X3} HERO? damage={d,12} defense={def,10} heal={heal,10}");
+                }
+            }
+            Console.WriteLine("  (small-int slots, possible wave/phase index:)");
+            for (int o = 0; o <= slots * 8; o += 8) {
+                int v = mem.ReadInt32(inst + o);
+                if (v is >= 0 and <= 6) Console.WriteLine($"  +0x{o:X3}  int={v}");
+            }
+        }
+        proc?.Dispose();
     }
 
     private static long ReadStat(ProcessMemory mem, nint heroCtx, int statOff)
