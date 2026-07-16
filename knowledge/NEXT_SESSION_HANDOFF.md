@@ -7,11 +7,19 @@ Written 2026-07-15 at the end of a long session. Nothing below is wired to prod.
 ---
 
 ## 0. Orient (first 5 min)
-1. Read `knowledge/DEEP_BLUE_STATUS.md`, then skim `knowledge/insights-ledger.md` INS-0014→0017.
-2. One-line state: **the evaluator is real for the KILL side (calibrated to real battles) and
-   half-built for SURVIVAL; it is NOT wired into the live recommendation.**
-3. Agreed next action: **Track 1 · Step 1 — calibrate the survival side** (below), unless Mike
-   redirects. Track 2 + the watchdog ship can run in parallel.
+1. Read `knowledge/DEEP_BLUE_STATUS.md`, then skim `knowledge/insights-ledger.md` INS-0014→**0018**.
+2. One-line state: **the evaluator is real for the KILL side (calibrated to real battles). The
+   SURVIVAL side was attempted 2026-07-15 and is BLOCKED on data (INS-0018) — it's a nominal
+   guardrail, not wire-ready. The evaluator is NOT wired into the live recommendation.**
+3. Agreed next action is NO LONGER "calibrate survival" — that ran and hit a data wall (INS-0018:
+   the loss captures are kill-limited, and enemy ATK isn't the survival wall / it inverts the
+   per-content wall). The live options now, in order:
+   - **Track 1 · Step 3 — wire the KILL side + budget ALONE** (survival waits). Shadow first.
+   - **Track 2 — the two survival unblockers**: per-champ dungeon damage capture (reader) + a
+     content-threat/mechanic-incoming term (in `lib/sustain-profiles.js` THREAT_PROFILES) + more
+     loss captures (same-team stage sweeps like the IG-18/19 pair). Also: automate reconciliation.
+   - **Ship the watchdog** (surface `result.watchdog` in `lib/explain.js`). All parallel.
+   Confirm direction with Mike.
 
 ---
 
@@ -112,8 +120,17 @@ Layer 2 contribution model · AI-config resolver · sustain-mechanism weighting.
 
 ---
 
-## 6. Definition of done for the next work block
-- `tools/calibrate-survival.mjs` exists; survival is on the real-turn scale; the two-sided
-  ceiling separates the win/loss boundary captures; INS-0018 recorded.
-- (Parallel, if picked up) reconciliation drains the backlog; a reader plan for dungeon damage.
+## 6. Definition of done — survival calibration block (DONE 2026-07-15)
+- ✅ `tools/calibrate-survival.mjs` exists (reproducible fit + classification + wall-inversion check).
+- ✅ INS-0018 recorded; `DEEP_BLUE_STATUS.md` + CLAUDE.md state lines updated.
+- ✅ OUTCOME: survival is NOT calibratable on current data — the 5 loss captures are kill-limited
+  (`ttk` over-credits the losers), raw bulk ranks the boundary backwards, and an enemy-ATK
+  incoming basis INVERTS the per-content wall (IG's wall is the Frigid-Vengeance mechanic, not
+  ATK). `SURVIVAL_SCALE` (7.25) is anchored to the one clean fixed-team boundary but is a nominal
+  guardrail only. `survivalProxy` moved weak-link → team-sum EHP.
+
+### Next work block (pick with Mike — see §0):
+- Wire the KILL side + budget alone (shadow first) → Spider moves off Stage 5, PREDICT green.
+- Survival unblockers: per-champ dungeon damage capture; mechanic-incoming term in
+  `sustain-profiles.js`; more loss captures. Automate reconciliation. Ship the watchdog.
 - Nothing wired to prod until shadow confirms. Update `DEEP_BLUE_STATUS.md` state line when done.

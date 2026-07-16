@@ -100,6 +100,37 @@ Where a dungeon has a wave phase AND a boss phase with different needs
 Boss, which skip straight to the boss), the table needs both phases'
 requirements.
 
+#### Wave-death vs boss-death — a loss is TWO possible failures, not one (2026-07-15)
+A wave→boss stage is two fights in sequence, and a loss in each means something
+completely different: dying on Wave 2 says nothing about boss survival, and dying
+on the boss after a clean wave clear says nothing about wave requirements. The
+first reconciliation question for any loss must be **"wave death or boss death?"**
+— before team composition or confidence. A predicted-confident clear that died on
+the WAVE means the wave evaluation is wrong; a boss death with cleared waves means
+the boss evaluation is wrong. Blended, they tell you nothing.
+
+Consequences (all OPEN as of 2026-07-15):
+- **Capture (schema):** loss records need a `furthest_point_reached`
+  (`wave_1|wave_2|wave_3|boss|cleared`) so wave-deaths and boss-deaths are separate
+  populations. **NOT capturable today** — the battle log has no phase-at-death
+  signal (`finishCause` says only how it ended, not where). This is a reader-
+  investigation TODO in the same class as the per-champ damage decode: does the
+  battle result record the wave/phase index at death?
+- **Model:** the power/survival evaluator must score wave-clear and boss-fight
+  SEPARATELY (different champ requirements: AoE/speed/wave-survival vs single-target
+  damage/boss-sustain). Today it treats a stage as one boss encounter, and
+  `dungeon_stage_enemies` has **no wave-enemy stats at all** (boss-only, + IG minions
+  / Spider adds) — so even a known wave-death has nothing to score against. Second gap.
+- **Calibration (blocks survival work):** split the loss population by
+  `furthest_point_reached` BEFORE calibrating survival — boss deaths calibrate boss
+  survival, wave deaths calibrate wave survival. As of 2026-07-15 there are 12
+  reconciled losses, **6 of them Dragon's Lair (true sequential waves)** — so the
+  confound is already active; the current blended set cannot cleanly calibrate either
+  fight. Only the 2 Spider losses are unambiguous (single fight); the 6 Dragon + 4 IG
+  are wave-confounded. (IG structure confirmed by Mike 2026-07-15: Wave 1 → Wave 2 →
+  Boss, where the boss fight is the golem + 2 reviving minions — those minions are the
+  boss-phase adds, not the waves, so there are still no wave-enemy stats for any dungeon.)
+
 ### Champion AI notes table (champion_ai_notes)
 Per champion, per dungeon (or global): plain-language AI configuration
 instructions for cases where wrong auto settings cause known run failures.

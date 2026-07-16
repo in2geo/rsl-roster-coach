@@ -77,12 +77,15 @@ More captured clears tighten it over time (the existing feedback loop feeds this
 
 ## Stat-data inventory (2026-07-15 audit — "check the seeds for other stats")
 Prompted by: the affinity data was orphaned in seed prose; check for more. Findings:
-- **Survival-wall anchors — HIGH VALUE, already queryable.** `champion_solo_profiles.required_stats`
-  has numeric HP/DEF/SPD/ACC/RES for **40 of 45** rows, plus the required gear SET, some
-  Plarium-forum CONFIRMED. e.g. Spider 10 = HP 85k/ACC 350/DEF 4500/SPD 247 (Slayer); Dragon 25
-  = HP 65-75k/DEF 2600-3200/RES 300-330/SPD 220-250/ACC 250-265 (Regen+Immortal). A solo tanks
-  100% of stage incoming, so these DIRECTLY quantify per-stage incoming pressure (the number
-  thought image-locked). → primary anchors for the survival-side curve at high stages.
+- **Survival-wall anchors from solo profiles — CLAIM FALSIFIED 2026-07-15 (verify #2).** This bullet
+  originally asserted `champion_solo_profiles.required_stats` holds numeric HP/DEF/SPD/ACC/RES for
+  40 of 45 rows → primary survival anchors. **Live check: 0/45 rows have structured numeric
+  thresholds; only 3/45 have ANY numbers even in prose (all Dragon 25, partial/inconsistent).** The
+  rest are `{mastery,set,level,stars}` or free-text "high DEF/HP recommended, thresholds unverified".
+  So this is NOT a usable survival-anchor source as-is. (It COULD become one if the solo research is
+  redone with real effective-stat thresholds, but that's fresh research, not existing data.) The real
+  headless survival-unblock is draining the reconciliation backlog for more LOSS captures; the other
+  is per-champ dungeon damage capture (reader, `DUNGEON_DAMAGE_TODO.md`). See [[INS-0018]].
 - **Promote-to-queryable constants (currently prose-only in seed comments):**
   - Fire Knight Divine Shield hit-counts: 5 (1-6) / 7 (7-9) / 10 (10-20) / 12 (21-25) — kill-wall.
   - Spider heal-effectiveness = 35% (per-dungeon sustain multiplier).

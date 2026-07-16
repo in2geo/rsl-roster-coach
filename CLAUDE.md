@@ -10,6 +10,19 @@ players a personalized "what should I do next" recommendation, based on
 their manually-entered roster. Not necessarily a tool for veteran players with deep
 rosters — that segment is already served by other tools.
 
+## The product model — how the app builds teams (READ FIRST)
+
+**Canonical doc: `knowledge/team-building-model.md` — read it first.** The app beats content by
+**role-based mechanic-solving**, NOT by predicting a power ceiling. In one line: each content is a set of
+mechanical **PROBLEMS**, each solvable **many ways** (never a fixed comp); a team is **5 SEATS**, each
+filling a **primary role** (multi-role champs free seats); the **build** (ACC/RES, gear, masteries) decides
+whether a capability actually fires; recommend for **AUTO**, judged by **TIME**; and it's a **LOOP** — the
+battle result diagnoses the short seat, then you re-solve it **without breaking the roles that already
+worked**. It's **per-account** — the right team is usually NOT the 5 most-developed champs. The older
+power/goal-coverage framing (below, and `POWER_LAYER_SCOPE.md`) is **superseded as the primary approach**
+(brute force is just the survival half of one problem). Detail: INS-0026…0029 in `knowledge/insights-ledger.md`;
+code in `lib/dungeon-mechanics.js`, `lib/team-assembler.js`, `data/keyword-glossary.json`.
+
 ## Deep Blue model — modeling console (READ FIRST when Mike mentions it)
 
 Mike builds this engine by *conversing to improve it* (the "Deep Blue" vision — the AI that
@@ -19,11 +32,14 @@ model"** or the work around it, the canonical, always-current reference is
 (INS-0001…, the durable brain). The loop is capture → reconcile → measure → propose → retain →
 predict; a change must be validated (shadow) before it drives live recommendations.
 
-Current one-line state (2026-07-15): the evaluator became real (kill side calibrated to real
-battles via `lib/power-model.js` + `tools/calibrate-power.mjs`); survival is half-built; it is
-**NOT yet wired** into the live recommendation. Agreed next step: calibrate the survival side
-on the loss captures, then shadow, then wire. See DEEP_BLUE_STATUS.md for the full priority
-stack, diagnostics, and how to resume.
+Current one-line state (2026-07-16): the **PRODUCT is the team-building model above** (role-based
+mechanic-solving + the result loop) — `knowledge/team-building-model.md`, INS-0026…0029. The power/
+kill/survival **evaluator (`lib/power-model.js`) is SUPERSEDED** as the product — it's now just the
+survival half of one problem and was never wired into recommendations. The modeling-console *method*
+(converse → improve → capture → reconcile → retain) still stands, and the CAPTURE loop is now
+trustworthy end-to-end (RslBattleReader: identity + survival + per-hero damage all **verified live
+2026-07-16**). DEEP_BLUE_STATUS.md now banner-points at team-building-model.md and retains the
+evaluator's calibration history below that.
 
 ## Stack
 - Frontend: mobile PWA, plain HTML/CSS/JS, no framework, no build step
@@ -75,6 +91,11 @@ work lives in session memory (see the memory index); this is the snapshot. Run t
   placeholders (see the Stat estimation notes section).
 
 ### Engine & tooling — BUILT
+- **THE PRODUCT MODEL (2026-07-16, `knowledge/team-building-model.md`):** `lib/dungeon-mechanics.js`
+  (each content = mechanical PROBLEMS × open ability-sets, INS-0027), `data/keyword-glossary.json`
+  (semantic layer — what each ability DOES, INS-0028), `lib/team-assembler.js` + `tools/assemble-team.mjs`
+  (5-seat role selection + the result-driven loop: diagnose short seat → constrained fix, INS-0029).
+  These are the current core; the deterministic match-engine below is the older goal-matching layer.
 - Deterministic match engine (`lib/match-engine.js`): solo-carry-first, team
   selection (**usability-gated as of 2026-07-13** — see the selectTeam ordering),
   Spider highest-confidence-stage scan, Clan Boss stun matrix, leader-aura
@@ -84,9 +105,11 @@ work lives in session memory (see the memory index); this is the snapshot. Run t
   (%maxHP/DoT source model), `lib/synergies.js` (2+-champ combo layer).
 - Data pipeline: master worksheet (`RAID Master Database … .xlsx`) -> committed
   `seeds/*.sql` -> live via `tools/apply-seed-pooler.mjs`; read live via
-  `tools/live_db_read.mjs` (REST). Seeds committed through 116.
-- Gestal sync + RslBattleReader (roster/gear/battle capture; CB damage capture
-  solved); engine feedback/calibration loop (`tools/calibrate-engine.mjs`).
+  `tools/live_db_read.mjs` (REST). Seeds committed through 139 (136 tag enrichment,
+  137/139 Multi-Hit A1 backfill, 138 tag-descriptions-from-glossary — all proposed).
+- Gestal sync + RslBattleReader — battle capture now TRUSTWORTHY end-to-end
+  (**5-hero identity + survival + per-hero damage all verified live 2026-07-16**, see
+  the rslbattlereader-status memory); engine feedback/calibration loop.
 - Profiles layer (multi-roster over rsl_accounts + user_champions); event-dungeon
   architecture (is_event/active_until + generic fallback).
 
