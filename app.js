@@ -451,6 +451,8 @@ function renderResults(data) {
       `<p class="not-ready-note">${data.not_ready_note}</p>`);
   }
 
+  renderContribution(data); // Layer 2 — beta panel, test-mode only
+
   // Gaps hidden behind Gate 1 — revealed after "Go deeper" ad
   document.getElementById('gaps-section').classList.add('hidden');
   document.getElementById('deep-section')?.remove();
@@ -497,6 +499,49 @@ function renderResults(data) {
       .then(b => { if (b.id) pendingOutcomeId = b.id; })
       .catch(() => {});
   }
+}
+
+// Layer 2 contribution model — beta display panel, shown only in test mode. It is
+// DIRECTIONAL and does NOT drive team selection (see PROJECT_BRIEF §5b), so it stays
+// hidden from real users until calibrated past the Layer 3 gate.
+function renderContribution(data) {
+  document.getElementById('contribution-panel')?.remove();
+  const c = data.contribution;
+  if (!isTestMode() || !c || !Array.isArray(c.per_champion) || !c.per_champion.length) return;
+
+  const fmt = n => {
+    n = Number(n) || 0;
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return Math.round(n / 1e3) + 'K';
+    return String(Math.round(n));
+  };
+  const maxShare = Math.max(1, ...c.per_champion.map(r => r.share));
+  const rows = c.per_champion.map(r => {
+    const parts = [];
+    if (r.own_damage)       parts.push(`own ${fmt(r.own_damage)}`);
+    if (r.granted_damage)   parts.push(`+${fmt(r.granted_damage)} debuff`);
+    if (r.granted_survival) parts.push(`+${fmt(r.granted_survival)} sustain`);
+    const sub = parts.join(' · ') || 'no modeled contribution';
+    const w = Math.round((r.share / maxShare) * 100);
+    return `<li class="contrib-row">
+        <div class="contrib-head"><span class="contrib-name">${r.name}</span><span class="contrib-share">${r.share}%</span></div>
+        <div class="contrib-bar"><span style="width:${w}%"></span></div>
+        <div class="contrib-sub">${sub}</div>
+      </li>`;
+  }).join('');
+
+  const conf = c.confidence != null ? `${Math.round(c.confidence * 100)}%` : '—';
+  const kt   = c.kill_turns != null ? ` · ~${c.kill_turns} turns to kill` : '';
+  const src  = c.boss_hp_source === 'clan_boss_stats' ? 'real boss HP' : 'nominal boss HP';
+  const note = [c.note, c.data_warning].filter(Boolean).join(' — ');
+
+  const html = `<section id="contribution-panel" class="contribution-panel">
+      <div class="contrib-title">Contribution model <span class="contrib-beta">beta · directional</span></div>
+      <div class="contrib-meta">Confidence <strong>${conf}</strong>${kt} · ${src}</div>
+      <ul class="contrib-list">${rows}</ul>
+      <p class="contrib-note">${note}</p>
+    </section>`;
+  document.getElementById('gaps-section').insertAdjacentHTML('beforebegin', html);
 }
 
 function revealGate1() {

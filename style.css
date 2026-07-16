@@ -805,6 +805,24 @@ footer a { color: var(--muted); text-decoration: underline; }
   gap: 0.6rem;
 }
 
+/* Book badge on roster cards — flag fully-booked champs right on the list (gold = booked). */
+.verify-book-badge {
+  margin-left: auto; flex: 0 0 auto;
+  font-size: 1.15rem; line-height: 1; padding: 0.35rem; border-radius: 8px;
+  opacity: 0.28; filter: grayscale(1); cursor: pointer;
+  transition: opacity .15s, filter .15s, background .15s;
+}
+.verify-book-badge:hover { background: rgba(255,255,255,0.06); opacity: 0.6; }
+.verify-book-badge.booked {
+  opacity: 1; filter: none;
+  background: rgba(255,183,0,0.16); box-shadow: inset 0 0 0 1px rgba(255,183,0,0.45);
+}
+.verify-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.6rem; margin: 0.2rem 0 0.6rem;
+}
+.verify-book-hint { font-size: 0.72rem; opacity: 0.55; }
+
 .verify-card {
   display: flex;
   align-items: center;
@@ -1225,3 +1243,57 @@ footer a { color: var(--muted); text-decoration: underline; }
   color: inherit;
   font-size: 0.9rem;
 }
+
+/* ── Layer 2 contribution model — beta panel (test mode only) ──────────────── */
+.contribution-panel {
+  margin: 1.25rem 0;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid rgba(233, 69, 96, 0.3);
+  border-radius: var(--radius);
+}
+.contrib-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.contrib-beta {
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--bg);
+  background: var(--accent2, #f5a623);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.contrib-meta { font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem; }
+.contrib-meta strong { color: var(--text); }
+.contrib-list {
+  list-style: none;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.contrib-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+.contrib-share { font-variant-numeric: tabular-nums; color: var(--muted); }
+.contrib-bar {
+  height: 6px;
+  margin: 0.28rem 0;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.contrib-bar > span { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.contrib-sub { font-size: 0.72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.contrib-note { font-size: 0.7rem; color: var(--muted); line-height: 1.45; margin: 0.8rem 0 0; font-style: italic; }

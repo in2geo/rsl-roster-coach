@@ -835,6 +835,15 @@ function renderVerifyScreen() {
   const editBtn = qs('#btn-edit-roster', screen);
   if (editBtn) editBtn.onclick = () => { renderRarityScreen(); showRosterScreen('screen-rarity'); };
 
+  // Bulk "book all max-level" — flags every Lv60 champ as fully booked in one tap (the common case).
+  const bookAllBtn = qs('#btn-book-all', screen);
+  if (bookAllBtn) bookAllBtn.onclick = async () => {
+    bookAllBtn.disabled = true; const prev = bookAllBtn.textContent; bookAllBtn.textContent = 'Booking…';
+    const n = await bookAllRares();
+    bookAllBtn.disabled = false; bookAllBtn.textContent = n > 0 ? `✓ Booked ${n} Rares` : '📖 Rares already booked';
+    setTimeout(() => { bookAllBtn.textContent = prev; }, 2000);
+  };
+
   // Champion cards (sorted level desc, then rarity desc)
   const list  = qs('#verify-list', screen);
   const empty = qs('#verify-empty', screen);
@@ -870,6 +879,7 @@ function getVerificationCards() {
         stars:           state.stars ?? 1,
         ascension_level: state.ascension_level ?? 0,
         gear_tier:       state.gear_tier ?? 'Starter',
+        is_booked:       state.is_booked ?? false,
       };
     })
     .sort((a, b) =>
@@ -931,13 +941,59 @@ function buildVerifyCard(c) {
   meta.textContent = bits.join('  |  ');
 
   info.append(top, meta);
-  card.append(img, info);
+
+  // Book badge — flag fully-booked champs right on the list. Gold = booked, faint = not.
+  // Tapping the badge toggles booked (and persists) WITHOUT opening the detail sheet.
+  const badge = document.createElement('span');
+  badge.className = 'verify-book-badge' + (c.is_booked ? ' booked' : '');
+  badge.textContent = '📖';
+  badge.title = c.is_booked ? 'Fully booked (tap to unset)' : 'Not booked (tap to mark fully booked)';
+  badge.setAttribute('role', 'button');
+  badge.addEventListener('click', async (e) => {
+    e.stopPropagation();               // don't open the detail sheet
+    const now = await toggleBooked(c.id);
+    c.is_booked = now;
+    badge.classList.toggle('booked', now);
+    badge.title = now ? 'Fully booked (tap to unset)' : 'Not booked (tap to mark fully booked)';
+  });
+
+  card.append(img, info, badge);
 
   card.addEventListener('click', () => {
     sheetReturnTo = 'verify';
     openDetailSheet({ id: c.id, name: c.name, portrait_url: c.portrait_url }, c.rarity);
   });
   return card;
+}
+
+// Persist a single champion's is_booked toggle (full record, same shape as saveChampion).
+// Optimistic: updates local state first, reverts on failure. Returns the new booked state.
+async function toggleBooked(champId) {
+  const s = roster[champId];
+  if (!s) return false;
+  const next = !s.is_booked;
+  s.is_booked = next;
+  try {
+    const res = await fetch('/api/user-champions', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: DEVICE_ID, champion_id: champId,
+        level: s.level, stars: s.stars, ascension_level: s.ascension_level,
+        gear_tier: s.gear_tier, mastery_tier: s.mastery_tier, is_booked: next }),
+    });
+    if (!res.ok) throw new Error('save failed');
+  } catch { s.is_booked = !next; return !next; } // revert
+  return next;
+}
+
+// Bulk: mark every RARE champ as fully booked — Rare books are cheap/abundant (INS-0003), so this is
+// the safe common case. Deliberately NOT level-based: level ≠ booked, and Legendary books are scarce so
+// most Lv60 Legendaries are NOT booked — those are flagged individually via the per-card badge.
+async function bookAllRares() {
+  const targets = Object.entries(roster)
+    .filter(([id, s]) => championDetails.get(id)?.rarity === 'Rare' && !s.is_booked);
+  for (const [id] of targets) await toggleBooked(id);
+  renderVerifyScreen(); // re-render so every badge reflects the change
+  return targets.length;
 }
 
 // ── Content selection (bottom sheet, opened from verify) ────────────────────────
