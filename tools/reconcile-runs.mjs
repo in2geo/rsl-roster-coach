@@ -46,6 +46,13 @@ for (let from = 0; ; from += 1000) {
   const d = await (await fetch(`${BASE}/rest/v1/champions?select=${encodeURIComponent(SEL)}&game_id=eq.raid_shadow_legends&limit=1000&offset=${from}`, { headers: H })).json();
   if (!Array.isArray(d) || !d.length) break; dbChampions = dbChampions.concat(d); if (d.length < 1000) break;
 }
+// Leader auras — to apply the FIELDED leader's aura to the frozen effective stats. A leader aura
+// (esp. flat ACC → debuff land-rate, INS-0019) materially changes team stats; frozen was aura-blind.
+const auraRows = await (await fetch(`${BASE}/rest/v1/champion_auras?select=champion_id,aura_type,aura_value,aura_area,aura_restriction`, { headers: H })).json();
+const auraById = {};
+for (const a of (Array.isArray(auraRows) ? auraRows : [])) auraById[a.champion_id] ??= a; // one aura/champ
+const idByName = Object.fromEntries(dbChampions.map(c => [norm(c.name), c.id]));
+const cleanArea = (s) => String(s ?? '').toLowerCase().replace(/^in\s+/, '').trim();
 
 // ── per-account rosters (Gestal) + userChampions cache ───────────────────────
 const OUT_DIR = path.join(REPO, 'gestal-sync', 'output');
@@ -111,10 +118,21 @@ for (const b of (Array.isArray(log) ? log : [])) {
   const dur = b.durationSeconds ?? 0, turns = b.turns ?? null;
   const margin = specMarginOf(res);
   const recNames = new Set((res.team ?? []).map(c => norm(c.name)));
-  const fielded = (b.heroes ?? []).map(h => ({ name: h.name, survived: h.survived ?? null, damage: h.damage ?? null }));
+  // is_leader is kept per-hero inside the team_fielded jsonb (no schema change) — the FIELDED
+  // leader (whose aura was actually active) is team_fielded.find(is_leader), which may differ from
+  // the engine's recommended leader (leader_name). Calibration should apply THIS leader's aura.
+  const fielded = (b.heroes ?? []).map(h => ({ name: h.name, survived: h.survived ?? null, damage: h.damage ?? null, is_leader: h.isLeader ?? null }));
   const teamMatch = fielded.filter(h => recNames.has(norm(h.name))).length;
   const floorVs = (actual == null || recFloor == null) ? null : actual > recFloor ? 'higher' : actual < recFloor ? 'lower' : 'same';
-  const frozen = (res.team ?? []).map(c => ({ name: c.name, gear_tier: c.gear_tier, effective_stats: c.estimated_stats }));
+  // Apply the FIELDED leader's aura to the team before freezing (was aura-blind). The fielded
+  // leader can differ from res.leader (the recommended one) — e.g. a player-chosen SPD vs ACC lead.
+  const fieldedLeaderName = fielded.find(h => h.is_leader)?.name;
+  const flAura = fieldedLeaderName ? auraById[idByName[norm(fieldedLeaderName)]] : null;
+  let teamForFreeze = res.team ?? [];
+  if (flAura && me.LEADER_AREA_APPLIES.dungeon(cleanArea(flAura.aura_area))) {
+    teamForFreeze = me.applyLeaderAura(teamForFreeze, { aura_type: flAura.aura_type, aura_value: flAura.aura_value, restriction: flAura.aura_restriction });
+  }
+  const frozen = teamForFreeze.map(c => ({ name: c.name, gear_tier: c.gear_tier, effective_stats: c.estimated_stats }));
 
   const row = {
     account_id: b.accountId, display_name: b.displayName, content: b.stage ?? b.dungeon,

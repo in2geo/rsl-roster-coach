@@ -69,6 +69,12 @@ create table if not exists run_reconciliations (
     check (status in ('candidate','applied','rejected'))
 );
 
+-- Natural key: one reconciliation per (account, captured battle). Lets the reconciler
+-- re-run and UPSERT sections ①–④ while preserving the human/LLM ⑤ analysis.
+alter table run_reconciliations add column if not exists battle_captured_at timestamptz;
+create unique index if not exists uq_run_recon_natural
+  on run_reconciliations (account_id, battle_captured_at) where battle_captured_at is not null;
+
 create index if not exists idx_run_recon_account   on run_reconciliations (account_id);
 create index if not exists idx_run_recon_content    on run_reconciliations (content);
 create index if not exists idx_run_recon_class      on run_reconciliations (classification);

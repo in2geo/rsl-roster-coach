@@ -16,8 +16,15 @@ const rest = async (p) => (await fetch(`${BASE}/rest/v1/${p}`, { headers: H })).
 
 // champion name -> best damage multiplier, and name -> DoT tags (Poison/HP Burn/Enemy Max HP).
 const skills = await rest('champion_skills?select=champion_id,damage_multiplier&damage_multiplier=not.is.null');
-const champs = await rest('champions?select=id,name,champion_tags(status,tags(name))&game_id=eq.raid_shadow_legends');
+const champs = await rest('champions?select=id,name,affinity,champion_tags(status,tags(name))&game_id=eq.raid_shadow_legends');
 const nameById = Object.fromEntries(champs.map(c => [c.id, c.name]));
+// champ name -> affinity (for the affinity-adjusted kill model). Include aliases so captured
+// team names that differ from champions.name still resolve (INS-0018 affinity-in-ttk fix).
+const affByName = {};
+for (const c of champs) if (c.affinity) affByName[c.name.toLowerCase()] = c.affinity;
+const aliasRows = await rest('champion_aliases?select=alias,champions(affinity)');
+for (const a of aliasRows) if (a.alias && a.champions?.affinity) affByName[a.alias.toLowerCase()] ??= a.champions.affinity;
+const affOf = (name) => affByName[name?.toLowerCase()] ?? null;
 const DOT_TAGS = new Set(['Poison', 'HP Burn', 'Enemy Max HP Damage']);
 const tagsByName = {};
 for (const c of champs) {
@@ -32,15 +39,24 @@ for (const s of skills) {
   const nm = nameById[s.champion_id]; if (!nm) continue;
   if (mx > (multByName[nm] || 0)) multByName[nm] = mx;
 }
+// per-champ DoT uptime (cooldown/duration of poison/HP-burn placers) → deflates on-cooldown placers.
+const allSkills = await rest('champion_skills?select=champion_id,slot,cooldown_base,skill_summary');
+const skillsByChamp = {};
+for (const s of allSkills) (skillsByChamp[s.champion_id] ??= []).push(s);
+const dotUptimeByName = {};
+for (const c of champs) dotUptimeByName[c.name] = pm.dotUptimeFromSkills(skillsByChamp[c.id] ?? []);
 
 // boss HP/DEF per (dungeon, stage)
 const DUNGEONS = { "Spider's Den": null, "Ice Golem's Peak": null, "Dragon's Lair": null, "Fire Knight's Castle": null };
 for (const n of Object.keys(DUNGEONS)) { const d = await rest(`dungeons?select=id&game_id=eq.raid_shadow_legends&name=eq.${encodeURIComponent(n)}`); DUNGEONS[n] = d[0]?.id; }
 const bossBy = {}; // "dungeon|stage" -> boss row
+const affBy = {};  // "dungeon|stage" -> boss affinity (for weak/strong hit factors)
 for (const [n, id] of Object.entries(DUNGEONS)) {
   if (!id) continue;
-  const rows = await rest(`dungeon_stage_enemies?select=stage_number,enemy_role,hp,def&dungeon_id=eq.${id}&enemy_role=eq.boss`);
+  const rows = await rest(`dungeon_stage_enemies?select=stage_number,enemy_role,hp,def,res&dungeon_id=eq.${id}&enemy_role=eq.boss`);
   for (const r of rows) bossBy[`${n}|${r.stage_number}`] = r;
+  const aff = await rest(`dungeon_stage_affinities?select=stage_number,affinity&dungeon_id=eq.${id}`);
+  for (const r of aff) affBy[`${n}|${r.stage_number}`] = r.affinity;
 }
 
 // captured wins on Normal dungeons with turns. Fielded champs come from team_fielded (names);
@@ -56,10 +72,11 @@ for (const r of runs) {
   if (!r.turns || !Array.isArray(r.team_fielded) || !Array.isArray(r.frozen_effective_stats)) continue;
   const statsByName = Object.fromEntries(r.frozen_effective_stats.map(c => [c.name, c.effective_stats]));
   const team = r.team_fielded
-    .map(c => ({ name: c.name, estimated_stats: statsByName[c.name], damage_multiplier: multByName[c.name] ?? null, tags: tagsByName[c.name] ?? [] }))
+    .map(c => ({ name: c.name, estimated_stats: statsByName[c.name], damage_multiplier: multByName[c.name] ?? null, tags: tagsByName[c.name] ?? [], affinity: affOf(c.name), dot_uptime: dotUptimeByName[c.name] ?? 1 }))
     .filter(c => c.estimated_stats);                          // must have real stats to score
   if (team.length < 2) continue;
-  const dptModel = pm.teamDamagePerTurn(team, boss);
+  const stageAffinity = affBy[`${dn}|${r.actual_floor}`] ?? null;
+  const dptModel = pm.teamDamagePerTurn(team, boss, stageAffinity);
   if (!(dptModel > 0)) continue;
   const impliedDpt = boss.hp / r.turns;                      // real damage/turn implied by the clear
   points.push({ content: r.content, stage: r.actual_floor, turns: r.turns, dptModel, impliedDpt, scale: impliedDpt / dptModel });
@@ -77,16 +94,28 @@ for (const p of points) console.log(
   String(p.stage).padStart(3), String(p.turns).padStart(5),
   String(Math.round(p.dptModel)).padStart(9), String(Math.round(p.impliedDpt)).padStart(10),
   p.scale.toFixed(2).padStart(7));
-console.log(`\nDAMAGE SCALE  median ${median?.toFixed(2)}  mean ${mean.toFixed(2)}  min ${scales[0]?.toFixed(2)}  max ${scales[scales.length-1]?.toFixed(2)}`);
-console.log(`(model DPT x ${median?.toFixed(2)} => real DPT; turnsToKill then lands in real turns)`);
+console.log(`\nDAMAGE SCALE (raw)  median ${median?.toFixed(2)}  mean ${mean.toFixed(2)}  min ${scales[0]?.toFixed(2)}  max ${scales[scales.length-1]?.toFixed(2)}`);
 
-// fit quality: with median scale, predicted turns vs actual
-console.log('\nFit check (predicted turns @ median scale vs actual):');
-let absErr = 0;
-for (const p of points) {
-  const predTurns = (p.dptModel * median) > 0 ? bossHpFor(p) / (p.dptModel * median) : Infinity;
-  absErr += Math.abs(predTurns - p.turns);
-}
+// PRUNE OVERPOWER anchors. A stage cleared FAR below the team's ceiling has huge headroom, so its
+// implied DPT (bossHP / turns) is a FLOOR on real DPT, not a measurement — it shows up as an
+// extreme-HIGH scale (killed way faster than the model) and doesn't constrain the calibration; it
+// only inflates the spread. Trim to scales within [median/K, median*K] and re-fit. (These are the
+// trivial low-stage overkills, e.g. Spider 4/6 cleared in 8-13 turns — NOT wall anchors.)
+const OVER_K = 3;
+const kept   = points.filter(p => p.scale >= median / OVER_K && p.scale <= median * OVER_K);
+const pruned = points.filter(p => p.scale < median / OVER_K || p.scale > median * OVER_K);
+const keptScales = kept.map(p => p.scale).sort((a, b) => a - b);
+const medTrim = keptScales.length ? keptScales[Math.floor(keptScales.length / 2)] : median;
 function bossHpFor(p) { const dn = parseDungeon(p.content); return bossBy[`${dn}|${p.stage}`].hp; }
-console.log(`  mean |predicted - actual| turns = ${(absErr / (points.length || 1)).toFixed(1)}`);
+const predOf = (p, scale) => (p.dptModel * scale > 0 ? bossHpFor(p) / (p.dptModel * scale) : Infinity);
+const fitErr = (pts, scale) => pts.reduce((s, p) => s + Math.abs(predOf(p, scale) - p.turns), 0) / (pts.length || 1);
+// relative error is the fair metric when turns span 8-245: |pred-actual| / actual.
+const fitRel = (pts, scale) => pts.reduce((s, p) => s + Math.abs(predOf(p, scale) - p.turns) / p.turns, 0) / (pts.length || 1);
+
+console.log(`\nPruned ${pruned.length} overpower/anomalous anchor(s) (scale outside [${(median/OVER_K).toFixed(2)}, ${(median*OVER_K).toFixed(2)}]):`);
+for (const p of pruned.sort((a, b) => b.scale - a.scale).slice(0, 8))
+  console.log(`  ${(p.content||'').slice(0,28).padEnd(29)} stage ${String(p.stage).padStart(3)} turns ${String(p.turns).padStart(4)}  scale ${p.scale.toFixed(2)}`);
+console.log(`\nDAMAGE SCALE (trimmed, n=${kept.length})  median ${medTrim.toFixed(2)}  => set DAMAGE_SCALE = ${(0.30 * medTrim).toFixed(2)} to re-center`);
+console.log(`Fit |pred-actual| turns:  raw(all ${points.length}) = ${fitErr(points, median).toFixed(1)}   trimmed(kept ${kept.length}) = ${fitErr(kept, medTrim).toFixed(1)}`);
+console.log(`Fit RELATIVE |pred-actual|/actual:  raw = ${(100*fitRel(points, median)).toFixed(0)}%   trimmed = ${(100*fitRel(kept, medTrim)).toFixed(0)}%   (fair metric across the 8-245 turn span)`);
 process.exit(0);
