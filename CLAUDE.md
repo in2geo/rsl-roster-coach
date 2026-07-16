@@ -356,7 +356,38 @@ tag work. "REJECT" = do not create a tag row; note the mechanic in the
     the debuff.
 11. **Duration extension** — "increases the duration of [X]" → REJECT. Not a
     placement.
-12. **Debuff activation** — "activates [X] debuffs" → REJECT. Not a placement.
+12. **Activation ≠ placement — but tag the ACTIVATION itself** (revised 2026-07-16; a policy-#19
+    sibling). "instantly activates [X]" → REJECT it as a placement of X: forcing an existing
+    [Poison] to tick early does NOT mean the champion places Poison. **But do NOT stop there** —
+    tag the ACTION, exactly as #19 does for buff removal:
+    - **Debuff Activation** — forces existing ENEMY DoTs ([Poison]/[HP Burn]/[Necrosis]) to tick
+      immediately. Damage acceleration: converts stacked DoT into damage NOW instead of over the
+      target's next turns, and relieves debuff-slot pressure (see the 10-debuff cap note below).
+      Example: Ezio's A2 — "Instantly activates all [Poison] debuffs on enemies under 4 or more
+      debuffs" → REJECT a Poison-placement tag for that clause (he places Poison elsewhere in the
+      same skill, which is what earns his Poison tag), APPROVE **Debuff Activation**.
+    - **Buff Activation** — forces an ALLY buff ([Continuous Heal]) to tick immediately. Sustain
+      acceleration, not damage. Example: Donatello's A1 — "Instantly activates one random
+      [Continuous Heal] buff on all allies".
+    - **BOUNDARY (the #19 rule, mirrored): side decides the tag.** Enemy DoT → Debuff Activation.
+      Ally buff → Buff Activation. Do not merge them: one is damage, the other is sustain, and a
+      single tag would make the engine credit a healer for damage.
+    - **NOT the same as neighbouring tags:** `Poison Explosion` DETONATES and consumes the stack
+      for %maxHP burst; `Poison Sensitivity` AMPLIFIES tick damage; **Activation** forces an early
+      tick of what is already there. Three different mechanics — do not conflate.
+    - **Passive/trigger prose is NOT activation.** "[Passive Effect] activates when…", "activates
+      if the target is under…" are trigger conditions, not the mechanic. Only "instantly activates
+      [X]" (or equivalent forced-tick wording) qualifies. A scan for `activat*` returns ~150 skills;
+      only ~67 are real activations. Match the mechanic, not the word.
+    - **ROOT CAUSE (why this policy needed fixing):** the original rule said only "REJECT. Not a
+      placement." — correct, but it DISCARDED the capability instead of relocating it, so the
+      activation ability became invisible to the engine (an untagged ability = an invisible path,
+      INS-0027). 33 champions were affected. #19 got this right for buff-strip; #12 did not. When
+      rejecting a bracket, always ask "what is the real action here, and does IT deserve a tag?"
+    - **WHY IT MATTERS (the general rule, not a per-team quirk):** the CB 10-debuff cap binds ONLY
+      when the team has NO activator. With one, the stack is cashed in before it can saturate, so
+      "cap your poison stackers" is wrong advice for that team and right for one without. That is
+      a TEAM-level resolution (INS-0010 Layer 2 SATURATION), not a per-champion fact.
 13. **Transfer/redirect mechanics** — "transfer [X] to" / "redirect [X]" → REJECT.
 14. **Exclusion clause** — an effect that appears only inside an "except [X]" /
     "transfers all debuffs except [X]" phrase → REJECT.

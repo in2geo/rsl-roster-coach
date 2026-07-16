@@ -1,0 +1,31 @@
+Acelin: A3
+Akoth: A3
+Arne: Passive
+Arnorn: A4 (Wrath of Hrothglime)
+Balar: Passive
+Chalco: Passive
+Crohnam: A4
+Dark Elhain: Passive (Freeze)
+Gaspard: Passive 2
+Gretel: A4 (Sacred Ritual)
+Hansel: A4 (Baneful Burst)
+Harima: A2
+Hephraak: A4
+Hilvi: A1, A2
+Karato: Passive
+Keberon: A2 (Infernal Eruption)
+Knosson: A2 (Bronze Rage)
+Krokhad the Throatripper: Passive (Throat Ripper)
+Oella: Passive
+Osgrun: Passive
+Phemo: A2
+Sabrael the Distant: A1, A1 (Block Damage)
+The Incarnate: A3
+Titus: A1 (Block Active Skills), A3
+Tormin: A1 (Freeze)
+Tribune Herakletes: A3
+Ugir: Passive (Earth Puncture)
+Urost: A2
+Vulkanos: Passive
+Yukimasa: A1 (Stun)
+Zargala: A2
