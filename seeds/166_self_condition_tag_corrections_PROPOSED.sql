@@ -82,7 +82,7 @@
 
 -- Rhaia — places no veil of any kind; both tags come from the passive's condition clause
 update champion_tags ct set status='rejected',
-  review_notes = coalesce(ct.review_notes||' | ','') || 'Policy #20 (proposed): self-condition bracket, not a placement. Passive requires her to BE under [Veil]/[Perfect Veil]; nothing in her kit places either. Verified vs in-game card 2026-07-17.'
+  source_note = coalesce(ct.source_note||' | ','') || 'Policy #20 (proposed): self-condition bracket, not a placement. Passive requires her to BE under [Veil]/[Perfect Veil]; nothing in her kit places either. Verified vs in-game card 2026-07-17.'
 from champions c, tags t
 where ct.champion_id=c.id and ct.tag_id=t.id
   and c.game_id='raid_shadow_legends' and c.name='Rhaia'
@@ -90,7 +90,7 @@ where ct.champion_id=c.id and ct.tag_id=t.id
 
 -- Umetogi — places [Perfect Veil] (A3); [Veil] appears only as an A1/A2 crit condition
 update champion_tags ct set status='rejected',
-  review_notes = coalesce(ct.review_notes||' | ','') || 'Policy #20 (proposed): places [Perfect Veil] on A3, never [Veil]. [Veil] appears only in "if this Champion is under a [Veil]" crit conditions. Different buffs.'
+  source_note = coalesce(ct.source_note||' | ','') || 'Policy #20 (proposed): places [Perfect Veil] on A3, never [Veil]. [Veil] appears only in "if this Champion is under a [Veil]" crit conditions. Different buffs.'
 from champions c, tags t
 where ct.champion_id=c.id and ct.tag_id=t.id
   and c.game_id='raid_shadow_legends' and c.name='Umetogi'
@@ -98,7 +98,7 @@ where ct.champion_id=c.id and ct.tag_id=t.id
 
 -- Yannica — Veil (condition; she places Perfect Veil) and Shield (ignored + removed, never placed)
 update champion_tags ct set status='rejected',
-  review_notes = coalesce(ct.review_notes||' | ','') || 'Policy #20 (proposed) for Veil: places [Perfect Veil] on A2, never [Veil]. Policy #16+#19 for Shield: A3 IGNORES and REMOVES [Shield] buffs, never places one — the removal should instead earn Buff Strip.'
+  source_note = coalesce(ct.source_note||' | ','') || 'Policy #20 (proposed) for Veil: places [Perfect Veil] on A2, never [Veil]. Policy #16+#19 for Shield: A3 IGNORES and REMOVES [Shield] buffs, never places one — the removal should instead earn Buff Strip.'
 from champions c, tags t
 where ct.champion_id=c.id and ct.tag_id=t.id
   and c.game_id='raid_shadow_legends' and c.name='Yannica'
@@ -106,7 +106,7 @@ where ct.champion_id=c.id and ct.tag_id=t.id
 
 -- Yumeko — places [Perfect Veil] in her passive; [Veil] is a condition + a steal target
 update champion_tags ct set status='rejected',
-  review_notes = coalesce(ct.review_notes||' | ','') || 'Policy #20 (proposed): passive places [Perfect Veil], never [Veil]. [Veil] appears as a debuff-immunity condition and as a STEAL target (#19), not a placement.'
+  source_note = coalesce(ct.source_note||' | ','') || 'Policy #20 (proposed): passive places [Perfect Veil], never [Veil]. [Veil] appears as a debuff-immunity condition and as a STEAL target (#19), not a placement.'
 from champions c, tags t
 where ct.champion_id=c.id and ct.tag_id=t.id
   and c.game_id='raid_shadow_legends' and c.name='Yumeko'
@@ -114,7 +114,7 @@ where ct.champion_id=c.id and ct.tag_id=t.id
 
 -- Elegaius — Heal Reduction sits inside a NEGATED self-condition
 update champion_tags ct set status='rejected',
-  review_notes = coalesce(ct.review_notes||' | ','') || 'Policy #20 (proposed): "Will NOT prevent this Champion''s death if they are under a [Heal Reduction] debuff" is a negated self-condition. He places no Heal Reduction.'
+  source_note = coalesce(ct.source_note||' | ','') || 'Policy #20 (proposed): "Will NOT prevent this Champion''s death if they are under a [Heal Reduction] debuff" is a negated self-condition. He places no Heal Reduction.'
 from champions c, tags t
 where ct.champion_id=c.id and ct.tag_id=t.id
   and c.game_id='raid_shadow_legends' and c.name='Elegaius'
