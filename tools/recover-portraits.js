@@ -95,13 +95,26 @@ const resp = await anthropic.messages.create({
 const visionChamps = resp.content.find(b => b.type === 'tool_use')?.input.champions ?? [];
 
 // ── 3. DB lookup (existing files + champion rows) ────────────────────────────────
+// Load EVERY rarity folder, not just the current one: portraits are sometimes filed
+// under a different rarity folder than the champion's rarity (e.g. a Legendary whose
+// portrait lives at rare/<slug>.jpg). Scanning only one folder falsely reports those as
+// missing and would OVERWRITE a working portrait with a grid crop on --upload.
 const bucketFiles = new Set();
-{ const { data } = await supabase.storage.from('portraits').list(rarity, { limit: 1000 });
-  for (const o of (data || [])) bucketFiles.add(`${rarity}/${o.name.toLowerCase()}`); }
+for (const rar of ['rare', 'epic', 'legendary', 'mythical']) {
+  const { data } = await supabase.storage.from('portraits').list(rar, { limit: 1000 });
+  for (const o of (data || [])) bucketFiles.add(`${rar}/${o.name.toLowerCase()}`);
+}
 
 const { data: allChamps } = await supabase.from('champions')
   .select('id,name,rarity,portrait_url').eq('game_id', 'raid_shadow_legends');
 const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+// Alias registry so a grid SHORT name (e.g. "AUGUSTIN") resolves to the DB long name
+// ("Pontiff Augustin") via its alias — the same any-name→champion.id resolution the app uses.
+const byId = new Map((allChamps ?? []).map(c => [c.id, c]));
+const { data: allAliases } = await supabase.from('champion_aliases')
+  .select('alias,champion_id').eq('game_id', 'raid_shadow_legends');
+const aliasByNorm = new Map();
+for (const a of (allAliases ?? [])) { const c = byId.get(a.champion_id); if (c) aliasByNorm.set(norm(a.alias), c); }
 const hasPortrait = c => { const p = c.portrait_url?.split('/portraits/')[1]?.toLowerCase(); return p && bucketFiles.has(p); };
 function lev(a, b) {
   const m = a.length, n = b.length, d = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
@@ -116,6 +129,8 @@ function findChampion(name) {
   const nn = norm(name);
   const exact = (allChamps ?? []).find(x => norm(x.name) === nn);
   if (exact) return exact;
+  const byAlias = aliasByNorm.get(nn);        // grid short name → DB long name via alias
+  if (byAlias) return byAlias;
   const pre = (allChamps ?? []).filter(x => norm(x.name).startsWith(nn));
   if (pre.length === 1) return pre[0];
   let best = null, bestD = 99;
