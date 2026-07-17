@@ -417,7 +417,12 @@ tag work. "REJECT" = do not create a tag row; note the mechanic in the
     "transfers all debuffs except [X]" phrase → REJECT.
 15. **Synergy-dependent skills** — a skill that only becomes available/activates
     when a specific ally is on the team → REJECT (e.g. Tallia's Bomb requires
-    Fenax).
+    Fenax). **SCOPE (2026-07-18): #15 disqualifies the GATED SKILL's capabilities
+    ONLY.** A champion whose (say) A4 is ally-gated still delivers everything their
+    A1/A2/A3/passive place — attribute each tag to the skill that provides it before
+    rejecting. (An external reviewer applied the gate at CHAMPION level and would have
+    erased 6 of Venus's 7 tags though only her A4 is Cupidus-gated; caught in the
+    seed-182 audit.)
 16. **Ignore-mechanic false positives** — a bracket tag appearing after "ignore",
     "ignores", or "will ignore" in skill text is NOT a placement; it describes
     what the attack BYPASSES → REJECT. Example: "ignores [Shield] and [Strengthen]
@@ -450,6 +455,17 @@ tag work. "REJECT" = do not create a tag row; note the mechanic in the
     "steals all buffs" is **Steal Buffs**. (Root cause: the 2026-07-12 pilot found
     Vitrius mis-tagged with Increase DEF / Ally Protection / Strengthen — buffs he
     STRIPS from enemies — because a bracket scraper can't tell strip from place.)
+20. **Self-condition brackets ≠ placement** (ratified 2026-07-18) — a `[Bracket]` buff
+    that appears only as a PREREQUISITE on the champion herself ("while this Champion
+    is under a [Veil] buff", "if this Champion is under [Perfect Veil]") is a condition,
+    not something she places → REJECT it as a placement (sibling of #12/#16/#19).
+    **BOUNDARY vs #17:** #17 keeps the DEBUFF SHE PLACES tagged when it's unresistable
+    under [Veil] (APPROVE); #20 says the [Veil] buff ITSELF is not hers (REJECT). Both
+    halves of one sentence — the 2026-07-12 sweep fixed only the first. **[Veil] ≠
+    [Perfect Veil] is load-bearing:** several champions PLACE [Perfect Veil] (a real
+    placement — tag it) but were tagged plain [Veil] off a self-condition clause →
+    reject the [Veil], keep the [Perfect Veil]. (Seed 166: Rhaia, Umetogi, Yannica,
+    Yumeko, Elegaius. Policy #18 worksheet writeback for these still owed.)
 
 ### Tag source of truth — regenerate from skill_summary, NOT bracket-scraping
 The `champion_tags` layer is derived from `champion_skills.skill_summary` (verbatim
