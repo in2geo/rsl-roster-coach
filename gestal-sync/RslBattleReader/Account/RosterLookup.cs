@@ -45,11 +45,18 @@ internal static class RosterLookup
             var map = new Dictionary<int, Champ>();
             if (doc.RootElement.TryGetProperty("champions", out var champs))
                 foreach (var c in champs.EnumerateArray())
+                {
+                    // Vaulted champions can never be FIELDED, so excluding them keeps a boss/enemy
+                    // hero record from validating against a vaulted entry whose heroId happens to
+                    // collide — e.g. the Dragon boss matched a vaulted "Marked" (typeId 1530) and
+                    // was captured as a 6th team member. Same inStorage filter buildUserChampions uses.
+                    if (c.TryGetProperty("inStorage", out var st) && st.ValueKind == JsonValueKind.True) continue;
                     if (c.TryGetProperty("heroId", out var h) && c.TryGetProperty("typeId", out var t))
                     {
                         var name = c.TryGetProperty("name", out var n) ? n.GetString() : null;
                         map[h.GetInt32()] = new Champ(name ?? "", t.GetInt32());
                     }
+                }
             _cachedFile = file; _cachedMtime = mtime; _cache = map;
             return map;
         }
