@@ -6,7 +6,11 @@
 //
 // Read side: battle-log.json (has duration now) + Gestal snapshots. Skips content
 // the engine can't scan (Event/Arena/Minotaur) and Clan Boss (chest-tier scored,
-// not floor — separate follow-up). Usage: node tools/reconcile-runs.mjs
+// not floor — separate follow-up).
+//
+// Usage:
+//   node tools/reconcile-runs.mjs         — incremental: only re-predict NEW captures (fast)
+//   node tools/reconcile-runs.mjs --all   — reprocess every battle (after an engine/data change)
 
 import fs from 'fs';
 import path from 'path';
@@ -38,6 +42,10 @@ const CONTENT_KEY = {
 };
 const norm = (s) => String(s ?? '').trim().toLowerCase();
 const BUDGET_SEC = 300; // ~5-min auto budget
+// Incremental by default: only re-predict battles not already reconciled. Pass --all to
+// reprocess every battle (do this after an engine/data change so old predictions refresh).
+const FORCE_ALL = process.argv.includes('--all');
+const keyOf = (accId, capturedAt) => capturedAt ? `${accId}|${new Date(capturedAt).getTime()}` : null;
 
 // ── fetch the full champion catalog once (tags + base stats) ─────────────────
 const SEL = 'id,name,type_id,rarity,role,affinity,faction,base_hp,base_atk,base_def,base_spd,base_acc,base_res,base_crit_rate,base_crit_dmg,champion_tags(tag_id,status,ascension_required,tags(name,is_debuff,bypasses_accuracy_check))';
@@ -102,10 +110,18 @@ function classify(won, actual, rec, dur, turns, margin) {
 const client = new pg.Client({ connectionString: env.SUPABASE_POOLER_URL });
 await client.connect();
 const log = JSON.parse(fs.readFileSync(path.join(REPO, 'gestal-sync/RslBattleReader/output/battle-log.json'), 'utf8'));
-let wrote = 0, skipped = 0;
+// Load already-reconciled keys so a routine run skips them (no engine re-run).
+const doneKeys = new Set();
+if (!FORCE_ALL) {
+  const { rows } = await client.query('select account_id, battle_captured_at from run_reconciliations');
+  for (const r of rows) { const k = keyOf(r.account_id, r.battle_captured_at); if (k) doneKeys.add(k); }
+}
+let wrote = 0, skipped = 0, skippedDone = 0;
 for (const b of (Array.isArray(log) ? log : [])) {
   const contentKey = CONTENT_KEY[b.dungeon];
   if (!contentKey) { skipped++; continue; }               // unseeded / CB / event
+  const k = keyOf(b.accountId, b.capturedAt);
+  if (k && doneKeys.has(k)) { skippedDone++; continue; }  // already reconciled — skip the engine re-run
   const acc = userChampionsFor(b.accountId);
   if (!acc) { skipped++; continue; }
   let res;
@@ -162,4 +178,4 @@ for (const b of (Array.isArray(log) ? log : [])) {
   wrote++;
 }
 await client.end();
-console.log(`reconciled ${wrote} battles, skipped ${skipped} (unseeded/CB/event/unscannable)`);
+console.log(`reconciled ${wrote} battles${FORCE_ALL ? ' (--all: full reprocess)' : ` (incremental — ${skippedDone} already-done skipped; use --all to reprocess)`}, skipped ${skipped} (unseeded/CB/event/unscannable)`);
