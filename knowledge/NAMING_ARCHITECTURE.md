@@ -158,3 +158,29 @@ filled from Gestal), but its 623-unowned gap blocks nothing and it is not what f
    constraint to lock it so this can never regress.
 5. *(Optional, decoupled)* re-run the Gestal `type_id` backfill as a new seed (+83) only if the
    import feature needs it — not part of the naming fix.
+
+---
+
+## 7. BUILT (2026-07-18) — "any name → champions.id" shipped
+
+The registry + resolver + constraint are live. Any champion name, in any form, from any
+source, now resolves to `champions.id`.
+
+- **One normalizer** — `normalizeName()` in `lib/champion-names.js` (case + punctuation +
+  spacing + accents). `Kro'khad` == `Krokhad`, `Losan K'Leth` == `Losan KLeth`, verified.
+- **Alias-aware ingestion** — `buildUserChampions` takes the alias registry; `buildRosterMapper`
+  (`lib/battle-pipeline.js`), `api/my-roster.js`, `api/gestal-context.js` all load
+  `champion_aliases`, fetch alias-referenced champions, and resolve through it (canonical name
+  still wins). Previously only `champions.name` was consulted — the cause of unresolved rosters.
+- **Registry consolidated** — seed 194 (only 2 residual gaps; normalization + existing 269
+  long-name aliases already covered 274/275 worksheet long-names). Seed 193 merged the one
+  `Ma'Shalled`/`MaShalled` collision.
+- **Locked** — migration `2026-07-18_champion_name_uniqueness.sql`: partial unique index on
+  Rare+ normalized `champions.name` + unique index on normalized `champion_aliases.alias`.
+  Verified it REJECTS a masked-dup insert. Masked duplicates can never return.
+- **Verified** — offline against 5 real Gestal rosters: every Rare+ name resolves; residual
+  unmatched are out-of-scope Commons/Uncommons (correct).
+
+Remaining (separate): the short-vs-full **display** canonical is still an open preference (§4,
+resolution works either way); the grid pass for truly-missing champions (Aria, Xanthe); and the
+optional `type_id` backfill.
