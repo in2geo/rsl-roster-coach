@@ -83,7 +83,10 @@ for (const c of caps) {
   }
   const nameNote = c.gameName && c.gameName !== c.name
     ? `\n-- NAME: in-game reads "${c.gameName}"; our row is "${c.name}". Not renamed (belongs in champion_aliases).` : '';
-  out.push(`-- ${c.gameName || c.name} (${row.rarity}, ${row.faction})${nameNote}\nupdate champions set base_hp=${c.hp}, base_atk=${c.atk}, base_def=${c.def}, base_spd=${c.spd}, base_crit_rate=${c.crate}, base_crit_dmg=${c.cdmg}, base_res=${c.res}, base_acc=${c.acc}\nwhere id='${row.id}' and base_hp is null;`);
+  // base_stat_reference_rank/level record WHAT THE STATS ARE SCALED TO. Without them a row is
+  // unfalsifiable — Staltus Dragonbane sat at a 5*/50 Gestal placeholder (ATK 518 for a
+  // Legendary) and only its citation gave it away. Captures are 6* L60 by definition.
+  out.push(`-- ${c.gameName || c.name} (${row.rarity}, ${row.faction})${nameNote}\nupdate champions set base_hp=${c.hp}, base_atk=${c.atk}, base_def=${c.def}, base_spd=${c.spd}, base_crit_rate=${c.crate}, base_crit_dmg=${c.cdmg}, base_res=${c.res}, base_acc=${c.acc},\n  base_stat_reference_rank=6, base_stat_reference_level=60,\n  source_citation='in-game Index 6★ L60 Total Stats (Mike screenshot ${new Date().toISOString().slice(0,10)}); HP ✓ multiple-of-15'\nwhere id='${row.id}' and base_hp is null;`);
 }
 
 console.log(`\nFILLS:   ${out.length}`);
