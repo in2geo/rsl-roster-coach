@@ -13,6 +13,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { buildUserChampions, buildContext } from '../lib/gestal-context.js';
+import { normalizeName } from '../lib/champion-names.js';
 
 const BASE_URL    = (process.env.SUPABASE_URL ?? '').replace(/\/rest\/v1\/?$/, '');
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -106,8 +107,14 @@ export default async function handler(req, res) {
   const owned = gestalRoster.champions.filter(c => !c.inStorage);
   const ownedNames   = [...new Set(owned.map(c => c.name).filter(Boolean))];
   const ownedTypeIds = [...new Set(owned.map(c => c.baseTypeId ?? c.typeId).filter(t => t != null))];
+  // Alias registry so a roster name in ANY form (long/short/apostrophe) resolves.
+  const { data: aliasRows } = await service
+    .from('champion_aliases').select('alias, champion_id').eq('game_id', 'raid_shadow_legends');
+  const ownedNorm = new Set(ownedNames.map(normalizeName));
+  const aliasChampIds = [...new Set((aliasRows ?? [])
+    .filter(a => ownedNorm.has(normalizeName(a.alias))).map(a => a.champion_id))];
   const dbById = new Map();
-  for (const [col, vals] of [['type_id', ownedTypeIds], ['name', ownedNames]]) {
+  for (const [col, vals] of [['type_id', ownedTypeIds], ['name', ownedNames], ['id', aliasChampIds]]) {
     if (!vals.length) continue;
     const { data, error: cErr } = await service
       .from('champions')
@@ -119,7 +126,7 @@ export default async function handler(req, res) {
   }
   const dbChampions = [...dbById.values()];
 
-  const { userChampions, unmatched } = buildUserChampions(gestalRoster.champions, dbChampions);
+  const { userChampions, unmatched } = buildUserChampions(gestalRoster.champions, dbChampions, aliasRows ?? []);
   const context = buildContext({ gestalRoster, userChampions, unmatched, battleLog: [] });
 
   const minutes = acct.extracted_at
