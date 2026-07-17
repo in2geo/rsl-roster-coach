@@ -677,7 +677,7 @@ function renderStars(root, value) {
     star.className = 'star-btn' + (i <= value ? ' active' : '');
     star.textContent = '★';
     star.setAttribute('data-star', i);
-    star.addEventListener('click', () => renderStars(root, i));
+    star.addEventListener('click', () => { renderStars(root, i); updateMasteryVisibility(root); });
     container.appendChild(star);
   }
 }
@@ -731,14 +731,13 @@ function updateLoreVisibility(root) {
   loreRow.classList.toggle('hidden', mastery !== 'Complete');
 }
 
-// The boss-mastery question is only meaningful for level-60 champions (Warmaster/Giant Slayer
-// require level 60). Below 60 we hide the row and force mastery to 'None' so a champ can't be
-// credited with a mastery it can't have.
+// The boss-mastery question is only meaningful for 6★ champions (masteries are gated on
+// ascension, not level — a 6★ at level 1 can have them). Below 6★ we hide the row and force
+// mastery to 'None' so a champ can't be credited with a mastery it can't have.
 function updateMasteryVisibility(root) {
   const row = qs('#sheet-mastery-row', root);
   if (!row) return;
-  const level = parseInt(qs('#sheet-level', root)?.value, 10) || 1;
-  const show = level >= 60;
+  const show = getStars(root) >= 6;
   row.style.display = show ? '' : 'none';
   if (!show) { renderMastery(root, 'None'); updateLoreVisibility(root); }
 }
@@ -879,6 +878,7 @@ function getVerificationCards() {
         stars:           state.stars ?? 1,
         ascension_level: state.ascension_level ?? 0,
         gear_tier:       state.gear_tier ?? 'Starter',
+        mastery_tier:    state.mastery_tier ?? 'None',
         is_booked:       state.is_booked ?? false,
       };
     })
@@ -959,6 +959,29 @@ function buildVerifyCard(c) {
 
   card.append(img, info, badge);
 
+  // Mastery badge — 6★ champs can carry full masteries (Warmaster/Giant Slayer), the CB damage
+  // gate. Shown ONLY for 6★ (masteries are star-gated, not level). Tap toggles it WITHOUT opening
+  // the detail sheet — same minimal-friction pattern as the book badge.
+  if ((c.stars ?? 0) >= 6) {
+    const hasM = () => String(c.mastery_tier).toLowerCase() === 'complete';
+    const mBadge = document.createElement('span');
+    mBadge.className = 'verify-mastery-badge' + (hasM() ? ' has-mastery' : '');
+    mBadge.textContent = '⚔️';
+    const setTitle = () => { mBadge.title = hasM()
+      ? 'Full masteries (Warmaster / Giant Slayer) — tap to unset'
+      : 'No boss masteries — tap to mark full'; };
+    setTitle();
+    mBadge.setAttribute('role', 'button');
+    mBadge.addEventListener('click', async (e) => {
+      e.stopPropagation();               // don't open the detail sheet
+      const now = await toggleMastery(c.id);
+      c.mastery_tier = now ? 'Complete' : 'None';
+      mBadge.classList.toggle('has-mastery', now);
+      setTitle();
+    });
+    card.append(mBadge);
+  }
+
   card.addEventListener('click', () => {
     sheetReturnTo = 'verify';
     openDetailSheet({ id: c.id, name: c.name, portrait_url: c.portrait_url }, c.rarity);
@@ -982,6 +1005,26 @@ async function toggleBooked(champId) {
     });
     if (!res.ok) throw new Error('save failed');
   } catch { s.is_booked = !next; return !next; } // revert
+  return next;
+}
+
+// Toggle full boss masteries (Complete ↔ None) inline from the card, persisting immediately.
+// Returns the new "has full masteries" boolean. Mirrors toggleBooked.
+async function toggleMastery(champId) {
+  const s = roster[champId];
+  if (!s) return false;
+  const wasComplete = String(s.mastery_tier).toLowerCase() === 'complete';
+  const next = !wasComplete;
+  s.mastery_tier = next ? 'Complete' : 'None';
+  try {
+    const res = await fetch('/api/user-champions', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: DEVICE_ID, champion_id: champId,
+        level: s.level, stars: s.stars, ascension_level: s.ascension_level,
+        gear_tier: s.gear_tier, mastery_tier: s.mastery_tier, is_booked: s.is_booked }),
+    });
+    if (!res.ok) throw new Error('save failed');
+  } catch { s.mastery_tier = wasComplete ? 'Complete' : 'None'; return wasComplete; } // revert
   return next;
 }
 

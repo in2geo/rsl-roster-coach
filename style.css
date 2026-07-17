@@ -817,6 +817,18 @@ footer a { color: var(--muted); text-decoration: underline; }
   opacity: 1; filter: none;
   background: rgba(255,183,0,0.16); box-shadow: inset 0 0 0 1px rgba(255,183,0,0.45);
 }
+/* Mastery badge on roster cards — shown only for 6★; crimson = full masteries (Warmaster/Giant Slayer). */
+.verify-mastery-badge {
+  flex: 0 0 auto;
+  font-size: 1.1rem; line-height: 1; padding: 0.35rem; border-radius: 8px;
+  opacity: 0.28; filter: grayscale(1); cursor: pointer;
+  transition: opacity .15s, filter .15s, background .15s;
+}
+.verify-mastery-badge:hover { background: rgba(255,255,255,0.06); opacity: 0.6; }
+.verify-mastery-badge.has-mastery {
+  opacity: 1; filter: none;
+  background: rgba(229,57,53,0.16); box-shadow: inset 0 0 0 1px rgba(229,57,53,0.5);
+}
 .verify-toolbar {
   display: flex; align-items: center; justify-content: space-between;
   gap: 0.6rem; margin: 0.2rem 0 0.6rem;
