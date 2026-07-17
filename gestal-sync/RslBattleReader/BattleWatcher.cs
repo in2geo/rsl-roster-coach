@@ -772,10 +772,17 @@ internal sealed class BattleWatcher(string outputPath)
                     // enough to separate allies from enemies (validated on the Brutal
                     // dumps: recovers Pelops, still rejects Seeker/Valerie). Re-slot
                     // 0..n in file order and attach the canonical name + full typeId.
+                    // Ascension-tolerant identity: typeId = baseTypeId + ascension (0..6). A champion
+                    // the player ascends between Gestal syncs shifts its typeId by up to 6, so an exact
+                    // low-byte match drops it (observed: Klodd, ascended +2 after the snapshot, vanished
+                    // from a 5-champ capture). heroId is the primary key at every call site here, so a
+                    // ±6 low-byte window (wrap-safe) only needs to reject enemy/coincidental collisions.
+                    static bool SameChamp(int a, int b) { int d = ((a & 0xFF) - (b & 0xFF) + 256) % 256; return d <= 6 || d >= 250; }
+
                     int slot = 0;
                     var preFilter = snapshot.Heroes;   // keep the raw file list for recovery + debug
                     snapshot.Heroes = preFilter
-                        .Where(h => roster.TryGetValue(h.HeroId, out var c) && (c.TypeId & 0xFF) == (h.TypeId & 0xFF))
+                        .Where(h => roster.TryGetValue(h.HeroId, out var c) && SameChamp(c.TypeId, h.TypeId))
                         .Select(h => h with
                         {
                             Slot   = slot++,
@@ -784,7 +791,7 @@ internal sealed class BattleWatcher(string outputPath)
                         })
                         .ToList();
                     if (_debugHeroes)
-                        try { File.AppendAllText(HeroDebugPath, $"[filter] file={preFilter.Count} kept={snapshot.Heroes.Count} dropped=[{string.Join(", ", preFilter.Where(h => !(roster.TryGetValue(h.HeroId, out var c) && (c.TypeId & 0xFF) == (h.TypeId & 0xFF))).Select(h => $"hid={h.HeroId} fileTid=0x{h.TypeId:X} inRoster={roster.ContainsKey(h.HeroId)}"))}]\n"); } catch { }
+                        try { File.AppendAllText(HeroDebugPath, $"[filter] file={preFilter.Count} kept={snapshot.Heroes.Count} dropped=[{string.Join(", ", preFilter.Where(h => !(roster.TryGetValue(h.HeroId, out var c) && SameChamp(c.TypeId, h.TypeId))).Select(h => $"hid={h.HeroId} fileTid=0x{h.TypeId:X} inRoster={roster.ContainsKey(h.HeroId)}"))}]\n"); } catch { }
 
                     // Leader (aura source) = slot 0 = first hero in file order =
                     // left-most on the battle-result screen. Confirmed on labeled
@@ -822,7 +829,7 @@ internal sealed class BattleWatcher(string outputPath)
                         {
                             if (!roster.TryGetValue(h.HeroId, out var c)) continue;
                             int lb = c.TypeId & 0xFF;
-                            if (have.Contains(lb) || !survival.Values.Any(sv => (sv.typeId & 0xFF) == lb)) continue;
+                            if (have.Contains(lb) || !survival.Values.Any(sv => SameChamp(sv.typeId, c.TypeId))) continue;
                             snapshot.Heroes.Add(new BattleHero { HeroId = h.HeroId, TypeId = c.TypeId, Name = c.Name });
                             have.Add(lb);
                             if (_debugHeroes) try { File.AppendAllText(HeroDebugPath, $"[recover] +{c.Name} tid=0x{c.TypeId:X}\n"); } catch { }
@@ -839,7 +846,7 @@ internal sealed class BattleWatcher(string outputPath)
                         var used = new HashSet<int>();
                         snapshot.Heroes = snapshot.Heroes.Select(h =>
                         {
-                            int i = avail.FindIndex(kv => !used.Contains(kv.Key) && (kv.Value.typeId & 0xFF) == (h.TypeId & 0xFF));
+                            int i = avail.FindIndex(kv => !used.Contains(kv.Key) && SameChamp(kv.Value.typeId, h.TypeId));
                             if (i < 0) return h;
                             used.Add(avail[i].Key);
                             return h with { Slot = avail[i].Key, Survived = avail[i].Value.survived };
