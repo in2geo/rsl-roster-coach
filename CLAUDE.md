@@ -524,8 +524,25 @@ was stated as fact, propagated through memory, and skewed a reconciliation.
   Boss do not).
 - When no owned champion satisfies a goal, say so explicitly — never
   silently substitute a guess.
-- Solo carry check runs BEFORE team recommendation. If a player owns a
-  known solo carry for the requested content, surface it first.
+- **SOLO CARRIES ARE PARKED (Mike, 2026-07-16). Do not build on this layer.**
+  The old rule read: "Solo carry check runs BEFORE team recommendation. If a
+  player owns a known solo carry for the requested content, surface it first."
+  That is **suspended** — it is niche, and it was actively interfering with the
+  main team-building product. `champion_solo_profiles` are back to `proposed`
+  (seed 148), so `checkSoloCarries` reads nothing and the layer is silent. The
+  data, seeds (06, 143) and research are all intact; one UPDATE un-parks it.
+  Three things must be fixed BEFORE it is ever un-parked:
+  1. **`checkSoloCarries` is INVERTED** — it queries the stage the TEAM scan
+     already chose, so a carry is only found if the team could already get
+     there. The whole point is that a carry clears a HIGHER stage. It never ran
+     "before team recommendation" as the old rule claimed.
+  2. **`required_set` is never checked against equipped gear** — so it proposes
+     champions in builds the player does not have (Michelangelo's Ice Golem and
+     Dragon solos both require Toxic; GuapoDonni's is in Perception 4 +
+     Accuracy 2). This is the "the BUILD decides it" principle, unimplemented.
+  3. **Duplicate rows** — Athel/Kael/Elhain each have two identical Spider
+     "Stages 1-14" rows, so the layer surfaced "Arix, Kael, Elhain, Kael,
+     Elhain" to a maxed account.
 - Clan Boss is NOT solo-able content. Never add Clan Boss rows to
   champion_solo_profiles.
 - Ice Golem stage 10-13 vs 14+ requires different explanation tone — see
