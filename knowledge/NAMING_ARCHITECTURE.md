@@ -79,6 +79,30 @@ complete and name-independent — dedup and the recommendation engine use it, no
 
 ---
 
+## 3b. Identity model — DECIDED (2026-07-18)
+
+**`champions.id` (the UUID) IS the app/model's champion identity. Do NOT add a second id.**
+It is app-owned (independent of Gestal and the game), it is the FK for every skill/tag/aura,
+it is what the frontend picker and the whole model use, and it is stable in practice — seeds
+reference champions by their UUID directly, so it survives DB rebuilds via committed seeds.
+
+A `champion_code` (promoting the worksheet's `C`-scheme id) was considered and **rejected** —
+it would be a second identifier for the same thing, the exact convolution we're avoiding. The
+only thing it reached for was a clean worksheet↔DB join key; that is a **one-time**
+reconciliation need, handled by matching on name+faction+grid during the reconciliation, not a
+permanent column. Three id layers, each with one job:
+
+| Layer | Job | Owner |
+|---|---|---|
+| **`champions.id`** (UUID) | the model's champion identity | us |
+| `type_id` (`baseTypeId`) | ingestion-boundary translation (game↔us), owned champs only | game |
+| `name` + aliases | display + name-fallback resolution | us |
+
+The real work is not a new id — it is making `name` reliable so the fallback stops breaking,
+while `champions.id` stays the identity it already is.
+
+---
+
 ## 4. The fix — reconcile three sources we ALREADY have (no Gestal)
 
 The master list is not Gestal. It is the **worksheet authoring tab** (completeness) arbitrated
