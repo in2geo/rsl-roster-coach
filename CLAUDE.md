@@ -179,6 +179,30 @@ order by d.name, ds.label;
   approved by a human before it's considered live. No auto-merge.
 - Zero-tag champions must surface explicitly — never silently exclude.
 
+### Base-stat validation: HP is ALWAYS a multiple of 15 (verified 3/3)
+A champion's 6★ Lvl 60 `base_hp` is always a multiple of 15. Use this to validate
+ANY base-stat source before seeding it — it is the cheapest check available and
+needs no second source: **any HP that is not a multiple of 15 is a typo.**
+- **Evidence (2026-07-17):** across the 884-row "Champ List Tizlerio" sheet the
+  rule flagged exactly 3 rows, and an in-game screenshot confirmed the correct
+  value on all 3 — Criodan the Blue (sheet 178835, true 17835), Wallmaster
+  Othorion (sheet 14690, true 15690), Tribuck Colwyn (sheet 15095, true 15195).
+  In the latter two our live DB was already exact on all 8 stats and the sheet
+  was wrong. Verified check, not a heuristic.
+- **Apply it to the hand-entry backlog** (141 champions as of seed 149, mostly
+  Legendary + Mythical): validate every hand-entered HP against the rule.
+- **KNOW ITS LIMITS — do not oversell it.** It validates HP ONLY, and only errors
+  that break the grid. A transposed HP that still lands on a multiple of 15, or
+  ANY error in ATK/DEF/SPD/RES/ACC/crit, passes undetected. It does not
+  adjudicate disputes where both candidates are multiples of 15 (Kael 13710 vs
+  15690 — both are). Community stat sheets are Tier-2; this rule does not
+  promote them to Tier-1.
+- **Corollary — the 2026-06-24 ChatGPT bulk load is NOT uniformly bad.** It is
+  exact on all 8 stats for both champions spot-checked in-game (one Legendary,
+  one Rare) and beat a community sheet both times. The ~19 disputed rows are
+  SPECIFIC failures. Do not rewrite the existing corpus wholesale on the strength
+  of them; fix disputed rows individually, against Tier-1 evidence.
+
 ## Source hierarchy for skill data (champion tags)
 
 When proposing champion_tags rows, use the following hierarchy in order
