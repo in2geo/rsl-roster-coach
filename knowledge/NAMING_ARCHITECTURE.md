@@ -54,20 +54,28 @@ is a symptom of this one fact:
 
 ---
 
-## 3. `type_id` is a SEPARATE, narrow concern — not the naming fix
+## 3. `type_id` vs the naming fix — related but separable
 
-`type_id` (the game's `baseTypeId`) is needed **only** to match EXTERNAL game data — Gestal
-exports and the battle-reader — back to our rows (the roster-*import* feature). It is NOT
-needed for naming, dedup, or the recommendation engine (which selects champions by their
-`id` UUID). The internal identity key already exists and is complete: the row **UUID** (and,
-in the worksheet, the frozen `C`-scheme **Stable Champion ID**). **So the naming fix does not
-depend on `type_id` or on Gestal at all.** An earlier draft of this doc conflated the two;
-this section supersedes it.
+`type_id` (the game's `baseTypeId`) is the **primary champion-identity key for external game
+data** — both the Gestal roster→DB match (`gestal-context.js:169`) and the **battle-reader
+feedback loop** (`lookupHero` prefers `hero.typeId`, `battle-pipeline.js:25,50,65`). It is
+**load-bearing for the capture→reconcile loop**, not an optional import-only concern (an
+earlier draft wrongly said so). Name is the FALLBACK in that same resolution, so garbled
+names on owned champions break the loop too.
 
-For completeness, the `type_id` audit (2026-07-18): 240/946 set; of 706 NULL, only **83** are
-fillable from the 5 Gestal exports (owned), **623** are unowned and would need a passive read
-of the game's own champion data. Pursue that **only** if/when the Gestal-import feature needs
-wider coverage — it is decoupled from everything below.
+The key scoping fact: the feedback loop only ever sees champions the player **owns and
+fields** — exactly the set Gestal covers. So:
+- `type_id` on **owned/fielded** champions is load-bearing → keep it filled (re-run the Gestal
+  backfill; the 240 set + 83 fillable cover this).
+- the **623 unowned** champions never appear in battles, so their NULL `type_id` blocks
+  nothing.
+- the naming fix (Steps below) is still **separable and independently necessary**: it fixes
+  the name-fallback half of the same resolution AND the display/dedup problem, and it needs
+  the worksheet+grids, not Gestal.
+
+Audit (2026-07-18): 240/946 `type_id` set; of 706 NULL, 83 Gestal-fillable, 623 unowned.
+The internal identity key (row **UUID**, and the worksheet's frozen `C`-id) is already
+complete and name-independent — dedup and the recommendation engine use it, not `type_id`.
 
 ---
 
@@ -113,8 +121,9 @@ Join worksheet ∪ grids ∪ DB on normalized name (+ faction). Produce:
 **Define `champions.name` as the single canonical in-game name (everything else an alias),
 reconcile it from the two sources we already have — the worksheet authoring tab for the
 complete roster, the grid archive for correct spelling and existence — and add a
-normalized-uniqueness constraint so masked duplicates can never come back; `type_id`/Gestal
-is a separate, optional concern for the import feature only.**
+normalized-uniqueness constraint so masked duplicates can never come back. `type_id` is a
+separable track — load-bearing for the battle-reader feedback loop on OWNED champions (keep it
+filled from Gestal), but its 623-unowned gap blocks nothing and it is not what fixes names.**
 
 ## 6. Concrete next steps (in order)
 1. **Build the reconciliation table** (Step 2) — worksheet authoring tab ∪ grids ∪ DB on
