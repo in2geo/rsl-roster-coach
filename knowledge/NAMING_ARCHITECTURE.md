@@ -54,73 +54,74 @@ is a symptom of this one fact:
 
 ---
 
-## 3. The `type_id` ceiling (audited 2026-07-18)
+## 3. `type_id` is a SEPARATE, narrow concern — not the naming fix
 
-`type_id` is learned only from Gestal exports, which cover **only owned champions**:
+`type_id` (the game's `baseTypeId`) is needed **only** to match EXTERNAL game data — Gestal
+exports and the battle-reader — back to our rows (the roster-*import* feature). It is NOT
+needed for naming, dedup, or the recommendation engine (which selects champions by their
+`id` UUID). The internal identity key already exists and is complete: the row **UUID** (and,
+in the worksheet, the frozen `C`-scheme **Stable Champion ID**). **So the naming fix does not
+depend on `type_id` or on Gestal at all.** An earlier draft of this doc conflated the two;
+this section supersedes it.
 
-| | count |
-|---|---|
-| champions | 946 |
-| `type_id` set | 240 |
-| `type_id` NULL | 706 |
-| &nbsp;&nbsp;— fillable now from the 5 exports (owned) | **83** |
-| &nbsp;&nbsp;— hard gap (unowned by all 5 accounts) | **623** (617 Rare+) |
-
-**Conclusion:** Gestal alone maxes out near **323/946 (34%)**. The 623 unowned champions
-need an **external `baseTypeId` source** — the game's own champion definitions (a *passive*
-read of the local client data, permitted as factual game data; NOT memory injection), or a
-Tier-2 community datamine read by hand. That is a real project, not a quick backfill.
-
-Therefore `type_id` completion is the long-term ideal, **but it cannot be the near-term
-cure.** The near-term cure is name hygiene + a schema guard, which work regardless of
-`type_id`.
+For completeness, the `type_id` audit (2026-07-18): 240/946 set; of 706 NULL, only **83** are
+fillable from the 5 Gestal exports (owned), **623** are unowned and would need a passive read
+of the game's own champion data. Pursue that **only** if/when the Gestal-import feature needs
+wider coverage — it is decoupled from everything below.
 
 ---
 
-## 4. The fix — two pillars
+## 4. The fix — reconcile three sources we ALREADY have (no Gestal)
 
-### Pillar A — Name hygiene (near-term cure; do this first)
-Stops the duplicate/garble class permanently, independent of `type_id`.
+The master list is not Gestal. It is the **worksheet authoring tab** (completeness) arbitrated
+by the **grid archive** (correctness). Both are already on disk.
 
-1. **One rule for `champions.name`:** the exact **full in-game name, verbatim** (e.g.
-   `Ash'nar Dragonsoul`). Nothing else. Short display names, garbled spellings, and old
-   forms all become **aliases**.
-2. **Grid reconciliation** (the `Champions/<faction>/*.png` archive is the ground-truth
-   master list): for each faction, the true set of in-game names. Reconcile `champions.name`
-   against it → fix every garbled name to canonical, auto-generate aliases for the variants,
-   and surface both **fakes** (in DB, not in game) and **missing** (in game, not in DB —
-   Aria the Golden Hope, Xanthe Seaflower, Leminisi the Goldwing, …). NB the grids are a
-   point-in-time snapshot, so "in DB not in grid" = fake **or** newly-added; disambiguate by
-   source + payload, never blanket-delete (see the 2026-07-18 handoff).
-3. **Schema guard so it can't regress:**
-   - `create unique index on champions (game_id, <normalized_name>)` where normalized =
-     `lower(regexp_replace(name,'[^a-z0-9]','','g'))` → makes `K'Leth`/`Losan KLeth` and
-     `Ma'Shalled`/`MaShalled` **impossible to insert twice**.
-   - unique index on normalized `alias` per game.
-   - keep the existing `champions (game_id, type_id)` unique index.
+| Source | What it provides | Caveat |
+|---|---|---|
+| **Worksheet `Champions` tab** (967 rows, `Stable Champion ID`, `Form` base/alt ×33) | the COMPLETE expected roster + a stable internal id + two-form structure | ChatGPT-generated; names are the SAME garbled forms the DB inherited (`Ashnar Dragonsoul`, `Packmaster Shyek`, `Losan KLeth`) — **not** a name-truth source |
+| **Grid archive** `Champions/<faction>/*.png` (Tier-1 game) | canonical NAME spelling (apostrophes) + existence ground truth | point-in-time snapshot (a few champions post-date it) |
+| **Live DB** (946 rows) | current state to correct | carries the garbled names + any fakes |
 
-### Pillar B — Complete `type_id` (long-term; makes matching fully name-proof)
-1. **Re-run the Gestal backfill** (`tools/generate-type-id-backfill.mjs`) → +83 now
-   (240 → ~323). Emit as a NEW seed (do not clobber the applied seed 127).
-2. **Reconcile the 81 owned-but-unresolved names** — these are real, owned, and carry a
-   `baseTypeId`. Fix their DB name / add the alias (Pillar A) so the bridge resolves them,
-   which also fills their `type_id`.
-3. **Source the 623 unowned `baseTypeId`s** from the game's own champion data (passive read)
-   or a hand-read datamine. This is the only way to reach 100%, and it is a scoped project of
-   its own — not a prerequisite for Pillar A.
+**Note:** the fakes (`Nson`, `Fimo`, `Jorad Wolfhart`) did NOT come from the authoring tab —
+they entered via a DB import (a "Google AI Overview") and appear only in the worksheet's
+`DB_Champions` mirror. Several are garbles of real champions (`Jorad Wolfhart` = the real
+`Fjorad Wolfheart`, in the DB as `Fjorad`, Dwarves Mythical).
+
+### Step 1 — One rule for `champions.name`
+`champions.name` = the exact **full in-game name, verbatim** (e.g. `Ash'nar Dragonsoul`).
+Short display names, garbled spellings, and old forms all become **aliases**.
+
+### Step 2 — Three-way reconciliation
+Join worksheet ∪ grids ∪ DB on normalized name (+ faction). Produce:
+- **name fixes** — DB/worksheet garble → the grid's canonical spelling (`Ashnar Dragonsoul`
+  → `Ash'nar Dragonsoul`, `Fjorad` → `Fjorad Wolfheart`), old spelling kept as alias.
+- **fakes** — in DB, not in worksheet-authoring AND not in any grid → delete (disambiguate
+  "not in grid but real/new" by source + payload; never blanket-delete).
+- **missing** — in worksheet/grid, not in DB → add (Aria the Golden Hope, Xanthe Seaflower,
+  Leminisi the Goldwing, …).
+
+### Step 3 — Schema guard so it can't regress
+- `create unique index on champions (game_id, <normalized_name>)` where normalized =
+  `lower(regexp_replace(name,'[^a-z0-9]','','g'))` → makes `K'Leth`/`Losan KLeth` and
+  `Ma'Shalled`/`MaShalled` **impossible to insert twice**.
+- unique index on normalized `alias` per game.
+- keep the existing `champions (game_id, type_id)` unique index.
 
 ---
 
 ## 5. One-sentence answer
-**Make `type_id` the identity key and complete it over time; in the meantime demote `name`
-to a single canonical in-game string with everything else as aliases, reconcile it against
-the grid master list, and add a normalized-uniqueness constraint so masked duplicates can
-never come back.**
+**Define `champions.name` as the single canonical in-game name (everything else an alias),
+reconcile it from the two sources we already have — the worksheet authoring tab for the
+complete roster, the grid archive for correct spelling and existence — and add a
+normalized-uniqueness constraint so masked duplicates can never come back; `type_id`/Gestal
+is a separate, optional concern for the import feature only.**
 
 ## 6. Concrete next steps (in order)
-1. **Grid reconciliation** (Pillar A.2) — read the ~89 grids → master list → fakes + missing
-   + garbled-name fixes. Highest leverage; also feeds Pillar B.2.
-2. **Normalized-uniqueness migration** (Pillar A.3) — after the reconciliation cleans
-   existing collisions, add the constraint to lock it.
-3. **Re-run type_id backfill** (Pillar B.1) as a new seed → +83.
-4. Decide whether/when to pursue the game-data `baseTypeId` read for the 623 (Pillar B.3).
+1. **Build the reconciliation table** (Step 2) — worksheet authoring tab ∪ grids ∪ DB on
+   normalized name+faction → three output lists: name-fixes, fakes, missing. Highest leverage.
+2. **Apply name-fixes** as a seed — rename to canonical, garbled spelling → alias.
+3. **Resolve fakes/missing** with review (fakes disambiguated by source+payload).
+4. **Normalized-uniqueness migration** (Step 3) — after collisions are cleaned, add the
+   constraint to lock it so this can never regress.
+5. *(Optional, decoupled)* re-run the Gestal `type_id` backfill as a new seed (+83) only if the
+   import feature needs it — not part of the naming fix.
