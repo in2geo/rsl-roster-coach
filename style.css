@@ -1316,3 +1316,25 @@ footer a { color: var(--muted); text-decoration: underline; }
 .contrib-bar > span { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
 .contrib-sub { font-size: 0.72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .contrib-note { font-size: 0.7rem; color: var(--muted); line-height: 1.45; margin: 0.8rem 0 0; font-style: italic; }
+
+/* ── Clan Boss chest verdict (damage race — replaces the % pill for CB) ── */
+.cb-verdict {
+  background: linear-gradient(180deg, rgba(245,166,35,0.10), rgba(245,166,35,0.03));
+  border: 1px solid rgba(245,166,35,0.35);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  margin-bottom: var(--gap);
+}
+.cb-verdict-head { font-size: 1.1rem; font-weight: 700; color: var(--accent2); line-height: 1.3; }
+.cb-verdict-head strong { color: var(--text); }
+.cb-verdict-focus { font-size: 0.9rem; line-height: 1.5; color: var(--text); margin-top: 0.5rem; }
+.cb-verdict-list { list-style: none; margin: 0.8rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+.cb-verdict-list li {
+  display: grid; grid-template-columns: 5rem 4rem 1fr; align-items: baseline; gap: 0.5rem;
+  font-size: 0.82rem; font-variant-numeric: tabular-nums;
+}
+.cb-diff { color: var(--muted); }
+.cb-dmg { color: var(--text); font-weight: 600; text-align: right; }
+.cb-status { color: var(--muted); }
+.cb-status .cb-ok { color: var(--accent2); font-weight: 600; }
+.cb-verdict-note { font-size: 0.7rem; color: var(--muted); line-height: 1.45; margin: 0.8rem 0 0; font-style: italic; }

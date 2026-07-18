@@ -438,6 +438,8 @@ function renderResults(data) {
     confDisplay.classList.add('hidden');
   }
 
+  renderClanBossVerdict(data); // Clan Boss: chest verdict replaces the % pill (damage race)
+
   const explanationEl = document.getElementById('explanation-text');
   explanationEl.textContent = data.explanation || '';
   document.querySelector('.event-fallback-note')?.remove();
@@ -499,6 +501,48 @@ function renderResults(data) {
       .then(b => { if (b.id) pendingOutcomeId = b.id; })
       .catch(() => {});
   }
+}
+
+// Clan Boss chest verdict — CB is a DAMAGE RACE graded by chest tier, not a "% chance of success".
+// Renders the account's proven top-one-keyable difficulty + the gap to the next chest, from real
+// captured keys (data.clan_boss_verdict). Hidden for all non-CB content.
+function renderClanBossVerdict(data) {
+  const el = document.getElementById('cb-verdict');
+  if (!el) return;
+  const v = data.clan_boss_verdict;
+  if (!v) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+  const M = n => n == null ? '?' : `${(n / 1e6).toFixed(1)}M`;
+  const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+
+  if (!v.has_data) {
+    el.innerHTML = `<div class="cb-verdict-head">Clan Boss — damage race</div>
+      <p class="cb-verdict-focus">No Clan Boss keys captured for this account yet. Run a key and we'll grade your chest tier — Clan Boss is scored by total damage, not win-or-lose.</p>`;
+    el.classList.remove('hidden');
+    return;
+  }
+
+  const headline = v.top_one_keyable
+    ? `You one-key the top chest at <strong>${v.top_one_keyable}</strong>`
+    : `Not one-keying a top chest yet`;
+  let focus = '';
+  if (v.focus && v.focus.tried) {
+    const pct = Math.round((v.focus.margin ?? 0) * 100);
+    focus = `<p class="cb-verdict-focus"><strong>${v.focus.difficulty}:</strong> earning the ${cap(v.focus.earned_chest) || 'below-lowest'} chest — ${pct}% of the way to the top ${cap(v.focus.top_chest)} chest (about ${M(v.focus.shortfall)} more damage).</p>`;
+  } else if (v.focus) {
+    focus = `<p class="cb-verdict-focus">Next tier to try: <strong>${v.focus.difficulty}</strong> — its top ${cap(v.focus.top_chest)} chest needs about ${M(v.focus.top_threshold)} damage.</p>`;
+  }
+  const rows = (v.per_difficulty ?? []).map(p => {
+    const status = p.earned_top
+      ? `<span class="cb-ok">one-keys ${cap(p.top_chest)}</span>`
+      : `${cap(p.earned_chest) || 'below lowest'} · ${Math.round((p.margin ?? 0) * 100)}% of ${cap(p.top_chest)}`;
+    return `<li><span class="cb-diff">${p.difficulty}</span><span class="cb-dmg">${M(p.best_damage)}</span><span class="cb-status">${status}</span></li>`;
+  }).join('');
+
+  el.innerHTML = `<div class="cb-verdict-head">${headline}</div>
+    ${focus}
+    <ul class="cb-verdict-list">${rows}</ul>
+    <p class="cb-verdict-note">Clan Boss is a damage race — success is the chest tier your key reaches, from your real runs.</p>`;
+  el.classList.remove('hidden');
 }
 
 // Layer 2 contribution model — beta display panel, shown only in test mode. It is

@@ -121,6 +121,8 @@ export default async function handler(req, res) {
       leader:                 matchResult.leader ?? null,
       synergies:              matchResult.synergies ?? [],
       stun_matrix:            matchResult.stun_matrix,
+      cb_damage:              matchResult.cb_damage ?? null,
+      clan_boss_verdict:      matchResult.clan_boss_verdict ?? null,
       contribution:           matchResult.contribution ?? null,
       watchdog:               matchResult.watchdog ?? null,
       gaps:                   matchResult.gaps,

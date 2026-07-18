@@ -25,7 +25,8 @@ const CHAMPION_JOIN = `
     id, name, rarity, portrait_url, affinity, faction,
     base_hp, base_atk, base_def, base_spd, base_acc, base_res,
     base_crit_rate, base_crit_dmg,
-    champion_tags ( tag_id, status, ascension_required, tags ( name, bypasses_accuracy_check ) )
+    champion_tags ( tag_id, status, ascension_required, tags ( name, bypasses_accuracy_check ) ),
+    champion_skills ( slot, skill_name, skill_summary )
   )`;
 
 export default async function handler(req, res) {
