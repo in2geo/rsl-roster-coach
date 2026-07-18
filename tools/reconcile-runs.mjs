@@ -123,7 +123,7 @@ if (!FORCE_ALL) {
   const { rows } = await client.query('select account_id, battle_captured_at from run_reconciliations');
   for (const r of rows) { const k = keyOf(r.account_id, r.battle_captured_at); if (k) doneKeys.add(k); }
 }
-let wrote = 0, skipped = 0, skippedDone = 0, skippedIncompleteCb = 0;
+let wrote = 0, skipped = 0, skippedDone = 0, skippedIncompleteCb = 0, skippedNoDamageCb = 0;
 async function upsert(row) {
   const cols = Object.keys(row);
   const vals = cols.map(k => (row[k] !== null && typeof row[k] === 'object') ? JSON.stringify(row[k]) : row[k]);
@@ -141,8 +141,19 @@ for (const b of (Array.isArray(log) ? log : [])) {
     const heroes = b.heroes ?? [];
     if (heroes.length < 5) { skippedIncompleteCb++; continue; } // a dropped hero → false-low total; don't grade
     const total = b.totalDamageDealt ?? (heroes.reduce((s, h) => s + (Number(h.damage) || 0), 0) || null);
+    // QUICK BATTLES ARE NOT GRADEABLE — and must be counted, not silently dropped (Mike 2026-07-18).
+    // CB per-hero damage is read from the live RESULT DIALOG's view-model; a quick battle never opens
+    // that dialog, so damage comes back null. The chest verdict IS damage, so there is nothing to
+    // grade. Previously this fell through to the generic `skipped` bucket labelled "unseeded/event/
+    // unscannable/unmapped-CB", which made four Don$Gnut Brutal runs disappear without a trace and
+    // sent us hunting a difficulty-specific reader bug that did not exist. Counted separately now so
+    // "no damage captured" is visible in the summary instead of being indistinguishable from
+    // unrelated skips. NOTE: this cannot yet tell a quick battle from a FAILED dialog read — both
+    // surface as null. Recording that difference needs a reader-side flag (dialog_read vs
+    // dialog_absent); until then this bucket means "no damage available", not "was a quick battle".
+    if (total == null) { skippedNoDamageCb++; continue; }
     const tiers = cbTiersByDifficulty[cls.difficulty];
-    const verdict = (tiers && total != null) ? cb.clanBossVerdict(tiers, total) : null;
+    const verdict = tiers ? cb.clanBossVerdict(tiers, total) : null;
     if (!verdict) { skipped++; continue; }                  // no tiers seeded for the difficulty
     await upsert({
       account_id: b.accountId, display_name: b.displayName, content: `Clan Boss ${cls.difficulty}`,
@@ -219,4 +230,4 @@ for (const b of (Array.isArray(log) ? log : [])) {
   wrote++;
 }
 await client.end();
-console.log(`reconciled ${wrote} battles${FORCE_ALL ? ' (--all: full reprocess)' : ` (incremental — ${skippedDone} already-done skipped; use --all to reprocess)`}, skipped ${skipped} (unseeded/event/unscannable/unmapped-CB), skipped ${skippedIncompleteCb} incomplete CB captures (<5 heroes — dropped-hero reads)`);
+console.log(`reconciled ${wrote} battles${FORCE_ALL ? ' (--all: full reprocess)' : ` (incremental — ${skippedDone} already-done skipped; use --all to reprocess)`}, skipped ${skipped} (unseeded/event/unscannable/unmapped-CB), skipped ${skippedIncompleteCb} incomplete CB captures (<5 heroes — dropped-hero reads), skipped ${skippedNoDamageCb} CB captures with NO DAMAGE (quick battles / no result dialog — not gradeable)`);

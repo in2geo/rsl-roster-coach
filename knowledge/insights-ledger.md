@@ -13,6 +13,146 @@ Every insight cites EVIDENCE (a game mechanic and/or a captured run) — never a
 
 ---
 
+## INS-0033 — Book state IS derivable from Gestal, but the model must stay BOOLEAN (audience constraint) (Mike, 2026-07-18)
+
+**Status:** encoded (`lib/gestal-context.js` `fullyBooked()`, commit 89d48f0).
+
+`gestal-context.js` hardcoded `is_booked: false` for every synced champion, commented "Gestal does not
+expose skill-book status directly." **That was false.** Every champion in the export carries
+`skills: [{skillId, level, maxLevel}, …]`, so book state is fully derivable, per skill. We were asking
+users for something we already had and discarding what we had. Now derived, same principle as
+`has_boss_mastery`: read it authoritatively, don't ask a question we can answer. 13 champions across 5
+accounts flag correctly (was 0).
+
+**THE CONSTRAINT (Mike, load-bearing):** the product targets MOBILE players entering rosters by hand,
+and the app's only book input is a single "fully booked" checkbox — partial booking is not expressible
+for them. So the MODEL consumes all-or-nothing, and Gestal only gets to LIGHT THE SAME BUTTON UP. Do not
+build a richer second code path off Gestal's per-skill detail that the audience can never feed. *This
+generalises: build to the data the AUDIENCE can supply, not the data one power user's tooling exposes.*
+
+**Known accepted error:** a partially-booked champion reads as unbooked and is UNDER-rated. Don$Gnut
+2026-07-18 — Tagoar 86% booked (4/5 4/5 3/3), Fahrakin 38% (3/5 1/7 1/3); both evaluate false, and that
+difference plausibly explains part of why the Tagoar team out-damaged the Fahrakin team. Joins lifesteal
+gear and masteries as a reason REALITY CAN BEAT PREDICTION.
+
+**Blocker for using books in scoring:** `cooldown_booked` is only 45% populated (1,573/3,490) and booked
+*chances* are near-empty, so `is_booked = true` usually has nothing to switch to and falls back to base.
+Capture is the gate, not wiring.
+
+---
+
+## INS-0032 — The CB result dialog carries THREE per-hero bars; HEALING ≠ team sustain contribution (2026-07-18)
+
+**Status:** encoded (capture) · the caveats are `proposed` and BLOCK naive calibration.
+
+`CbDamageReader` always read three per-hero stats — damage (`+0x090`), defense (`+0x098`), healing
+(`+0x0A0`) — and `BattleWatcher` discarded two of them at the slot join. Now persisted. Verified
+digit-for-digit against a result screenshot (Don$Gnut Brutal 2026-07-18). `defense` is kept under the
+VM's own name because its SEMANTICS ARE UNCONFIRMED (values cluster like damage-taken, and the Taunt
+champion led the column, which is corroborating but not proof).
+
+**WHY IT MATTERS:** per-hero DAMAGE understates supports by design (damage-mechanics §4). Glorious Pallas
+showed 228k damage — 1.7% of team output, reads as dead weight — while healing 330k, the most on the team
+by 2.4x. Sustain becomes MEASURABLE instead of argued.
+
+**THE TRAP — do not calibrate sustain off the healing column naively:** it mixes TEAM healing, SELF
+healing, and GEAR lifesteal. Gnut posted the largest healing of the day (1,392,073) with NO restoration
+tag: he is in Lifesteal gear AND his A3 self-heals 30% of damage dealt — and the team died SOONER with
+him (177 turns vs 210). A self-healer inflates the column without helping anyone. A cheap audit catches
+it (observed healing vs kit restoration capability), and it flagged Gnut, Pelops and Ezio; but that audit
+cannot separate "gear lifesteal" from "kit heal we never tagged" — Gnut is BOTH.
+
+---
+
+## INS-0031 — MAGNITUDE is the missing ingredient; coverage-is-binary recurs at EVERY level (2026-07-18)
+
+**Status:** approved (diagnosis) · two candidate scorers BUILT AND REJECTED — record the failures.
+
+Coverage-is-binary (the 2026-07-17 finding) is not one bug at one level. It reappears wherever the model
+asks "does anyone have this?" instead of "how much of this gets done?" **Three instances in a single
+session:**
+1. **Sustain** — a Revive-only champion satisfied the whole sustain seat (fixed by splitting sustain into
+   absorption/restoration/recovery roles, `lib/cb-shadow-goals.js`).
+2. **Tagoar** — priced at 0.25x as a "redundant" second healer, then MEASURED delivering 479,739 healing,
+   28% of the team's total and within 3% of Pallas. He is also the team's second TEMPO carrier; dropping
+   him removed half the tempo coverage invisibly.
+3. **Gnut** — L60 6★ carrying the top-weighted CB need (Decrease ATK) plus both amps (Decrease DEF,
+   Weaken), discarded because Pelops ticked the boxes first. **Claude first blamed his ACC 40; a direct
+   test disproved that** — raising him to ACC 200, and even removing the ACC gate entirely, still does not
+   seat him. The cause is SATURATION, not the build gate.
+
+**NEGATIVE RESULTS — two bucket-scorer fill rules built and rejected (`tools/bucket-score.mjs`):**
+- **(a) "one seat = 20%, split across the buckets a champion covers."** Discriminated (Tagoar 78.7 >
+  Gnut 70.1 > Fahrakin 68.7) but ranked the middle team last, and is WRONG IN PRINCIPLE: it makes a
+  4-bucket champion contribute a quarter to each, so Pallas "cleanses at 50%" because she also buffs
+  speed. It penalises exactly the multi-role champions the model exists to value.
+- **(b) "best coverer fills the bucket, extras add 30% bonus"** (Mike's rule: *"you would give ONE spot
+  for mitigation. any more is bonus... you wouldn't give 2 seats for mitigation"*). Correct in principle
+  and it makes Pallas fill cleanse fully — but **all three captured teams then score 100/100.** Every
+  bucket over-fills, so the model cannot tell them apart. It moved the checkbox from "role" to "bucket".
+- **Penalising over-fill does NOT rescue (b):** the BEST team (Tagoar) has the MOST waste (58.9 vs 43.4 /
+  45.0), so a declining-past-100% rule would rank it LAST. Flat-vs-declining is therefore not the lever
+  while fill stays capability-based.
+
+**The conclusion:** a bucket must be filled by HOW MUCH of the job gets done. All three teams "cover"
+mitigation; what separates them is Pelops landing his at ACC 214 while Gnut lands his at ACC 20.
+Estimated magnitude ≈ `effect size × uptime × land rate × build scale`, where effect size is the
+bracket's own value normalised against the corpus range for that tag (Decrease ATK spans 25%–60%), chance
+folds into land rate, and duration÷cooldown gives uptime. Selection needs ESTIMATED magnitude (available
+pre-battle); captures supply OBSERVED magnitude for CALIBRATION. Cost: effect values must be extracted
+from `skill_summary` per (champion, tag) — ~1/3 resist naive regex (conditional, random-pool, multi-debuff
+prose), so it is an LLM-extraction + advisor-approval job like the tag regen.
+
+---
+
+## INS-0030 — The POOL model: a team is a 100% BUDGET across six buckets, not a checklist (Mike, 2026-07-18)
+
+**Status:** approved (structure + allocation ruled by Mike) · scorer NOT working yet (see INS-0031).
+
+**Mike:** *"we need to break down the pieces and re-grade them so all the parts make a whole on the
+grade... we would have X% of the pool for mitigation, Y% for damage, Z% for healing/sustain."*
+
+Replaces the ORDINAL weights (each need has a weight; a second carrier takes an arbitrary 0.25x haircut;
+nothing sums to anything) with a CARDINAL BUDGET. The pool is 100% of what a team can be; champions FILL
+buckets; the grade is how well actual fill matches target. Over-supply becomes VISIBLE instead of free.
+
+**Six buckets — Mitigation · Sustain · Damage · Amplification · Cleanse · Tempo.** Mitigation stands alone
+(ruled): on CB it is dual-purpose — it cuts incoming damage AND extends the fight, multiplying every other
+bucket. Sustain keeps an internal absorption/restoration/recovery split one level down.
+
+**Allocation (Mike, 2026-07-18) — 20% = one seat, sums to exactly 5.0 seats:**
+`Mitigation 20 · Damage 20 · Tempo 20 · Sustain 15 · Amplification 15 · Cleanse 10`
+
+- **TEMPO 20% is the headline** (the old weights implied 6.1%). *"speed is the most important stat in the
+  game, top to bottom in all content. The first piece of any team should be who handles your tempo...
+  which is why High Khatun gets used even for accounts that have 30 legendary champs."* Tempo is solved
+  FIRST — an anchor pick, not a greedy outcome. Note Don$Gnut owns High Khatun (L25) and Apothecary (L24)
+  and both are GATED OUT of the pool by `usabilityTier`, so the app cannot currently give the single most
+  valuable advice on that account: *level High Khatun*.
+- **SUSTAIN 15%** (old weights implied 30.4%) — 0.75 seats, so ONE good sustain champion fills it and a
+  second overflows. Matches the measured 2.7x overheal, and predicts the build-conditional flip on its
+  own: under-built, Pallas alone does not fill it and a second sustain earns the seat; built, she does,
+  and the seat converts to damage. *This is why the right answer changes with build state.*
+
+**SHARE vs REQUIREMENT are two mechanisms.** The share sets the GRADE penalty; a separate, conditionally
+active REQUIREMENT forces a seat in SELECTION (Mike: at fair gear or below a speed booster is mandatory).
+Requirements never hard-fail — they degrade into NAMED GAPS, and each bucket tracks FILLED vs FILLABLE, so
+an owned-but-unbuilt candidate becomes a "level this next" recommendation rather than silence.
+
+**Boundary rulings** (full list + open questions: `knowledge/cb-bucket-taxonomy-DRAFT.md`):
+`Increase ACC`→Amplification (a champion's own ACC STAT is a gate; an ACC BUFF they place is a
+capability — stat ≠ buff); `Taunt`, `Increase DEF`, `Increase RES`→Mitigation (mitigation = damage
+prevention on EITHER side of the exchange; sustain = a resource spent on what got through — a shield is
+healing paid in advance, and stays in Sustain); `Decrease Speed`→Tempo (tempo is two-sided);
+`Reflect Damage`→Damage (damage-on-being-hit is a real lane); `Buff Strip`/`Steal Buffs`→DEAD on CB.
+
+**Champion value ≈ BUCKET SPAN.** Five seats is the binding constraint, so a champion collapsing three
+jobs into one slot is worth more than the sum — which is *why* Pallas (tempo + all three sustain
+mechanisms + cleanse) and Pelops (mitigation + damage + sustain) are coveted. The checkbox model cannot
+express this; it sees Pallas ticking four boxes and discounts everyone who overlaps her.
+
+---
+
 ## INS-0029 — Team building is ROLE-ASSIGNMENT across 5 seats, and a RESULT-DRIVEN LOOP (Mike, 2026-07-16)
 
 **Status:** approved (principle) · first assembler built (`lib/team-assembler.js` + `tools/assemble-team.mjs`).

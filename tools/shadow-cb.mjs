@@ -48,6 +48,10 @@ const cbQuality = (c) =>
   0.10 * Math.min(1, (c.level ?? 0) / 60) +
   MAST_W * (c.has_boss_mastery ? 1 : 0);          // masteries: secondary CB bonus, not the decider
 
+// Synergy weight (Side 2): credit a candidate for combos they complete with the already-seated.
+// CB_SYN_W=0 reproduces the pre-synergy selection exactly, for A/B.
+const SYN_W = process.env.CB_SYN_W != null ? Number(process.env.CB_SYN_W) : 0;
+
 const ANCHOR = { GuapoDonni: ['Ezio Auditore', 'Xenomorph', 'Duchess Lilitu', 'Donatello', 'Michelangelo'] };
 
 const outDir = path.join(REPO, 'gestal-sync/output');
@@ -64,7 +68,7 @@ for (const file of files) {
   try { await attachDamageScores(mapped, supabase); } catch {}
   for (const c of mapped) c.auras = auraByName.get(c.name) || [];
 
-  const { team, leader, needCoverage } = constructTeam(mapped, CB_NEEDS, { contentKey: 'clan_boss', eligible: isBuilt, tagMeta, accFloor: ACC_FLOOR, qualityFn: cbQuality });
+  const { team, leader, needCoverage } = constructTeam(mapped, CB_NEEDS, { contentKey: 'clan_boss', eligible: isBuilt, tagMeta, accFloor: ACC_FLOOR, qualityFn: cbQuality, synergyWeight: SYN_W });
   console.log(`── ${acct} ──`);
   console.log(`  TEAM: ${team.map(c => c.name).join(', ')}   (leader ${leader?.name ?? 'none'})`);
   const uncovered = needCoverage.filter(n => !n.covered_by.length).map(n => n.role);

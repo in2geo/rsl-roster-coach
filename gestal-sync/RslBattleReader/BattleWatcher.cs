@@ -531,9 +531,15 @@ internal sealed class BattleWatcher(string outputPath)
         // in screen left-to-right order.
         if (snapshot.Heroes.Count > 0)
         {
-            var bySlot = res.Heroes.ToDictionary(h => h.Slot, h => h.Damage);
+            // Carry the WHOLE HeroDamage record, not just Damage: CbDamageReader already reads the
+            // dialog's other two per-hero bars (Defense +0x098, Healing +0x0A0) and this join used to
+            // drop them one line after they were read. Healing in particular is what makes a support
+            // measurable — a healer's damage bar understates them by design (CLAUDE.md §4).
+            var bySlot = res.Heroes.ToDictionary(h => h.Slot);
             snapshot.Heroes = snapshot.Heroes
-                .Select(h => bySlot.TryGetValue(h.Slot, out var d) ? h with { Damage = d } : h)
+                .Select(h => bySlot.TryGetValue(h.Slot, out var s)
+                    ? h with { Damage = s.Damage, Defense = s.Defense, Healing = s.Healing }
+                    : h)
                 .ToList();
             // CaptureDungeon matches EVERY HeroBattleStatsContext by class — in a dungeon boss room that
             // also includes the BOSS (FK = 5 allies + Fyro = 6 contexts), whose "damage" is damage IT dealt
