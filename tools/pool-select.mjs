@@ -23,11 +23,25 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { buildUserChampions } from '../lib/gestal-context.js';
 import { mapRoster, usabilityTier } from '../lib/match-engine.js';
-import { scoreTeam, ALLOCATION } from './bucket-score.mjs';
+import { scoreTeam, ALLOCATION, BUCKETS, DEAD_ON_CB } from './bucket-score.mjs';
+import { DRAGON_ALLOCATION, DRAGON_BUCKETS, DEAD_ON_DRAGON } from '../lib/dragon-rubric.js';
+import { CB_ACC_FLOOR } from '../lib/cb-shadow-goals.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, '..');
-const DIFFICULTY = process.argv[2] || 'Brutal';
+// Usage:  node --env-file=.env.local tools/pool-select.mjs [content] [difficulty]
+//   content:    cb (default) | dragon
+//   difficulty: CB only — Easy|Normal|Hard|Brutal|Nightmare|Ultra Nightmare (default Brutal)
+const CONTENT    = (process.argv[2] || 'cb').toLowerCase();
+const DIFFICULTY = process.argv[3] || 'Brutal';
+const CONTENT_CFG = {
+  cb:     { allocation: ALLOCATION,        buckets: BUCKETS,        dead: DEAD_ON_CB,
+            accFloor: CB_ACC_FLOOR[DIFFICULTY] ?? 150, label: `Clan Boss ${DIFFICULTY}` },
+  dragon: { allocation: DRAGON_ALLOCATION, buckets: DRAGON_BUCKETS, dead: DEAD_ON_DRAGON,
+            accFloor: 130, label: "Dragon's Lair" },
+};
+const RUN_CFG = CONTENT_CFG[CONTENT];
+if (!RUN_CFG) { console.error(`Unknown content "${CONTENT}". Use: cb | dragon`); process.exit(1); }
 
 // ── DEVELOPMENT: how built is this champion? The term the bucket scorer completely lacked. ──
 // Deliberately the same shape as shadow-cb's `cbQuality` (Mike: "DEVELOPMENT is primary — a maxed
@@ -125,8 +139,8 @@ for (const f of fs.readdirSync(path.join(REPO, 'gestal-sync/output')).filter(x =
   const mapped = mapRoster(userChampions, {}).mapped;
   const pool = mapped.filter(c => usabilityTier(c) >= 2);
   if (pool.length < 5) continue;
-  const { team, grade, rows, trace } = poolSelect(pool, tagMeta, skillsByName);
-  console.log(`\n══ ${snap.displayName ?? f} — ${DIFFICULTY} (pool ${pool.length}) ══`);
+  const { team, grade, rows, trace } = poolSelect(pool, tagMeta, skillsByName, { cfg: RUN_CFG });
+  console.log(`\n══ ${snap.displayName ?? f} — ${RUN_CFG.label} (pool ${pool.length}) ══`);
   for (const t of trace) console.log(`   ${String(t.grade.toFixed(1)).padStart(6)}  ${t.step}${t.because ? `  [${t.because}]` : ''}\n           ${t.team.join(', ')}`);
   console.log(`   FINAL: ${team.map(c => c.name).join(', ')}`);
   console.log(`   buckets: ${rows.map(r => `${r.bucket} ${(r.pct * 100).toFixed(0)}%`).join(' · ')}`);

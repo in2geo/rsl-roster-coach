@@ -167,6 +167,11 @@ export function scoreTeam(team, tagMeta, skillsByName = {}, cfg = {}) {
 }
 
 // ── run it against the real captured teams ───────────────────────────────────
+// Guarded: this file is BOTH a module (scoreTeam is imported by pool-select / shadow-grade /
+// shadow-grade-dragon) and a CLI report. Without this guard the report ran on every import and
+// polluted every other tool's output.
+const RUN_DIRECTLY = /bucket-score\.mjs$/.test(process.argv[1] ?? '');
+if (RUN_DIRECTLY) {
 const BASE = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
 const H = { apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}` };
 const rest = async p => (await fetch(`${BASE}/rest/v1/${p}`, { headers: H })).json();
@@ -210,4 +215,5 @@ for (const run of RUNS) {
     console.log(`   ${r.bucket.padEnd(14)} target ${String(r.target).padStart(2)}  got ${r.got.toFixed(1).padStart(5)}  ${(r.pct * 100).toFixed(0).padStart(4)}%  ${bar}${r.waste > 0.5 ? ` waste ${r.waste.toFixed(1)}` : ''}`);
   }
   console.log(`   seats: ${per.map(p => `${p.name}(${p.nBuckets})`).join(', ')}\n`);
+}
 }
