@@ -57,10 +57,10 @@ function shortestBucket(rows) {
  * The swap step is where "what do we give up" gets answered — a swap is only taken if the total
  * grade rises, so losing coverage elsewhere is priced in automatically.
  */
-export function poolSelect(pool, tagMeta, skillsByName, { size = 5, maxSwaps = 12, trace = [] } = {}) {
+export function poolSelect(pool, tagMeta, skillsByName, { size = 5, maxSwaps = 12, trace = [], cfg = {} } = {}) {
   const ranked = [...pool].sort((a, b) => devScore(b) - devScore(a));
   let team = ranked.slice(0, size);
-  let { grade, rows } = scoreTeam(team, tagMeta, skillsByName);
+  let { grade, rows } = scoreTeam(team, tagMeta, skillsByName, cfg);
   trace.push({ step: 'seed (most developed)', team: team.map(c => c.name), grade });
 
   for (let n = 0; n < maxSwaps; n++) {
@@ -78,11 +78,21 @@ export function poolSelect(pool, tagMeta, skillsByName, { size = 5, maxSwaps = 1
       if (team.includes(cand)) continue;
       for (const out of team) {
         const next = team.map(c => (c === out ? cand : c));
-        const s = scoreTeam(next, tagMeta, skillsByName);
+        const s = scoreTeam(next, tagMeta, skillsByName, cfg);
         // The swap must actually FIX THE SHORT BUCKET, not merely raise the total.
         const fixed = (s.rows.find(r => r.bucket === short.bucket)?.pct ?? 0) > short.pct;
-        if (fixed && s.grade > grade + 1e-9 && (!best || s.grade > best.grade)) {
-          best = { team: next, grade: s.grade, rows: s.rows, inName: cand.name, outName: out.name };
+        if (!fixed || s.grade <= grade + 1e-9) continue;
+        // AND THE REPLACEMENT MUST BE ONE OF YOUR BEST CHAMPIONS TOO (Mike, 2026-07-18).
+        // The seed respects development; the repair used to ignore it entirely and simply took
+        // whichever candidate scored highest — which benched a maxed 6-star Legendary for a L40
+        // Epic because the L40 touched two more buckets (Don$Gnut: Gnut -> Seeker on Dragon).
+        // That is the "fields fodder" failure the whole seed-by-development design exists to stop,
+        // sneaking back in through the repair step. GRADE is the FILTER (does this fix the gap);
+        // DEVELOPMENT is the CHOOSER (who fixes it best). Among candidates that genuinely fix the
+        // short bucket, take the most developed — a champion you have actually built.
+        if (!best || devScore(cand) > devScore(best.cand)
+                  || (devScore(cand) === devScore(best.cand) && s.grade > best.grade)) {
+          best = { team: next, grade: s.grade, rows: s.rows, cand, inName: cand.name, outName: out.name };
         }
       }
     }
