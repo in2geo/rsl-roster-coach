@@ -34,6 +34,20 @@ const tagRows = await rest('tags?select=name,is_debuff,bypasses_accuracy_check')
 const tagMeta = Object.fromEntries((tagRows || []).map(t => [t.name, { is_debuff: t.is_debuff, bypasses_accuracy_check: t.bypasses_accuracy_check }]));
 
 const isBuilt = c => usabilityTier(c) >= 2;
+
+// CB QUALITY tiebreaker (Side 2): breaks redundant-coverage ties toward the better-built champ.
+// DEVELOPMENT is primary — a maxed champ should beat an under-built one on level/gear/stars ALONE
+// (Duchess L60/endgame vs an L34/starter is not close). Masteries are a real but SECONDARY CB
+// signal (a bonus among comparably-built champs), NOT the decider. Tiebreaker scale so it never
+// overrides fresh coverage. has_boss_mastery comes from mapRoster. CB_MAST_W=0 proves dev-only.
+const GEARW = { starter: 1, fair: 2, good: 3, endgame: 4 };
+const MAST_W = process.env.CB_MAST_W != null ? Number(process.env.CB_MAST_W) : 0.10;
+const cbQuality = (c) =>
+  0.30 * (usabilityTier(c) / 3) +                 // built-ness
+  0.25 * ((GEARW[c.gear_tier] ?? 1) / 4) +        // gear — the clearest built-vs-fodder signal
+  0.10 * Math.min(1, (c.level ?? 0) / 60) +
+  MAST_W * (c.has_boss_mastery ? 1 : 0);          // masteries: secondary CB bonus, not the decider
+
 const ANCHOR = { GuapoDonni: ['Ezio Auditore', 'Xenomorph', 'Duchess Lilitu', 'Donatello', 'Michelangelo'] };
 
 const outDir = path.join(REPO, 'gestal-sync/output');
@@ -50,7 +64,7 @@ for (const file of files) {
   try { await attachDamageScores(mapped, supabase); } catch {}
   for (const c of mapped) c.auras = auraByName.get(c.name) || [];
 
-  const { team, leader, needCoverage } = constructTeam(mapped, CB_NEEDS, { contentKey: 'clan_boss', eligible: isBuilt, tagMeta, accFloor: ACC_FLOOR });
+  const { team, leader, needCoverage } = constructTeam(mapped, CB_NEEDS, { contentKey: 'clan_boss', eligible: isBuilt, tagMeta, accFloor: ACC_FLOOR, qualityFn: cbQuality });
   console.log(`── ${acct} ──`);
   console.log(`  TEAM: ${team.map(c => c.name).join(', ')}   (leader ${leader?.name ?? 'none'})`);
   const uncovered = needCoverage.filter(n => !n.covered_by.length).map(n => n.role);
