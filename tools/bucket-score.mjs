@@ -34,6 +34,7 @@ import path from 'path';
 import { buildUserChampions } from '../lib/gestal-context.js';
 import { mapRoster } from '../lib/match-engine.js';
 import { CB_ACC_FLOOR } from '../lib/cb-shadow-goals.js';
+import { tagDelivery } from '../lib/bucket-magnitude.js';
 
 const DIFFICULTY = process.argv[2] || 'Brutal';
 const ACC_FLOOR = CB_ACC_FLOOR[DIFFICULTY] ?? 150;
@@ -47,22 +48,36 @@ export const ALLOCATION = {
 export const BUCKETS = {
   mitigation: ['Decrease Attack', 'Decrease C.Rate', 'Decrease C.DMG', 'Decrease ACC', 'Fatigue',
                'Taunt', 'Increase Defense', 'Increase RES'],
+  // Redirect family stays here (RULED): Ally Protection / Intercept / Pain Link redistribute damage
+  // that is ALREADY incoming — the boss still picks its target and still swings. `Taunt` is the
+  // outlier in Mitigation because it changes WHO THE BOSS TARGETS, i.e. it acts before the swing.
   sustain:    ['Shield', 'AoE Shield', 'Ally Protection', 'Block Damage', 'Unkillable', 'Intercept',
-               'Stone Skin', 'Magma Shield', 'Life Barrier', 'Total Guard', 'Fortify', 'Immutable',
-               'Healer', 'AoE Heal', 'Continuous Heal', 'Leech', 'Revive', 'Revive on Death'],
+               'Pain Link', 'Stone Skin', 'Magma Shield', 'Life Barrier', 'Total Guard', 'Fortify',
+               'Immutable', 'Healer', 'AoE Heal', 'Continuous Heal', 'Leech', 'Revive',
+               'Revive on Death'],
+  // BOUNDARY (RULED 2026-07-18, after review): DAMAGE **generates** damage; AMPLIFICATION **makes
+  // existing damage bigger**. `Counterattack` and `Ally Attack` therefore belong HERE, not in
+  // amplification — they produce attacks. Counterattack is the same mechanic as `Reflect Damage`
+  // (damage on being hit), which was already ruled into Damage, so the two were split across
+  // buckets. That loose boundary also inflated amplification, which was running 182-220% on every
+  // team while damage carried the teams that actually won.
   damage:     ['Poison', 'HP Burn', 'Poison Cloud', 'Necrosis', 'Enemy Max HP Damage',
                'Poison Explosion', 'Single Target Damage', 'AoE Damage', 'Multi-Hit A1',
-               'Reflect Damage'],
+               'Reflect Damage', 'Counterattack', 'Ally Attack'],
   amplification: ['Decrease Defense', 'AoE Decrease Defense', 'Weaken', 'Poison Sensitivity',
-               'Increase Debuff Duration', 'Debuff Activation', 'Counterattack', 'Ally Attack',
+               'Increase Debuff Duration', 'Debuff Activation',
                'Increase Attack', 'Increase C.Rate', 'Increase C.DMG', 'Increase ACC'],
   cleanse:    ['Cleanse', 'Block Debuffs'],
   tempo:      ['Increase Speed', 'Increase Turn Meter', 'Fervor', 'Reset Cooldowns', 'Decrease Speed'],
 };
 
-// Tags that do NOTHING on Clan Boss — they must not earn pool share. (PROPOSED-dead list: stated
-// from general game knowledge, NOT yet confirmed by Mike. A wrong entry here silently zeroes a real
-// capability, so this is the riskiest table in the file.)
+// Tags that do NOTHING on Clan Boss — they must not earn pool share. RULED by Mike 2026-07-18.
+// The boss is immune to this whole CC family, so it is dead weight regardless of how well built the
+// champion is: ~a third of Gnut's kit (Freeze + Decrease Turn Meter), and part of Pelops's (Stun,
+// Provoke, Petrification — including the Petrification his passive places on attackers, though the
+// HP Burn half of that same passive is very much alive).
+// Previously these scored zero only by ACCIDENT — they were simply absent from every CB need — so the
+// engine reached the right answer with no rule behind it. Now it is explicit.
 export const DEAD_ON_CB = new Set(['Freeze', 'AoE Freeze', 'Sleep', 'AoE Sleep', 'Stun', 'AoE Stun',
   'Provoke', 'Fear', 'True Fear', 'Sheep', 'Petrification', 'Ensnare', 'Seal', 'Master Seal', 'Hex',
   'Decrease Turn Meter', 'AoE Decrease Turn Meter', 'Block Revive', 'Buff Strip', 'Steal Buffs']);
@@ -80,30 +95,55 @@ const BONUS_COVERER = 0.30;
  *  buckets they cover — a champion who does four jobs does each of them fully (that is exactly why
  *  multi-role champions are coveted). The five-seat limit is a SEPARATE constraint, not a divisor.
  *  The earlier "split one seat across covered buckets" rule had it backwards: it made Pallas cleanse
- *  at 50% because she also buffs speed. */
-function championDelivery(champ, tagMeta) {
+ *  at 50% because she also buffs speed.
+ *
+ *  MAGNITUDE (lib/bucket-magnitude.js): delivery is now uptime × chance × land-rate, not a bare
+ *  "has the tag". This is what separates Pelops landing Decrease ATK at ACC 214 from Gnut landing the
+ *  SAME debuff at ACC 20 — the distinction capability-based fill could not see (INS-0031). */
+function championDelivery(champ, tagMeta, skillsByName) {
   const tags = (champ.tags ?? []).filter(t => !DEAD_ON_CB.has(t));
+  const rows = skillsByName[champ.name] ?? [];
   const out = {};
   for (const t of tags) {
     const b = bucketOf(t); if (!b) continue;
-    // Reliability: an ACC-gated debuff only counts as much as it lands. Buffs/heals always apply.
-    const meta = tagMeta?.[t];
-    const gated = meta?.is_debuff && !meta?.bypasses_accuracy_check;
-    const acc = champ.estimated_stats?.acc ?? 0;
-    const rel = gated ? Math.max(0.15, Math.min(1, acc / ACC_FLOOR)) : 1;
-    out[b] = Math.max(out[b] ?? 0, rel);   // best-delivered tag in that bucket represents the champ
+    // `assume_booked` is the field mapRoster actually exposes (NOT `is_booked` — that is the raw
+    // user_champions/Gestal field one layer down). It folds in the Rare-books-are-cheap heuristic
+    // (INS-0003) on top of the real flag. Reading the wrong name silently disabled books entirely.
+    const { delivery } = tagDelivery(t, champ, rows, tagMeta,
+      { accFloor: ACC_FLOOR, assumeBooked: champ.assume_booked === true });
+    out[b] = Math.max(out[b] ?? 0, delivery);  // best-delivered tag in that bucket represents the champ
   }
   return out;
 }
 
-export function scoreTeam(team, tagMeta) {
+// Credit for a bucket given how much filled it. RULED (Mike, 2026-07-18): "anything over 100% is
+// DECLINING." Full credit up to the target; surplus still earns something, but progressively less.
+//
+// DECLINING TOWARD ZERO, NOT NEGATIVE. In a fixed 100% budget across 5 seats, surplus in one bucket
+// necessarily means a SHORTFALL in another — and the grade already docks you there. Making the
+// over-filled bucket go negative would penalise the same seat twice.
+//
+// NOTE ON AN EARLIER WRONG OBJECTION: Claude argued against declining because it ranked the BEST
+// captured team LAST (Tagoar had the most over-fill: 58.9 vs 43.4 / 45.0). That was an artifact of
+// CAPABILITY-based fill, where "over-fill" only meant counting more tags — noise, not surplus. Under
+// MAGNITUDE fill it means genuinely surplus delivery (e.g. the measured 2.7x overheal), which should
+// indeed stop paying. Do not re-litigate this using capability-fill numbers.
+const SURPLUS_DECAY = 0.15;   // log-scale: 2x fill earns ~+10%, 3x ~+16%. Nominal until calibrated.
+function bucketCredit(got, target) {
+  if (target <= 0) return 0;
+  const ratio = got / target;
+  if (ratio <= 1) return got;                                   // linear up to a full bucket
+  return target * (1 + SURPLUS_DECAY * Math.log(ratio));        // diminishing past it
+}
+
+export function scoreTeam(team, tagMeta, skillsByName = {}) {
   const fill = Object.fromEntries(Object.keys(ALLOCATION).map(b => [b, 0]));
   const per = [];
   // Gather every champion's delivery per bucket, then fill each bucket: best coverer fills it,
   // additional coverers add BONUS_COVERER of the target each.
   const byBucket = Object.fromEntries(Object.keys(ALLOCATION).map(b => [b, []]));
   for (const c of team) {
-    const d = championDelivery(c, tagMeta);
+    const d = championDelivery(c, tagMeta, skillsByName);
     for (const [b, rel] of Object.entries(d)) byBucket[b].push({ name: c.name, rel });
     per.push({ name: c.name, nBuckets: Object.keys(d).length, covered: d });
   }
@@ -118,7 +158,7 @@ export function scoreTeam(team, tagMeta) {
   for (const [b, target] of Object.entries(ALLOCATION)) {
     const got = fill[b];
     const pct = target ? got / target : 0;
-    grade += Math.min(got, target);            // v1: over-fill capped flat, no credit past 100%
+    grade += bucketCredit(got, target);
     rows.push({ bucket: b, target, got, pct, waste: Math.max(0, got - target) });
   }
   return { grade, rows, per };
@@ -131,6 +171,13 @@ const rest = async p => (await fetch(`${BASE}/rest/v1/${p}`, { headers: H })).js
 const SEL = 'id,name,type_id,rarity,role,affinity,faction,base_hp,base_atk,base_def,base_spd,base_acc,base_res,base_crit_rate,base_crit_dmg,champion_tags(tag_id,status,ascension_required,tags(name,is_debuff,bypasses_accuracy_check)),champion_auras(aura_type,aura_value,aura_area)';
 let db = [];
 for (let f = 0; ; f += 1000) { const d = await rest(`champions?select=${encodeURIComponent(SEL)}&game_id=eq.raid_shadow_legends&limit=1000&offset=${f}`); if (!Array.isArray(d) || !d.length) break; db = db.concat(d); if (d.length < 1000) break; }
+// Skill rows WITH cooldowns — mapRoster carries {slot,name,summary} but not cooldowns, and uptime
+// needs them. Fetched here rather than widening the live mapRoster carry.
+let skillRows = [];
+for (let f = 0; ; f += 1000) { const d = await rest(`champion_skills?select=slot,skill_summary,cooldown_base,cooldown_booked,champions(name)&limit=1000&offset=${f}`); if (!Array.isArray(d) || !d.length) break; skillRows = skillRows.concat(d); if (d.length < 1000) break; }
+const skillsByName = {};
+for (const r of skillRows) { const n = r.champions?.name; if (n) (skillsByName[n] ??= []).push(r); }
+
 const tagRows = await rest('tags?select=name,is_debuff,bypasses_accuracy_check');
 const tagMeta = Object.fromEntries((tagRows || []).map(t => [t.name, { is_debuff: t.is_debuff, bypasses_accuracy_check: t.bypasses_accuracy_check }]));
 
@@ -153,7 +200,7 @@ console.log(`allocation: ${Object.entries(ALLOCATION).map(([b, v]) => `${b} ${v}
 for (const run of RUNS) {
   const team = run.names.map(n => byName[n]).filter(Boolean);
   if (team.length < 5) { console.log(`${run.label}: MISSING ${run.names.filter(n => !byName[n]).join(', ')}\n`); continue; }
-  const { grade, rows, per } = scoreTeam(team, tagMeta);
+  const { grade, rows, per } = scoreTeam(team, tagMeta, skillsByName);
   console.log(`── ${run.label}`);
   console.log(`   GRADE ${grade.toFixed(1)} / 100`);
   for (const r of rows) {

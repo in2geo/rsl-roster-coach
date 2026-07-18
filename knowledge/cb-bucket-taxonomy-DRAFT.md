@@ -95,10 +95,19 @@ mirror of `Decrease ACC` on the boss, already in this bucket.
   damage-on-hit passive is deliberately maximizing this lane, which is why Pelops reads as both
   Mitigation and Damage. Needs a tag before the bucket can actually score it.
 
-### AMPLIFICATION — multiply others' output
+### AMPLIFICATION — make EXISTING damage bigger
 `Decrease Defense` · `AoE Decrease Defense` · `Weaken` · `Poison Sensitivity` ·
-`Increase Debuff Duration` · `Debuff Activation` · `Counterattack` · `Ally Attack` ·
+`Increase Debuff Duration` · `Debuff Activation` ·
 `Increase Attack` · `Increase C.Rate` · `Increase C.DMG` · **`Increase ACC`** (RULED)
+
+**BOUNDARY (RULED 2026-07-18, prompted by an external review):** Damage **generates** damage;
+Amplification **multiplies** it. `Counterattack` and `Ally Attack` MOVED OUT of here into Damage —
+they produce attacks rather than scaling them. Counterattack is the same mechanic as `Reflect Damage`
+(damage on being hit), already ruled into Damage, so one concept was living in two buckets. The loose
+boundary also inflated Amplification (182-220% on every captured team) while starving Damage, which
+is the bucket the winning teams actually loaded. Reviewer's wording: "make sure the definition is
+tight... if the scorer is putting anything that touches damage here, the boundary will matter when
+you're comparing teams." 
 
 **PRINCIPLE established by the Increase ACC ruling:** a champion's OWN ACC stat is a **gate** (build
 state, discounts what they deliver); an `Increase ACC` **buff they place** is a contributed
@@ -116,12 +125,18 @@ this makes Tempo two-sided — buffing your side and slowing his are the same bu
 **RULED dead:** `Buff Strip` · `Steal Buffs` (boss carries no buffs worth removing — note this
 zeroes part of Ezio's and Pelops's kits).
 
-**PROPOSED dead, NOT yet confirmed by Mike** — stated from general game knowledge, NOT from anything
-in this repo, so treat as unverified. This list is where a wrong entry does the most damage: it
-silently zeroes a real capability.
+**RULED DEAD by Mike 2026-07-18** (was Claude-proposed from general game knowledge; now confirmed —
+this list is where a wrong entry does the most damage, since it silently zeroes a real capability):
 `Freeze` · `AoE Freeze` · `Sleep` · `AoE Sleep` · `Stun` · `AoE Stun` · `Provoke` · `Fear` ·
 `True Fear` · `Sheep` · `Petrification` · `Ensnare` · `Seal` · `Master Seal` · `Hex` ·
 `Decrease Turn Meter` · `AoE Decrease Turn Meter` · `Block Revive`
+
+**Consequence — CC is worthless on CB, and that is a big deal for scoring.** It is roughly a third of
+Gnut's kit (`Freeze` + `Decrease Turn Meter`) and part of Pelops's (`Stun`, `Provoke`, `Petrification`
+— note his passive PLACES Petrification on attackers, which is dead here even though the passive's
+HP Burn half is not). Previously these scored zero only by ACCIDENT — they simply were not listed in
+any CB need — so the engine got the right answer with no understanding behind it and would mis-handle
+the same case on other content. Now it is an explicit rule.
 
 (This list is what would correctly explain Gnut — his `Freeze` + `Decrease Turn Meter` are dead here.)
 
@@ -134,10 +149,32 @@ enemy that attacks him (100%)**; then A1's [Decrease ATK] and A2's effects **"ca
 while the target is under that HP Burn. So he converts incoming damage into DoT, and his mitigation
 bypasses resistance entirely.
 
-1. **Self-protection / immunity.** Tag policy #10 rejects "immune to [X]" — right for PLACEMENT, but
-   it leaves immunity unrepresentable. A champion who cannot be stunned is genuinely worth more on
-   content that stuns; the pool cannot say so.
-2. **Damage-on-being-hit.** HP Burn-on-attack has no tag. `Counterattack` is a different mechanic.
+1. **Self-protection / immunity → MITIGATION, at SMALL weight (RULED, Mike 2026-07-18).** It is damage
+   prevention, so it belongs in Mitigation — but it protects ONE champion where a team-wide mitigation
+   protects five, so it is "a small contributor."
+
+   **THE GENERAL RULE THIS ESTABLISHES — SCOPE SCALES CONTRIBUTION.** The same *kind* of effect is worth
+   far less when it is self-only than when it is team-wide. Natural anchor: 1-of-5 seats ~= 0.2 of the
+   team-wide equivalent (derived, not ruled). This is NOT immunity-specific — it covers self-heal,
+   self-shield, self-veil, self-buff of any kind.
+
+   **It retroactively explains the Gnut case and would have caught it automatically:** Gnut posted the
+   day's largest healing (1,392,073) and the team died SOONER with him (177 turns vs 210), because it
+   was SELF-healing (A3 heals him 30% of damage dealt, plus Lifesteal gear). A scope multiplier
+   discounts that to ~a fifth without anyone noticing by hand. Same principle, different bucket.
+
+   **Still unscorable:** tag policy #10 rejects "immune to [X]" as a placement — correct, but it means
+   no tag exists to hang this on. Needs either a new vocab tag or a policy amendment (a #12/#19-style
+   "reject the placement, tag the real action" fix) before the bucket can score it.
+2. **Damage-on-being-hit → DAMAGE (RULED, Mike 2026-07-18).** Placement settled: it goes in the Damage
+   bucket with `Reflect Damage` (Lane C). What is MISSING is a TAG — Pelops's passive places [HP Burn]
+   on any enemy that attacks him and nothing in the 108-tag vocab covers "places a debuff on whatever
+   attacks me." `Counterattack` is a different mechanic (it makes YOU swing back).
+
+   **Same vocabulary gap as immunity above, and the same shape as policies #12 / #19:** the bracket was
+   correctly rejected as a placement and the REAL ACTION was never relocated to a tag of its own. One
+   piece of tag work covers both, and until it lands the Damage bucket cannot score the mechanic that
+   makes Pelops a Taunt-plus-damage engine rather than just a tank.
 3. **Unresistable debuffs (policy #17) are not scored.** The engine discounts every debuff by ACC,
    but Pelops's key Decrease ATK cannot be resisted (via a debuff he self-applies), so his ACC 214 is
    near-irrelevant to his most important contribution. The ACC gate needs a bypass exception.
@@ -147,6 +184,37 @@ including the passive — but CLAUDE.md lists him under **yellow-star-screenshot
 `Master of Games [P]: ascension_required = 3`. The confirmed ruling never reached the DB. No impact
 on Mike's account (his Pelops IS ascended), but on any account with an unascended Pelops the model
 credits immunity + the HP Burn engine + the unresistable Decrease ATK that he does not have.
+
+## AURAS — a GAP-FILLER against the binding gate, never a bucket (Mike, RULED 2026-07-18)
+
+**`SPD Aura` does NOT satisfy the Tempo bucket.** Mike: *"speed aura does not satisfy tempo bucket. it
+should be used to get the team over the hump if needed. that should be the general strategy for auras.
+what are we missing to maximize our score? is it more speed, more accuracy, more resist, more HP."*
+
+**The principle:** an aura boosts a STAT, and stats are GATES, not buckets. So an aura never FILLS a
+bucket — it raises the DELIVERY multiplier on buckets already filled. It is therefore chosen LAST, after
+the five seats, against whichever gate is actually binding. Consistent with the Increase-ACC ruling
+(stat = gate, buff = capability): an aura is a stat, so it is a gate.
+
+**THE GATE ONLY BINDS WHERE A CHAMPION CARRIES GATED CAPABILITY.** Worked live on the Don$Gnut CB team
+(Brutal, ACC floor 150) — and this corrected a naive "4 of 5 are below the floor" reading:
+| | ACC | Binding? |
+|---|---|---|
+| Ezio | 85 | **57% land** — gates Decrease Defense, Poison, Poison Sensitivity |
+| Narma | 112 | **75% land** — gates Poison, Decrease Attack, Poison Sensitivity |
+| Pelops | 214 | 100% — fine |
+| Pallas | 30 | **IRRELEVANT** — no live debuffs, pure buffs/heals |
+| Tagoar | 47 | **IRRELEVANT** — same |
+
+So the binding constraint is ACC **on Ezio**, and the evidence says it is expensive: Pelops dropped
+9.00M → 7.15M when Ezio was swapped out, so ~43% of that amplification is currently resisting off.
+Not speed, not RES (115-137, not the limiter), not HP (sustain already 2.7x over-supplied).
+
+**AND THE AURA CANNOT ALWAYS FIX IT — check `aura_area`.** The team's only ACC aura (Narma, 80 ACC) is
+**"Dungeons" and does NOT apply on Clan Boss**. Available on CB: Ezio 19% SPD, Pelops 60 RES, Pallas
+50 RES, Tagoar 25% HP (all "All Battles"). So the binding gate is unreachable by aura here and the fix
+is GEAR. The aura layer must be able to say *"nothing available relieves your binding gate — this is a
+gear problem"* rather than silently picking the least-bad option and looking satisfied.
 
 ## NOT buckets — gates and constraints (keeps the pool from becoming a junk drawer)
 - **Champion's own ACC** — a gate on every debuff bucket. Gnut's ACC 40 vs the Brutal floor 150 is a
@@ -160,8 +228,13 @@ credits immunity + the HP Burn engine + the unresistable Decrease ATK that he do
 1. **The target percentages themselves.** Mitigation gets the biggest chunk (ruled). Rest unset.
 2. `Increase Defense` / `Increase RES` — Sustain or Mitigation? (RES stops debuffs landing at all =
    prevention, and is the mirror of `Decrease ACC` on the boss, which IS Mitigation.)
-4. `Intercept` — **DEFERRED by Mike ("leave for now")**; stays in Sustain/absorption meanwhile.
-   Still open: `Ally Protection`, `Pain Link`.
+4. ~~Redirect siblings~~ **RULED 2026-07-18: `Ally Protection` and `Pain Link` STAY IN SUSTAIN**
+   (`Intercept` was deferred earlier and stays there too). So `Taunt` is the deliberate OUTLIER of the
+   redirect family, and the line is: **Taunt controls WHO THE BOSS TARGETS** — it changes the boss's
+   behaviour before damage is dealt, which is prevention → Mitigation. Ally Protection / Intercept /
+   Pain Link **redistribute damage that is already incoming** — the boss still picks its target and
+   still swings; they just move where the hit lands. That is spending a resource on damage that
+   arrived → Sustain, same reasoning that kept shields there.
 5. ~~The shield boundary~~ **RULED: shields STAY in Sustain.** So the Mitigation/Sustain line is NOT
    simply before-vs-after: Mitigation = change how much damage EXISTS or WHERE IT GOES (Dec ATK, Inc
    DEF/RES, Taunt); Sustain = a RESOURCE you spend absorbing or repairing what arrives (shield, heal,
