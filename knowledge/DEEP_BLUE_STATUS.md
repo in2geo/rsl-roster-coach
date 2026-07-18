@@ -46,7 +46,7 @@ writes explanations. Three commitments:
 | Stage | Status | Reality |
 |---|---|---|
 | **CAPTURE** | ✅ | RslBattleReader → 398 raw battles (to today), abundant. |
-| **RECONCILE** | ✅ | `run_reconciliations` (48 rows), classification, spec-margin. |
+| **RECONCILE** | ✅ | **THE GRADING SYSTEM (see the ⭐ section below — use it in every test).** `run_reconciliations`, account-keyed, floor + **CB chest** axes; auto via `tools/watch-reconcile.mjs`. |
 | **PROPOSE** | ✅ | Proven this session: real data diagnosed DoT + calibrated the fix. |
 | **RETAIN** | ✅ | `insights-ledger.md` INS-0001…0017 + scope docs. A real durable brain. |
 | **MEASURE** | 🟡 | Scoreboard built (`tools/loop.mjs`); starved of **on-spec** runs. |
@@ -56,6 +56,38 @@ writes explanations. Three commitments:
 side was attempted (INS-0018) and found NOT calibratable on the current data — the loss captures
 are kill-limited and enemy ATK isn't the survival wall — so survival stays a nominal diagnostic
 guardrail and the evaluator still does not drive the recommendation.*
+
+---
+
+## ⭐ THE GRADING SYSTEM — standing rule (READ, and USE IT in every test)
+
+**We HAVE a grading system. It has been built across many sessions.** It is the *how* of "validate
+before trust." Do not re-derive it, do not hand-grade a run from a battle screenshot, and do not
+forget it exists — it HAS been forgotten before (a whole session went by blind to it), and that is
+the exact failure this section exists to stop.
+
+**The pieces (all built, all in the repo):**
+- **`run_reconciliations`** (table) — one row per captured battle: the engine's PREDICTION vs the
+  captured REALITY + a derived CLASSIFICATION. **Account-keyed** (`account_id`). Dungeons grade on the
+  stage-FLOOR axis; **Clan Boss on the CHEST-tier axis** (`earned_chest`; `classification` = `cb_one_key`
+  / `cb_below_top`; `spec_margin` = damage ÷ top-chest threshold) — added 2026-07-18.
+- **`tools/reconcile-runs.mjs`** — populates it (re-runs the prediction, reads the capture, classifies).
+  Incremental + idempotent; handles CB; **refuses incomplete (<5-hero) captures** so a dropped hero
+  never grades as a false low.
+- **`tools/watch-reconcile.mjs`** — the AUTO trigger: watches the battle log and reconciles each new
+  capture. Run it alongside the reader; grading then happens with no manual step.
+- **`lib/run-analysis.js`** — the ⑤ layer: an LLM grades WHY + proposes a fix (candidate → human-confirmed).
+- **`tools/loop.mjs` / `tools/reconcile-cb-runs.mjs` / `knowledge/scoreboard.md`** — the MEASURE reads.
+
+**THE STANDING RULE — every test / validation goes through this loop, no exceptions:**
+`capture → (watcher) auto-reconcile → a graded run_reconciliations row → read the scoreboard.`
+Never validate a change by eyeballing a battle screen — the whole point is that grading *accumulates
+and self-corrects*. If you catch yourself hand-grading a screenshot, stop and use the system.
+
+**ALWAYS SCOPE BY ACCOUNT — the data is separated by account, keep it that way.** The battle log is
+MULTI-ACCOUNT. Every grading read, scoreboard, and A/B comparison is per `account_id`; one account's
+graded runs are the unit. Mixing accounts has produced false inversions before — never aggregate across
+accounts.
 
 ---
 

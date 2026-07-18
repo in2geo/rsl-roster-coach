@@ -33,6 +33,7 @@ const H = { apikey: KEY, Authorization: `Bearer ${KEY}` };
 
 const gc = await import('../lib/gestal-context.js');
 const me = await import('../lib/match-engine.js');
+const cb = await import('../lib/clan-boss.js'); // Clan Boss chest-tier reconciliation (isClanBoss/classifyClanBoss/clanBossVerdict)
 
 const CONTENT_KEY = {
   "Ice Golem's Peak": 'ice_golem',
@@ -61,6 +62,12 @@ const auraById = {};
 for (const a of (Array.isArray(auraRows) ? auraRows : [])) auraById[a.champion_id] ??= a; // one aura/champ
 const idByName = Object.fromEntries(dbChampions.map(c => [norm(c.name), c.id]));
 const cleanArea = (s) => String(s ?? '').toLowerCase().replace(/^in\s+/, '').trim();
+
+// Clan Boss chest tiers grouped by difficulty — the chest-tier axis CB is graded on (clanBossVerdict).
+const cbTierRows = await (await fetch(`${BASE}/rest/v1/clan_boss_chest_tiers?select=chest_name,sort_order,damage_min,damage_max,dungeon_stages(label)`, { headers: H })).json();
+const cbTiersByDifficulty = {};
+for (const t of (Array.isArray(cbTierRows) ? cbTierRows : [])) { const d = t.dungeon_stages?.label; if (d) (cbTiersByDifficulty[d] ??= []).push(t); }
+const chestOrdinal = (tiers, chest) => chest ? (Number((tiers.find(t => String(t.chest_name).toLowerCase() === chest) || {}).sort_order) || null) : 0;
 
 // ── per-account rosters (Gestal) + userChampions cache ───────────────────────
 const OUT_DIR = path.join(REPO, 'gestal-sync', 'output');
@@ -116,10 +123,50 @@ if (!FORCE_ALL) {
   const { rows } = await client.query('select account_id, battle_captured_at from run_reconciliations');
   for (const r of rows) { const k = keyOf(r.account_id, r.battle_captured_at); if (k) doneKeys.add(k); }
 }
-let wrote = 0, skipped = 0, skippedDone = 0;
+let wrote = 0, skipped = 0, skippedDone = 0, skippedIncompleteCb = 0;
+async function upsert(row) {
+  const cols = Object.keys(row);
+  const vals = cols.map(k => (row[k] !== null && typeof row[k] === 'object') ? JSON.stringify(row[k]) : row[k]);
+  const ph = cols.map((_, i) => `$${i + 1}`).join(',');
+  const upd = cols.filter(k => k !== 'account_id' && k !== 'battle_captured_at').map(k => `${k}=excluded.${k}`).join(',');
+  await client.query(`insert into run_reconciliations (${cols.join(',')}) values (${ph}) on conflict (account_id, battle_captured_at) do update set ${upd}`, vals);
+}
 for (const b of (Array.isArray(log) ? log : [])) {
+  // ── Clan Boss: chest-tier reconciliation (its own axis — damage → chest, not stage floor) ──
+  if (cb.isClanBoss(b)) {
+    const cls = cb.classifyClanBoss(b);
+    if (!cls?.difficulty) { skipped++; continue; }          // stageId → difficulty unmapped; can't grade
+    const k = keyOf(b.accountId, b.capturedAt);
+    if (k && doneKeys.has(k)) { skippedDone++; continue; }
+    const heroes = b.heroes ?? [];
+    if (heroes.length < 5) { skippedIncompleteCb++; continue; } // a dropped hero → false-low total; don't grade
+    const total = b.totalDamageDealt ?? (heroes.reduce((s, h) => s + (Number(h.damage) || 0), 0) || null);
+    const tiers = cbTiersByDifficulty[cls.difficulty];
+    const verdict = (tiers && total != null) ? cb.clanBossVerdict(tiers, total) : null;
+    if (!verdict) { skipped++; continue; }                  // no tiers seeded for the difficulty
+    await upsert({
+      account_id: b.accountId, display_name: b.displayName, content: `Clan Boss ${cls.difficulty}`,
+      auto_battle: b.manualSkillUsed === false,
+      account_maturity: rosters[b.accountId] ? accountMaturity(rosters[b.accountId]) : null,
+      battle_captured_at: b.capturedAt ?? null,
+      // PREDICTION: the CB damage model is calibration-blocked, so no predicted chest yet (honest null).
+      recommended_team: null, leader_name: null, leader_skill: null, recommended_floor: null,
+      predicted_confidence_pct: null, verdict_band: null, predicted_chest: null,
+      predicted_limiting_factor: verdict.earned_top ? null : `short of top ${verdict.top_chest} by ${(verdict.shortfall / 1e6).toFixed(2)}M`,
+      gear_context: null,
+      // REALITY (reliable — no calibration needed): chest earned from captured damage.
+      successful: verdict.earned_top, actual_floor: chestOrdinal(tiers, verdict.earned_chest),
+      earned_chest: verdict.earned_chest, floor_vs_recommended: null,
+      duration_seconds: b.durationSeconds || null, turns: b.turns ?? null, battle_speed: b.battleSpeed ?? null,
+      team_fielded: heroes.map(h => ({ name: h.name, survived: h.survived ?? null, damage: h.damage ?? null, is_leader: h.isLeader ?? null })),
+      gestal_snapshot_ref: { account_id: b.accountId }, frozen_effective_stats: null,
+      team_match: null, off_spec: null, spec_margin: verdict.margin,
+      classification: verdict.earned_top ? 'cb_one_key' : 'cb_below_top', assumptions: null,
+    });
+    wrote++; continue;
+  }
   const contentKey = CONTENT_KEY[b.dungeon];
-  if (!contentKey) { skipped++; continue; }               // unseeded / CB / event
+  if (!contentKey) { skipped++; continue; }               // unseeded / event
   const k = keyOf(b.accountId, b.capturedAt);
   if (k && doneKeys.has(k)) { skippedDone++; continue; }  // already reconciled — skip the engine re-run
   const acc = userChampionsFor(b.accountId);
@@ -168,14 +215,8 @@ for (const b of (Array.isArray(log) ? log : [])) {
     assumptions: null,
   };
 
-  const cols = Object.keys(row);
-  const vals = cols.map(k => (row[k] !== null && typeof row[k] === 'object') ? JSON.stringify(row[k]) : row[k]);
-  const ph = cols.map((_, i) => `$${i + 1}`).join(',');
-  const upd = cols.filter(k => k !== 'account_id' && k !== 'battle_captured_at').map(k => `${k}=excluded.${k}`).join(',');
-  await client.query(
-    `insert into run_reconciliations (${cols.join(',')}) values (${ph})
-     on conflict (account_id, battle_captured_at) do update set ${upd}`, vals);
+  await upsert(row);
   wrote++;
 }
 await client.end();
-console.log(`reconciled ${wrote} battles${FORCE_ALL ? ' (--all: full reprocess)' : ` (incremental — ${skippedDone} already-done skipped; use --all to reprocess)`}, skipped ${skipped} (unseeded/CB/event/unscannable)`);
+console.log(`reconciled ${wrote} battles${FORCE_ALL ? ' (--all: full reprocess)' : ` (incremental — ${skippedDone} already-done skipped; use --all to reprocess)`}, skipped ${skipped} (unseeded/event/unscannable/unmapped-CB), skipped ${skippedIncompleteCb} incomplete CB captures (<5 heroes — dropped-hero reads)`);
