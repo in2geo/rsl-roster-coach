@@ -7,6 +7,51 @@ Read order: this → `knowledge/cb-bucket-taxonomy-DRAFT.md` → `insights-ledge
 
 ---
 
+## ⏩ READ THIS FIRST — state at end of session
+
+The premise **HOLDS**. Seed with your best champions → measure against a budget of jobs → repair what
+is short. It lands on known-good teams, separates clears from wipes, and keeps every account's real
+carries.
+
+**THE TEST THAT MATTERS — `tools/shadow-grade-clears.mjs` — 14/15 (93%).** On DonBrogni Dragon 20 the
+seven clears score 104.3-105.6 and the two wipes 89.2/89.7: a 15-point gap, both failures flagged
+unseen. The two SPEED tests (`shadow-grade.mjs`, `shadow-grade-dragon.mjs`) return ~coin-flip and are
+kept only for reference — Mike: *"are we trying to get the fastest farming team?"* No. Every Dragon 20
+team clears in 184-235s, well inside the ~5-min budget, so ranking them by speed measures a difference
+the product does not care about. **Do not re-read those numbers as model failure.**
+
+**Commands:**
+```
+node --env-file=.env.local tools/pool-select.mjs dragon        # what to field
+node --env-file=.env.local tools/pool-select.mjs cb Brutal
+node --env-file=.env.local tools/shadow-grade-clears.mjs       # THE test (baseline 14/15)
+node --env-file=.env.local tools/watch-reconcile.mjs           # auto-grade while playing
+```
+
+**Four corrections Mike made that got it working — all structural, none tuning:**
+1. Seed by DEVELOPMENT (not coverage) — the brute force put Seeker (L40) in all 5 top teams and
+   dropped Ezio, ranking the real Grandmaster team #90 of 3003.
+2. REPAIR GAPS, don't maximise grade — the grade-chasing version traded Xenomorph (measured 13.4M
+   carry) for Iudex Artor on two accounts, each labelled "grade improvement".
+3. Repairs must come FROM developed champions too — it had benched a maxed 6★ Legendary for a L40
+   Epic because the L40 touched two more buckets.
+4. Counterattack + Ally Attack → Damage, not Amplification (Damage GENERATES, Amplification
+   MULTIPLIES). This single change made the selector bench Gnut instead of Ezio and land on
+   Don$Gnut's 23.46M GRANDMASTER team exactly.
+
+**What it CANNOT do (both = the multiplier project, Mike: "a separate project"):**
+rank already-working teams against each other, and predict which stage is the limit (no difficulty
+axis exists — only a placeholder ACC floor). Use it as a PICKER, then CLIMB to find the limit. Mixed
+W/L at a stage = that account's frontier and is the most valuable data in the log.
+
+**NEXT:** (a) benchmark GuapoDonni before climbing — its two most-developed champs are Sun Wukong +
+Alice, the pair the ledger records failing at Ice Golem 20; (b) climb with the picks; (c) EFFECT SIZE
+— per-(champion,tag) values from skill_summary. Every remaining failure traces to it, and Phase 2
+(optimal teams assuming all champs maxed = the POTENTIAL layer, ad-gated) depends on it MORE than
+Phase 1 does, because it removes the development seed that is currently doing the heavy lifting.
+
+---
+
 ## TL;DR
 
 1. **Mike defined a new scoring model: the POOL/BUCKET budget** (INS-0030). Six buckets, 100%, allocation
