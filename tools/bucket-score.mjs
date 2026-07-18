@@ -82,7 +82,7 @@ export const DEAD_ON_CB = new Set(['Freeze', 'AoE Freeze', 'Sleep', 'AoE Sleep',
   'Provoke', 'Fear', 'True Fear', 'Sheep', 'Petrification', 'Ensnare', 'Seal', 'Master Seal', 'Hex',
   'Decrease Turn Meter', 'AoE Decrease Turn Meter', 'Block Revive', 'Buff Strip', 'Steal Buffs']);
 
-const bucketOf = (tag) => Object.keys(BUCKETS).find(b => BUCKETS[b].includes(tag)) ?? null;
+const bucketOf = (tag, buckets = BUCKETS) => Object.keys(buckets).find(b => buckets[b].includes(tag)) ?? null;
 
 // Each ADDITIONAL champion covering an already-covered bucket adds this fraction of the target.
 // Mike, 2026-07-18: "you would give ONE spot for mitigation. any more is bonus from another champ's
@@ -100,12 +100,13 @@ const BONUS_COVERER = 0.30;
  *  MAGNITUDE (lib/bucket-magnitude.js): delivery is now uptime × chance × land-rate, not a bare
  *  "has the tag". This is what separates Pelops landing Decrease ATK at ACC 214 from Gnut landing the
  *  SAME debuff at ACC 20 — the distinction capability-based fill could not see (INS-0031). */
-function championDelivery(champ, tagMeta, skillsByName) {
-  const tags = (champ.tags ?? []).filter(t => !DEAD_ON_CB.has(t));
+function championDelivery(champ, tagMeta, skillsByName, cfg) {
+  const { buckets = BUCKETS, dead = DEAD_ON_CB, accFloor = ACC_FLOOR } = cfg ?? {};
+  const tags = (champ.tags ?? []).filter(t => !dead.has(t));
   const rows = skillsByName[champ.name] ?? [];
   const out = {};
   for (const t of tags) {
-    const b = bucketOf(t); if (!b) continue;
+    const b = bucketOf(t, buckets); if (!b) continue;
     // `assume_booked` is the field mapRoster actually exposes (NOT `is_booked` — that is the raw
     // user_champions/Gestal field one layer down). It folds in the Rare-books-are-cheap heuristic
     // (INS-0003) on top of the real flag. Reading the wrong name silently disabled books entirely.
@@ -136,18 +137,19 @@ function bucketCredit(got, target) {
   return target * (1 + SURPLUS_DECAY * Math.log(ratio));        // diminishing past it
 }
 
-export function scoreTeam(team, tagMeta, skillsByName = {}) {
-  const fill = Object.fromEntries(Object.keys(ALLOCATION).map(b => [b, 0]));
+export function scoreTeam(team, tagMeta, skillsByName = {}, cfg = {}) {
+  const allocation = cfg.allocation ?? ALLOCATION;
+  const fill = Object.fromEntries(Object.keys(allocation).map(b => [b, 0]));
   const per = [];
   // Gather every champion's delivery per bucket, then fill each bucket: best coverer fills it,
   // additional coverers add BONUS_COVERER of the target each.
-  const byBucket = Object.fromEntries(Object.keys(ALLOCATION).map(b => [b, []]));
+  const byBucket = Object.fromEntries(Object.keys(allocation).map(b => [b, []]));
   for (const c of team) {
-    const d = championDelivery(c, tagMeta, skillsByName);
+    const d = championDelivery(c, tagMeta, skillsByName, cfg);
     for (const [b, rel] of Object.entries(d)) byBucket[b].push({ name: c.name, rel });
     per.push({ name: c.name, nBuckets: Object.keys(d).length, covered: d });
   }
-  for (const [b, target] of Object.entries(ALLOCATION)) {
+  for (const [b, target] of Object.entries(allocation)) {
     const cov = byBucket[b].sort((x, y) => y.rel - x.rel);
     if (!cov.length) { fill[b] = 0; continue; }
     fill[b] = target * cov[0].rel;                                   // dedicated seat fills it
@@ -155,7 +157,7 @@ export function scoreTeam(team, tagMeta, skillsByName = {}) {
   }
   let grade = 0;
   const rows = [];
-  for (const [b, target] of Object.entries(ALLOCATION)) {
+  for (const [b, target] of Object.entries(allocation)) {
     const got = fill[b];
     const pct = target ? got / target : 0;
     grade += bucketCredit(got, target);
