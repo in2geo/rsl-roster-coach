@@ -44,11 +44,43 @@ rank already-working teams against each other, and predict which stage is the li
 axis exists — only a placeholder ACC floor). Use it as a PICKER, then CLIMB to find the limit. Mixed
 W/L at a stage = that account's frontier and is the most valuable data in the log.
 
-**NEXT:** (a) benchmark GuapoDonni before climbing — its two most-developed champs are Sun Wukong +
-Alice, the pair the ledger records failing at Ice Golem 20; (b) climb with the picks; (c) EFFECT SIZE
-— per-(champion,tag) values from skill_summary. Every remaining failure traces to it, and Phase 2
-(optimal teams assuming all champs maxed = the POTENTIAL layer, ad-gated) depends on it MORE than
-Phase 1 does, because it removes the development seed that is currently doing the heavy lifting.
+**NEXT — SUPERSEDED BY INS-0034 (`274525a`), read that first. EFFECT SIZE IS DEMOTED BELOW ALL FOUR
+ITEMS BELOW:** it sharpens PICKING only, and picking already works well enough to climb with. The
+diagnosis path does not need it at all. The reprioritised order:
+
+1. **DEVELOPMENT verdict — the cheapest item, and it moved from LAST to FIRST.** It sounded like the
+   vague one; it is actually a rule over data we have had all along — `level`, `stars`, `gear_tier`,
+   `has_boss_mastery` are all already in the roster snapshot and `devScore` computes most of it. No
+   reader fix, no capture change, no LLM extraction. **Mike's correction: it is DEVELOPMENT, not
+   "masteries and gear"** — *"i have a lot of level 50 5 star champs in the rotation. those need to be
+   leveled up to 60. its a big stat increase."* Order by stat gain: **ascension 5★→6★ → levels to 60 →
+   masteries → gear.** Measured on Don$Gnut: Pelops L60 6★ +masteries (maxed); Tagoar, Gnut L60 6★ no
+   masteries; Ezio **L52**; Pallas, Narma **L50 5★**. Three of five fielded under-developed, 12 of 15
+   across the pool, 1 of 31 with boss masteries. **This reframes the Dragon 20 result (11:01, VICTORY):
+   not a composition failure — it is what an under-developed roster looks like, which is also why both
+   selectors and Mike independently land on the same five. There is nothing left to fix in the lineup.**
+2. ~~**Dungeon per-hero capture**~~ ✅ **DONE — the "records ZEROES" claim was already false when
+   written (verified against the live log 2026-07-19).** Per-hero `damage` lands on 100% of dungeon
+   captures since 2026-07-16; `healing` + `defense` since the 07-18 Release build. The sustain-surplus
+   ratio now computes itself — Don$Gnut Dragon 20 (07-19): healing 929,294 vs damage taken 202,208 =
+   **4.6× over-supplied** (~2.8× after discounting Gnut's self-heal, INS-0032).
+   ✅ **`defense` = DAMAGE TAKEN, CONFIRMED 2026-07-19** (in-game bar legend: red dealt / blue taken /
+   green healed). The over-supply rule (item 3) is unblocked — its input is now a measured quantity.
+   **RESIDUAL LIMIT = DATA VOLUME (n=5 dungeon captures carry healing), and it CANNOT be backfilled.**
+   ⚠ **OPERATIONAL RULE: the reader must be RUNNING during play or the run is ungradeable.** It was not
+   running for the 07-19 Tagoar→Vallaryn Dragon 20 swap, so that A/B has no captured baseline and the
+   result exists only as recollection. Start reader + `watch-reconcile` BEFORE any test session.
+3. **The over-supply rule** — once healing-vs-taken exists it is arithmetic: `healing > N × damage
+   taken` → sustain is surplus → name the seat to convert. (Dragon 20: 1,276,944 vs 252,287 = **5.1×**.)
+4. **Phase timing** — wave seconds vs boss seconds. Not captured at all; *"the waves are slowing me
+   down"* is currently unknowable from the data and Mike had to say it out loud.
+
+Then: (a) benchmark GuapoDonni before climbing — its two most-developed champs are Sun Wukong + Alice,
+the pair the ledger records failing at Ice Golem 20; (b) climb with the picks.
+
+**Note for Phase 2** (optimal teams assuming all champs maxed = the POTENTIAL layer, ad-gated): that
+phase depends on effect size MORE than Phase 1 does, because it removes the development seed currently
+doing the heavy lifting. Demoted ≠ dropped.
 
 ---
 
@@ -106,7 +138,13 @@ not the target difficulty). **Top difficulty one-keyable = Brutal.**
 (`team-constructor.js` + `shadow-cb.mjs`), the `ally_attack_stack` correction (`synergies.js`), the
 quick-battle accounting (`reconcile-runs.mjs`), the reader C# capture, `tools/bucket-score.mjs`.
 
-**⚠ BACK OUT OR RE-JUSTIFY: the synergy weighting.** `shadow-cb.mjs` defaults `CB_SYN_W=0.6`, which
+**⚠ BACK OUT OR RE-JUSTIFY: the synergy weighting. — CORRECTED 2026-07-19: ALREADY DONE.**
+`tools/shadow-cb.mjs:53` now reads `CB_SYN_W != null ? Number(...) : 0`, i.e. it **defaults to 0**,
+with a comment at :52 noting 0 reproduces pre-synergy selection for A/B. The paragraph below is stale
+— nothing to back out, and the shadow selector is NOT seating Fahrakin. The reasoning is retained
+because the *justification* half still stands. Original text:
+
+**`shadow-cb.mjs` defaults `CB_SYN_W=0.6`, which
 seats Fahrakin over Tagoar — and the captures say that costs a chest tier. It is off by default in
 `team-constructor` (`synergyWeight = 0`), so nothing live is affected, but the shadow default should go
 to 0 pending a better formulation. Its original justification (an ally-attack "cascade") was also wrong:
@@ -153,9 +191,15 @@ Attack is a champion's OWN skill already paid for by `extra_hits`, so crediting 
 - **Untagged kit healing** — Gnut's A3 heals him 30% of damage dealt with no tag; Pelops posts 389–665k
   healing with no restoration tag. The kit-vs-observed audit flags them but cannot separate "gear
   lifesteal" from "tag gap".
-- **Tempo specialists are gated out of the pool** — High Khatun (L25) and Apothecary (L24) fail
-  `usabilityTier >= 2`, so the app cannot say "level High Khatun", which on this account is probably the
-  single most valuable recommendation available (INS-0030).
+- **Unbuilt champions are gated out of the pool** — `pool.filter(usabilityTier >= 2)` hides every
+  under-levelled champion (High Khatun L25, Apothecary L24 on Don$Gnut), so the model can never say
+  "level X" even where a bucket IS short. The GAP is real; build FILLED vs FILLABLE (INS-0030).
+  **⚠ BUT NOT THE OLD EXAMPLE — CORRECTED by Mike 2026-07-19.** This previously claimed "level High
+  Khatun" was *"probably the single most valuable recommendation available"* on Don$Gnut. **Wrong.**
+  Mike's statement was CONDITIONAL — *if* the account had no turn-meter manipulator. Don$Gnut has
+  several already levelled, and `pool-select` proves it: the Dragon seed showed tempo 40%, the repair
+  seated Glorious Pallas, tempo finished **112%**. **An unbuilt champion's value is conditional on the
+  bucket being short — never intrinsic.** A correct FILLABLE layer stays SILENT on High Khatun here.
 - **`durationSeconds` is 0 on CB captures.** Irrelevant for CB (Mike: time does not matter there — it is
   damage vs threshold) but presumably the same gap on the dungeons, where TIME *is* the judgment.
   **NOTE: `CLAUDE.md` states "judged by TIME not turns" as a blanket principle with no CB exception —
@@ -189,5 +233,13 @@ Attack is a champion's OWN skill already paid for by `extra_hits`, so crediting 
 - **Do not rebuild a bucket scorer without reading INS-0031's two rejected fill rules.**
 - **Build to what the AUDIENCE can supply**, not what Gestal exposes (INS-0033). This is why booking is
   a boolean.
-- The `defense` column's semantics are UNCONFIRMED — three conclusions lean on it meaning damage-taken.
+- ~~The `defense` column's semantics are UNCONFIRMED~~ ✅ **RESOLVED 2026-07-19: `defense` = DAMAGE
+  TAKEN**, per the in-game result-bar legend (red = damage dealt · blue = damage taken · green =
+  healing). The three conclusions that leaned on it stand.
+- ⚠ **NEW, UNRESOLVED — suspicious ZEROS in `healing`/`defense`.** Some reads look dropped rather than
+  true: Dragon 17 (153t) has Pelops `defense` 0 AND `healing` 0 while he survived 153 turns as the Taunt
+  champion; Dragon 18 has Pallas `healing` 0 though she posts 270k-561k in every other run; Dragon 19
+  has Ezio and Pelops both at `healing` 0. If these are failed reads, over-supply ratios are computed on
+  partial data and bias LOW — i.e. real over-supply is WORSE than measured. Not confirmed: Pallas
+  shields as well as heals, so a genuine 0 is possible. Check on the next capture.
 - Repo is PUBLIC and now PUSHED. Nothing is deployed.

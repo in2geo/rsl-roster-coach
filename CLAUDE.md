@@ -23,6 +23,28 @@ power/goal-coverage framing (below, and `POWER_LAYER_SCOPE.md`) is **superseded 
 (brute force is just the survival half of one problem). Detail: INS-0026…0029 in `knowledge/insights-ledger.md`;
 code in `lib/dungeon-mechanics.js`, `lib/team-assembler.js`, `data/keyword-glossary.json`.
 
+## HARD RULE: read the dungeon's `*_REVIEW.md` BEFORE touching its model
+
+`FIRE_KNIGHT_REVIEW.md` · `ICE_GOLEM_REVIEW.md` · `SPIDER_REVIEW.md` · `DRAGON_REVIEW.md` (repo root)
+are the **per-dungeon source-mechanics packets** — verbatim boss kits, stat floors per tier, affinity
+rotations, deferred items, and the open questions already put to Mike. `lib/dungeon-mechanics.js` is a
+SUMMARY of these, not a substitute: it omits numbers the reviews carry.
+
+**Read the relevant review in full before proposing, scoring, or coding anything for that dungeon.**
+
+Established 2026-07-19 after Fire Knight, Ice Golem and Spider bucket rubrics were drafted from
+`dungeon-mechanics.js` alone. Everything below was already written down and was missed:
+- FK: Fyro's punish is **%MAX-HP** (up to ~40%) + Searing Storm 15% MaxHP from stage 7 — so `Decrease
+  ATK` / `Increase DEF` mitigation does NOTHING, and a "min HP" survive-gate is the wrong instrument.
+- FK: an HP floor was already scoped and **deferred as "needs a judgment number."**
+- IG: per-tier floors already exist (1-9 ACC 80/HP 5,000 … 21-25 ACC 210/RES 210/HP 45,000).
+- IG: **`Counterattack` / `Reflect Damage` are HARMFUL** — they chain-trigger Frigid Vengeance.
+- Spider: tiers are **STAGE-DETERMINED** (1-14 nuke / 15-20 wall / 21-25 HP Burn), not player-choice.
+- Spider: **lifesteal heals only 35%**; Skavag is **Heal-Reduction-immune** and permanently gains
+  +10% ATK per Spiderling consumed.
+
+Same failure class as skipping `DEEP_BLUE_STATUS.md`: trusting a summary over the source.
+
 ## Deep Blue model — modeling console (READ FIRST when Mike mentions it)
 
 Mike builds this engine by *conversing to improve it* (the "Deep Blue" vision — the AI that

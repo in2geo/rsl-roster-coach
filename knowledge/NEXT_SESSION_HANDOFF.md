@@ -1,5 +1,16 @@
 # Next-session handoff — cold-start runbook
 
+> # ⚠ STALE TASK LIST — DO NOT COLD-START FROM THIS DOC (flagged 2026-07-19)
+> Written 2026-07-15. It **predates the POOL MODEL** (2026-07-16 → 07-18) entirely, and its §2 Step 1
+> still carries a `◀ START HERE` on **survival calibration — a task §0 of this same file says is no
+> longer the plan and INS-0018 records as BLOCKED.**
+>
+> **Cold start from `knowledge/HANDOFF_2026-07-18_pool-model.md`** → `cb-bucket-taxonomy-DRAFT.md` →
+> ledger **INS-0030…0034**.
+>
+> **What is still good here: §1, the environment cheat-sheet** (env vars, REST read pattern, seed
+> apply path, engine-on-a-roster recipe). That is why this file is kept. Treat §§0, 2, 3, 6 as history.
+
 **Purpose:** get a fresh session productive on the agreed tasks in the first 10 minutes.
 Pairs with `knowledge/DEEP_BLUE_STATUS.md` (the *what/why*); this is the *how/do-next*.
 Written 2026-07-15 at the end of a long session. Nothing below is wired to prod.
@@ -46,7 +57,11 @@ Written 2026-07-15 at the end of a long session. Nothing below is wired to prod.
 
 ## 2. TRACK 1 — close the evaluator and wire it (critical path)
 
-### Step 1 — Calibrate the SURVIVAL side  ◀ START HERE
+### Step 1 — Calibrate the SURVIVAL side  ⛔ BLOCKED — DO NOT START (was mislabelled "◀ START HERE")
+**This ran on 2026-07-15 and hit a data wall — see INS-0018 and §6 below.** The loss captures are
+kill-limited, raw bulk ranks the boundary backwards, and an enemy-ATK incoming basis INVERTS the
+per-content wall. Method retained below for whoever unblocks it; the unblocker is **per-champ dungeon
+damage capture** (§3), not another fit attempt.
 **Goal:** make `turnsSurvived` land in the SAME real-turn units as `turnsToKill` (already
 calibrated via `DAMAGE_SCALE`), so the two-sided `stagePower` verdict is valid.
 
@@ -98,13 +113,23 @@ captured clear first.
 ---
 
 ## 3. TRACK 2 — data fixes (parallel, no wiring needed)
-- **Automate reconciliation.** Capture is abundant (398 raw, ~87/day) but only 48 reconciled in
-  one batch — reconciliation is the bottleneck. Make `tools/reconcile-runs.mjs` run continuously
-  / drain the backlog so MEASURE stops starving. (Higher leverage than any capture-friction work.)
-- **Extend the reader's per-champ damage decode to dungeons.** Confirmed reader-wiring gap: the
-  hero schema has `damage` but it's null for 0/105 dungeon battles, populated only 4/16 Clan Boss
-  (reader decodes the CB result dialog, not the dungeon result screen). Passive IL2CPP work,
-  inside the read-only boundary. Unblocks kill fine-tuning + sustain calibration.
+- ~~**Automate reconciliation.**~~ ✅ **DONE 2026-07-18** — `tools/watch-reconcile.mjs` watches the
+  battle log and reconciles each new capture. Run it alongside the reader. No backlog remains
+  (621 captured / 190 graded as of 2026-07-19 — counts move with play, re-read rather than quote).
+- ~~**Extend the reader's per-champ damage decode to dungeons.**~~ ✅ **DONE — verified against the
+  live battle log 2026-07-19.** It landed in TWO stages and no doc caught either:
+  | field | landed | coverage (169 dungeon captures) |
+  |---|---|---|
+  | per-hero `damage` | 2026-07-15→16 | 48 total, **100% of captures from 07-16 onward** |
+  | `healing` + `defense` | 2026-07-18 (Release build 10:17) | **5** — 07-18 and 07-19 runs only |
+
+  The "null for 0/105 dungeon battles" line was true when written on 07-15 and was overtaken within a
+  day. **The remaining constraint is DATA VOLUME, not reader capability** — and it cannot be
+  backfilled, since older captures never recorded these fields. Every new run adds to n.
+  Worked example (Don$Gnut Dragon 20, 2026-07-19): team healing 929,294 vs damage taken 202,208 =
+  **4.6× over-supplied** — the sustain-surplus ratio now computes straight off the capture.
+  ✅ **`defense` = DAMAGE TAKEN, CONFIRMED 2026-07-19** (in-game bar legend: red dealt / blue taken /
+  green healed), so the ratio is measured, not assumed.
 
 ## 4. NEAR-TERM SHIPS (no evaluator needed)
 - **Ship the watchdog.** Logic built + wired (`result.watchdog` on every rec); ship work =

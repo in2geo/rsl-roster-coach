@@ -45,7 +45,7 @@ writes explanations. Three commitments:
 
 | Stage | Status | Reality |
 |---|---|---|
-| **CAPTURE** | ✅ | RslBattleReader → 398 raw battles (to today), abundant. |
+| **CAPTURE** | ✅ | RslBattleReader → **621 raw battles as of 2026-07-19 14:0x**, abundant. (398 on 07-15.) Count moves with play — re-read the log rather than quoting this. |
 | **RECONCILE** | ✅ | **THE GRADING SYSTEM (see the ⭐ section below — use it in every test).** `run_reconciliations`, account-keyed, floor + **CB chest** axes; auto via `tools/watch-reconcile.mjs`. |
 | **PROPOSE** | ✅ | Proven this session: real data diagnosed DoT + calibrated the fix. |
 | **RETAIN** | ✅ | `insights-ledger.md` INS-0001…0017 + scope docs. A real durable brain. |
@@ -126,15 +126,25 @@ old logic). We are one evaluator-half + one wiring step from the loop being full
    content. General safe wiring waits on the survival side.
 
 **Track 2 — fix the data gaps (parallel), REVISED by 2026-07-15 diagnostics:**
-- **Per-champ damage = a reader-wiring gap, not friction.** The hero schema has a `damage`
-  field but it's null for **0/105 dungeon** battles; populated only for **4/16 Clan Boss**
-  (the reader decodes damage from the CB result dialog, not the dungeon result screen). Fix =
-  extend the reader's dungeon result-screen damage decode (passive IL2CPP; within the
-  read-only boundary). NOT a UI/submission change.
-- **Capture is NOT the bottleneck — reconciliation is.** 398 battles captured (~20-90/day,
-  87 today) but only 48 reconciled, in a single one-time batch. Fix = **automate reconciliation
-  continuously** to drain the ~350 backlog into MEASURE. (Do NOT spend effort reducing capture
-  friction — capture is abundant.)
+- ~~**Per-champ damage = a reader-wiring gap, not friction.**~~ ✅ **FIXED — see the resume section.**
+  As written on 07-15 this was true (`damage` null for 0/105 dungeon battles, 4/16 Clan Boss). The
+  dungeon decode landed 07-15→16 and `healing`/`defense` on 07-18. Verified against the live log
+  2026-07-19: 100% of dungeon captures since 07-16 carry per-hero damage. Remaining limit is data
+  volume (5 captures with healing/defense), not capability.
+- ~~**Capture is NOT the bottleneck — reconciliation is.**~~ **DONE 2026-07-18** — `tools/watch-reconcile.mjs`
+  drains continuously; run it alongside the reader. As of 2026-07-19: 621 captured, **190 graded**, 417
+  skipped, 4 incomplete (<5-hero) and 10 quick-battle/no-damage. There is no reconciliation backlog.
+
+  **WHAT THE 417 ACTUALLY ARE — measured 2026-07-19, because the first version of this line was wrong.**
+  Mike's read is "mostly arena battles." **No capture in the log is labelled Arena** (`/arena/` matches
+  ZERO rows), so that is plausible but UNCONFIRMED — Arena has no dungeon stage and would land in the
+  222 `(null stage)` rows. What IS identifiable in the skipped set is content the app does not model:
+  **Minotaur's Labyrinth 58 · Arcane Keep 33 · Spirit Keep 28 · Force Keep 19 · Magic Keep 14 · Event
+  Dungeon 40**. Those are NOT Arena.
+  **Caveat that stands:** the counter lumps genuinely out-of-scope content in with real gaps, so a true
+  gap can hide inside the 417. Splitting "out of scope" from "should have graded but didn't" would make
+  it trustworthy at a glance.
+  (Do NOT spend effort reducing capture friction — capture is abundant.)
 
 **Near-term ships (no evaluator wiring needed):**
 - **Ship the watchdog.** Logic is built + wired (every rec carries a `watchdog` result); the
@@ -191,10 +201,30 @@ Layer 2 contribution model · AI-config resolver · sustain-mechanism weighting.
 
 ## How to resume next session
 
-**→ Cold-start runbook with exact commands + first tasks: `knowledge/NEXT_SESSION_HANDOFF.md`.**
+> **⚠ THIS SECTION IS SUPERSEDED (corrected 2026-07-19).** It previously told a cold start to go do
+> **Track 1 step 1, calibrate survival** — which *this same document* marks **BLOCKED (INS-0018)**
+> twenty lines above. That is a dead task and following it wastes a session. It also predates the
+> POOL MODEL entirely (2026-07-16 → 07-18).
 
-1. Read this file, then skim `insights-ledger.md` INS-0014→0017 (this session's arc).
-2. The agreed next action is **Track 1 step 1: calibrate the survival side** against the loss
-   captures — unless Mike redirects. Track 2 (reconciliation automation, reader damage decode)
-   and the watchdog ship can run in parallel.
-3. Nothing new is wired into live recommendations beyond soft-ACC + affinity — no prod risk.
+**→ CURRENT cold start: `knowledge/HANDOFF_2026-07-18_pool-model.md`**, then
+`cb-bucket-taxonomy-DRAFT.md` and `insights-ledger.md` **INS-0030…0034**. The 07-15 runbook
+`knowledge/NEXT_SESSION_HANDOFF.md` is retained for its environment cheat-sheet (§1) only — its
+task list is stale for the same reason this section was.
+
+1. Read the pool-model handoff first. **`tools/shadow-grade-clears.mjs` (14/15) is the test of
+   record** — and per **INS-0034**, do NOT judge the tag layer by asking it to RANK teams.
+2. The evaluator described in this document is still **NOT wired, deliberately**: survival is
+   BLOCKED (INS-0018) and kill-alone was shadowed and REJECTED (INS-0020 — it over-recommends DoT
+   content, flipping Spider/FK from under- to over-recommendation). Do not treat wiring it as an
+   easy win; both halves have been tried and recorded.
+3. **The live backlog is INS-0034's**, in order: development verdict → dungeon per-hero capture →
+   over-supply rule → phase timing. Effect size is DEMOTED below all four.
+4. Nothing new is wired into live recommendations beyond soft-ACC + affinity — no prod risk.
+
+**The convergence — and it is ALREADY DONE (verified 2026-07-19).** Track 2's "per-champ dungeon damage
+capture" (named 07-15 as the survival unblocker) and INS-0034 item #2 (named 07-18 as the diagnosis
+unblocker) are the SAME reader fix — and it shipped without either doc noticing. Per-hero `damage` has
+been landing on 100% of dungeon captures since 2026-07-16; `healing` + `defense` since 2026-07-18.
+**What is left is data VOLUME (only 5 dungeon captures carry healing/defense), and it cannot be
+backfilled.** Older captures never recorded the fields, so the only way to accumulate is to keep the
+reader running while playing.

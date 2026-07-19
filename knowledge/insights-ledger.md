@@ -50,8 +50,22 @@ damage/defense/healing, though the numbers are plainly on the in-game result scr
 the sustain-surplus ratio compute itself on every run, on all content, with no LLM extraction and no
 advisor review.
 
+> **⚠ CORRECTION (2026-07-19, verified against the live battle log).** The claim above — *"every dungeon
+> capture records ZEROES for damage/defense/healing"* — was **already false when written.** The reader
+> fix had shipped in two stages and nobody noticed: per-hero `damage` from **2026-07-15→16** (100% of
+> dungeon captures from 07-16 on; 48/169 overall), `healing` + `defense` from the **07-18 Release
+> build** (5/169). Item 1 below is therefore **DONE**, and the sustain-surplus ratio does now compute
+> itself on every dungeon run — worked live on Don$Gnut Dragon 20 (2026-07-19): healing 929,294 vs
+> damage taken 202,208 = **4.6× over-supplied**, and ~2.8× after discounting Gnut's self-heal per
+> INS-0032. ✅ **`defense` = DAMAGE TAKEN — CONFIRMED 2026-07-19** (in-game result-bar legend: red =
+> damage dealt, **blue = damage taken**, green = healing). The ratio is measured, not conditional. **The residual constraint is DATA VOLUME (n=5 with healing) and it CANNOT be backfilled** —
+> older captures never recorded the fields. Accumulation requires the reader running during play, which
+> is also the lesson: the reader was NOT running for the 07-19 Tagoar→Vallaryn Dragon 20 swap, so that
+> A/B has no captured baseline and is ungradeable.
+
 **THE DIAGNOSIS BACKLOG, cheapest first:**
-1. Dungeon per-hero capture (damage / defense / healing) — currently CB-only.
+1. ~~Dungeon per-hero capture (damage / defense / healing) — currently CB-only.~~ ✅ **DONE** — see the
+   correction above. Reprioritise the remainder accordingly.
 2. The over-supply rule: `healing > N x damage taken` -> sustain is surplus -> name the seat to convert.
 3. PHASE TIMING (wave seconds vs boss seconds). Not captured at all; "the waves are slowing me down"
    is unknowable from the current data — Mike had to say it out loud.
@@ -116,9 +130,16 @@ Capture is the gate, not wiring.
 
 `CbDamageReader` always read three per-hero stats — damage (`+0x090`), defense (`+0x098`), healing
 (`+0x0A0`) — and `BattleWatcher` discarded two of them at the slot join. Now persisted. Verified
-digit-for-digit against a result screenshot (Don$Gnut Brutal 2026-07-18). `defense` is kept under the
-VM's own name because its SEMANTICS ARE UNCONFIRMED (values cluster like damage-taken, and the Taunt
-champion led the column, which is corroborating but not proof).
+digit-for-digit against a result screenshot (Don$Gnut Brutal 2026-07-18).
+
+✅ **`defense` = DAMAGE TAKEN — CONFIRMED 2026-07-19.** The in-game result-bar legend settles it:
+**red = total damage dealt · blue = total damage TAKEN · green = total healing done.** These map in
+offset order to `+0x090 / +0x098 / +0x0A0`. The field keeps the VM's name `defense`, but its meaning is
+no longer open — over-supply ratios (healing ÷ damage taken) are MEASURED.
+*(Superseded reasoning, kept as audit trail: the column was held UNCONFIRMED because values merely
+clustered like damage-taken and the Taunt champion often led it — corroborating, not proof. The
+inference was right; it just wasn't evidence. Note it would NOT have survived scrutiny: on the
+2026-07-19 Dragon 20 run, Fahrakin — who has no Taunt — led the column over Pelops.)*
 
 **WHY IT MATTERS:** per-hero DAMAGE understates supports by design (damage-mechanics §4). Glorious Pallas
 showed 228k damage — 1.7% of team output, reads as dead weight — while healing 330k, the most on the team
@@ -195,9 +216,25 @@ bucket. Sustain keeps an internal absorption/restoration/recovery split one leve
 - **TEMPO 20% is the headline** (the old weights implied 6.1%). *"speed is the most important stat in the
   game, top to bottom in all content. The first piece of any team should be who handles your tempo...
   which is why High Khatun gets used even for accounts that have 30 legendary champs."* Tempo is solved
-  FIRST — an anchor pick, not a greedy outcome. Note Don$Gnut owns High Khatun (L25) and Apothecary (L24)
-  and both are GATED OUT of the pool by `usabilityTier`, so the app cannot currently give the single most
-  valuable advice on that account: *level High Khatun*.
+  FIRST — an anchor pick, not a greedy outcome.
+
+  > **⚠ CORRECTION (Mike, 2026-07-19).** This insight originally read: *"Don$Gnut owns High Khatun (L25)
+  > and Apothecary (L24), both GATED OUT by `usabilityTier`, so the app cannot give the single most
+  > valuable advice on that account: level High Khatun."* **That is WRONG.** Mike's actual statement was
+  > CONDITIONAL — *"IF the account did not have a turn meter manipulator, THEN High Khatun would be the
+  > most important to level."* Don$Gnut **has multiple already-levelled champions covering turn meter**,
+  > so High Khatun is NOT a priority there. A conditional was recorded as an unconditional recommendation.
+  >
+  > **THE RULE THIS ESTABLISHES — an unbuilt champion's value is CONDITIONAL ON THE BUCKET BEING SHORT,
+  > never intrinsic.** "Level X" may only fire where that account's bucket is actually unfilled. The model
+  > already had the evidence: on Don$Gnut/Dragon the seed showed **tempo 40%**, the repair step seated
+  > Glorious Pallas (`swap: Gnut → Glorious Pallas [tempo was 40%]`), and tempo finished at **112%** —
+  > covered from the built roster. A correctly-implemented FILLABLE layer would therefore stay SILENT on
+  > High Khatun for this account.
+  >
+  > The GAP itself is still real and still worth building: `pool.filter(usabilityTier >= 2)` makes every
+  > unbuilt champion invisible, so the model cannot say "level X" on an account where a bucket IS short.
+  > Only the worked example was wrong.
 - **SUSTAIN 15%** (old weights implied 30.4%) — 0.75 seats, so ONE good sustain champion fills it and a
   second overflows. Matches the measured 2.7x overheal, and predicts the build-conditional flip on its
   own: under-built, Pallas alone does not fill it and a second sustain earns the seat; built, she does,
