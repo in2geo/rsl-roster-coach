@@ -55,8 +55,30 @@ advisor review.
 2. The over-supply rule: `healing > N x damage taken` -> sustain is surplus -> name the seat to convert.
 3. PHASE TIMING (wave seconds vs boss seconds). Not captured at all; "the waves are slowing me down"
    is unknowable from the current data — Mike had to say it out loud.
-4. A build-vs-composition verdict: when no swap improves the grade, say "composition is right, your
-   constraint is masteries and gear."
+4. **A build-vs-composition verdict — and it is DEVELOPMENT broadly, not just masteries/gear
+   (Mike, 2026-07-18): "i have a lot of level 50 5 star champs in the rotation. those need to be
+   leveled up to 60. its a big stat increase."** When no swap improves the grade, say so and name the
+   SHORT AXIS per champion.
+
+   **THIS IS THE CHEAPEST ITEM ON THIS LIST, NOT THE LAST** — level, stars, gear_tier and
+   has_boss_mastery are all already in the roster snapshot. No reader fix, no capture change, no LLM
+   extraction. It is a rule over data we have had all along, and `devScore` already computes most of it.
+
+   Measured on Don$Gnut 2026-07-18:
+   | champion | state |
+   |---|---|
+   | Pelops | L60 6* + boss masteries — maxed |
+   | Tagoar, Gnut | L60 6*, no masteries |
+   | Ezio | **L52** |
+   | Glorious Pallas, Narma | **L50 5*** |
+
+   THREE OF THE FIVE FIELDED are under-developed; across the eligible pool it is 12 of 15; and just
+   1 of 31 mapped champions has boss masteries. **This reframes the Dragon 20 result (11:01, VICTORY):
+   that is not a composition failure, it is what an under-developed roster looks like** — which is
+   also why both selectors and Mike independently land on the same five champions. There is nothing
+   left to fix in the lineup.
+
+   Order by stat gain: **ascension 5*->6* -> levels to 60 -> masteries -> gear.**
 
 ---
 
