@@ -76,7 +76,39 @@ internal sealed class HeroStatSnapshot
     public int  Slot            { get; init; }
     public bool IsDead          { get; init; }
 
-    // Aggregated from last round's HeroBattleStatistics
+    // Aggregated across rounds (KEPT for backwards compatibility — every downstream consumer
+    // reads these; Rounds below is additive).
+    public int   KilledEnemiesCount { get; init; }
+    public int   KilledAlliesCount  { get; init; }
+    public int   TurnsCount         { get; init; }
+    public float HpOnStart          { get; init; }
+    public float HpOnFinish         { get; init; }
+
+    /// <summary>
+    /// PER-ROUND breakdown (added 2026-07-19). The game exposes a StatsPerRound dictionary per hero
+    /// and the reader was already iterating it — it just SUMMED everything away, the same defect as
+    /// INS-0032 (three stats read, two discarded at the join).
+    ///
+    /// Keeping the array answers four open questions that were all recorded as "not captured":
+    ///   • DEATH ORDER  — the round where HpOnFinish first hits 0 (Mike: "if Pallas dies in the
+    ///     waves, then the run is over" — wiping in the waves is a different failure from wiping
+    ///     at the boss, and nothing downstream could tell them apart).
+    ///   • PHASE BOUNDARY — early rounds with KilledEnemies > 0 are the wave; the transition to
+    ///     zero kills marks the boss phase. This is the "phase timing" backlog item.
+    ///   • TEMPO, MEASURED — Turns per round is how often the team actually acts, which tests the
+    ///     turn-starvation hypothesis directly instead of inferring it from damage-taken rates.
+    ///   • HP CURVES — who was under pressure, and when.
+    ///
+    /// LIVE-MEMORY ONLY: like healing/defense, this cannot be backfilled. Captures made before this
+    /// build carry no round data, so the reader must be RUNNING during play.
+    /// </summary>
+    public List<HeroRoundSnapshot> Rounds { get; init; } = [];
+}
+
+/// <summary>One round of one hero's battle statistics, as the game records it.</summary>
+internal sealed class HeroRoundSnapshot
+{
+    public int   Round             { get; init; }
     public int   KilledEnemiesCount { get; init; }
     public int   KilledAlliesCount  { get; init; }
     public int   TurnsCount         { get; init; }

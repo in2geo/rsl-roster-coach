@@ -628,24 +628,48 @@ internal sealed class BattleWatcher(string outputPath)
         foreach (var (rk, _) in rounds)
             if (rk > lastRoundKey) lastRoundKey = rk;
 
+        // PER-ROUND detail is retained as well as summed (2026-07-19). The aggregates below are
+        // unchanged so every existing consumer keeps working; `perRound` is purely additive and is
+        // what makes death ORDER, the wave/boss phase boundary, and per-round tempo readable.
+        // Sorted by round key because the dictionary iteration order is not guaranteed.
+        var perRound = new List<HeroRoundSnapshot>();
+
         foreach (var (roundKey, roundPtr) in rounds)
         {
             if (!ProcessMemory.IsValidPointer(roundPtr)) continue;
-            killedEnemies += mem.ReadInt32(roundPtr + HBS_KilledEnemiesCount);
-            killedAllies  += mem.ReadInt32(roundPtr + HBS_KilledAlliesCount);
-            turns         += mem.ReadInt32(roundPtr + HBS_TurnsCount);
+            int rKilledEnemies = mem.ReadInt32(roundPtr + HBS_KilledEnemiesCount);
+            int rKilledAllies  = mem.ReadInt32(roundPtr + HBS_KilledAlliesCount);
+            int rTurns         = mem.ReadInt32(roundPtr + HBS_TurnsCount);
+            long rHpStart      = mem.ReadInt64(roundPtr + HBS_HpOnStart);
+            long rHpFinish     = mem.ReadInt64(roundPtr + HBS_HpOnFinish);
+
+            killedEnemies += rKilledEnemies;
+            killedAllies  += rKilledAllies;
+            turns         += rTurns;
+
+            perRound.Add(new HeroRoundSnapshot
+            {
+                Round              = roundKey,
+                KilledEnemiesCount = rKilledEnemies,
+                KilledAlliesCount  = rKilledAllies,
+                TurnsCount         = rTurns,
+                HpOnStart          = rHpStart  / 1000f,
+                HpOnFinish         = rHpFinish / 1000f,
+            });
 
             if (!gotFirstRound)
             {
-                hpOnStart    = mem.ReadInt64(roundPtr + HBS_HpOnStart);
+                hpOnStart    = rHpStart;
                 gotFirstRound = true;
             }
             if (roundKey == lastRoundKey)
             {
-                hpOnFinish  = mem.ReadInt64(roundPtr + HBS_HpOnFinish);
+                hpOnFinish  = rHpFinish;
                 gotLastRound = true;
             }
         }
+
+        perRound.Sort((a, b) => a.Round.CompareTo(b.Round));
 
         return new HeroStatSnapshot
         {
@@ -661,6 +685,7 @@ internal sealed class BattleWatcher(string outputPath)
             TurnsCount         = turns,
             HpOnStart          = gotFirstRound ? hpOnStart  / 1000f : 0f,
             HpOnFinish         = gotLastRound  ? hpOnFinish / 1000f : 0f,
+            Rounds             = perRound,
         };
     }
 
@@ -807,13 +832,29 @@ internal sealed class BattleWatcher(string outputPath)
                     if (snapshot.Heroes.Count > 0)
                         snapshot.Heroes[0] = snapshot.Heroes[0] with { IsLeader = true };
 
-                    // Enrich with kills from the in-memory hero statistics (joined by heroId).
-                    // Leaves them null when the stats weren't read.
+                    // Enrich from the in-memory hero statistics (joined by heroId). Leaves them null
+                    // when the stats weren't read.
+                    //
+                    // CARRY THE WHOLE RECORD (2026-07-19). This join used to take TWO fields
+                    // (IsDead, KilledEnemiesCount) from a snapshot holding twelve — silently dropping
+                    // per-champion turns (tempo), effective HP, end HP, and level/grade at battle time.
+                    // Same defect as the damage/defense/healing join below, which discarded two of
+                    // three bars until 2026-07-18. Read once, keep everything.
                     var memHeroStats = ReadLatestHeroStats();
                     if (memHeroStats.Count > 0)
                         snapshot.Heroes = snapshot.Heroes
                             .Select(h => memHeroStats.TryGetValue(h.HeroId, out var st)
-                                ? h with { Survived = !st.IsDead, Kills = st.KilledEnemiesCount }
+                                ? h with {
+                                    Survived          = !st.IsDead,
+                                    Kills             = st.KilledEnemiesCount,
+                                    Grade             = st.Grade,
+                                    Level             = st.Level,
+                                    TurnsCount        = st.TurnsCount,
+                                    HpOnStart         = st.HpOnStart,
+                                    HpOnFinish        = st.HpOnFinish,
+                                    KilledAlliesCount = st.KilledAlliesCount,
+                                    Rounds            = st.Rounds,
+                                  }
                                 : h)
                             .ToList();
 

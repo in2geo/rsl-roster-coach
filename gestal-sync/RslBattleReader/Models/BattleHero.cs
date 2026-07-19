@@ -66,4 +66,41 @@ internal sealed record BattleHero
     /// measurement, and is a direct input to the blocked survival calibration (INS-0018).
     /// </summary>
     public long? Healing { get; init; }
+
+    // ── Added 2026-07-19 after an audit prompted by Mike: "what other info are we discarding?" ──
+    // All of the below were ALREADY being read into HeroStatSnapshot from process memory and then
+    // dropped at the join (BattleWatcher ~L841 took only IsDead + KilledEnemiesCount from a snapshot
+    // carrying twelve fields). This is the THIRD instance of the same defect: healing/defense were
+    // discarded the same way until 2026-07-18, and the per-round array added earlier today would have
+    // been discarded at this very join too. Nothing new is read from memory — this is plumbing.
+
+    /// <summary>Star grade AT BATTLE TIME. Lets a run be graded against the roster as it WAS, rather
+    /// than against a current snapshot that may have changed since.</summary>
+    public int? Grade { get; init; }
+
+    /// <summary>Champion level AT BATTLE TIME. Same reason as Grade — this is the development-verdict
+    /// input (level/stars) frozen at the moment the run happened.</summary>
+    public int? Level { get; init; }
+
+    /// <summary>Turns THIS champion took, summed across rounds. TEMPO, measured per champion —
+    /// previously only inferable from damage-taken rates.</summary>
+    public int? TurnsCount { get; init; }
+
+    /// <summary>Effective HP at battle start — the champion's REAL built HP, measured. `estimate-stats.js`
+    /// currently guesses this and is documented over-estimating under-levelled champs ~3.3x
+    /// (see the stat-estimator-accuracy memory). Direct input to gear-tier calibration.</summary>
+    public float? HpOnStart { get; init; }
+
+    /// <summary>HP remaining at battle end. Distinguishes a comfortable survivor from one that
+    /// finished at 2% — invisible in the boolean `Survived`.</summary>
+    public float? HpOnFinish { get; init; }
+
+    /// <summary>Allies this champion killed (sacrifice/HP-transfer mechanics). Usually 0.</summary>
+    public int? KilledAlliesCount { get; init; }
+
+    /// <summary>
+    /// PER-ROUND breakdown — death ORDER, the wave/boss phase boundary, per-round tempo, HP curves.
+    /// Empty for captures made before 2026-07-19; live-memory only, cannot be backfilled.
+    /// </summary>
+    public List<HeroRoundSnapshot>? Rounds { get; init; }
 }
