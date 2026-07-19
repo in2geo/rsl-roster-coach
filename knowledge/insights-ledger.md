@@ -13,6 +13,53 @@ Every insight cites EVIDENCE (a game mechanic and/or a captured run) — never a
 
 ---
 
+## INS-0034 — TAGS PICK, RESULTS DIAGNOSE — two layers, two data sources (Mike, 2026-07-18)
+
+**Status:** approved (architecture). Explains and supersedes a whole day of wrong-headed testing.
+
+**Mike:** *"to me, the tags are only for helping pick the team. we definitely need to overcome certain
+challenges. The feedback should be all about real results and then refine the selections based on the
+real data."*
+
+**THE SPLIT:**
+- **TAGS / the pool model → SELECTION.** "Can this team face the challenges this content poses?"
+  Capability coverage, computed BEFORE the battle from the roster. Good at it: 14/15 clear-vs-wipe,
+  lands on known-good teams on two accounts.
+- **CAPTURES → DIAGNOSIS.** "Did it work, and what was actually short?" MEASUREMENT, computed AFTER
+  the battle from the reader. Then the diagnosis refines the next selection.
+
+**WHY THIS MATTERS — it is the root cause of a day of misdirected work.** Claude built three tests
+(`shadow-grade`, `shadow-grade-dragon`, and the brute-force ranking) that all asked the TAG model to
+RANK teams — a diagnosis question. They returned ~coin-flip (56% / 42%) and were reported as the model
+failing. The tag layer was never going to answer them. `shadow-grade-clears.mjs` (14/15) asks the
+selection question and passes. **Do not judge the tag layer by ranking; judge it by whether the team
+it picks can clear.**
+
+**PROOF THE DIAGNOSIS LAYER NEEDS MEASUREMENT, NOT BETTER TAGS.** Mike's own diagnosis of a Dragon 20
+run (11:01, VICTORY) was: waves are the bottleneck, sustain is massively over-supplied, swap a healer
+for a DPS, and if that wipes then the answer is masteries/gear. Every step came from measured numbers:
+  healing 1,276,944  vs  damage taken 252,287  =  **5.1x over-supplied**
+The POOL MODEL CANNOT PRODUCE THAT ADVICE — it reads that same team as `damage 207% · mitigation 170%
+· poison_management 160%`, i.e. it believes damage is already abundant, so it would never propose
+trading sustain for damage. Tag coverage cannot see over-supply of OUTPUT; only the capture can.
+
+**CONSEQUENCE — REPRIORITISATION.** Effect size (per-(champion,tag) values from skill text) improves
+PICKING only. The diagnosis path does not need it at all. So **dungeon per-hero capture leapfrogs
+effect size**: `CbDamageReader.CaptureDungeon` exists but every dungeon capture records ZEROES for
+damage/defense/healing, though the numbers are plainly on the in-game result screen. Fixing that makes
+the sustain-surplus ratio compute itself on every run, on all content, with no LLM extraction and no
+advisor review.
+
+**THE DIAGNOSIS BACKLOG, cheapest first:**
+1. Dungeon per-hero capture (damage / defense / healing) — currently CB-only.
+2. The over-supply rule: `healing > N x damage taken` -> sustain is surplus -> name the seat to convert.
+3. PHASE TIMING (wave seconds vs boss seconds). Not captured at all; "the waves are slowing me down"
+   is unknowable from the current data — Mike had to say it out loud.
+4. A build-vs-composition verdict: when no swap improves the grade, say "composition is right, your
+   constraint is masteries and gear."
+
+---
+
 ## INS-0033 — Book state IS derivable from Gestal, but the model must stay BOOLEAN (audience constraint) (Mike, 2026-07-18)
 
 **Status:** encoded (`lib/gestal-context.js` `fullyBooked()`, commit 89d48f0).
