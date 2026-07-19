@@ -26,22 +26,38 @@ import { mapRoster, usabilityTier } from '../lib/match-engine.js';
 import { scoreTeam, ALLOCATION, BUCKETS, DEAD_ON_CB } from './bucket-score.mjs';
 import { DRAGON_ALLOCATION, DRAGON_BUCKETS, DEAD_ON_DRAGON } from '../lib/dragon-rubric.js';
 import { CB_ACC_FLOOR } from '../lib/cb-shadow-goals.js';
+import { FK_STRATEGIES } from '../lib/fire-knight-rubric.js';
+import { IG_STRATEGIES } from '../lib/ice-golem-rubric.js';
+import { spiderStrategiesForStage } from '../lib/spider-rubric.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, '..');
-// Usage:  node --env-file=.env.local tools/pool-select.mjs [content] [difficulty]
-//   content:    cb (default) | dragon
-//   difficulty: CB only — Easy|Normal|Hard|Brutal|Nightmare|Ultra Nightmare (default Brutal)
+// Usage:  node --env-file=.env.local tools/pool-select.mjs [content] [difficulty|stage]
+//   content:  cb (default) | dragon | fire_knight | ice_golem | spider
+//   3rd arg:  CB → difficulty (Easy|Normal|Hard|Brutal|Nightmare|Ultra Nightmare, default Brutal)
+//             spider → STAGE NUMBER (default 15) — Spider's strategies are stage-gated
+//
+// SINGLE-ALLOCATION content passes `cfg`; MULTI-STRATEGY content passes `strategies` and the repair
+// loop is run ONCE PER STRATEGY, then the best result wins. Comparing one team under two rulebooks is
+// a different (and misleading) question — each strategy must build its own team.
 const CONTENT    = (process.argv[2] || 'cb').toLowerCase();
-const DIFFICULTY = process.argv[3] || 'Brutal';
+const ARG3       = process.argv[3];
+const DIFFICULTY = ARG3 || 'Brutal';
+const STAGE      = Number(ARG3) || 15;
 const CONTENT_CFG = {
-  cb:     { allocation: ALLOCATION,        buckets: BUCKETS,        dead: DEAD_ON_CB,
-            accFloor: CB_ACC_FLOOR[DIFFICULTY] ?? 150, label: `Clan Boss ${DIFFICULTY}` },
-  dragon: { allocation: DRAGON_ALLOCATION, buckets: DRAGON_BUCKETS, dead: DEAD_ON_DRAGON,
-            accFloor: 130, label: "Dragon's Lair" },
+  cb:          { cfg: { allocation: ALLOCATION, buckets: BUCKETS, dead: DEAD_ON_CB,
+                        accFloor: CB_ACC_FLOOR[DIFFICULTY] ?? 150 }, label: `Clan Boss ${DIFFICULTY}` },
+  dragon:      { cfg: { allocation: DRAGON_ALLOCATION, buckets: DRAGON_BUCKETS, dead: DEAD_ON_DRAGON,
+                        accFloor: 130 }, label: "Dragon's Lair" },
+  fire_knight: { strategies: FK_STRATEGIES, label: "Fire Knight's Castle" },
+  ice_golem:   { strategies: IG_STRATEGIES, label: "Ice Golem's Peak" },
+  spider:      { strategies: spiderStrategiesForStage(STAGE), label: `Spider's Den (stage ${STAGE})` },
 };
 const RUN_CFG = CONTENT_CFG[CONTENT];
-if (!RUN_CFG) { console.error(`Unknown content "${CONTENT}". Use: cb | dragon`); process.exit(1); }
+if (!RUN_CFG) {
+  console.error(`Unknown content "${CONTENT}". Use: cb | dragon | fire_knight | ice_golem | spider`);
+  process.exit(1);
+}
 
 // ── DEVELOPMENT: how built is this champion? The term the bucket scorer completely lacked. ──
 // Deliberately the same shape as shadow-cb's `cbQuality` (Mike: "DEVELOPMENT is primary — a maxed
@@ -139,9 +155,41 @@ for (const f of fs.readdirSync(path.join(REPO, 'gestal-sync/output')).filter(x =
   const mapped = mapRoster(userChampions, {}).mapped;
   const pool = mapped.filter(c => usabilityTier(c) >= 2);
   if (pool.length < 5) continue;
-  const { team, grade, rows, trace } = poolSelect(pool, tagMeta, skillsByName, { cfg: RUN_CFG });
+  // Multi-strategy: build a team PER strategy, then take the best. Single-allocation: one run.
+  let best, chosen = null;
+  if (RUN_CFG.strategies) {
+    if (!RUN_CFG.strategies.length) { console.log(`\n══ ${snap.displayName ?? f} — ${RUN_CFG.label}: no strategy viable`); continue; }
+    /* GRADE FILTERS, DEVELOPMENT CHOOSES — applied ACROSS strategies, not just within one.
+     *
+     * Mike's correction #3 (2026-07-18) made the REPAIR step respect development: "repairs must come
+     * FROM developed champions too — it benched a maxed 6-star Legendary for a L40 Epic because the
+     * L40 touched two more buckets." That rule lived INSIDE poolSelect. Choosing BETWEEN strategies
+     * sorted on raw grade alone, so the same failure walked straight back in one level up:
+     * Don$Gnut / Spider 17 fielded Sunken Sentinel (L30 3*, 4,590 HP) over Narma (L50 5*, 13,605 HP)
+     * for 2.2 points of grade.
+     *
+     * And a 2.2-point gap across DIFFERENT allocations is not a real difference — bucket sets differ,
+     * so fillability differs, and the grades are only loosely comparable. Within TIE_BAND we therefore
+     * treat strategies as equivalent and prefer the better-developed team. */
+    const TIE_BAND = 5;
+    const teamDev = t => t.reduce((a, c) => a + devScore(c), 0) / (t.length || 1);
+    const runs = RUN_CFG.strategies.map(s => ({ s, sel: poolSelect(pool, tagMeta, skillsByName, { cfg: s }) }))
+                                   .sort((a, b) => b.sel.grade - a.sel.grade);
+    const topGrade = runs[0].sel.grade;
+    const contenders = runs.filter(r => r.sel.grade >= topGrade - TIE_BAND)
+                           .sort((a, b) => teamDev(b.sel.team) - teamDev(a.sel.team));
+    best = contenders[0].sel; chosen = contenders[0].s;
+    var alternatives = runs.filter(r => r.s.key !== chosen.key);
+  } else {
+    best = poolSelect(pool, tagMeta, skillsByName, { cfg: RUN_CFG.cfg });
+  }
+  const { team, grade, rows, trace } = best;
+
   console.log(`\n══ ${snap.displayName ?? f} — ${RUN_CFG.label} (pool ${pool.length}) ══`);
+  if (chosen) console.log(`   PATH: ${chosen.name}`);
   for (const t of trace) console.log(`   ${String(t.grade.toFixed(1)).padStart(6)}  ${t.step}${t.because ? `  [${t.because}]` : ''}\n           ${t.team.join(', ')}`);
   console.log(`   FINAL: ${team.map(c => c.name).join(', ')}`);
   console.log(`   buckets: ${rows.map(r => `${r.bucket} ${(r.pct * 100).toFixed(0)}%`).join(' · ')}`);
+  if (chosen && alternatives?.length)
+    for (const a of alternatives) console.log(`   alt: ${a.s.key.padEnd(18)} ${a.sel.grade.toFixed(1)}   ${a.sel.team.map(c => c.name).join(', ')}`);
 }

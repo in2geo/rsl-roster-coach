@@ -82,7 +82,19 @@ export const DEAD_ON_CB = new Set(['Freeze', 'AoE Freeze', 'Sleep', 'AoE Sleep',
   'Provoke', 'Fear', 'True Fear', 'Sheep', 'Petrification', 'Ensnare', 'Seal', 'Master Seal', 'Hex',
   'Decrease Turn Meter', 'AoE Decrease Turn Meter', 'Block Revive', 'Buff Strip', 'Steal Buffs']);
 
-const bucketOf = (tag, buckets = BUCKETS) => Object.keys(buckets).find(b => buckets[b].includes(tag)) ?? null;
+/* A bucket's membership is EITHER a plain array of tags (every tag weight 1) OR an object
+ * { tag: weight } for per-tag weighting WITHIN the bucket. Both forms are supported so every existing
+ * rubric keeps working untouched.
+ *
+ * WHY WEIGHTS EXIST (Mike, 2026-07-19, on Fire Knight's shield_break): the Divine Shield loses one
+ * stack per HIT, so `Multi-Hit A1` is worth materially more than `AoE Damage` there — "Coldheart's A1
+ * is the reason she trivialises FK. If both tags score equally under shield_break, the selector can't
+ * find her." Ruled AGAINST adding a real hit-count data source for now ("fewer variables with high
+ * confidence") — hit-count-per-ability is not in the schema. This is the approximation that replaces it. */
+const bucketMembers = spec => (Array.isArray(spec) ? spec : Object.keys(spec ?? {}));
+const tagWeightIn  = (tag, spec) => (Array.isArray(spec) ? 1 : (spec?.[tag] ?? 1));
+const bucketOf = (tag, buckets = BUCKETS) =>
+  Object.keys(buckets).find(b => bucketMembers(buckets[b]).includes(tag)) ?? null;
 
 // Each ADDITIONAL champion covering an already-covered bucket adds this fraction of the target.
 // Mike, 2026-07-18: "you would give ONE spot for mitigation. any more is bonus from another champ's
@@ -100,21 +112,64 @@ const BONUS_COVERER = 0.30;
  *  MAGNITUDE (lib/bucket-magnitude.js): delivery is now uptime × chance × land-rate, not a bare
  *  "has the tag". This is what separates Pelops landing Decrease ATK at ACC 214 from Gnut landing the
  *  SAME debuff at ACC 20 — the distinction capability-based fill could not see (INS-0031). */
+/* TWO OUTPUTS, NOT ONE BLENDED SCORE (Mike, 2026-07-19).
+ *   • `buckets` — delivery WITH land rate blended in. This is the RANKING signal and is unchanged:
+ *     it is what separates Pelops landing Decrease ATK at ACC 214 from Gnut landing it at ACC 20
+ *     (INS-0031), and removing it would undo that discrimination.
+ *   • `gates`   — the SAME ACC shortfall surfaced SEPARATELY, so the player can be told "this champion
+ *     needs more ACC" instead of silently receiving a lower score they cannot interpret.
+ * Mike's framing (on Ice Golem's revive_control): the bucket is a CHALLENGE dimension; ACC is a
+ * CHAMPION-LEVEL viability check on whoever fills the role. The check never lowers the dimension's
+ * weight — it flags the fill.
+ *
+ * THE GATE ONLY BINDS WHERE A CHAMPION CARRIES GATED CAPABILITY — `landRate()` returns 1 for anything
+ * that is not a debuff needing ACC, so a pure buffer/healer is never flagged. That is the ruled
+ * behaviour (Glorious Pallas at ACC 30 is IRRELEVANT, not broken) and it falls out for free. */
 function championDelivery(champ, tagMeta, skillsByName, cfg) {
-  const { buckets = BUCKETS, dead = DEAD_ON_CB, accFloor = ACC_FLOOR } = cfg ?? {};
-  const tags = (champ.tags ?? []).filter(t => !dead.has(t));
+  const { buckets = BUCKETS, dead = DEAD_ON_CB, accFloor = ACC_FLOOR, harmful = null } = cfg ?? {};
   const rows = skillsByName[champ.name] ?? [];
   const out = {};
+  const gates = [];
+  const warnings = [];
+
+  /* HARMFUL ≠ DEAD (Ice Golem, 2026-07-19). ICE_GOLEM_REVIEW.md: "avoid Counterattack/Reflect
+   * (chain-triggers Frigid Vengeance)". A DEAD tag contributes nothing; these make the fight WORSE by
+   * firing the boss's threshold retaliation more often.
+   * CURRENT HANDLING: contribute ZERO (same as dead) + raise an explicit WARNING. A true NEGATIVE term
+   * that docks the grade is deliberately NOT implemented — that is a scoring change with no validation
+   * behind it, and "fewer variables with high confidence" applies. Consequence to be aware of: the
+   * selector will not AVOID a Counterattack champion here, it just won't credit them. */
+  const allTags = champ.tags ?? [];
+  if (harmful) {
+    for (const t of allTags)
+      if (harmful.has(t))
+        warnings.push({ champion: champ.name, tag: t, kind: 'harmful',
+                        why: 'chain-triggers the boss retaliation — contributes nothing and adds risk' });
+  }
+  const tags = allTags.filter(t => !dead.has(t) && !(harmful?.has(t)));
   for (const t of tags) {
     const b = bucketOf(t, buckets); if (!b) continue;
     // `assume_booked` is the field mapRoster actually exposes (NOT `is_booked` — that is the raw
     // user_champions/Gestal field one layer down). It folds in the Rare-books-are-cheap heuristic
     // (INS-0003) on top of the real flag. Reading the wrong name silently disabled books entirely.
-    const { delivery } = tagDelivery(t, champ, rows, tagMeta,
-      { accFloor: ACC_FLOOR, assumeBooked: champ.assume_booked === true });
-    out[b] = Math.max(out[b] ?? 0, delivery);  // best-delivered tag in that bucket represents the champ
+    // BUG FIX 2026-07-19: this passed the module-level ACC_FLOOR (CB Brutal = 150) instead of the
+    // destructured `accFloor` from cfg — so EVERY content scored at Clan Boss's floor. Dragon's 130
+    // and CB's per-difficulty floors (Easy 40 … Ultra Nightmare 200) were computed and discarded.
+    const { delivery, land } = tagDelivery(t, champ, rows, tagMeta,
+      { accFloor, assumeBooked: champ.assume_booked === true });
+    // Best-delivered tag in that bucket represents the champ, scaled by that tag's weight WITHIN the
+    // bucket (1 unless the rubric declares otherwise).
+    out[b] = Math.max(out[b] ?? 0, delivery * tagWeightIn(t, buckets[b]));
+
+    // Viability flag. `land < 1` can ONLY happen for an ACC-gated debuff (landRate returns 1
+    // otherwise), so this fires exactly where the gate genuinely binds.
+    if (land < 1) {
+      const acc = champ.estimated_stats?.acc ?? champ.acc ?? 0;
+      gates.push({ champion: champ.name, tag: t, bucket: b, land,
+                   acc, accFloor, shortfall: Math.max(0, (accFloor ?? 0) - acc) });
+    }
   }
-  return out;
+  return { buckets: out, gates, warnings };
 }
 
 // Credit for a bucket given how much filled it. RULED (Mike, 2026-07-18): "anything over 100% is
@@ -130,10 +185,23 @@ function championDelivery(champ, tagMeta, skillsByName, cfg) {
 // MAGNITUDE fill it means genuinely surplus delivery (e.g. the measured 2.7x overheal), which should
 // indeed stop paying. Do not re-litigate this using capability-fill numbers.
 const SURPLUS_DECAY = 0.15;   // log-scale: 2x fill earns ~+10%, 3x ~+16%. Nominal until calibrated.
-function bucketCredit(got, target) {
+
+/* `overfill` (optional, per bucket) makes surplus ACTIVELY COST instead of merely paying less.
+ *
+ * WHY (Mike ruled a true negative, 2026-07-19): Spider's Den spawns 2 Spiderlings at the start of
+ * EACH of your champions' turns, and Skavag consumes them to heal 3% MaxHP and gain +10% ATK
+ * PERMANENTLY. So team speed is genuinely DOUBLE-EDGED there — you need turns to clear the spawns,
+ * but every turn you take creates more of them. Spider is the only content where a bucket has a
+ * downside, and no amount of re-weighting expresses that: a lower weight says "this matters less",
+ * not "past a point this hurts."
+ *
+ * Pass e.g. `overfill: { tempo: -1 }` — beyond target, each surplus unit SUBTRACTS one unit of credit.
+ * Omitted buckets keep the default diminishing-returns curve. */
+function bucketCredit(got, target, overfill = null) {
   if (target <= 0) return 0;
   const ratio = got / target;
   if (ratio <= 1) return got;                                   // linear up to a full bucket
+  if (overfill != null) return target + overfill * (got - target);
   return target * (1 + SURPLUS_DECAY * Math.log(ratio));        // diminishing past it
 }
 
@@ -144,10 +212,14 @@ export function scoreTeam(team, tagMeta, skillsByName = {}, cfg = {}) {
   // Gather every champion's delivery per bucket, then fill each bucket: best coverer fills it,
   // additional coverers add BONUS_COVERER of the target each.
   const byBucket = Object.fromEntries(Object.keys(allocation).map(b => [b, []]));
+  const gates = [];
+  const warnings = [];
   for (const c of team) {
-    const d = championDelivery(c, tagMeta, skillsByName, cfg);
+    const { buckets: d, gates: g, warnings: w } = championDelivery(c, tagMeta, skillsByName, cfg);
     for (const [b, rel] of Object.entries(d)) byBucket[b].push({ name: c.name, rel });
     per.push({ name: c.name, nBuckets: Object.keys(d).length, covered: d });
+    gates.push(...g);
+    warnings.push(...(w ?? []));
   }
   for (const [b, target] of Object.entries(allocation)) {
     const cov = byBucket[b].sort((x, y) => y.rel - x.rel);
@@ -160,10 +232,45 @@ export function scoreTeam(team, tagMeta, skillsByName = {}, cfg = {}) {
   for (const [b, target] of Object.entries(allocation)) {
     const got = fill[b];
     const pct = target ? got / target : 0;
-    grade += bucketCredit(got, target);
+    grade += bucketCredit(got, target, cfg.overfill?.[b] ?? null);
     rows.push({ bucket: b, target, got, pct, waste: Math.max(0, got - target) });
   }
-  return { grade, rows, per };
+
+  /* HARMFUL TAGS now dock the grade (Mike ruled the true negative, 2026-07-19) rather than merely
+   * contributing zero. Ice Golem: "avoid Counterattack/Reflect — chain-triggers Frigid Vengeance."
+   * Zero-credit meant the selector had no reason to AVOID such a champion; a penalty gives it one.
+   * `harmfulPenalty` is grade points per harmful tag carried by a fielded champion. Nominal until
+   * calibrated — same status as SURPLUS_DECAY. */
+  const harmfulPenalty = cfg.harmfulPenalty ?? 0;
+  if (harmfulPenalty) grade -= harmfulPenalty * warnings.filter(w => w.kind === 'harmful').length;
+  // `gates` is the SECOND output — viability flags, deliberately NOT folded into `grade`.
+  // Worst-first so the binding constraint reads off the top.
+  gates.sort((a, b) => a.land - b.land);
+  return { grade, rows, per, gates, warnings };
+}
+
+/**
+ * Score a team against SEVERAL strategies for one content and return the BEST FIT.
+ *
+ * WHY (Mike, 2026-07-19): dungeons are multi-PATH. Fire Knight's TM-LOCK and SURVIVE are explicit
+ * substitutes ("you need one, not both"); Ice Golem has three (DoT race / Block Revive / out-sustain).
+ * A single flat allocation is wrong for every path but one — set survive high and you penalise a lock
+ * team, set it low and you penalise a grind team. Scoring per strategy and taking the best fit also
+ * produces a genuinely useful statement: "this is a DoT-race team, 85% of the way there."
+ *
+ * Single-strategy content (Clan Boss, Dragon) passes a one-element list and this reduces EXACTLY to
+ * scoreTeam — which is the regression guarantee: those baselines must not move.
+ *
+ * ⚠ KNOWN RISK — BEST-OF-N INFLATES. max() over several noisy scores beats any single one, so grades
+ * rise and clear-vs-wipe separation can shrink as strategies are added. Watch `shadow-grade-clears`
+ * per content. If discrimination drops, the fix is FEWER, MORE DISTINCT strategies — not abandoning
+ * the split.
+ */
+export function scoreBestStrategy(team, tagMeta, skillsByName = {}, strategies = []) {
+  const scored = strategies
+    .map(s => ({ strategy: s, ...scoreTeam(team, tagMeta, skillsByName, s) }))
+    .sort((a, b) => b.grade - a.grade);
+  return { ...scored[0], all: scored };
 }
 
 // ── run it against the real captured teams ───────────────────────────────────

@@ -30,15 +30,26 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { buildUserChampions } from '../lib/gestal-context.js';
 import { mapRoster } from '../lib/match-engine.js';
-import { scoreTeam, ALLOCATION, BUCKETS, DEAD_ON_CB } from './bucket-score.mjs';
+import { scoreTeam, scoreBestStrategy, ALLOCATION, BUCKETS, DEAD_ON_CB } from './bucket-score.mjs';
 import { DRAGON_ALLOCATION, DRAGON_BUCKETS, DEAD_ON_DRAGON } from '../lib/dragon-rubric.js';
+import { IG_STRATEGIES } from '../lib/ice-golem-rubric.js';
+import { FK_STRATEGIES } from '../lib/fire-knight-rubric.js';
+import { spiderStrategiesForStage } from '../lib/spider-rubric.js';
 
+// Multi-strategy content passes `strategies`; single-allocation content passes `cfg`. Both go through
+// the same harness — scoreBestStrategy over a one-element list reduces exactly to scoreTeam, which is
+// the regression guarantee that Dragon/CB baselines cannot move.
 const CONTENT = (process.argv[2] || 'dragon').toLowerCase();
 const CFG = {
-  dragon: { dungeon: "Dragon's Lair", cfg: { allocation: DRAGON_ALLOCATION, buckets: DRAGON_BUCKETS, dead: DEAD_ON_DRAGON, accFloor: 130 } },
-  cb:     { dungeon: 'Clan Boss',     cfg: { allocation: ALLOCATION,        buckets: BUCKETS,        dead: DEAD_ON_CB,     accFloor: 150 } },
+  dragon:      { dungeon: "Dragon's Lair",         cfg: { allocation: DRAGON_ALLOCATION, buckets: DRAGON_BUCKETS, dead: DEAD_ON_DRAGON, accFloor: 130 } },
+  cb:          { dungeon: 'Clan Boss',             cfg: { allocation: ALLOCATION,        buckets: BUCKETS,        dead: DEAD_ON_CB,     accFloor: 150 } },
+  ice_golem:   { dungeon: "Ice Golem's Peak",      strategies: IG_STRATEGIES },
+  fire_knight: { dungeon: "Fire Knight's Castle",  strategies: FK_STRATEGIES },
+  // Spider is STAGE-GATED: the stage decides which strategies are viable, then the model picks the
+  // best fit among them. `strategiesFor` is consulted per capture rather than a fixed list.
+  spider:      { dungeon: "Spider's Den",          strategiesFor: spiderStrategiesForStage },
 }[CONTENT];
-if (!CFG) { console.error(`Unknown content "${CONTENT}". Use: dragon | cb`); process.exit(1); }
+if (!CFG) { console.error(`Unknown content "${CONTENT}". Use: dragon | cb | ice_golem | fire_knight`); process.exit(1); }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, '..');
@@ -76,7 +87,16 @@ let ok = 0, tot = 0, excl = 0;
 for (const [key, rs] of Object.entries(groups)) {
   const roster = rosters[rs[0].accountId]; if (!roster) continue;
   const teamKey = r => r.heroes.map(h => h.name).sort().join(', ');
-  const score = r => { const t = r.heroes.map(h => roster[h.name]).filter(Boolean); return t.length < 5 ? null : scoreTeam(t, tagMeta, skillsByName, CFG.cfg).grade; };
+  const score = r => {
+    const t = r.heroes.map(h => roster[h.name]).filter(Boolean);
+    if (t.length < 5) return null;
+    const strategies = CFG.strategiesFor ? CFG.strategiesFor(r.stageNumber) : CFG.strategies;
+    if (strategies) {
+      if (!strategies.length) return null;          // no strategy viable at this stage
+      return scoreBestStrategy(t, tagMeta, skillsByName, strategies).grade;
+    }
+    return scoreTeam(t, tagMeta, skillsByName, CFG.cfg).grade;
+  };
   const W = new Map(), L = new Map();
   for (const r of rs) { const g = score(r); if (g == null) continue; (r.result === 'Victory' ? W : L).set(teamKey(r), g); }
   if (!W.size || !L.size) continue;
