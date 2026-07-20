@@ -28,7 +28,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { buildUserChampions } from '../lib/gestal-context.js';
+import { buildUserChampions, fetchAliasRows } from '../lib/gestal-context.js';
 import { mapRoster } from '../lib/match-engine.js';
 import { scoreTeam, scoreBestStrategy, ALLOCATION, BUCKETS, DEAD_ON_CB } from './bucket-score.mjs';
 import { DRAGON_ALLOCATION, DRAGON_BUCKETS, DEAD_ON_DRAGON } from '../lib/dragon-rubric.js';
@@ -56,6 +56,9 @@ const REPO = path.join(__dirname, '..');
 const BASE = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
 const H = { apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}` };
 const rest = async p => (await fetch(`${BASE}/rest/v1/${p}`, { headers: H })).json();
+// ALIASES ARE REQUIRED (2026-07-19) — omitting them silently drops champions whose Gestal
+// display name differs from champions.name (e.g. "Thor Faehammer" -> "Thor"). See gestal-context.js.
+const aliasRows = await fetchAliasRows(rest);
 const SEL = 'id,name,type_id,rarity,role,affinity,faction,base_hp,base_atk,base_def,base_spd,base_acc,base_res,base_crit_rate,base_crit_dmg,champion_tags(tag_id,status,tags(name,is_debuff,bypasses_accuracy_check))';
 let db = [];
 for (let f = 0; ; f += 1000) { const d = await rest(`champions?select=${encodeURIComponent(SEL)}&game_id=eq.raid_shadow_legends&limit=1000&offset=${f}`); if (!Array.isArray(d) || !d.length) break; db = db.concat(d); if (d.length < 1000) break; }
@@ -66,11 +69,25 @@ for (const r of sk) { const n = r.champions?.name; if (n) (skillsByName[n] ??= [
 const tagRows = await rest('tags?select=name,is_debuff,bypasses_accuracy_check');
 const tagMeta = Object.fromEntries((tagRows || []).map(t => [t.name, { is_debuff: t.is_debuff, bypasses_accuracy_check: t.bypasses_accuracy_check }]));
 
+/* ── BOSS AFFINITY (2026-07-20) ───────────────────────────────────────────────────────────────
+ * The TEST OF RECORD was blind to affinity even after the term landed in the scorer, so a
+ * before/after on this harness was not measuring the change at all. Keyed by stage_number: the
+ * affinity belongs to the STAGE being graded, not to the account or the strategy.
+ * `--no-affinity` is the A/B control — same battles, same rubric, one term varied. */
+const NO_AFFINITY = process.argv.includes('--no-affinity');
+const affinityByStage = {};
+if (!NO_AFFINITY) {
+  const dRow = (await rest(`dungeons?select=id&name=eq.${encodeURIComponent(CFG.dungeon)}&game_id=eq.raid_shadow_legends`))?.[0];
+  if (dRow)
+    for (const r of await rest(`dungeon_stage_affinities?select=stage_number,affinity&dungeon_id=eq.${dRow.id}&limit=100`))
+      affinityByStage[r.stage_number] = r.affinity;
+}
+
 const rosters = {};
 for (const f of fs.readdirSync(path.join(REPO, 'gestal-sync/output')).filter(x => x.endsWith('.json') && !/^gear-corpus/.test(x))) {
   const s = JSON.parse(fs.readFileSync(path.join(REPO, 'gestal-sync/output', f), 'utf8'));
   if (!s.accountId) continue;
-  const { userChampions } = buildUserChampions(s.champions ?? [], db);
+  const { userChampions } = buildUserChampions(s.champions ?? [], db, aliasRows);
   rosters[s.accountId] = Object.fromEntries(mapRoster(userChampions, {}).mapped.map(c => [c.name, c]));
 }
 
@@ -91,11 +108,13 @@ for (const [key, rs] of Object.entries(groups)) {
     const t = r.heroes.map(h => roster[h.name]).filter(Boolean);
     if (t.length < 5) return null;
     const strategies = CFG.strategiesFor ? CFG.strategiesFor(r.stageNumber) : CFG.strategies;
+    // Clan Boss stays null by design — its affinity rotates DAILY and is not captured (battle-gaps).
+    const bossAffinity = affinityByStage[r.stageNumber] ?? null;
     if (strategies) {
       if (!strategies.length) return null;          // no strategy viable at this stage
-      return scoreBestStrategy(t, tagMeta, skillsByName, strategies).grade;
+      return scoreBestStrategy(t, tagMeta, skillsByName, strategies, { bossAffinity }).grade;
     }
-    return scoreTeam(t, tagMeta, skillsByName, CFG.cfg).grade;
+    return scoreTeam(t, tagMeta, skillsByName, { ...CFG.cfg, bossAffinity }).grade;
   };
   const W = new Map(), L = new Map();
   for (const r of rs) { const g = score(r); if (g == null) continue; (r.result === 'Victory' ? W : L).set(teamKey(r), g); }

@@ -31,7 +31,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { buildUserChampions } from '../lib/gestal-context.js';
+import { buildUserChampions, fetchAliasRows } from '../lib/gestal-context.js';
 import { mapRoster } from '../lib/match-engine.js';
 import { CB_ACC_FLOOR } from '../lib/cb-shadow-goals.js';
 import { tagDelivery } from '../lib/bucket-magnitude.js';
@@ -126,11 +126,13 @@ const BONUS_COVERER = 0.30;
  * that is not a debuff needing ACC, so a pure buffer/healer is never flagged. That is the ruled
  * behaviour (Glorious Pallas at ACC 30 is IRRELEVANT, not broken) and it falls out for free. */
 function championDelivery(champ, tagMeta, skillsByName, cfg) {
-  const { buckets = BUCKETS, dead = DEAD_ON_CB, accFloor = ACC_FLOOR, harmful = null } = cfg ?? {};
+  const { buckets = BUCKETS, dead = DEAD_ON_CB, accFloor = ACC_FLOOR, harmful = null,
+          bossAffinity = null } = cfg ?? {};
   const rows = skillsByName[champ.name] ?? [];
   const out = {};
   const gates = [];
   const warnings = [];
+  const affinityNotes = [];
 
   /* HARMFUL ≠ DEAD (Ice Golem, 2026-07-19). ICE_GOLEM_REVIEW.md: "avoid Counterattack/Reflect
    * (chain-triggers Frigid Vengeance)". A DEAD tag contributes nothing; these make the fight WORSE by
@@ -155,8 +157,8 @@ function championDelivery(champ, tagMeta, skillsByName, cfg) {
     // BUG FIX 2026-07-19: this passed the module-level ACC_FLOOR (CB Brutal = 150) instead of the
     // destructured `accFloor` from cfg — so EVERY content scored at Clan Boss's floor. Dragon's 130
     // and CB's per-difficulty floors (Easy 40 … Ultra Nightmare 200) were computed and discarded.
-    const { delivery, land } = tagDelivery(t, champ, rows, tagMeta,
-      { accFloor, assumeBooked: champ.assume_booked === true });
+    const { delivery, land, affinity, placementSource } = tagDelivery(t, champ, rows, tagMeta,
+      { accFloor, assumeBooked: champ.assume_booked === true, bossAffinity });
     // Best-delivered tag in that bucket represents the champ, scaled by that tag's weight WITHIN the
     // bucket (1 unless the rubric declares otherwise).
     out[b] = Math.max(out[b] ?? 0, delivery * tagWeightIn(t, buckets[b]));
@@ -168,8 +170,14 @@ function championDelivery(champ, tagMeta, skillsByName, cfg) {
       gates.push({ champion: champ.name, tag: t, bucket: b, land,
                    acc, accFloor, shortfall: Math.max(0, (accFloor ?? 0) - acc) });
     }
+
+    // AFFINITY placement penalty — reported, never silent. `placementSource === 'unknown'` means we
+    // could not prove the debuff is active-placed and penalised it anyway (see affinityPlacementGaps).
+    if (affinity < 1)
+      affinityNotes.push({ champion: champ.name, tag: t, bucket: b, factor: affinity,
+                           affinity: champ.affinity, bossAffinity, placementSource });
   }
-  return { buckets: out, gates, warnings };
+  return { buckets: out, gates, warnings, affinityNotes };
 }
 
 // Credit for a bucket given how much filled it. RULED (Mike, 2026-07-18): "anything over 100% is
@@ -214,12 +222,15 @@ export function scoreTeam(team, tagMeta, skillsByName = {}, cfg = {}) {
   const byBucket = Object.fromEntries(Object.keys(allocation).map(b => [b, []]));
   const gates = [];
   const warnings = [];
+  const affinityNotes = [];
   for (const c of team) {
-    const { buckets: d, gates: g, warnings: w } = championDelivery(c, tagMeta, skillsByName, cfg);
+    const { buckets: d, gates: g, warnings: w, affinityNotes: a } =
+      championDelivery(c, tagMeta, skillsByName, cfg);
     for (const [b, rel] of Object.entries(d)) byBucket[b].push({ name: c.name, rel });
     per.push({ name: c.name, nBuckets: Object.keys(d).length, covered: d });
     gates.push(...g);
     warnings.push(...(w ?? []));
+    affinityNotes.push(...(a ?? []));
   }
   for (const [b, target] of Object.entries(allocation)) {
     const cov = byBucket[b].sort((x, y) => y.rel - x.rel);
@@ -246,7 +257,10 @@ export function scoreTeam(team, tagMeta, skillsByName = {}, cfg = {}) {
   // `gates` is the SECOND output — viability flags, deliberately NOT folded into `grade`.
   // Worst-first so the binding constraint reads off the top.
   gates.sort((a, b) => a.land - b.land);
-  return { grade, rows, per, gates, warnings };
+  // `affinityNotes` is a THIRD output, same rationale as `gates`: the penalty is already inside
+  // `grade` (a weak champion genuinely delivers less), but the player needs to be told WHY and
+  // which seat it cost — "bring a Void or same-affinity carrier here", not a silently lower score.
+  return { grade, rows, per, gates, warnings, affinityNotes };
 }
 
 /**
@@ -266,9 +280,14 @@ export function scoreTeam(team, tagMeta, skillsByName = {}, cfg = {}) {
  * per content. If discrimination drops, the fix is FEWER, MORE DISTINCT strategies — not abandoning
  * the split.
  */
-export function scoreBestStrategy(team, tagMeta, skillsByName = {}, strategies = []) {
+/* `opts` carries per-RUN context that is not part of a strategy's rulebook — currently just
+ * `bossAffinity`, which belongs to the STAGE being played, not to the strategy chosen. Without this
+ * the multi-strategy contents (Fire Knight, Ice Golem, Spider) silently dropped the affinity term
+ * while single-allocation contents kept it, which would have made any A/B incomparable across
+ * contents. Merged UNDER the strategy so a rubric could still pin its own value if one ever needs to. */
+export function scoreBestStrategy(team, tagMeta, skillsByName = {}, strategies = [], opts = {}) {
   const scored = strategies
-    .map(s => ({ strategy: s, ...scoreTeam(team, tagMeta, skillsByName, s) }))
+    .map(s => ({ strategy: s, ...scoreTeam(team, tagMeta, skillsByName, { ...opts, ...s }) }))
     .sort((a, b) => b.grade - a.grade);
   return { ...scored[0], all: scored };
 }
@@ -282,6 +301,9 @@ if (RUN_DIRECTLY) {
 const BASE = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
 const H = { apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}` };
 const rest = async p => (await fetch(`${BASE}/rest/v1/${p}`, { headers: H })).json();
+// ALIASES ARE REQUIRED (2026-07-19) — omitting them silently drops champions whose Gestal
+// display name differs from champions.name (e.g. "Thor Faehammer" -> "Thor"). See gestal-context.js.
+const aliasRows = await fetchAliasRows(rest);
 const SEL = 'id,name,type_id,rarity,role,affinity,faction,base_hp,base_atk,base_def,base_spd,base_acc,base_res,base_crit_rate,base_crit_dmg,champion_tags(tag_id,status,ascension_required,tags(name,is_debuff,bypasses_accuracy_check)),champion_auras(aura_type,aura_value,aura_area)';
 let db = [];
 for (let f = 0; ; f += 1000) { const d = await rest(`champions?select=${encodeURIComponent(SEL)}&game_id=eq.raid_shadow_legends&limit=1000&offset=${f}`); if (!Array.isArray(d) || !d.length) break; db = db.concat(d); if (d.length < 1000) break; }
@@ -298,7 +320,7 @@ const tagMeta = Object.fromEntries((tagRows || []).map(t => [t.name, { is_debuff
 const REPO = path.join(path.dirname(new URL(import.meta.url).pathname.slice(1)), '..');
 const snapF = fs.readdirSync(path.join(REPO, 'gestal-sync/output')).find(f => /Gnut/i.test(f) && f.endsWith('.json'));
 const snap = JSON.parse(fs.readFileSync(path.join(REPO, 'gestal-sync/output', snapF), 'utf8'));
-const { userChampions } = buildUserChampions(snap.champions ?? [], db);
+const { userChampions } = buildUserChampions(snap.champions ?? [], db, aliasRows);
 const mapped = mapRoster(userChampions, {}).mapped;
 const byName = Object.fromEntries(mapped.map(c => [c.name, c]));
 
