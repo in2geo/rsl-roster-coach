@@ -513,17 +513,28 @@ internal sealed class BattleWatcher(string outputPath)
         if (mem is null) return;
         string tag = isCb ? "cbdamage" : "dungeondamage";
 
-        // Retry, keeping the result with the MOST heroes — the dialog can appear a beat after the
-        // file write and the per-hero stat contexts can populate progressively.
+        // Retry: the dialog can appear a beat after the file write and the per-hero stat contexts can
+        // populate progressively. The team size in the FILE is authoritative, so accept only a read
+        // that matches it exactly.
+        //
+        // ⚠ Do NOT go back to "keep the result with the MOST heroes". For dungeons that actively
+        // PREFERRED the polluted read: the heap scan can return stale contexts from a previous battle
+        // mixed in with this one, and the union is always the largest. See the staleness guard in
+        // CbDamageReader.CaptureDungeon (2026-07-19 — it corrupted a real graded Spider-20 run).
+        int expected = snapshot.Heroes.Count;
         CbDamageReader.CbResult? res = null;
         for (int attempt = 0; attempt < 5; attempt++)
         {
-            var r = isCb ? CbDamageReader.Capture(mem) : CbDamageReader.CaptureDungeon(mem);
-            if (r is not null && (res is null || r.Heroes.Count > res.Heroes.Count)) res = r;
-            if (res is not null && res.Heroes.Count >= 5) break;   // full team — done
+            var r = isCb ? CbDamageReader.Capture(mem) : CbDamageReader.CaptureDungeon(mem, expected);
+            if (r is not null && (expected <= 0 || r.Heroes.Count == expected)) { res = r; break; }
             Thread.Sleep(200);
         }
-        if (res is null) { Console.WriteLine($"[{tag}] {snapshot.Dungeon} battle but result dialog not readable"); return; }
+        if (res is null)
+        {
+            Console.WriteLine($"[{tag}] {snapshot.Dungeon}: no trustworthy per-hero read for {expected} hero(es) — " +
+                              "per-hero stats left NULL (a missing number is recoverable; a wrong one is not).");
+            return;
+        }
 
         snapshot.TotalDamageDealt = res.TotalDamage;
 
@@ -812,8 +823,44 @@ internal sealed class BattleWatcher(string outputPath)
 
                     int slot = 0;
                     var preFilter = snapshot.Heroes;   // keep the raw file list for recovery + debug
-                    snapshot.Heroes = preFilter
+                    var validated = preFilter
                         .Where(h => roster.TryGetValue(h.HeroId, out var c) && SameChamp(c.TypeId, h.TypeId))
+                        .ToList();
+
+                    /* HARD CAP AT 5 — a Raid battle team cannot exceed five champions (2026-07-20).
+                     *
+                     * HeroIdentity.Extract byte-scans the WHOLE file for <typeId:u16-BE> A1 68 <heroId>,
+                     * so it returns enemies and coincidental matches as well as the real team; a logged
+                     * example was file=12 kept=4. SameChamp is the filter, but it compares only the LOW
+                     * BYTE of typeId with a +/-6 tolerance (needed because typeId = baseTypeId +
+                     * ascension), which accepts 13 of 256 values. A coincidental byte run whose heroId
+                     * happens to be a roster key therefore slips through roughly 5% of the time.
+                     *
+                     * MEASURED: 5 six-hero captures in 771 (0.6%) — FK18 got a phantom Artak, Spider15 a
+                     * phantom Visix, Dragon20 a phantom Marked. In every case the extra champion was
+                     * REAL and OWNED (that is why it passed roster validation) but was not in the battle,
+                     * carried no damage and no survival flag, and sat LAST in file order.
+                     *
+                     * COST OF NOT CAPPING: every downstream tool filters to exactly 5 heroes, so the whole
+                     * run is silently DISCARDED — the phantom does not corrupt a stat, it deletes a battle.
+                     *
+                     * Taking the FIRST five is safe on the evidence (slot order is file order, which is
+                     * on-screen left-to-right — see the leader note below — and all five observed phantoms
+                     * were last). It is not proven that a phantom can never sort first, so the drop is
+                     * LOGGED unconditionally rather than only under RSL_DEBUG_HEROES: a silent cap would
+                     * hide exactly the case this guard cannot handle. */
+                    const int MaxTeamSize = 5;
+                    if (validated.Count > MaxTeamSize)
+                    {
+                        var dropped = validated.Skip(MaxTeamSize)
+                            .Select(h => $"{(roster.TryGetValue(h.HeroId, out var rc) ? rc.Name : "?")}(hid={h.HeroId},fileTid=0x{h.TypeId:X})");
+                        Console.WriteLine($"[hero-cap] {validated.Count} champions passed roster validation; " +
+                                          $"a team cannot exceed {MaxTeamSize}. Dropped: {string.Join(", ", dropped)}");
+                        try { File.AppendAllText(HeroDebugPath, $"{DateTime.Now:HH:mm:ss.fff} [hero-cap] kept={MaxTeamSize} of {validated.Count}: dropped {string.Join(", ", dropped)}\n"); } catch { }
+                        validated = validated.Take(MaxTeamSize).ToList();
+                    }
+
+                    snapshot.Heroes = validated
                         .Select(h => h with
                         {
                             Slot   = slot++,
