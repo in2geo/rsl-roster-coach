@@ -39,10 +39,36 @@ const ROLE = {
 // (Weapon main = ATK → statId 3=ATK; Shield main = DEF → statId 2=DEF). The previous
 // table mislabeled 2,3,5,6,8,10,11, which corrupted every champion's gear on import.
 // statId 11=DEF% is confirmed (makes Kael's DEF land exactly on the in-game 637).
+/* ARTIFACT stat-id map. CORRECTED 2026-07-20 — five of eleven ids were wrong (4,5,7,9,11).
+ *
+ * GROUND TRUTH: Ezio Auditore (DonThor, Lvl 60 6★) in-game stat panel + per-artifact tooltips,
+ * matched piece-by-piece against his snapshot rows. Every corrected id is verified by a tooltip:
+ *   Gauntlets main  id8=26  -> "C. RATE 26%"      => 8 = CRATE (unchanged)
+ *   Gauntlets sub   id11=15 -> "RES(1) 15"        => 11 = RES   (was DEF%)
+ *   Chestplate sub  id7=14  -> "SPD(2) 14"        => 7 = SPD    (was RES)
+ *   Chestplate sub  id9=10  -> "C.DMG(1) 10%"     => 9 = CDMG   (was HP%)
+ *   Boots main      id7=40  -> "SPD 40"           => 7 = SPD    (confirmed twice)
+ *   Boots sub       id5=11  -> "DEF(1) 11%"       => 5 = DEF%   (was CDMG)
+ *   Boots sub       id4=10  -> "HP(1) 10%"        => 4 = HP%    (was SPD)
+ * ids 2/3 are pinned by slot restriction (Shield-main is always DEF ×2640, Weapon-main always
+ * ATK ×894); id6 = ATK% by elimination as the last percent stat.
+ *
+ * The result is a clean enum: flat trio (HP/DEF/ATK), percent trio (HP%/DEF%/ATK%), then
+ * SPD, CRATE, CDMG, ACC, RES.
+ *
+ * PROOF THE OLD MAP WAS BROKEN: it computed Ezio's gear RES as 99 and HP as +20,147 against a
+ * panel showing +56 and +18,705 — ABOVE the totals, which is impossible since gear only adds.
+ * It also read SPD as 22 against a panel of 105. The corrected map reproduces C.RATE, C.DMG and
+ * RES EXACTLY and SPD to within 1 (rounding on Perception's +5%).
+ *
+ * CONSEQUENCE FOR ANYTHING DERIVED FROM THE OLD MAP: every RES figure was actually SPD (id7), and
+ * real RES (id11) was discarded as DEF%. HANDOFF_2026-07-20 §3.7's "RES barely moves across the
+ * progression" and "zero of 96 champions exceed RES 250" are artefacts of this bug, not findings.
+ * Re-derive the stat floors, the ACC gates and the gear tier before trusting them. */
 const STAT_KIND = {
-  1: 'HP',    2: 'DEF',   3: 'ATK',  4: 'SPD',
-  5: 'CDMG',  6: 'ATK%',  7: 'RES',  8: 'CRATE',
-  9: 'HP%',  10: 'ACC',  11: 'DEF%',
+  1: 'HP',    2: 'DEF',   3: 'ATK',  4: 'HP%',
+  5: 'DEF%',  6: 'ATK%',  7: 'SPD',  8: 'CRATE',
+  9: 'CDMG', 10: 'ACC',  11: 'RES',
 };
 
 const SLOT = {
