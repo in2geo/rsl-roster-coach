@@ -30,6 +30,7 @@ import { buildUserChampions, fetchAliasRows } from '../lib/gestal-context.js';
 import { mapRoster, STAGE_EHP_MULTIPLIER } from '../lib/match-engine.js';
 import { computeContributions } from '../lib/contribution-model.js';
 import { buildRosterIndex, loadNameResolverRest } from '../lib/champion-names.js';
+import { maxHpCapFor } from '../lib/damage-mechanics.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, '..');
@@ -42,7 +43,7 @@ const norm = s => String(s ?? '').trim().toLowerCase();
 const med  = a => { if (!a.length) return null; const b = [...a].sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; };
 
 // ── catalog ──────────────────────────────────────────────────────────────────
-const SEL = 'id,name,type_id,rarity,role,affinity,faction,base_hp,base_atk,base_def,base_spd,base_acc,base_res,base_crit_rate,base_crit_dmg,champion_tags(tag_id,status,tags(name,is_debuff,bypasses_accuracy_check))';
+const SEL = 'id,name,type_id,rarity,role,affinity,faction,base_hp,base_atk,base_def,base_spd,base_acc,base_res,base_crit_rate,base_crit_dmg,champion_tags(tag_id,status,tags(name,is_debuff,bypasses_accuracy_check)),champion_skills(slot,skill_name,skill_summary,maxhp_effect_kind,maxhp_pct,maxhp_pct_boss,maxhp_pct_cap)';
 let db = [];
 for (let f = 0; ; f += 1000) {
   const d = await rest(`champions?select=${encodeURIComponent(SEL)}&game_id=eq.raid_shadow_legends&limit=1000&offset=${f}`);
@@ -100,8 +101,12 @@ for (const r of runs) {
     crit_rate: c.estimated_stats?.crit_rate ?? c.estimated_stats?.crate,
     crit_dmg:  c.estimated_stats?.crit_dmg  ?? c.estimated_stats?.cdmg,
     damage_multiplier_score: c.damage_multiplier_score,
+    maxhp_damage: c.maxhp_damage ?? null,
   }));
-  const res = computeContributions(contribTeam, { bossHp: effectiveHp, incomingDamagePerTurn: null });
+  // Same content cap the engine applies (damage-mechanics §6b): Normal 21-25 and Hard clamp
+  // an active Enemy-MAX-HP skill to 10% of boss MAX HP per hit.
+  const res = computeContributions(contribTeam, { bossHp: effectiveHp, incomingDamagePerTurn: null,
+                                                 maxHpCap: maxHpCapFor({ stageNumber: stage }) });
   rows.push({
     account: r.display_name ?? r.account_id, accountId: r.account_id, dungeon, stage,
     won: r.successful, seconds: r.duration_seconds ?? null, turns: r.turns ?? null,
