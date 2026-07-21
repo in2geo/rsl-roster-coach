@@ -13,6 +13,243 @@ Every insight cites EVIDENCE (a game mechanic and/or a captured run) — never a
 
 ---
 
+## INS-0040 — GEAR TIER must be anchored to PROGRESSION, and it is ROLE-AWARE (Mike, 2026-07-20)
+
+**Status:** `approved` (design ruling) · implementation BLOCKED on INS-0041.
+
+**Mike:** *"The gear tier should correspond to success at certain levels of progression so it ties
+back to the level predictor. The multipliers on 'good' gear should get you past level 20 of the
+dungeons (with the right team) and to Brutal clan boss (two key). 'fair' gear should get you through
+level 10."* And: *"if your gear is good your attackers are near 100% crit rate and have some crit
+damage. Your speed is right around the required amounts... your accuracy is close to the accuracy
+gate. It might not be there but it is close."* And: *"supports are built with HP and DEF rather than
+ATK and crit. If the support is a debuffer they shoot for the accuracy cap then go HP/DEF."*
+
+**WHY NOT PERCENTILES (rejected):** a distribution-derived tier anchors "good" to whatever the synced
+rosters happen to contain — Mike: *"I don't have a lot of good gear, I have much more fair gear."*
+The corpus can only say where an account SITS; it cannot define the standard.
+
+**WHY NOT THE DECLARED STAT FLOORS (falsified):** across 96 geared champions on six accounts, ZERO
+meet Dragon stage-10's `ACC 150 + RES 250`, and ZERO exceed RES 250 at all (max 214) — yet Dragon 20
+is cleared routinely. Anchoring tiers to the floors would bake a broken number in.
+
+**THE ANCHOR THAT WORKS — observed carriers.** Gear on champions that DEMONSTRABLY clear stage 20
+(31 of 96 geared): attackers **crit 89 · crit dmg 113 · ACC 142 · HP 33k** (vs a 170-225 ACC gate —
+"close but not there", exactly as described). The rest of the geared population sits at crit 31 /
+ACC 37 = the "fair" band. 627 of 723 champions have no gear at all.
+
+**ROLE-AWARE IS STRUCTURAL, not a refinement.** Crit separates attackers (carrier median 89) from
+supports (median 20); supports measure ATK 1092 / DEF 1300 / CRATE 20 vs attackers ATK 1909 / CRATE 78.
+A single per-champion tier label cannot express "good" meaning different stats per role.
+⚠ "is a debuffer" as a champion-level boolean is useless — 80 of 96 champions carry SOME debuff tag.
+The bucket scorer's per-TAG ACC gate is the right instrument.
+
+**BLOCKED BY [[INS-0041]]:** crit, SPD and ACC are all mis-mapped today, so the benchmark numbers
+above must be re-derived before the classifier is built.
+
+**Also open:** ACCOUNT-level vs PER-CHAMPION tier is unruled — the standing design note says
+account-level, `mapRoster` uses the per-champion Gestal tier and ignores the account selector.
+
+---
+
+## INS-0041 — TWO stat-ID maps, two different ID SPACES, both wrong (2026-07-20)
+
+**Status:** `proposed` — two entries PROVEN, the rest needs one in-game screenshot. **NOTHING CHANGED**
+(Mike: *"just leave it all flagged right now"*). **Blocks all stat-derived work.**
+
+`sync.js STAT_KIND` (artifact main/sub stats) and `lib/effective-stats.js STAT_KIND_ID` (`bonusesV2`
+statKindId) disagree on **5 of 8** shared IDs — and they are genuinely two different enumerations,
+not one map with a typo.
+
+**PROVEN, via slot restrictions** (C.RATE/C.DMG = Gauntlets only · ACC/RES = Chestplate only ·
+SPD = Boots only — no amount of bad gearing can violate these):
+- **artifact-space `id7` = SPD** (currently `RES`): appears on **boots ONLY, 70 of 81**, and Mike
+  confirms every champion runs speed boots.
+- **bonus-space `id7` = CRATE** (currently `res`): Narma wears **Critical Rate ×3**, and the model
+  applies **`+12 res`** while her crit rate stays at base 15.
+- `effective-stats.js` additionally has **id2/id3 swapped** (id2 = 100% of Shields = DEF;
+  id3 = 100% of Weapons = ATK) and `id8` as `acc` though it appears only on Gauntlets.
+
+**CONSEQUENCE — RES inflated, SPD and CRIT under-counted, ACC uncertain, on EVERY Gestal champion.**
+Everything stat-shaped must be re-derived after the fix: the ACC gates, "Narma ACC 112 vs the 150
+floor", the RES-floor falsification, the carrier crit/SPD benchmark, and the gear tier.
+
+**Verified-good and NOT affected:** win/loss, team composition, turns, duration, and per-hero DAMAGE.
+The Pallas synergy measurement ([[INS-0036]]) is damage-based and therefore stands.
+
+**NEEDS:** one in-game stat-panel screenshot to arbitrate id4/id5/id6/id8.
+
+---
+
+## INS-0039 — A champion the model CANNOT SEE: aliases were off in every shadow tool (2026-07-20)
+
+**Status:** `encoded` (fixed in all 13 tools; the parameter now throws on omission).
+
+**Mike:** *"I'm curious why my best champ is not on any of the teams?"*
+
+`buildUserChampions(gestal, db, dbAliases = [])` — the third argument resolves any NAME FORM to the
+champion. It **defaulted to `[]`**, and **every shadow/testing tool omitted it** while the live paths
+(`api/my-roster.js`, `lib/battle-pipeline.js`) passed it correctly. A champion is invisible whenever
+their Gestal display name differs from `champions.name` AND their `type_id` is null.
+
+**"Thor Faehammer" → `champions.name` "Thor", type_id null ⇒ never entered the roster.** He is
+usabilityTier 3 with 8 approved tags including **Multi-Hit A1 — the PRIMARY Fire Knight
+`shield_break` tag** — plus AoE Stun and Decrease Turn Meter (`tm_lock`). With aliases on he enters
+the Dragon and FK teams and **displaces Sun Wukong**, and Mike confirms the resulting Dragon team is
+the one he already runs — an independent validation the bug had been masking.
+
+Recovers **5 champions on DonThor, 10 on GuapoDonni, 1 on TicoTholin.**
+
+**THE REAL LESSON — the `= []` default made it SILENT.** No error, just a quietly smaller roster. The
+parameter is now REQUIRED (`undefined` throws; an explicit `[]` remains legal for tests). *A default
+that silently degrades correctness is worse than no default.*
+
+**NOT a `type_id` problem.** Backfilling `type_id` was proposed and REJECTED (Mike): `type_id` is an
+ingestion-BOUNDARY column, `champions.id` is identity — `NAMING_ARCHITECTURE.md` §3b. Name + aliases
+→ `champions.id` is the correct layer, which is what was fixed.
+
+---
+
+## INS-0038 — AFFINITY may be FIRST-ORDER on clear time, and gen-3 is blind to it (2026-07-20)
+
+**Status:** `proposed` (n=3, one account, one team) — but the mechanism is a game fact and the
+model gap is certain.
+
+Don$Gnut Fire Knight, **the same five champions**, three stages:
+
+| stage | boss | Ezio (ATK carrier, Spirit) | turns |
+|---|---|---|---|
+| 13 | Force | **STRONG** (crushing) | **96** |
+| 16 | Void | neutral | 353 |
+| 15 | Magic | **WEAK** (glancing) | **565** |
+
+Clear time tracks the carrier's affinity matchup **monotonically**, and Ezio's ATK (3,135) is roughly
+double anyone else's on that team.
+
+**THE MODEL GAP:** `bucket-score.mjs`, `pool-select.mjs` and all five rubrics have **no affinity term**
+— they only SELECT the column. Gen-1 has `applyAffinityToConfidence` + `dungeon_stage_affinities`
+(150 rows, seeded). This is the **third capability gen-3 lost that gen-1 has** (leader aura — fixed
+2026-07-20; affinity; synergy), all with the same cause: built as a first cut, omission logged as
+debt, and each turns out to matter.
+
+**METHOD WARNING:** Claude first attributed the 565→353 improvement to a leader-aura change; Mike
+caught that stage 16 is affinity-neutral. **Any clear-time comparison ACROSS stages is confounded by
+affinity** — hold the stage constant, or model it.
+
+---
+
+## INS-0037 — A WIN can be a FAILURE, and the grading harness cannot see it (2026-07-20)
+
+**Status:** `proposed` (measurement + a structural gap in the test of record).
+
+Don$Gnut cleared **Fire Knight 15 in 565 turns / 26.4 minutes with all five alive.** `CLAUDE.md` judges
+auto content by **TIME** (~5 min reference), so that is a functional failure — and
+`shadow-grade-clears`, our test of record, scored it as a **clear**.
+
+The FK rubric graded that team **106.7, its highest score of all five contents**, on the path named
+*"Survive grind"*, with `survive` filled to **190%**. It optimised for survival, got survival
+(nobody died), and could not kill.
+
+**THE GENERAL DEFECT — unconditional credit for DEFENCE whose value is conditional on that constraint
+actually binding.** Second sighting the same day: the CB leader picker chose a **RES** aura for a team
+that was not dying (RES converts to ~zero damage there). Third: `bucket-score` caps over-fill flat at
+100%, so 190% and 100% are indistinguishable.
+
+**COROLLARY (Mike):** *"when the buckets are full, we would want to swap in more damage."* Repair the
+gaps first, then spend surplus on DAMAGE rather than on marginal bucket-stuffing. Implementing that
+needs a damage MAGNITUDE to rank on — `bucket-magnitude.js` specifies
+`effect size × uptime × land rate × build scale` and implements **uptime × land rate only**.
+
+**Related, and shipped:** the BUILD FLOOR (level 50) on repair candidates, because with `build scale`
+unimplemented an ungeared L40 filled a bucket exactly as a maxed 6★ would (DonThor: Dark Elhain,
+L40, 4★, **zero equipped artifacts**, swapped into the Spider team). Gaps are now NAMED instead of
+pretend-filled.
+
+**Also unfixed:** `finishCause: "Retreat"` is captured and unused, so a run abandoned on TIME grades
+as a WIPE — currently polluting Fire Knight, the one content that had no losses.
+
+---
+
+## INS-0036 — GRANTED DAMAGE, measured: Glorious Pallas is worth ~10x her damage bar (2026-07-20)
+
+**Status:** `verified` (controlled A/B, replicated across two comparisons) — the first calibration
+anchor for the contribution model.
+
+Clan Boss Brutal, Don$Gnut, three runs differing by ONE champion:
+
+| | 5th slot | **Pelops dmg/turn** | turns | team total |
+|---|---|---|---|---|
+| A | Ezio + **Pallas** | **38.4k** | 217 | 19.99M |
+| B | Ezio + Gnut *(no Pallas)* | **28.6k** | 189 | 18.40M |
+| C | Gnut + **Pallas** *(no Ezio)* | **37.3k** | 217 | 19.73M |
+
+**Pelops holds ~37-38k/turn WITH Pallas and collapses to 28.6k WITHOUT her — regardless of who fills
+the other slot.** Granted damage ≈ **9-10k/turn**, about **10× her own 1.1k/turn damage bar**.
+
+**MECHANISM (already ruled, `lib/synergies.js` `pallas_argonite`, magnitude `high`):** her A1 attacks
+with a random **Argonites** ally — Pelops is Argonites — for FREE (no skill slot, no cooldown), and
+his mastery procs on each extra attack. **All of it lands in HIS damage bar.**
+
+**THIS IS `CLAUDE.md` §4 MEASURED:** *"per-hero captured damage UNDERSTATES support value… never rank
+or judge a support by its raw damage bar."* Claude judged Pallas as "~1% of team damage, close to
+nothing" ONE PARAGRAPH after quoting §4; Mike corrected it. Note also she was CONSTANT across all four
+earlier CB runs — a variable that never varies carries no information, so her stat line was not weak
+evidence, it was **no evidence**.
+
+**TRAP — the top-line number inverts the answer.** Gnut is the better personal damage dealer (13.0k/turn
+vs 1.1k) and team damage-per-turn ROSE without Pallas (92.1k → 97.3k) — but total damage FELL 1.59M,
+because Pallas bought 28 more turns. On CB, where the verdict is total damage vs the chest threshold,
+**judging by per-turn output picks the wrong team.**
+
+**FOR THE CONTRIBUTION MODEL:** champion value = own damage + (turns granted × team per-turn output) +
+granted multipliers. This is the first case where all three of mechanism, pair and magnitude are known.
+
+**NOT synergy-modelled in gen-3:** `bucket-score.mjs` has no synergy term; gen-1 calls `detectSynergies`.
+
+---
+
+## INS-0035 — CB team selection is DIFFICULTY-INVARIANT BY DESIGN (Mike, 2026-07-19)
+
+**Status:** approved (design ruling). Closes an open question raised in the first testing session.
+
+**The observation that prompted it:** `pool-select.mjs cb` on Don$Gnut returned near-identical
+output across all four difficulties — grade 106.2 (Normal) → 105.8 (Nightmare), one champion
+swapped. Claude flagged this as possible UNDER-SENSITIVITY (a defect). **It is not a defect.**
+
+**Mike's ruling: "1 should be designed like that."**
+
+**Why it's correct:** Clan Boss is ONE boss with ONE kit. Difficulty scales the boss's STATS
+(HP, ATK), not its mechanics — so the mechanical PROBLEMS the team must solve are identical at
+Normal and Nightmare, and the team that solves them is the same team. Nothing in a
+selection-layer rubric should move.
+
+**Where difficulty DOES belong — the OTHER axis.** Per the CB feedback model, the CB verdict is
+purely damage vs the top-chest threshold of the difficulty run, and the deliverable is
+*"suggest the TOP difficulty you can one-key."* Difficulty is therefore an OUTPUT of the
+damage/chest axis, not an INPUT to selection. Selection answers "which five?"; the damage model
+answers "how far up can these five carry you?" Conflating them would push the selector to
+invent per-difficulty team differences that do not exist in the game.
+
+**Generalization (the reusable rule):** *a scaling knob that changes enemy STATS but not enemy
+MECHANICS must not move the selection layer.* Flat selection output across such a knob is the
+model behaving correctly. This applies beyond CB — do not read stat-only invariance as
+under-sensitivity anywhere.
+
+**⚠ Do NOT "fix" this.** Adding difficulty sensitivity to the CB rubric would be a regression.
+If a future session sees flat CB selection across difficulties and reads it as a bug, this
+entry is the answer.
+
+**Contrast — where flatness IS suspicious:** Spider returns an identical team and identical
+bucket fills for stages 17 and 20, but Spider's bands are STAGE-DETERMINED by MECHANICS
+(1-14 nuke / 15-20 wall / 21-25 HP Burn), so mechanics genuinely change and flatness is a real
+open question. The distinction is stats-only (invariance expected) vs mechanics (variance
+expected) — not "flat = bad."
+
+**Consumers:** `tools/bucket-score.mjs`, `tools/pool-select.mjs`, CB rubric work, any future
+review of CB selection sensitivity.
+
+---
+
 ## INS-0034 — TAGS PICK, RESULTS DIAGNOSE — two layers, two data sources (Mike, 2026-07-18)
 
 **Status:** approved (architecture). Explains and supersedes a whole day of wrong-headed testing.
