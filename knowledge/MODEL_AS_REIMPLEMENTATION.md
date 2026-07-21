@@ -59,6 +59,11 @@ Therefore:
 
 ## The mechanics checklist (living — this is the "clear list")
 
+> ⚠ **THE CANONICAL LIST IS `knowledge/GAME_MECHANICS_INVENTORY.md`.** The table below is a summary
+> of what the 2026-07-21 session happened to surface; it is NOT an enumeration of the game. The
+> inventory doc enumerates three axes (battle keywords · character-power systems · combat-resolution
+> systems) and is the one to add rows to.
+
 One row per game system: **captured?** (do we have the input) · **modelled?** (does it enter a
 formula) · verdict. Ranked by battles-flipped when implemented (measurable via the suite). Seeded
 from what 2026-07-21 established — mention in code ≠ modelled, so every "modelled" needs evidence.
