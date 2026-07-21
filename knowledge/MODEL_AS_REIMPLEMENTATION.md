@@ -108,6 +108,48 @@ was zigzag #6.
   minimum mechanic that moves the number. Mark things "deliberately excluded" — we need enough
   fidelity to RANK teams and PLACE a stage, not Plarium's exact damage numbers.
 
+## DATA WE ARE MISSING — the acquisition list (what to GO GET)
+
+Distinct from the checklist above. The checklist mixes "captured but unmodelled" (needs CODE, we
+already have the data) with "not captured" (needs ACQUISITION). This is only the acquisition half,
+split by who can get it — because most of it is play/review only a human can do.
+
+### A. ONLY MIKE CAN GET THIS (play / review / tell us) — highest value, blocks the most
+- **Frontier runs at 21-25**, especially **Spider and Fire Knight (never fought there)** and
+  **Dragon 25 / IG 23-25**. Uncensors over-predictions AND is the only way to exercise the %maxHP cap
+  regime (0 corpus runs currently field a cap-affected champ at 21+). One run at Spider 21 is worth
+  more than the hundredth at Spider 13.
+- **Push a fixed team until it LOSES** on any dungeon. Turns a censored ceiling (20/24 cells) into a
+  two-sided boundary. We have 16 such boundaries; every new one is a hard calibration constraint.
+- **Approve or reject the 8 proposed %maxHP champions** (seed 202 found them, unapproved): Blood
+  Marchioness Mina, Cinda, Gamuran, Geomancer, Klaazag, Odin, Steel Bowyer, Storm Herald Hekaton.
+- **Per-champion AI skill settings** — confirmed UN-readable from memory (see ai-settings memory);
+  must be entered by hand. Affects whether a tagged skill actually fires on auto.
+
+### B. READER / CAPTURE WORK (code, passive-read boundary)
+- **Per-hero dungeon damage** — currently BROKEN, not just missing: the heap-scan contiguity premise
+  fails (allies+enemies interleave). 21× in the gap backlog. Needs the dungeon-dialog hero-list path,
+  not the current scan.
+- **Debuff LANDINGS** (did a tagged debuff actually land?) — needed to verify ACC floors. 31× in the
+  backlog. In the heroRounds blob; deferred.
+- **Phase-at-death / per-round HP** — `--roundstats` probe INCONCLUSIVE (post-battle dict may be
+  cleared); likely needs IN-BATTLE sampling at the existing 100ms poll, not file parsing (the file
+  cannot hold a per-round timeline — measured).
+- **Gear-set REQUIRED-PIECE-COUNTS** — we capture set pieces but not whether a bonus is ACTIVE
+  (needs the count threshold per set). Blocks crediting Lifesteal/set effects correctly.
+
+### C. INPUTS NOT CAPTURED (mostly in the game, need a capture path)
+- **Debuff chance / duration / auto_reliable** per skill — 76× the top backlog item; without it
+  reliability×uptime cannot be scored. Some derivable from skill text, some needs game data.
+- **Masteries for the other ~52% of geared champions** — masteryIds present on only ~48% of geared
+  champs; the rest can't be credited masteries at all.
+- **Battle speed** — reads null (unguarded assumption; constant across corpus today, but a silent
+  break if it ever changes). Verify the offset or add a guard.
+
+### D. ALREADY CAPTURED — needs MODELLING not acquisition (see the checklist)
+Awakening, ascension, blessings, empower, booked-from-Gestal, gear-set effects, turn/speed model.
+**Do not go "get" these — we have them. They need code.**
+
 ## Immediate next steps (ranked)
 1. **Wire `battle-suite.mjs` into `watch-reconcile`/`loop.mjs`** — make the number unavoidable. Until
    this, everything below is unmeasurable and the reframe hasn't taken.
