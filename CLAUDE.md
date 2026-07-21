@@ -488,6 +488,31 @@ tag work. "REJECT" = do not create a tag row; note the mechanic in the
     placement — tag it) but were tagged plain [Veil] off a self-condition clause →
     reject the [Veil], keep the [Perfect Veil]. (Seed 166: Rhaia, Umetogi, Yannica,
     Yumeko, Elegaius. Policy #18 worksheet writeback for these still owed.)
+21. **The RECIPIENT decides the tag** (ratified 2026-07-21) — a tag names an EFFECT, and an
+    effect delivered to a DIFFERENT RECIPIENT is a DIFFERENT CAPABILITY. Before tagging, ask
+    *who receives this?* — self, an ally, an enemy, or a summon.
+    - **Self-revive ≠ ally revive.** "Revives THIS CHAMPION" is personal durability; "revives
+      an ally / all dead allies" is TEAM RECOVERY. Only the latter earns `Revive` (whose own
+      description reads "brings a dead ALLY back to life"); the former is `Self-Revive`.
+      Seed 201 re-classified 7: Arne, Bushi, Minaya, Skullcrown, Solanar, Sun Wukong,
+      Xenomorph. Lydia does BOTH and carries both tags — the case that proves they must
+      coexist rather than replace one another.
+    - **Damage out of a pool ≠ shrinking the pool.** `Enemy Max HP Damage` (%maxHP damage)
+      vs `Max HP Destruction` ("destroys/decreases the target's MAX HP by X%"). Seed 202
+      split these; of 46 champions carrying the tag only 8 dealt true %maxHP damage.
+    - **WHY IT MATTERS MECHANICALLY, not pedantically:** the engine reads `Revive` as team
+      sustain, which is multiplicative and a single point of failure (`lib/damage-mechanics.js`
+      §3). A self-revive contributes nothing to that — Xenomorph reviving himself keeps a
+      damage dealer running but rescues no one. Crediting it as team sustain is the
+      over-credit failure §1 exists to prevent, applied to the survival side.
+    - This is #19's "BOUNDARY: side decides the tag" generalised, and the same root cause as
+      #12 (activation), #16 (ignore), #19 (removal) and #20 (self-condition): **the tag was
+      matched on the effect without reading who receives it.** When a fourth instance of this
+      class appears, sweep the whole vocabulary rather than fixing it one tag at a time.
+    - ⚠ **CHECK WHETHER A NAMED TARGET IS A REAL CHAMPION** before inventing a category.
+      Skull Lord Var-Gall "revives Skullsworn" was nearly tagged as a summon/minion revive —
+      **Skullsworn is a real Rare champion (Lizardmen)**, so that clause is an ALLY revive that
+      is ally-GATED (policy #15 territory), not a new mechanic. One query would have settled it.
 
 ### Tag source of truth — regenerate from skill_summary, NOT bracket-scraping
 The `champion_tags` layer is derived from `champion_skills.skill_summary` (verbatim
@@ -508,6 +533,36 @@ advisor-approved. The full corpus was regenerated this way 2026-07-13.
   `champion_aliases` when reconciling, never by exact name alone.
 - Current counts / provenance / the reusable runner live in session memory
   (`tag-regen-pilot-2026-07-12`, `tag-sweep-ignore-veil-2026-07-12`), not here.
+
+## HARD RULE: never look a champion up by a raw or locally-normalized name
+
+**Use the registry: `normalizeName` / `buildNameResolver` / `buildRosterIndex` /
+`resolveOrThrow` in `lib/champion-names.js`.** A champion is `champions.id`; every name —
+`champions.name`, a `champion_aliases.alias`, a Gestal display name, a worksheet name — is
+just a reference to it. `where name = '…'`, `.eq('name', …)`, and hand-rolled
+`const norm = s => s.toLowerCase().replace(…)` maps all bypass this and **fail silently**.
+
+**Why this rule exists (measured 2026-07-21).** The registry is COMPLETE and has been since
+2026-07-18 — all 957 distinct worksheet champion names resolve, 0% unresolvable. Every
+recurrence of "champion not found" has been a BYPASS, not a data gap:
+- A `where ch.name = 'Mavara'` query reported her as a ZERO-TAG champion and nearly went into
+  memory as fact. Her `champions.name` is **"Mavara the Web Diviner"**; `Mavara` is an alias.
+- Of 64 distinct captured hero names, a local trim+lowercase misses **10**; the resolver
+  misses **2**. Among the 8 silently dropped: **"Thor Faehammer"** and **"Bambus Fourleaf"**,
+  the latter in Don$Bambus's core five in EVERY run. `reconcile-runs.mjs` was writing NULL
+  per-hero stats onto GRADED rows because of it, and mis-counting `team_match`.
+
+**The failure mode is the danger.** A name miss returns ZERO ROWS, and zero rows reads as a
+legitimate finding — "this champion has no tags" — not "your lookup is broken". A crash costs
+ten seconds; a plausible wrong answer costs an afternoon and can be written down as fact.
+So the API is deliberately loud: `resolveOrThrow` / `resolveAll` throw and name the offender,
+and `buildUserChampions` throws if its alias rows are omitted. Same principle as the
+required-`dbAliases` change: **make the mistake loud, keep the intent expressible** — plain
+`resolve()` still exists for callers legitimately testing whether a name is known.
+
+Detail and history: `knowledge/NAMING_ARCHITECTURE.md`. Note `type_id` is populated on only
+~25% of champions, so the name path is the FALLBACK for the other 75% — it is load-bearing,
+not a convenience.
 
 ## Reasoning discipline (guardrails against snap decisions & assumptions)
 The code has guardrails (e.g. `lib/battle-gaps.js` spec-margin classifier); these

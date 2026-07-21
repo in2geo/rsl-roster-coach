@@ -1,5 +1,5 @@
 -- ============================================================================
--- Seed 201 — PROPOSED: split `Enemy Max HP Damage` into two mechanics, and
+-- Seed 202 — PROPOSED: split `Enemy Max HP Damage` into two mechanics, and
 --            extract the real per-skill %MAX-HP percentages.
 --
 -- ⚠⚠ NOT APPLIED. NEEDS MIKE'S SIGN-OFF. Per CLAUDE.md:
@@ -173,7 +173,7 @@
 --
 -- TO APPLY (after sign-off):
 --   node --env-file=.env.local tools/apply-migration.js migrations/2026-07-21_champion_skills_maxhp_extraction.sql
---   node --env-file=.env.local tools/apply-seed-pooler.mjs seeds/201_maxhp_tag_split_PROPOSED.sql
+--   node --env-file=.env.local tools/apply-seed-pooler.mjs seeds/202_maxhp_tag_split_PROPOSED.sql
 -- ============================================================================
 
 -- ---------------------------------------------------------------------------
@@ -189,7 +189,7 @@ on conflict (name) do nothing;
 
 -- Sharpen the surviving tag so the same conflation cannot recur.
 update tags set description =
-  'Deals DAMAGE equal to a percentage of the target''s MAX HP, ignoring DEF. Not a debuff — no ACC/RES check. DOES NOT INCLUDE MAX-HP DESTRUCTION ("destroys/decreases the target''s MAX HP by X%") — that shrinks the pool rather than damaging out of it and is the separate `Max HP Destruction` tag (split 2026-07-21, seed 201). Capped at 10% of boss MAX HP at Normal 21-25 and Hard by the boss passive Almighty Strength — see lib/damage-mechanics.js §6b. Real per-skill percentages live in champion_skills.maxhp_pct.'
+  'Deals DAMAGE equal to a percentage of the target''s MAX HP, ignoring DEF. Not a debuff — no ACC/RES check. DOES NOT INCLUDE MAX-HP DESTRUCTION ("destroys/decreases the target''s MAX HP by X%") — that shrinks the pool rather than damaging out of it and is the separate `Max HP Destruction` tag (split 2026-07-21, seed 202). Capped at 10% of boss MAX HP at Normal 21-25 and Hard by the boss passive Almighty Strength — see lib/damage-mechanics.js §6b. Real per-skill percentages live in champion_skills.maxhp_pct.'
 where name = 'Enemy Max HP Damage';
 
 
