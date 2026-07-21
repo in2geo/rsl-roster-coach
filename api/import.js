@@ -14,6 +14,7 @@
 // for the validation phase; a long-lived per-user import key is a follow-up.
 
 import { createClient } from '@supabase/supabase-js';
+import { upsertGestalProfile } from '../lib/roster-import.js';
 
 const BASE_URL    = (process.env.SUPABASE_URL ?? '').replace(/\/rest\/v1\/?$/, '');
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -44,58 +45,10 @@ export default async function handler(req, res) {
     return json(res, 400, { error: 'Body must include account.accountId and roster.champions.' });
   }
 
-  // Find-or-create the 'gestal' PROFILE for this account (one profile per
-  // rsl_account). The profile is the user-facing "named roster" the switcher
-  // lists; the Gestal-specific data stays on rsl_accounts.
-  const { data: existingAcct } = await service
-    .from('rsl_accounts').select('id, profile_id')
-    .eq('user_id', user.id).eq('account_id', account.accountId).maybeSingle();
-
-  let profileId = existingAcct?.profile_id ?? null;
-  if (!profileId) {
-    const { count } = await service
-      .from('profiles').select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id).eq('game_id', 'raid_shadow_legends');
-    const { data: prof, error: pErr } = await service
-      .from('profiles')
-      .insert({
-        user_id: user.id, game_id: 'raid_shadow_legends',
-        name: account.displayName ?? account.accountId,
-        population_method: 'gestal', is_default: (count ?? 0) === 0,
-      })
-      .select('id').single();
-    if (pErr) return json(res, 500, { error: 'Profile create failed: ' + pErr.message });
-    profileId = prof.id;
+  try {
+    const result = await upsertGestalProfile(service, { userId: user.id, account, roster });
+    return json(res, 200, { ok: true, ...result });
+  } catch (e) {
+    return json(res, 500, { error: e.message });
   }
-
-  // Upsert the user's account link + roster snapshot. Unique (user_id, account_id).
-  const row = {
-    user_id:        user.id,
-    account_id:     account.accountId,
-    profile_id:     profileId,
-    display_name:   account.displayName  ?? null,
-    raid_player_id: account.raidPlayerId ?? null,
-    game_version:   account.gameVersion  ?? null,
-    last_synced_at: account.extractedAt  ?? new Date().toISOString(),
-    extracted_at:   account.extractedAt  ?? null,
-    imported_at:    new Date().toISOString(),
-    roster_json:    { champions: roster.champions, artifacts: roster.artifacts ?? [] },
-  };
-
-  const { data, error } = await service
-    .from('rsl_accounts')
-    .upsert(row, { onConflict: 'user_id,account_id' })
-    .select('id, account_id, display_name, profile_id')
-    .single();
-
-  if (error) return json(res, 500, { error: 'Import failed: ' + error.message });
-
-  return json(res, 200, {
-    ok: true,
-    accountId: data.account_id,
-    displayName: data.display_name,
-    profileId: data.profile_id,
-    champions: roster.champions.length,
-    artifacts: (roster.artifacts ?? []).length,
-  });
 }

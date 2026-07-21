@@ -843,6 +843,34 @@ function renderVerifyScreen() {
     setTimeout(() => { bookAllBtn.textContent = prev; }, 2000);
   };
 
+  // Dev-box only: re-run gestal-sync (Gestal export → gestal-sync/output) then reload
+  // the roster. Lets a testing session Refresh in Gestal and re-pull without a terminal.
+  // Gated to localhost — the /api/sync endpoint also hard-rejects non-loopback callers.
+  const resyncBtn = qs('#btn-resync-gestal', screen);
+  const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
+  if (resyncBtn && isLocal) {
+    resyncBtn.classList.remove('hidden');
+    resyncBtn.onclick = async () => {
+      resyncBtn.disabled = true; const prev = resyncBtn.textContent; resyncBtn.textContent = 'Syncing…';
+      try {
+        const res  = await fetch('/api/sync', { method: 'POST' });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error || 'sync failed');
+        const reloaded = await loadGestalContext();   // re-read the freshest snapshot
+        renderVerifyScreen();                          // repaint cards from the new roster
+        const active = body.accounts?.slice().sort((a, b) => b.champions - a.champions)[0];
+        resyncBtn.textContent = reloaded
+          ? `✓ Synced ${body.accounts?.length ?? 0} — showing ${gestalContext?.account?.displayName ?? active?.displayName ?? '?'}`
+          : '✓ Synced (no roster matched)';
+      } catch (e) {
+        resyncBtn.textContent = '⚠ ' + (e.message || 'sync failed');
+      } finally {
+        resyncBtn.disabled = false;
+        setTimeout(() => { resyncBtn.textContent = prev; }, 3500);
+      }
+    };
+  }
+
   // Champion cards (sorted level desc, then rarity desc)
   const list  = qs('#verify-list', screen);
   const empty = qs('#verify-empty', screen);
