@@ -34,7 +34,12 @@ const H = { apikey: KEY, Authorization: `Bearer ${KEY}` };
 const gc = await import('../lib/gestal-context.js');
 // ALIASES ARE REQUIRED (2026-07-19) — omitting them silently drops champions whose Gestal display
 // name differs from champions.name (e.g. "Thor Faehammer" -> "Thor"). See gestal-context.js.
-const aliasRows = await gc.fetchAliasRows(p => fetch(`${BASE}/rest/v1/${p}`, { headers: H }).then(r => r.json()));
+const rest = (p) => fetch(`${BASE}/rest/v1/${p}`, { headers: H }).then(r => r.json());
+const aliasRows = await gc.fetchAliasRows(rest);
+// THE alias-aware name registry (champions.name + champion_aliases). Every hero-name lookup in
+// this file goes through it — see buildRosterIndex's header for the bug that made it necessary.
+const { buildRosterIndex, loadNameResolverRest } = await import('../lib/champion-names.js');
+const nameResolver = await loadNameResolverRest(rest);
 const me = await import('../lib/match-engine.js');
 const cb = await import('../lib/clan-boss.js'); // Clan Boss chest-tier reconciliation (isClanBoss/classifyClanBoss/clanBossVerdict)
 
@@ -45,6 +50,12 @@ const CONTENT_KEY = {
   "Dragon's Lair": 'dragon',
 };
 const norm = (s) => String(s ?? '').trim().toLowerCase();
+/* CHAMPION IDENTITY KEY — always the resolved champions.id, so "Thor Faehammer", "Thor" and
+ * "thor" collapse to the same champion. Falls back to a namespaced normalized string ONLY for
+ * names the registry genuinely does not know, so an unknown name can never collide with a real
+ * champion's id. Use this for EVERY champion-keyed map in this file; a bare norm() silently
+ * dropped 8 of 64 captured hero names (see buildRosterIndex in lib/champion-names.js). */
+const champKey = (raw) => nameResolver.resolve(raw)?.id ?? `unresolved:${norm(raw)}`;
 const BUDGET_SEC = 300; // ~5-min auto budget
 // Incremental by default: only re-predict battles not already reconciled. Pass --all to
 // reprocess every battle (do this after an engine/data change so old predictions refresh).
@@ -63,7 +74,7 @@ for (let from = 0; ; from += 1000) {
 const auraRows = await (await fetch(`${BASE}/rest/v1/champion_auras?select=champion_id,aura_type,aura_value,aura_area,aura_restriction`, { headers: H })).json();
 const auraById = {};
 for (const a of (Array.isArray(auraRows) ? auraRows : [])) auraById[a.champion_id] ??= a; // one aura/champ
-const idByName = Object.fromEntries(dbChampions.map(c => [norm(c.name), c.id]));
+const idByName = Object.fromEntries(dbChampions.map(c => [champKey(c.name), c.id]));
 const cleanArea = (s) => String(s ?? '').toLowerCase().replace(/^in\s+/, '').trim();
 
 // Clan Boss chest tiers grouped by difficulty — the chest-tier axis CB is graded on (clanBossVerdict).
@@ -114,13 +125,13 @@ function gearSetsFor(accountId) {
   for (const c of j.champions ?? []) {
     const counts = {};
     for (const a of c.equippedArtifacts ?? []) if (a.set) counts[a.set] = (counts[a.set] ?? 0) + 1;
-    out[norm(c.name)] = counts;
+    out[champKey(c.name)] = counts;
   }
   return (setsCache[accountId] = out);
 }
 /** Gear sets for one fielded hero, to be merged into their `team_fielded` entry. */
 function sustainCtx(accountId, heroName) {
-  const counts = gearSetsFor(accountId)[norm(heroName ?? '')];
+  const counts = gearSetsFor(accountId)[champKey(heroName ?? '')];
   if (!counts || !Object.keys(counts).length) return { gear_sets: null, sustain_sets: null };
   return {
     gear_sets: counts,
@@ -147,22 +158,32 @@ function sustainCtx(accountId, heroName) {
  * owing nothing to our estimator. Storing it beside the computed stats makes every run a free
  * estimator-accuracy datapoint. `turns_count` is the correct per-hero denominator for rate maths
  * (team turns is what we had been dividing by, which is wrong for anything per-champion). */
+/* ⚠ ALIAS-AWARE INDEX, NOT A LOCAL norm() (2026-07-21). This used
+ * `{[norm(c.name)]: c}` with the file's own trim+lowercase, which knows nothing about
+ * champion_aliases — so any hero whose CAPTURED display name differs from
+ * `champions.name` silently resolved to null and their stats were written as NULL on a
+ * graded run. Measured over the battle log: the local-norm pattern misses 10 of 64
+ * distinct hero names where the resolver misses 2. Among the 8 it dropped were
+ * "Thor Faehammer" and "Bambus Fourleaf" — the latter is in Don$Bambus's core five in
+ * EVERY run, so this was corrupting the primary calibration account's records. */
 const mappedCache = {};
 function mappedRosterFor(accountId) {
   if (mappedCache[accountId] !== undefined) return mappedCache[accountId];
   const acc = userChampionsFor(accountId);
   if (!acc) return (mappedCache[accountId] = null);
-  let byName = null;
+  let index = null;
   try {
     const mapped = me.mapRoster(acc.uc, {}).mapped ?? [];
-    byName = Object.fromEntries(mapped.map(c => [norm(c.name), c]));
-  } catch { byName = null; }
-  return (mappedCache[accountId] = byName);
+    index = buildRosterIndex(mapped, nameResolver);
+    if (index.unresolved.length)
+      console.warn(`[reconcile] ${accountId}: ${index.unresolved.length} roster champion(s) not in the name registry: ${index.unresolved.slice(0, 6).join(', ')}`);
+  } catch { index = null; }
+  return (mappedCache[accountId] = index);
 }
 
 /** Everything we know about one hero AS THEY FOUGHT: observed battle facts + the stats behind them. */
 function heroRecord(accountId, h, isGestal = true) {
-  const c = mappedRosterFor(accountId)?.[norm(h.name ?? '')] ?? null;
+  const c = mappedRosterFor(accountId)?.get(h.name ?? '') ?? null;
   return {
     name: h.name, survived: h.survived ?? null, damage: h.damage ?? null,
     healing: h.healing ?? null, defense: h.defense ?? null, is_leader: h.isLeader ?? null,
@@ -286,17 +307,17 @@ for (const b of (Array.isArray(log) ? log : [])) {
   const won = b.result === 'Victory';
   const dur = b.durationSeconds ?? 0, turns = b.turns ?? null;
   const margin = specMarginOf(res);
-  const recNames = new Set((res.team ?? []).map(c => norm(c.name)));
+  const recNames = new Set((res.team ?? []).map(c => champKey(c.name)));
   // is_leader is kept per-hero inside the team_fielded jsonb (no schema change) — the FIELDED
   // leader (whose aura was actually active) is team_fielded.find(is_leader), which may differ from
   // the engine's recommended leader (leader_name). Calibration should apply THIS leader's aura.
   const fielded = (b.heroes ?? []).map(h => heroRecord(b.accountId, h));
-  const teamMatch = fielded.filter(h => recNames.has(norm(h.name))).length;
+  const teamMatch = fielded.filter(h => recNames.has(champKey(h.name))).length;
   const floorVs = (actual == null || recFloor == null) ? null : actual > recFloor ? 'higher' : actual < recFloor ? 'lower' : 'same';
   // Apply the FIELDED leader's aura to the team before freezing (was aura-blind). The fielded
   // leader can differ from res.leader (the recommended one) — e.g. a player-chosen SPD vs ACC lead.
   const fieldedLeaderName = fielded.find(h => h.is_leader)?.name;
-  const flAura = fieldedLeaderName ? auraById[idByName[norm(fieldedLeaderName)]] : null;
+  const flAura = fieldedLeaderName ? auraById[nameResolver.resolve(fieldedLeaderName)?.id] : null;
   let teamForFreeze = res.team ?? [];
   if (flAura && me.LEADER_AREA_APPLIES.dungeon(cleanArea(flAura.aura_area))) {
     teamForFreeze = me.applyLeaderAura(teamForFreeze, { aura_type: flAura.aura_type, aura_value: flAura.aura_value, restriction: flAura.aura_restriction });

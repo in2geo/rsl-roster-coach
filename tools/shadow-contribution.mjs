@@ -29,6 +29,7 @@ import { fileURLToPath } from 'url';
 import { buildUserChampions, fetchAliasRows } from '../lib/gestal-context.js';
 import { mapRoster, STAGE_EHP_MULTIPLIER } from '../lib/match-engine.js';
 import { computeContributions } from '../lib/contribution-model.js';
+import { buildRosterIndex, loadNameResolverRest } from '../lib/champion-names.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, '..');
@@ -48,6 +49,10 @@ for (let f = 0; ; f += 1000) {
   if (!Array.isArray(d) || !d.length) break; db = db.concat(d); if (d.length < 1000) break;
 }
 const aliasRows = await fetchAliasRows(rest);
+// Alias-aware hero-name lookup. A local trim+lowercase (what this file used first) misses 10 of
+// the 64 distinct captured hero names vs 2 for the resolver — silently dropping runs that field
+// e.g. "Bambus Fourleaf", who is in Don$Bambus's core five in EVERY run. See champion-names.js.
+const nameResolver = await loadNameResolverRest(rest);
 
 // ── real per-stage enemy magnitude ───────────────────────────────────────────
 const dungeons = await rest('dungeons?select=id,name&game_id=eq.raid_shadow_legends');
@@ -65,8 +70,7 @@ for (const f of fs.readdirSync(path.join(REPO, 'gestal-sync/output')).filter(x =
   const snap = JSON.parse(fs.readFileSync(path.join(REPO, 'gestal-sync/output', f), 'utf8'));
   if (!snap.accountId) continue;
   const { userChampions } = buildUserChampions(snap.champions ?? [], db, aliasRows);
-  rosterByAccount[snap.accountId] = Object.fromEntries(
-    mapRoster(userChampions, {}).mapped.map(c => [norm(c.name), c]));
+  rosterByAccount[snap.accountId] = buildRosterIndex(mapRoster(userChampions, {}).mapped, nameResolver);
 }
 
 // ── reconciled runs ──────────────────────────────────────────────────────────
@@ -85,7 +89,7 @@ for (const r of runs) {
   if (!roster) { skipped.no_roster++; continue; }
 
   let tf = r.team_fielded; if (typeof tf === 'string') { try { tf = JSON.parse(tf); } catch { tf = []; } }
-  const team = (tf ?? []).map(h => roster[norm(h.name)]).filter(Boolean);
+  const team = (tf ?? []).map(h => roster.get(h.name)).filter(Boolean);
   if (team.length < 3) { skipped.no_team++; continue; }   // partial rebuild would understate output
 
   const mult = STAGE_EHP_MULTIPLIER[dungeon] ?? 2.0;
