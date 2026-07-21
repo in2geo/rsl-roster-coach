@@ -1,5 +1,13 @@
 # Deep Blue — canonical status & continuity doc
 
+> **⏩ 2026-07-21 — THE MEASURE STEP IS NOW REAL.** capture → reconcile → measure → propose was all
+> built, but "measure" only ever emitted DESCRIPTIONS (rankings, medians, correlations), which can
+> always be argued with — and the one scalar that existed (recommended vs actual stage) is CENSORED
+> in 20 of 24 account×dungeon cells. `tools/battle-suite.mjs` supplies the missing falsifiable
+> number: **204/324 battles reproduced, balanced accuracy 52.9%** (a constant predictor scores 50%).
+> This COMPLETES the Deep Blue loop rather than replacing it.
+> Canonical: `knowledge/MODEL_AS_REIMPLEMENTATION.md` · backlog: `knowledge/GAME_MECHANICS_INVENTORY.md`
+
 **This is the START-HERE reference whenever Mike says "the Deep Blue model."** Read this
 first, then `knowledge/insights-ledger.md` (INS-0001 … INS-0029) for the detailed thread.
 Last updated: 2026-07-15.

@@ -23,6 +23,35 @@ power/goal-coverage framing (below, and `POWER_LAYER_SCOPE.md`) is **superseded 
 (brute force is just the survival half of one problem). Detail: INS-0026…0029 in `knowledge/insights-ledger.md`;
 code in `lib/dungeon-mechanics.js`, `lib/team-assembler.js`, `data/keyword-glossary.json`.
 
+## HARD RULE: the SCORING layer is a REIMPLEMENTATION — measure every change
+
+**Canonical: `knowledge/MODEL_AS_REIMPLEMENTATION.md`. Read it before changing anything that
+scores, predicts or ranks.** The product model above (5 seats, mechanic-solving) is unchanged and
+still right — this governs the PREDICTION layer underneath it.
+
+The engine is a **partial reimplementation of Raid's combat**, validated by replaying captured
+battles. Consequences that bind every session:
+
+1. **`tools/battle-suite.mjs` is the metric.** Every captured battle is a WIN/LOSS test case.
+   Headline = BALANCED ACCURACY (a constant predictor scores 50%). **Floor as of 2026-07-21:
+   204/324, 52.9%.** A change reports the new number or it isn't evidence. Correlations, medians
+   and rankings are descriptions — they can always be argued with, and that is why this project
+   zigzagged for months.
+2. **IMPLEMENT, DON'T FIT.** A fitted coefficient hides an unimplemented mechanic inside a constant
+   and makes it permanently invisible. ~144 "nominal" constants in `lib/` are unimplemented
+   mechanics wearing numbers. Fit only after the mechanics are enumerated.
+   - VERIFIED GAME FACT that doesn't move the number → **keep it** (the metric is blind to that axis).
+   - SPECULATIVE TUNING that doesn't move the number → **revert it**.
+3. **`knowledge/GAME_MECHANICS_INVENTORY.md` is the backlog** — three axes (battle keywords ·
+   character-power systems · combat-resolution systems), each row captured?/modelled? WITH EVIDENCE.
+   **MENTION ≠ MODELLED**: `awakening_level` appears in five files and enters zero formulas.
+4. **SURVIVAL IS A PREREQUISITE.** `incomingDamagePerTurn` is null and 65% of real losses happen
+   while the kill side calls the fight comfortable. Several mechanics can only express through
+   survival, so implementing them first is unmeasurable.
+5. **To find what you don't model, slice the RESIDUAL** — an unexplained cluster is the shadow of an
+   unmodelled mechanic. Uniform unknowns leave no residual and hide in constants; that is why the
+   data range must expand (frontier stages, new accounts, new patches).
+
 ## HARD RULE: read the dungeon's `*_REVIEW.md` BEFORE touching its model
 
 `FIRE_KNIGHT_REVIEW.md` · `ICE_GOLEM_REVIEW.md` · `SPIDER_REVIEW.md` · `DRAGON_REVIEW.md` (repo root)
@@ -53,6 +82,13 @@ model"** or the work around it, the canonical, always-current reference is
 **`knowledge/DEEP_BLUE_STATUS.md`** — read it first, then `knowledge/insights-ledger.md`
 (INS-0001…, the durable brain). The loop is capture → reconcile → measure → propose → retain →
 predict; a change must be validated (shadow) before it drives live recommendations.
+
+**UPDATE 2026-07-21 — the loop's MEASURE step was never operationalised.** capture → reconcile →
+measure → propose was all built, but "measure" emitted DESCRIPTIONS, and the one scalar that existed
+(recommended vs actual stage) is CENSORED — 20 of 24 account×dungeon cells never pushed past a win,
+so it cannot say "you got worse" in the over-prediction direction where the model is worst.
+`tools/battle-suite.mjs` supplies the missing scalar. This completes Deep Blue rather than replacing
+it — see `knowledge/MODEL_AS_REIMPLEMENTATION.md`.
 
 Current one-line state (2026-07-16): the **PRODUCT is the team-building model above** (role-based
 mechanic-solving + the result loop) — `knowledge/team-building-model.md`, INS-0026…0029. The power/
@@ -727,6 +763,20 @@ already imports `damageSourceIgnoresDef` and enforces the §1 invariant at load.
   recommendations, failure diagnosis, solo carry details = rewarded ad.
 
 ## Stat estimation notes
+- **ACCOUNT-LEVEL GLOBAL BONUSES — VERIFIED IN-GAME 2026-07-21, and we model them WRONG.**
+  Three separate systems, all "active in every battle", captured verbatim in `data/`:
+  - **Arena** (`arena-bonus-stats.json`) — account-wide, by medal tier, Bronze I +1% → Platinum +25%.
+    **HP/ATK/DEF ONLY. Grants NO ACC, NO RES, NO SPD, NO C.DMG.**
+  - **Great Hall** (`great-hall-bonus-stats.json`) — per-AFFINITY, 6 stats, levels 0-10,
+    **a PERCENTAGE OF BASE STATS** (+2/3/4/6/8/10/12/14/17/20%).
+  - **Faction Guardians** (in `GAME_MECHANICS_INVENTORY.md`) — per-FACTION × rarity, 5 cumulative
+    chambers; Legendary grants +10% HP/ATK/DEF, **+30 ACC/RES**, +10 SPD.
+  ⚠ **PHANTOM ACC:** `estimate-stats.js: applyAccountBonus()` injects flat ACC +20/+40 as a
+  "Great Hall + Arena bundle". Arena grants 0 ACC; Great Hall's ACC is a % of a base that is ZERO on
+  604 of 944 champions (~0-3); Guardians are unassigned on all 7 accounts. **Real total ≈ 0-3, so we
+  invent 17-37 ACC per champion** — ~3.7 Spider stages of headroom on the stat that gates content.
+  ⚠ Faction Guardians are **PER-FACTION**, so unlike an account-wide offset they do NOT cancel when
+  comparing two champions — they can corrupt TEAM SELECTION, not just stage prediction.
 - ACC and RES use additive gear bonuses (base is 0 for most champions)
 - C.Rate and C.DMG vary per champion — use champions table values
 - All gear tier modifiers are PLACEHOLDER ESTIMATES — store in config
@@ -766,6 +816,10 @@ already imports `damageSourceIgnoresDef` and enforces the §1 invariant at load.
    shipping.
 6. base_crit_rate / base_crit_dmg migration — confirm applied to live DB
    before running full stats scraper.
+7. **Do Classic Arena tier bonuses apply in PvE, or only in Arena?** Decides whether
+   `data/arena-bonus-stats.json` belongs in the dungeon model at all. Unverified.
+8. Great Hall: does the same level→percent curve apply to all six stats? Only one
+   bonus's curve was visible in the source screenshot.
 
 ## Event dungeon architecture
 
