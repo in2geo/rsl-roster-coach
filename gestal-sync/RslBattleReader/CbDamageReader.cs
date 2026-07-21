@@ -140,7 +140,10 @@ internal static class CbDamageReader
     /// <param name="expectedTeam">Team size from the battle FILE (authoritative). The heap scan is
     /// only trustworthy when it yields exactly one contiguous run of this length — see the staleness
     /// note above. Pass 0 only for the ad-hoc --dungeondamage diagnostic, which tolerates a guess.</param>
-    public static CbResult? CaptureDungeon(ProcessMemory mem, int expectedTeam = 0)
+    /// <param name="logRejection">Whether to print WHY a read was refused. The caller retries while
+    /// the previous battle's contexts are still being cleared, so most rejections are just
+    /// mid-convergence noise — it passes true only on the final attempt, when the refusal is real.</param>
+    public static CbResult? CaptureDungeon(ProcessMemory mem, int expectedTeam = 0, bool logRejection = true)
     {
         var gameAsm = mem.FindModuleBase("GameAssembly.dll");
         if (gameAsm == nint.Zero) return null;
@@ -201,14 +204,17 @@ internal static class CbDamageReader
             var exact = runs.FindAll(r => r.Count == expectedTeam);
             if (exact.Count == 0)
             {
-                Console.WriteLine($"[dungeondamage] REJECTED: no contiguous run of {expectedTeam} hero context(s) " +
-                                  $"(found runs: {string.Join(",", runs.ConvertAll(r => r.Count))}). Per-hero stats left null.");
+                if (logRejection)
+                    Console.WriteLine($"[dungeondamage] REJECTED: no contiguous run of {expectedTeam} hero context(s) " +
+                                      $"(found runs: {string.Join(",", runs.ConvertAll(r => r.Count))}, " +
+                                      $"{runs.Sum(r => r.Count)} valid contexts). Per-hero stats left null.");
                 return null;
             }
             if (exact.Count > 1)
             {
-                Console.WriteLine($"[dungeondamage] REJECTED: {exact.Count} candidate runs of {expectedTeam} — " +
-                                  "cannot tell the current battle from a stale one. Per-hero stats left null.");
+                if (logRejection)
+                    Console.WriteLine($"[dungeondamage] REJECTED: {exact.Count} candidate runs of {expectedTeam} — " +
+                                      "cannot tell the current battle from a stale one. Per-hero stats left null.");
                 return null;
             }
             best = exact[0];

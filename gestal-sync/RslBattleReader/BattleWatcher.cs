@@ -521,18 +521,39 @@ internal sealed class BattleWatcher(string outputPath)
         // PREFERRED the polluted read: the heap scan can return stale contexts from a previous battle
         // mixed in with this one, and the union is always the largest. See the staleness guard in
         // CbDamageReader.CaptureDungeon (2026-07-19 — it corrupted a real graded Spider-20 run).
+        // RETRY BUDGET — 4s, not 1s (2026-07-21). The previous battle's HeroBattleStatsContext objects
+        // are STILL LIVE when the dialog opens and are cleared progressively, so the early reads see a
+        // polluted, fragmented set that CONVERGES on the real team over roughly a second or two.
+        // Measured across one testing session (reader-stdout.log): within a single battle the context
+        // count decayed 10 -> 10 -> 8 -> 5 -> 5 across five attempts, and a battle that DID succeed did
+        // so on its second attempt. At 5 x 200ms the budget expired mid-convergence, so 55 of 67
+        // dungeon captures were rejected — per-hero damage was effectively dead. The staleness guard
+        // was right to refuse those reads (they are exactly the two-battles-merged case); it was the
+        // patience that was wrong. The result dialog stays open far longer than 4s, so this costs
+        // nothing but a short wait on the FAILING path — a converging read still returns as soon as it
+        // is clean, usually within one or two attempts.
+        const int MaxAttempts = 20, RetryDelayMs = 200;
         int expected = snapshot.Heroes.Count;
         CbDamageReader.CbResult? res = null;
-        for (int attempt = 0; attempt < 5; attempt++)
+        for (int attempt = 0; attempt < MaxAttempts; attempt++)
         {
-            var r = isCb ? CbDamageReader.Capture(mem) : CbDamageReader.CaptureDungeon(mem, expected);
-            if (r is not null && (expected <= 0 || r.Heroes.Count == expected)) { res = r; break; }
-            Thread.Sleep(200);
+            // Only let the LAST attempt log a rejection: the guard prints its reason every call, which
+            // otherwise floods the log with 5 identical lines per battle and hides the convergence.
+            bool lastTry = attempt == MaxAttempts - 1;
+            var r = isCb ? CbDamageReader.Capture(mem) : CbDamageReader.CaptureDungeon(mem, expected, lastTry);
+            if (r is not null && (expected <= 0 || r.Heroes.Count == expected))
+            {
+                res = r;
+                if (attempt > 0) Console.WriteLine($"[{tag}] converged on attempt {attempt + 1} ({(attempt + 1) * RetryDelayMs}ms).");
+                break;
+            }
+            Thread.Sleep(RetryDelayMs);
         }
         if (res is null)
         {
-            Console.WriteLine($"[{tag}] {snapshot.Dungeon}: no trustworthy per-hero read for {expected} hero(es) — " +
-                              "per-hero stats left NULL (a missing number is recoverable; a wrong one is not).");
+            Console.WriteLine($"[{tag}] {snapshot.Dungeon}: no trustworthy per-hero read for {expected} hero(es) " +
+                              $"after {MaxAttempts * RetryDelayMs}ms — per-hero stats left NULL " +
+                              "(a missing number is recoverable; a wrong one is not).");
             return;
         }
 
