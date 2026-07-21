@@ -32,6 +32,9 @@ const KEY = env.SUPABASE_SERVICE_KEY;
 const H = { apikey: KEY, Authorization: `Bearer ${KEY}` };
 
 const gc = await import('../lib/gestal-context.js');
+// ALIASES ARE REQUIRED (2026-07-19) — omitting them silently drops champions whose Gestal display
+// name differs from champions.name (e.g. "Thor Faehammer" -> "Thor"). See gestal-context.js.
+const aliasRows = await gc.fetchAliasRows(p => fetch(`${BASE}/rest/v1/${p}`, { headers: H }).then(r => r.json()));
 const me = await import('../lib/match-engine.js');
 const cb = await import('../lib/clan-boss.js'); // Clan Boss chest-tier reconciliation (isClanBoss/classifyClanBoss/clanBossVerdict)
 
@@ -80,8 +83,98 @@ const ucCache = {};
 function userChampionsFor(accountId) {
   if (ucCache[accountId]) return ucCache[accountId];
   const j = rosters[accountId]; if (!j) return null;
-  const { userChampions } = gc.buildUserChampions(j.champions, dbChampions);
+  const { userChampions } = gc.buildUserChampions(j.champions, dbChampions, aliasRows);
   return (ucCache[accountId] = { uc: userChampions, snap: j });
+}
+
+/* ── SUSTAIN-SET CAPTURE (INS-0022 + INS-0032's "THE TRAP") ────────────────────────────────────
+ * The per-hero `healing` column mixes TEAM healing, SELF healing and GEAR LIFESTEAL, and nothing in
+ * the record said which. That ambiguity has now cost time twice: Gnut posted the largest healing of
+ * 2026-07-18 (1,392,073) with no restoration tag — he is in a sustain set AND his A3 self-heals 30%
+ * of damage dealt — and on 2026-07-19 it was re-derived from scratch.
+ *
+ * INS-0022 already ruled the fix: for a GESTAL roster we KNOW the gear, so read the real set. The
+ * "assume no Lifesteal/Regeneration/Immortal" rule in CLAUDE.md is a MANUAL-roster fallback for when
+ * we cannot see gear — it is not a claim about the account, and it must not be applied to captures.
+ *
+ * So every graded run now stores each hero's gear sets ALONGSIDE their healing number. Raw piece
+ * COUNTS, not a verdict: whether a set bonus is actually active depends on its required piece count,
+ * which we do not store and will not guess here.
+ *
+ * ⚠ It still cannot separate gear lifesteal from an untagged kit heal on a champion who has BOTH.
+ * It narrows the question from "where did this healing come from?" to "which of these two" — the
+ * remaining half needs the restoration tags backfilled. */
+const SUSTAIN_SETS = new Set(['Lifesteal', 'Regeneration', 'Immortal']);
+const setsCache = {};
+function gearSetsFor(accountId) {
+  if (setsCache[accountId]) return setsCache[accountId];
+  const j = rosters[accountId];
+  if (!j) return (setsCache[accountId] = {});
+  const out = {};
+  for (const c of j.champions ?? []) {
+    const counts = {};
+    for (const a of c.equippedArtifacts ?? []) if (a.set) counts[a.set] = (counts[a.set] ?? 0) + 1;
+    out[norm(c.name)] = counts;
+  }
+  return (setsCache[accountId] = out);
+}
+/** Gear sets for one fielded hero, to be merged into their `team_fielded` entry. */
+function sustainCtx(accountId, heroName) {
+  const counts = gearSetsFor(accountId)[norm(heroName ?? '')];
+  if (!counts || !Object.keys(counts).length) return { gear_sets: null, sustain_sets: null };
+  return {
+    gear_sets: counts,
+    sustain_sets: Object.entries(counts).filter(([s]) => SUSTAIN_SETS.has(s)).map(([set, pieces]) => ({ set, pieces })),
+  };
+}
+
+/* ── PER-FIELDED-CHAMPION STATS, EVERYWHERE (Mike, 2026-07-19) ─────────────────────────────────
+ * `frozen_effective_stats` froze the RECOMMENDED team and was NULL for Clan Boss — so for the
+ * champions that ACTUALLY FOUGHT we stored nothing, while storing stats for benched champions. On
+ * a 2026-07-19 FK run, frozen held Gnut/Skeletor/Vallaryn (never played) and the three champions who
+ * did the work (Ezio/Narma/Pelops) had no stats at all.
+ *
+ * WHY IT MATTERS BEYOND DIAGNOSIS: gear tiers are to be DERIVED from these numbers. Gear moves
+ * between runs, so a stat read from today's snapshot is not the stat that fought last week — an
+ * unanchored number silently drifts (it already did, with Gnut's gear, the same day).
+ *
+ * ⚠ CIRCULARITY TO RESPECT: `estimated_stats` for a MANUAL roster is derived FROM the gear tier, so
+ * deriving the tier back out of it would be circular. For a GESTAL roster it is computed from the
+ * ACTUAL equipped artifacts, which is what makes tier derivation legitimate — `stats_source` records
+ * which one this is, so the calibration can use only the non-circular rows.
+ *
+ * `hp_on_start` is the anti-circularity anchor: it is the champion's REAL in-battle max HP, observed,
+ * owing nothing to our estimator. Storing it beside the computed stats makes every run a free
+ * estimator-accuracy datapoint. `turns_count` is the correct per-hero denominator for rate maths
+ * (team turns is what we had been dividing by, which is wrong for anything per-champion). */
+const mappedCache = {};
+function mappedRosterFor(accountId) {
+  if (mappedCache[accountId] !== undefined) return mappedCache[accountId];
+  const acc = userChampionsFor(accountId);
+  if (!acc) return (mappedCache[accountId] = null);
+  let byName = null;
+  try {
+    const mapped = me.mapRoster(acc.uc, {}).mapped ?? [];
+    byName = Object.fromEntries(mapped.map(c => [norm(c.name), c]));
+  } catch { byName = null; }
+  return (mappedCache[accountId] = byName);
+}
+
+/** Everything we know about one hero AS THEY FOUGHT: observed battle facts + the stats behind them. */
+function heroRecord(accountId, h, isGestal = true) {
+  const c = mappedRosterFor(accountId)?.[norm(h.name ?? '')] ?? null;
+  return {
+    name: h.name, survived: h.survived ?? null, damage: h.damage ?? null,
+    healing: h.healing ?? null, defense: h.defense ?? null, is_leader: h.isLeader ?? null,
+    // observed, from the capture — owes nothing to our estimates
+    level: h.level ?? null, hp_on_start: h.hpOnStart ?? null, hp_on_finish: h.hpOnFinish ?? null,
+    turns_count: h.turnsCount ?? null, kills: h.kills ?? null,
+    // computed, as of the snapshot backing this reconcile
+    effective_stats: c?.estimated_stats ?? null,
+    gear_tier: c?.gear_tier ?? null,
+    stats_source: c ? (isGestal ? 'gestal_artifacts' : 'manual_tier') : null,
+    ...sustainCtx(accountId, h.name),
+  };
 }
 
 function accountMaturity(j) {
@@ -169,7 +262,9 @@ for (const b of (Array.isArray(log) ? log : [])) {
       successful: verdict.earned_top, actual_floor: chestOrdinal(tiers, verdict.earned_chest),
       earned_chest: verdict.earned_chest, floor_vs_recommended: null,
       duration_seconds: b.durationSeconds || null, turns: b.turns ?? null, battle_speed: b.battleSpeed ?? null,
-      team_fielded: heroes.map(h => ({ name: h.name, survived: h.survived ?? null, damage: h.damage ?? null, is_leader: h.isLeader ?? null })),
+      // healing/defense were CAPTURED but never persisted — the very columns the CB sustain question
+      // turns on. `defense` = damage TAKEN (INS-0032, confirmed off the in-game bar legend).
+      team_fielded: heroes.map(h => heroRecord(b.accountId, h)),
       gestal_snapshot_ref: { account_id: b.accountId }, frozen_effective_stats: null,
       team_match: null, off_spec: null, spec_margin: verdict.margin,
       classification: verdict.earned_top ? 'cb_one_key' : 'cb_below_top', assumptions: null,
@@ -195,7 +290,7 @@ for (const b of (Array.isArray(log) ? log : [])) {
   // is_leader is kept per-hero inside the team_fielded jsonb (no schema change) — the FIELDED
   // leader (whose aura was actually active) is team_fielded.find(is_leader), which may differ from
   // the engine's recommended leader (leader_name). Calibration should apply THIS leader's aura.
-  const fielded = (b.heroes ?? []).map(h => ({ name: h.name, survived: h.survived ?? null, damage: h.damage ?? null, is_leader: h.isLeader ?? null }));
+  const fielded = (b.heroes ?? []).map(h => heroRecord(b.accountId, h));
   const teamMatch = fielded.filter(h => recNames.has(norm(h.name))).length;
   const floorVs = (actual == null || recFloor == null) ? null : actual > recFloor ? 'higher' : actual < recFloor ? 'lower' : 'same';
   // Apply the FIELDED leader's aura to the team before freezing (was aura-blind). The fielded
