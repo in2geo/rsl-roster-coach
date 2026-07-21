@@ -1,0 +1,117 @@
+# The model is a partial REIMPLEMENTATION of Raid's combat, tested against captured battles
+
+**Established 2026-07-21 (Mike).** This reframes what the engine *is*, which fixes why the project has
+zigzagged. Read this before proposing any change to the scoring/prediction layer.
+
+## The reframe
+
+We are not building a recommendation heuristic. We are building a **partial reimplementation of
+Raid's combat model**, and validating it by replaying battles we captured and checking it reproduces
+what happened. A reimplementation has a definition of done (reproduce observed reality), a backlog
+(the mechanics still unimplemented), and a metric (how many battles it reproduces). A heuristic has
+none of those — which is why six months of heuristic tuning produced argument instead of progress.
+
+## Why it kept zigzagging (the diagnosis)
+
+Until 2026-07-21 there was no **falsifiable scalar** a change had to beat. The shadow tools and the
+reconciler existed and were used, but they emit *descriptions* — rankings, medians, correlations —
+which can always be argued with. So every model disagreement was settled by whichever framing was
+most persuasive that session. The stage-recommendation number WAS falsifiable, but it is **censored**
+(20 of 24 account×dungeon cells never pushed past a win, so "actual ceiling" is unknown) and so it
+could not clearly say "you got worse" in the over-prediction direction where the model is worst.
+
+## The test — `tools/battle-suite.mjs`
+
+Every captured battle is a test case: known team, known stage, known outcome → predict WIN/LOSS →
+pass or fail. **The headline is BALANCED ACCURACY** (mean of win-recall and loss-recall); a constant
+predictor scores exactly 50%, so class imbalance (78% of battles are wins) cannot flatter it.
+
+**First measured state (2026-07-21): 204/324 reproduced, balanced accuracy 52.9%** — barely above a
+coin flip; Spider below chance. Win-recall 71% vs **loss-recall 35%**: we predict clears, we are
+two-thirds blind to deaths. This is the floor we build up from.
+
+## The method — how you find what you don't model
+
+You cannot measure an unknown mechanic directly. You measure the **residual** (model vs reality),
+which is fully observable, and read its **structure**:
+
+1. **Slice the residual** many ways (by dungeon, stage band, champion, mechanic-present).
+2. **An unexplained cluster is the shadow of an unmodelled mechanic.** Demonstrated 2026-07-21: of 47
+   deaths our kill-side called comfortable, ~none are below stage 15 and 11+11 pile up at Dragon/IG
+   15-20 — *something turns on at 15* even though we cannot yet name it.
+3. **Domain knowledge names the cluster.** The model localizes; the human identifies. (This is how
+   the %maxHP cap *should* have been found — as an over-prediction spike at 21+ — instead of via a
+   forum thread.)
+4. **Implement the mechanic, re-run the suite, keep it only if the number moves.**
+
+### THE HARD LIMIT — and the two rules that follow from it
+An unknown that affects **everything uniformly** creates no residual structure: it gets absorbed
+into a calibration constant and becomes permanently invisible, looking like a tuned parameter.
+Therefore:
+- **IMPLEMENT, DON'T FIT.** Fitting free coefficients (e.g. against the 16 frontier boundaries)
+  *launders unknown-unknowns into false knowledge* — it hides a missing term inside `SOURCE_COEFF`
+  and the suite then looks calibrated while being structurally wrong. Fit only AFTER the mechanics
+  are enumerated, so a residual means something.
+- **EXPAND THE DATA RANGE to make uniform unknowns vary.** Frontier stages (new regime — the cap
+  turns on at 21), new accounts (new rosters), new game versions (mechanics change per patch). A
+  uniform unknown at stage 13 stops being uniform the moment you play 22. This is the real reason
+  frontier play matters — it *uncensors* over-predictions AND flushes uniform unknowns.
+
+## The mechanics checklist (living — this is the "clear list")
+
+One row per game system: **captured?** (do we have the input) · **modelled?** (does it enter a
+formula) · verdict. Ranked by battles-flipped when implemented (measurable via the suite). Seeded
+from what 2026-07-21 established — mention in code ≠ modelled, so every "modelled" needs evidence.
+
+| mechanic | captured | modelled | note |
+|---|---|---|---|
+| **Survival / incoming damage** | enemy ATK ✅ | ❌ `incomingDamagePerTurn=null` | **top lever: 65% of losses are here** (kill-side blind) |
+| Incoming-damage taxonomy (%maxHP vs ATK-vs-DEF) | — | ❌ | prerequisite for survival; raw ATK inverts known walls (INS-0016) |
+| Awakening | ✅ 100% | ❌ | transported through 5 files, enters no formula |
+| Ascension | ✅ 100% | ❌ | same |
+| Blessings (`blessingId`) | ✅ | ❌ | never read |
+| Empower (`empowerLevel`) | ✅ | ❌ | never read |
+| Masteries | ✅ 48% geared | ⚠️ partial | only `has_boss_mastery`; rest of tree ignored |
+| Booked skills | ✅ (`isFullyBooked` exists) | ❌ | engine uses a rarity GUESS; its own comment says "representation-only" |
+| Gear SET effects | sets ✅ | ⚠️ | pieces captured; set bonuses not modelled |
+| %maxHP boss cap (stage 21+) | ✅ (`maxhp_pct`, 47 skills) | ✅ (2026-07-21) | UNVALIDATED — 0 corpus runs field a cap-affected champ at 21+ |
+| Affinity | ✅ | ✅ | INS-0015 |
+| Boss HP / stage magnitude | ✅ | ✅ | wired 2026-07-21; note DoT kill-time is HP-invariant |
+
+Not yet on the list and probably belong: buff/debuff stacking caps, Great Hall, faction guardians,
+glyphs, speed/turn-order (captured as turns, **no turn model** — audit flags this 29×).
+
+## What is NOT in question (do not throw these away)
+
+- **Team SELECTION works** — the Spider 5th-seat ordering (Vergis > Kael > Fahrakin) matched reality
+  by clear time. The selection half of the product is real and untouched by any of this.
+- **The data layer is the asset** — 4,525 tags, real Gestal gear, 353 graded battles, the capture
+  loop. It accretes across every pivot; the scoring layer is what kept getting rebuilt. This reframe
+  changes the scoring layer's METHOD, not the data.
+
+## The chronic disease this must not repeat
+
+Built-but-unwired artifacts die and get re-derived by hand. On 2026-07-21 alone: the alias resolver
+(complete, bypassed), per-round capture (reads the dict after it's cleared), the contribution model
+(fed a constant), `battle-gaps`/assumption-audit (never called), and now the suite itself. **The
+suite is only real when it prints on every reconcile** (`watch-reconcile` / `loop.mjs`) and a change
+that lowers it is rejected on that basis. If it stays a tool in `tools/` run once and forgotten, this
+was zigzag #6.
+
+## Honest caveats (so this doesn't become the thing it's replacing)
+- The suite tests the **contribution path** (kill-side), not the live `matchRoster` verdict (which
+  scans for a best stage, not score-a-team-at-a-stage). Extending it to the verdict is follow-up.
+- The suite **could be the wrong metric** — binary win/loss at a fielded stage is not identical to
+  "which stage should you attempt." If it starts driving decisions it hasn't earned, that's the next
+  zigzag.
+- "Reimplementation" is the organizing principle; the suite is the **stopping rule**. Implement the
+  minimum mechanic that moves the number. Mark things "deliberately excluded" — we need enough
+  fidelity to RANK teams and PLACE a stage, not Plarium's exact damage numbers.
+
+## Immediate next steps (ranked)
+1. **Wire `battle-suite.mjs` into `watch-reconcile`/`loop.mjs`** — make the number unavoidable. Until
+   this, everything below is unmeasurable and the reframe hasn't taken.
+2. **Wire `battle-gaps.js` into the reconciler** — stop re-deriving known-unknowns by hand.
+3. **Build the survival side** — `incomingDamagePerTurn` from the incoming-damage taxonomy. Biggest
+   single lever (65% of losses). Re-run the suite; it should move loss-recall off 35%.
+4. **Then** consider fitting — never before the checklist is worked through.
