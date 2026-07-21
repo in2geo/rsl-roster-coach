@@ -44,10 +44,15 @@
 --
 -- METHOD: read all 100 clauses containing "reviv" across the 87 champions carrying
 -- an approved `Revive` tag, and classify by RECIPIENT from literal skill_summary.
---   ally revive (correct, unchanged) ... 78
---   self-revive only (rejected here) ...  7
---   both self and ally (Lydia) ........   1
---   minion-only (flagged, NO change) ..   1
+--   ally revive — tag CORRECT, unchanged .................... 78
+--   self-revive only — RE-CLASSIFIED: the `Revive` ROW is
+--     rejected and a `Self-Revive` row added. These champions
+--     DO self-revive; that is exactly why they must not carry
+--     `Revive`, which means "brings a dead ALLY back to life".
+--     Nobody loses a capability they actually have. ...........  7
+--   both self and ally (Lydia) — keeps `Revive`, GAINS
+--     `Self-Revive` ...........................................  1
+--   minion-only — FLAGGED, no change proposed ................  1
 -- ⚠ Do NOT regex this. A first pass missed every "revives 2 random allies" (it only
 -- matched "a random ally") and MIS-READ Arne, whose "revives THEM" refers back to
 -- "this Champion". Every row below was read by eye.
