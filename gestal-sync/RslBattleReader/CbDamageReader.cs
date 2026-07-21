@@ -398,6 +398,87 @@ internal static class CbDamageReader
         return mem.ReadInt64(prop + LongProp_Value);
     }
 
+    /// <summary>
+    /// DIAGNOSTIC (2026-07-21): can we still reach PER-ROUND hero stats after a battle?
+    ///
+    /// ReadHeroStat already builds a full `perRound` list (death order, phase boundary, per-round
+    /// tempo) — it just always comes back EMPTY, because it walks BattleResult -> BR_Statistics ->
+    /// StatisticsByHero, and that dictionary is cleared once the battle ends. The data structure
+    /// is not missing; we are reading it at the wrong moment.
+    ///
+    /// So: skip the BattleResult path entirely and heap-scan for BattleStatistics instances
+    /// directly, exactly as the damage capture scans for HeroBattleStatsContext. If any instance
+    /// still holds a populated StatisticsByHero, then per-round HP — i.e. PHASE-AT-DEATH, which
+    /// round the reviver died in — is recoverable post-battle with no in-battle sampling at all.
+    ///
+    /// Prints, per hero: typeId, slot, isDead, and every round key with its HP start/finish,
+    /// turns and kills. Usage: --roundstats [maxObjects=20]
+    /// </summary>
+    public static void RoundStatsScan(int max = 20)
+    {
+        var (mem, proc) = Open();
+        if (mem is null) return;
+        using (mem)
+        {
+            var gameAsm = mem.FindModuleBase("GameAssembly.dll");
+            if (gameAsm == nint.Zero) { Console.WriteLine("[roundstats] GameAssembly.dll not found."); proc?.Dispose(); return; }
+
+            var klass = Il2CppClassResolver.Resolve(mem, gameAsm, 0, "BattleStatistics", "SharedModel.Battle.Core");
+            if (klass == nint.Zero) { Console.WriteLine("[roundstats] BattleStatistics class not found."); proc?.Dispose(); return; }
+
+            var nav = new Il2Cpp.Il2CppNavigator(mem, gameAsm);
+            int found = 0, withHeroes = 0;
+            var buf = new byte[8 * 1024 * 1024];
+
+            foreach (var (baseAddr, size) in mem.EnumerateReadableRegions())
+            {
+                for (long off = 0; off < size && found < max; off += buf.Length)
+                {
+                    int chunk = (int)Math.Min(buf.Length, size - off);
+                    var view = chunk == buf.Length ? buf : new byte[chunk];
+                    if (!mem.TryReadBytes((nint)((long)baseAddr + off), view)) continue;
+                    for (int i = 0; i + 8 <= chunk && found < max; i += 8)
+                    {
+                        if (BitConverter.ToInt64(view, i) != (long)klass) continue;
+                        var stats = (nint)((long)baseAddr + off + i);
+                        found++;
+                        var dict = mem.ReadPointer(stats + Il2Cpp.Il2CppOffsets.BStats_StatisticsByHero);
+                        if (!ProcessMemory.IsValidPointer(dict)) continue;
+                        var heroes = nav.IterateDictIntObj(dict).ToList();
+                        if (heroes.Count == 0) continue;
+                        withHeroes++;
+                        Console.WriteLine();
+                        Console.WriteLine($"[roundstats] BattleStatistics @0x{stats:X} — {heroes.Count} hero entry(ies)");
+                        foreach (var (hk, hptr) in heroes)
+                        {
+                            if (!ProcessMemory.IsValidPointer(hptr)) continue;
+                            int typeId = mem.ReadInt32(hptr + Il2Cpp.Il2CppOffsets.HS_TypeId);
+                            int slot   = mem.ReadInt32(hptr + Il2Cpp.Il2CppOffsets.HS_Slot);
+                            bool dead  = mem.ReadBool(hptr  + Il2Cpp.Il2CppOffsets.HS_IsDead);
+                            var rd     = mem.ReadPointer(hptr + Il2Cpp.Il2CppOffsets.HS_StatsPerRound);
+                            var rounds = ProcessMemory.IsValidPointer(rd) ? nav.IterateDictIntObj(rd).ToList() : new List<(int key, nint valuePtr)>();
+                            Console.WriteLine($"   hero key={hk} typeId={typeId} slot={slot} isDead={dead} rounds={rounds.Count}");
+                            foreach (var (rk, rptr) in rounds.OrderBy(r => r.key))
+                            {
+                                if (!ProcessMemory.IsValidPointer(rptr)) continue;
+                                long hp0 = mem.ReadInt64(rptr + Il2Cpp.Il2CppOffsets.HBS_HpOnStart);
+                                long hp1 = mem.ReadInt64(rptr + Il2Cpp.Il2CppOffsets.HBS_HpOnFinish);
+                                int  trn = mem.ReadInt32(rptr + Il2Cpp.Il2CppOffsets.HBS_TurnsCount);
+                                int  ke  = mem.ReadInt32(rptr + Il2Cpp.Il2CppOffsets.HBS_KilledEnemiesCount);
+                                Console.WriteLine($"      round {rk,3}: hpStart={hp0 / 1000f,10:F0} hpFinish={hp1 / 1000f,10:F0} turns={trn,3} kills={ke}");
+                            }
+                        }
+                    }
+                }
+            }
+            Console.WriteLine();
+            Console.WriteLine($"[roundstats] scanned: {found} BattleStatistics instance(s), {withHeroes} with a populated StatisticsByHero.");
+            if (withHeroes == 0)
+                Console.WriteLine("[roundstats] => the dictionary is cleared post-battle on every instance; per-round data needs IN-BATTLE sampling.");
+        }
+        proc?.Dispose();
+    }
+
     private static (ProcessMemory?, Process?) Open()
     {
         Process? proc = null;

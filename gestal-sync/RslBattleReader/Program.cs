@@ -100,6 +100,9 @@ if (args.Contains("--dungeondamage")) { RslBattleReader.CbDamageReader.DungeonRu
 
 // Diagnostic: find HeroBattleStatsContext instances directly + decode damage. Usage: --herostats [max]
 {
+    int rsi = Array.IndexOf(args, "--roundstats");
+    if (rsi >= 0) { int m = (rsi + 1 < args.Length && int.TryParse(args[rsi + 1], out var rv)) ? rv : 20; RslBattleReader.CbDamageReader.RoundStatsScan(m); return; }
+
     int hi = Array.IndexOf(args, "--herostats");
     if (hi >= 0) { int m = (hi + 1 < args.Length && int.TryParse(args[hi + 1], out var v)) ? v : 40; RslBattleReader.CbDamageReader.HeroStatsScan(m); return; }
 }
