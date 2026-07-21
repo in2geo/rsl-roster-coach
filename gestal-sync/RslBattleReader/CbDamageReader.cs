@@ -137,7 +137,10 @@ internal static class CbDamageReader
     // extra 0x120000=1,179,648 context in both FK and IG captures, inflating the raw total). Exclude it.
     private static bool ValidStat(long v) => v >= 0 && v < 1_000_000_000 && v != 0x120000;
 
-    public static CbResult? CaptureDungeon(ProcessMemory mem)
+    /// <param name="expectedTeam">Team size from the battle FILE (authoritative). The heap scan is
+    /// only trustworthy when it yields exactly one contiguous run of this length — see the staleness
+    /// note above. Pass 0 only for the ad-hoc --dungeondamage diagnostic, which tolerates a guess.</param>
+    public static CbResult? CaptureDungeon(ProcessMemory mem, int expectedTeam = 0)
     {
         var gameAsm = mem.FindModuleBase("GameAssembly.dll");
         if (gameAsm == nint.Zero) return null;
@@ -171,21 +174,49 @@ internal static class CbDamageReader
         if (valid.Count < 2) return null;
         valid.Sort((a, b) => a.addr.CompareTo(b.addr));
 
-        // The current battle's heroes are the valid (non-sentinel) contexts while the dialog is
-        // open. A full team is <= 6; take them all (address-sorted = reverse screen order). If more
-        // than 6 slipped through (stale contexts not reset), fall back to the largest contiguous
-        // run at Hero_Stride — the freshly-allocated team is contiguous even when stale ones aren't.
+        // ── Staleness guard (2026-07-19). ────────────────────────────────────────────────────────
+        // The OLD code took ALL valid contexts whenever there were <= 6, on the assumption that only
+        // the current battle's heroes are non-sentinel while the dialog is open. THAT IS FALSE: the
+        // game does not reset a previous battle's HeroBattleStatsContext objects, so their stats stay
+        // in the "sane" range indefinitely. A capture whose stale + fresh contexts summed to <= 6
+        // therefore returned a UNION OF TWO BATTLES, silently and plausibly.
+        //   Observed Spider-20, Don$Gnut: two different defeats (133 vs 44 turns, different teams)
+        //   reported byte-identical per-hero triples, and the following VICTORY's slots 2-4 carried
+        //   the defeat's slots 1-3. Three exact matches — misattributed damage on a real graded run.
+        // The freshly-allocated team IS contiguous at Hero_Stride; stale survivors generally are not.
+        // So ALWAYS segment into contiguous runs, and only trust an UNAMBIGUOUS one of the expected
+        // length. Anything else returns null: a missing number is recoverable, a wrong one is not.
+        var runs = new List<List<(nint addr, long dmg, long def, long heal)>>();
+        var cur = new List<(nint addr, long dmg, long def, long heal)> { valid[0] };
+        for (int i = 1; i < valid.Count; i++)
+        {
+            if ((long)valid[i].addr - (long)valid[i - 1].addr == Hero_Stride) cur.Add(valid[i]);
+            else { runs.Add(cur); cur = new() { valid[i] }; }
+        }
+        runs.Add(cur);
+
         List<(nint addr, long dmg, long def, long heal)> best;
-        if (valid.Count <= 6) best = valid;
+        if (expectedTeam > 0)
+        {
+            var exact = runs.FindAll(r => r.Count == expectedTeam);
+            if (exact.Count == 0)
+            {
+                Console.WriteLine($"[dungeondamage] REJECTED: no contiguous run of {expectedTeam} hero context(s) " +
+                                  $"(found runs: {string.Join(",", runs.ConvertAll(r => r.Count))}). Per-hero stats left null.");
+                return null;
+            }
+            if (exact.Count > 1)
+            {
+                Console.WriteLine($"[dungeondamage] REJECTED: {exact.Count} candidate runs of {expectedTeam} — " +
+                                  "cannot tell the current battle from a stale one. Per-hero stats left null.");
+                return null;
+            }
+            best = exact[0];
+        }
         else
         {
-            best = new(); var run = new List<(nint addr, long dmg, long def, long heal)> { valid[0] };
-            for (int i = 1; i < valid.Count; i++)
-            {
-                if ((long)valid[i].addr - (long)valid[i - 1].addr == Hero_Stride) run.Add(valid[i]);
-                else { if (run.Count > best.Count) best = new(run); run = new() { valid[i] }; }
-            }
-            if (run.Count > best.Count) best = run;
+            best = runs[0];
+            foreach (var r in runs) if (r.Count > best.Count) best = r;
         }
         if (best.Count < 2) return null;
 
