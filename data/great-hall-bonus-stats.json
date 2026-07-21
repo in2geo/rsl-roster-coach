@@ -1,0 +1,34 @@
+{
+  "_meta": {
+    "what": "GREAT HALL (Affinity Bonuses) — account-level bonuses unlocked per AFFINITY, applied as a PERCENTAGE OF BASE STATS to every champion of that affinity in the collection.",
+    "source": "Plarium in-game Help screen, supplied by Mike 2026-07-21. VERBATIM Tier-1 factual game data.",
+    "verbatim": [
+      "In the Affinity Bonuses tab, you can unlock Bonuses for the following 6 Stats: HP, ATK, DEF, C. DMG, RES, ACC",
+      "All Bonuses apply to the Champions' Base Stats.",
+      "There are multiple Levels of each Bonus - from 0 to 10 - where 0 is not upgraded at all, and 10 is fully upgraded.",
+      "For example, if you upgrade the Void HP Bonus to Level 1, all Void Champions in your Collection will immediately receive a 2% boost to their MAX HP. Upgrade that Bonus to Level 10 and they'll receive a 20% boost."
+    ],
+    "scope": "PER AFFINITY (Magic / Force / Spirit / Void) x PER STAT (6). Not per-faction — that is Faction Guardians, a different system.",
+    "percent_of_base": true,
+    "unverified": [
+      "Whether the same level->percent curve applies to ALL SIX stats. Only one bonus's curve was visible in the screenshot (a Magic bonus, stat name obscured); the HP example in the text matches it. VERIFY the ACC/RES/C.DMG curves in-game before relying on them.",
+      "Whether the Great Hall has non-affinity tabs beyond Affinity Bonuses."
+    ],
+    "why_it_matters": "⚠ OUR CODE HAS THIS BACKWARDS. `estimate-stats.js: applyAccountBonus()` adds FLAT ACC +40 / RES +30 and DELIBERATELY OMITS HP/ATK/DEF, on the stated belief that 'HP/ATK/DEF Great-Hall bonuses are flat in-game (not % of base)'. The game says the opposite: everything is a % of BASE. Measured against our own champion table (944 rows): 604 champions have base_acc = 0 and the non-zero average is 14, so a +20% ACC bonus is worth ~0-3 ACC, NOT 40. Meanwhile base HP averages 17,439, so the +20% HP bonus we discard is worth ~3,488. We invent ~37 ACC that does not exist (~3.7 Spider stages of the stage x 10 ACC floor) and throw away the part that matters.",
+    "modelling_note": "Needs the player's per-affinity Great Hall LEVELS, which Gestal does NOT export. Until captured, any substitute should at least have the right SHAPE: percentage-of-base on HP/ATK/DEF/C.DMG, and near-zero on ACC/RES."
+  },
+  "level_to_percent": [
+    { "level": 1,  "percent": 2,  "cost": 50 },
+    { "level": 2,  "percent": 3,  "cost": 150 },
+    { "level": 3,  "percent": 4,  "cost": 300 },
+    { "level": 4,  "percent": 6,  "cost": 400 },
+    { "level": 5,  "percent": 8,  "cost": 500 },
+    { "level": 6,  "percent": 10, "cost": 600 },
+    { "level": 7,  "percent": 12, "cost": 700 },
+    { "level": 8,  "percent": 14, "cost": 800 },
+    { "level": 9,  "percent": 17, "cost": 900 },
+    { "level": 10, "percent": 20, "cost": 1000 }
+  ],
+  "stats": ["hp", "atk", "def", "crit_dmg", "res", "acc"],
+  "affinities": ["Magic", "Force", "Spirit", "Void"]
+}
