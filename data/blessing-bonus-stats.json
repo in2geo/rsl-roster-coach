@@ -1,0 +1,22 @@
+{
+  "_meta": {
+    "what": "Blessing BONUS STATS — flat stats a champion gains purely from (rarity x awakening level), granted when the champion has a Blessing assigned. Introduced in Patch 8.20.",
+    "source": "Plarium in-game Help / 'Blessings Bonus Stats' doc supplied by Mike 2026-07-21 — VERBATIM, Tier-1 factual game data (not editorial).",
+    "why_it_matters": "This is the awakening term the model never had. Mike flagged it 2026-07-21: 'we haven't even introduced awakening into the formula!'. Both inputs are already captured at 100% (rarity, awakenLevel), so this is implementable with NO new acquisition.",
+    "rules": [
+      "CUMULATIVE: a champion at awakening level N receives the bonuses for every level 1..N.",
+      "GATED on having a Blessing assigned (blessingId). Blessing CHOICE does not change these stats — only rarity and awakening level do.",
+      "Champion rarity, not blessing rarity, selects the column. A Legendary taking a Rare blessing still uses the Legendary row for these bonus stats (the blessing's own EFFECT is separate, and a lower-rarity blessing grants extra bonuses at certain levels — see note).",
+      "C.DMG is a PERCENTAGE; every other value is FLAT.",
+      "SEPARATE from the blessing's ABILITY (Indomitable Spirit, Iron Will, Miracle Heal, ...), which also scales with awakening level and is NOT modelled here."
+    ],
+    "magnitude_note": "A 6-star-awakened Legendary gains HP +8500, ATK +750, DEF +600, C.DMG +38%, RES +75, ACC +75, SPD +15. For scale: fielded team HP on this corpus runs 10k-28k, and Spider's ACC floor is stage x 10 — so ACC +75 is ~7.5 stages of that floor.",
+    "unverified": "Whether the bonus requires the blessing to be assigned (assumed yes, per 'Blessings now offer extra bonus stats') and whether a lower-rarity blessing on a higher-rarity champion alters these specific values. Confirm in-game before relying on edge cases."
+  },
+  "by_rarity": {
+    "Rare":      [ {"level":1,"hp":2250},{"level":2,"atk":450},{"level":3,"def":300},{"level":4,"hp":1000,"crit_dmg_pct":23},{"level":5,"res":40,"acc":40},{"level":6,"spd":7} ],
+    "Epic":      [ {"level":1,"hp":4500},{"level":2,"atk":600},{"level":3,"def":450},{"level":4,"hp":1000,"crit_dmg_pct":30},{"level":5,"res":60,"acc":60},{"level":6,"spd":10} ],
+    "Legendary": [ {"level":1,"hp":7500},{"level":2,"atk":750},{"level":3,"def":600},{"level":4,"hp":1000,"crit_dmg_pct":38},{"level":5,"res":75,"acc":75},{"level":6,"spd":15} ],
+    "Mythical":  [ {"level":1,"hp":10500},{"level":2,"atk":900},{"level":3,"def":750},{"level":4,"hp":1000,"crit_dmg_pct":45},{"level":5,"res":90,"acc":90},{"level":6,"spd":20} ]
+  }
+}

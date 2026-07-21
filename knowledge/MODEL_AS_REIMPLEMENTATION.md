@@ -42,7 +42,18 @@ which is fully observable, and read its **structure**:
 3. **Domain knowledge names the cluster.** The model localizes; the human identifies. (This is how
    the %maxHP cap *should* have been found — as an over-prediction spike at 21+ — instead of via a
    forum thread.)
-4. **Implement the mechanic, re-run the suite, keep it only if the number moves.**
+4. **Implement the mechanic, re-run the suite.** ⚠ AMENDED 2026-07-21, same day, after the first
+   real trial: "keep it only if the number moves" is TOO CRUDE. Distinguish:
+   - a **VERIFIED GAME FACT** (published table, in-game screenshot) that doesn't move the number →
+     **KEEP IT.** It means the METRIC is blind to that axis, not that the mechanic is wrong.
+   - a **SPECULATIVE TUNING** (a coefficient, a weight, a threshold) that doesn't move the number →
+     **REVERT IT.** That is the case the rule was written for.
+   Worked example: blessing bonus stats (verified Plarium table) were implemented correctly and
+   flipped ZERO battles — because the kill-side model consumes almost no stats. The bonus is mostly
+   HP/ACC/RES, which feed SURVIVAL and LAND RATE, and neither axis exists yet.
+   **COROLLARY — survival is a PREREQUISITE, not merely the biggest lever.** Several mechanics can
+   only express themselves through it, so implementing them is UNMEASURABLE until it exists. Build
+   survival before any further stat-mechanic work, or you cannot tell success from no-op.
 
 ### THE HARD LIMIT — and the two rules that follow from it
 An unknown that affects **everything uniformly** creates no residual structure: it gets absorbed
