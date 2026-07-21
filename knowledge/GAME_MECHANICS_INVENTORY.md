@@ -53,7 +53,7 @@ Known gaps live in the tag-policy work, not here.
 | **Glyphs** | ✅ field exists (`substats[].glyph`) | ❌ | never read. ❓ confirm they're populated in-game |
 | **Great Hall** | ❌ **NOT exported by Gestal** | ⚠️ estimated | `estimate-stats.js` substitutes an `account_development` bundle. ❓ real values readable in-game |
 | Arena bonus | ❌ | ⚠️ | folded into the same bundle as Great Hall |
-| Faction Guardians | ✅ (`isFactionGuardian`) | ❌ | flag captured, effect not modelled. ❓ what it grants |
+| **Faction Guardians** | ⚠️ flag only, **and it is FALSE on all 1,370 champions** | ❌ | **VERIFIED IN-GAME 2026-07-21 (Mike screenshot).** Assign DUPLICATE champions; 3 tiers (Rare/Epic/Legendary) x 5 chambers x 2 slots. Bonus applies to **ALL champions of that RARITY in that FACTION** — it does NOT attach to the guardian champion, so `isFactionGuardian` can never yield it. **We would need chamber-fill state per faction x rarity, which Gestal does not export.**<br>Legendary: +10% HP · +10% ATK · **+30 ACC / +30 RES** · +10% DEF · +10 SPD<br>Epic: +10% HP · +10% ATK · **+15 ACC / +15 RES** · +10% DEF · +6 SPD<br>⚠ MATERIAL: +30 ACC ≈ **3 Spider stages** of the `stage x 10` ACC floor. A per-faction uniform offset — precisely the unknown that hides inside a calibration constant. |
 | **Books / skill levels** | ✅ 100% (`skills[].level/maxLevel`) | ❌ | `isFullyBooked()` EXISTS; engine still uses a rarity **guess** (`assume_booked`), its own comment says "representation-only" |
 | ❓ *others?* | | | **Mike: walk the champion detail screen and add any row not listed** |
 
