@@ -1,5 +1,19 @@
 -- ============================================================================
--- Seed 199 — non-placement debuff tags: immunity / condition / activation
+-- ⚠ RENUMBERED 199 -> 204 on 2026-07-21. This seed was authored in an earlier
+-- session on branch `claude/happy-rubin-95be3a` and never merged, while seed
+-- number 199 was meanwhile taken by 199_dragon_ig_p25_floors_from_reality.sql.
+-- Renumbering only — no ruling in this file was changed.
+--
+-- ⚠ STILL NOT APPLIED TO LIVE (verified 2026-07-21: Atur | Freeze/Sleep/Stun and
+-- Archbishop Pinthroy | Decrease Defense are all still `approved` in the DB, i.e.
+-- none of the 26 rejections below have landed). It is committed here so the work
+-- is not lost — committing is not applying. Needs Mike's sign-off like any other
+-- tag ruling, and the policy #18 worksheet writeback appears to have been done
+-- already (BACKUP-2026-07-20-preSeed199ImmunityRejections.xlsx exists), so the
+-- worksheet and live may currently DISAGREE on these 26 pairs.
+-- ============================================================================
+-- ============================================================================
+-- Seed 204 — non-placement debuff tags: immunity / condition / activation
 --
 -- 26 approved (champion, debuff-tag) pairs where the champion DOES NOT PLACE the
 -- debuff. Every bracket occurrence in the champion's whole kit sits in a clause
