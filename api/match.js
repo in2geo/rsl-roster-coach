@@ -126,6 +126,8 @@ export default async function handler(req, res) {
       contribution:           matchResult.contribution ?? null,
       watchdog:               matchResult.watchdog ?? null,
       gaps:                   matchResult.gaps,
+      shortfall_notes:        matchResult.shortfall_notes ?? [],
+      stretch:                matchResult.stretch ?? [],
       threshold_results:      matchResult.threshold_results,
       ascension_gaps:         matchResult.ascension_gaps,
       data_warning:           matchResult.data_warning,
