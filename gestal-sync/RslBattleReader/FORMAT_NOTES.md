@@ -134,3 +134,56 @@ Raw dumps are saved per battle under the scratchpad `battle-dumps/` dir
 samples across battle types before committing to a parser strategy.
 ```
 ```
+
+---
+
+## Measured 2026-07-21 — what the file can and cannot hold (read before decoding)
+
+Empirical survey over **662 dumped battles** (`battle-dumps/`, 22 MB), each matched to its
+`battle-log.json` entry by timestamp. Three results, all of which constrain any decode effort:
+
+### 1. Blob INDEX is not a stable identifier
+`blob_<stamp>_1` is always a setup blob (`F2 ?? 91 DE`, byte[1] = format version: 0x52 on the
+v11.50 era, 0x54 after v11.60). Everything after that varies — files carry anywhere from **3 to 24
+blobs**, because `bin(stats)` is optional (as the layout comment says) and more regions follow.
+So "blob3 = heroRounds" is WRONG; identify blobs by their 4-byte signature, not position.
+Most common headers across 2,781 blobs: `23 D3 00 01` (1025), `F2 54 91 DE` (519),
+`B0 D3 00 00` (189), `33 74 D3 00` (165), `F2 52 91 DE` (143).
+
+### 2. ⚠ THE FILE DOES NOT SCALE WITH BATTLE LENGTH — so it is very unlikely to hold a
+###   per-round timeline
+This is the load-bearing finding. Measured across 596 matched battles:
+
+    bottom-50 by turns:  avg   3 turns  ->  avg  8,608 bytes
+    top-50    by turns:  avg 284 turns  ->  avg 10,450 bytes
+    extremes:   1 turn -> ~7,000 B      1,167 turns -> 13,095 B
+
+A ~100x increase in turns buys ~21% more bytes. Correlations are effectively nil:
+`r(blob count vs turns) = 0.178`, `r(total bytes vs turns) = 0.157`,
+`r(blob3 size vs turns) = -0.123`.
+
+A 250-turn battle would need ~1,250 hero-round records in the ~2 KB of growth — about 1.6 bytes
+each. Not strictly impossible under aggressive delta encoding, but the file is dominated by a
+fixed ~7 KB of setup/roster/stats, and the growth is far too weak to promise a full HP-over-time
+series. **Do not start the custom-opcode reverse-engineering effort expecting phase-at-death to
+fall out of it.** The name "heroRounds" oversells what the size budget allows.
+
+### 3. Better route for PHASE-AT-DEATH
+`HeroBattleStatsContext` already exposes `HBS_HpOnStart` / `HBS_TurnsCount` /
+`HBS_KilledAlliesCount`, and `ReadHeroStat` already reads them — they land NULL only because
+`BR_Statistics -> StatisticsByHero` is EMPTY once the battle is over (see DAMAGE_CAPTURE_TODO).
+The watcher already polls every 100 ms. **Sampling those contexts DURING the fight**, rather than
+parsing the file afterwards, gets the HP-over-time series directly and stays passive-read-only.
+That is the cheaper and far more likely path to "which round did the reviver die in".
+
+### 4. Also measured: BattleSpeed / AllyTurns are never populated
+`BR_BattleSpeed` (0x40) and `BR_AllyTurns` (0x50) both read `hasValue = false` on every one of
+836 captures, while `BR_DurationSeconds` (0x3C) — four bytes earlier in the same struct — lands
+100%. Either the game genuinely leaves both null post-battle, or the `Nullable<T>` layout
+assumption (value@+0, hasValue@+4) is wrong for this runtime. UNRESOLVED; needs a dump or a live
+byte-probe.
+**It is not currently corrupting anything:** derived seconds-per-turn is unimodal at ~2.0 across
+all 513 timed battles and every account sits in 1.57-2.27, with no cluster near ~1.0 where a 2x
+speed would land. Battle speed has been constant across the whole corpus. It is an UNGUARDED
+assumption, not an active bug — if the player ever changes speed, every duration comparison
+silently breaks with no signal.
