@@ -43,6 +43,13 @@
       },
       "Void": {},
       "everything_else": "0/10"
+    },
+    "VERIFIED_ARITHMETIC_2026_07_21": "CLOSED-LOOP VERIFICATION on a GEARLESS champion, where the green bonus column can ONLY be account-level. Avenger (Magic, Rare, Lvl 1, 3★, ZERO gear equipped) on Don$Bambus — in-game base / bonus: HP 2475 +25 · ATK 270 +8 · DEF 173 +2 · SPD 104 +0 · C.RATE 15 +0 · C.DMG 50 +0 · RES 30 +0 · ACC 0 +5. Predicted from Arena Bronze I (+1% HP/ATK/DEF) plus Great Hall Magic (ATK +2%, ACC +5 flat): HP +25, ATK +8, DEF +2, everything else 0, ACC +5. **8 of 8 stats matched exactly.** ACC is the clincher on flat-vs-percent: base ACC is ZERO, so a percentage bonus would grant NOTHING, yet +5 appears. Gestal exported {hp:2475,atk:270,def:173,spd:104,crate:15,cdmg:50,res:30,acc:0} — i.e. exactly the BASE column, acc 0 not 5. Gestal baseStats ARE the in-game base column and exclude all account bonuses.",
+    "verified_formula": {
+      "percent_stats": "hp/atk/def/crit_dmg: base + base * (arena_pct + great_hall_pct[affinity][stat])",
+      "flat_stats": "acc/res: base + great_hall_flat[affinity][stat]  (Arena grants none)",
+      "then": "+ gear (main/sub/set) + blessing bonus stats + faction guardian (per faction x rarity)",
+      "UNRESOLVED": "Whether the percentages ADD (1%+2%=3%) or COMPOUND (1.01*1.02=1.0302). At these magnitudes both round to +8 on 270 ATK, so this case cannot distinguish them. Needs a champion with a larger base and bigger bonuses."
     }
   },
   "level_to_percent": [

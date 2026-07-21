@@ -39,6 +39,18 @@ Known gaps live in the tag-policy work, not here.
 
 ## AXIS 2 — Character-power systems (what multiplies a champion's numbers)
 
+> ✅ **ACCOUNT-LEVEL BONUS ARITHMETIC IS VERIFIED (2026-07-21).** A GEARLESS champion isolates it
+> perfectly — with no gear, the green bonus column can only be account-level. Avenger (Magic, Rare,
+> Lvl 1, 3★, zero gear) on Don$Bambus: `HP 2475 +25 · ATK 270 +8 · DEF 173 +2 · SPD/CRATE/CDMG/RES +0
+> · ACC 0 +5`. Predicted from Arena Bronze I (+1% HP/ATK/DEF) + Great Hall Magic (ATK +2%, ACC +5
+> flat): **8 of 8 stats matched exactly.** ACC settles flat-vs-percent — base ACC is ZERO, so a
+> percentage would grant nothing, yet +5 appears.
+> **Verified formula:** `hp/atk/def/cdmg = base + base*(arena% + greatHall%[affinity])` ·
+> `acc/res = base + greatHallFlat[affinity]` · then gear, blessing bonus, faction guardians.
+> **Gestal exports the BASE column only** (Avenger exported `acc: 0`, not 5) — so account bonuses
+> must be ADDED by us, and `applyAccountBonus` is right to exist even though its VALUES are wrong.
+> ❓ Still open: do the percentages ADD or COMPOUND? Both round to +8 here; needs a bigger case.
+
 | mechanic | captured? | modelled? | evidence / note |
 |---|---|---|---|
 | Level | ✅ 100% | ✅ | `estimate-stats` scales by level |
