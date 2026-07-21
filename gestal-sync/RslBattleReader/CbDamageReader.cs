@@ -426,8 +426,9 @@ internal static class CbDamageReader
             var klass = Il2CppClassResolver.Resolve(mem, gameAsm, 0, "BattleStatistics", "SharedModel.Battle.Core");
             if (klass == nint.Zero) { Console.WriteLine("[roundstats] BattleStatistics class not found."); proc?.Dispose(); return; }
 
+            Console.WriteLine($"[roundstats] BattleStatistics klass=0x{klass:X}; scanning heap (this walks the whole address space and is slow)...");
             var nav = new Il2Cpp.Il2CppNavigator(mem, gameAsm);
-            int found = 0, withHeroes = 0;
+            int found = 0, withHeroes = 0, errors = 0;
             var buf = new byte[8 * 1024 * 1024];
 
             foreach (var (baseAddr, size) in mem.EnumerateReadableRegions())
@@ -442,6 +443,8 @@ internal static class CbDamageReader
                         if (BitConverter.ToInt64(view, i) != (long)klass) continue;
                         var stats = (nint)((long)baseAddr + off + i);
                         found++;
+                        if (found % 25 == 0) Console.WriteLine($"[roundstats]   ...{found} instance(s) seen, {withHeroes} populated, {errors} unreadable");
+                        try {
                         var dict = mem.ReadPointer(stats + Il2Cpp.Il2CppOffsets.BStats_StatisticsByHero);
                         if (!ProcessMemory.IsValidPointer(dict)) continue;
                         var heroes = nav.IterateDictIntObj(dict).ToList();
@@ -468,10 +471,12 @@ internal static class CbDamageReader
                                 Console.WriteLine($"      round {rk,3}: hpStart={hp0 / 1000f,10:F0} hpFinish={hp1 / 1000f,10:F0} turns={trn,3} kills={ke}");
                             }
                         }
+                        } catch { errors++; }   // garbage pointer — skip, never abort the scan
                     }
                 }
             }
             Console.WriteLine();
+            Console.WriteLine($"[roundstats] unreadable instances (bad pointers): {errors}");
             Console.WriteLine($"[roundstats] scanned: {found} BattleStatistics instance(s), {withHeroes} with a populated StatisticsByHero.");
             if (withHeroes == 0)
                 Console.WriteLine("[roundstats] => the dictionary is cleared post-battle on every instance; per-round data needs IN-BATTLE sampling.");
