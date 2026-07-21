@@ -31,8 +31,10 @@ const nameById = Object.fromEntries(champs.map(c => [c.id, c.name]));
 const DOT = new Set(['Poison', 'HP Burn', 'Enemy Max HP Damage']);
 const tagsByName = {}; for (const c of champs) tagsByName[c.name] = (c.champion_tags ?? []).filter(ct => ct.status === 'approved' && DOT.has(ct.tags?.name)).map(ct => ct.tags.name);
 const affByName = {}; for (const c of champs) if (c.affinity) affByName[c.name.toLowerCase()] = c.affinity;
-const aliasRows = await rest('champion_aliases?select=alias,champions(affinity)');
-for (const a of aliasRows) if (a.alias && a.champions?.affinity) affByName[a.alias.toLowerCase()] ??= a.champions.affinity;
+// NB a DIFFERENT projection from the alias→champion_id rows used for roster resolution below —
+// this one carries affinity, so it keeps its own name rather than colliding with `aliasRows`.
+const aliasAffinityRows = await rest('champion_aliases?select=alias,champions(affinity)');
+for (const a of aliasAffinityRows) if (a.alias && a.champions?.affinity) affByName[a.alias.toLowerCase()] ??= a.champions.affinity;
 const affOf = (n) => affByName[n?.toLowerCase()] ?? null;
 const skills = await rest('champion_skills?select=champion_id,damage_multiplier&damage_multiplier=not.is.null');
 const multByName = {}; for (const s of skills) { const nums = (String(s.damage_multiplier).match(/[0-9]+\.?[0-9]*/g) || []).map(Number); const mx = nums.length ? Math.max(...nums) : 0; const nm = nameById[s.champion_id]; if (nm && mx > (multByName[nm] || 0)) multByName[nm] = mx; }
@@ -113,10 +115,14 @@ if (RUN_OLD) {
   try {
     const me = await import('../lib/match-engine.js');
     const gc = await import('../lib/gestal-context.js');
-    const SEL = 'id,name,type_id,rarity,role,affinity,faction,base_hp,base_atk,base_def,base_spd,base_acc,base_res,base_crit_rate,base_crit_dmg,champion_tags(tag_id,status,ascension_required,tags(name,is_debuff,bypasses_accuracy_check)),champion_auras(aura_type,aura_value,aura_area)';
+    // ALIASES ARE REQUIRED (2026-07-19) — omitting them silently drops champions whose Gestal
+    // display name differs from champions.name (e.g. "Thor Faehammer" -> "Thor"). Fetched here
+    // because `gc` is only imported inside this --old branch.
+    const aliasRows = await gc.fetchAliasRows(rest);
+    const SEL ='id,name,type_id,rarity,role,affinity,faction,base_hp,base_atk,base_def,base_spd,base_acc,base_res,base_crit_rate,base_crit_dmg,champion_tags(tag_id,status,ascension_required,tags(name,is_debuff,bypasses_accuracy_check)),champion_auras(aura_type,aura_value,aura_area)';
     let db = []; for (let f = 0; ; f += 1000) { const d = await rest(`champions?select=${encodeURIComponent(SEL)}&game_id=eq.raid_shadow_legends&limit=1000&offset=${f}`); if (!Array.isArray(d) || !d.length) break; db = db.concat(d); if (d.length < 1000) break; }
     const snap = JSON.parse(fs.readFileSync('gestal-sync/output/DonBrogni_768ae0d91391eff5.json', 'utf8'));
-    const { userChampions } = gc.buildUserChampions(snap.champions, db);
+    const { userChampions } = gc.buildUserChampions(snap.champions, db, aliasRows);
     for (const key of Object.keys(DUNGEONS)) {
       try { const res = await me.matchRoster(userChampions, key, { account_development: 'fair' }); oldRec[key] = (res.content_label || '').match(/Stage\s+(\d+)/i)?.[1] ?? '?'; }
       catch (e) { oldRec[key] = `err:${e.message.slice(0, 20)}`; }

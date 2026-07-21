@@ -24,7 +24,10 @@ const roster = readGestalRoster(acct);
 const typeIds = [...new Set((roster?.champions ?? []).map(c => c.baseTypeId ?? c.typeId).filter(Boolean))];
 const { data: champs } = await s.from('champions').select('id,name,type_id,rarity,base_hp,base_atk,base_def,base_spd')
   .eq('game_id', 'raid_shadow_legends').in('type_id', typeIds);
-const { userChampions } = buildUserChampions(roster?.champions ?? [], champs ?? []);
+// NOTE: `champs` above is filtered by .in('type_id', …), so champions with a NULL type_id are absent
+// before aliases can help them. Aliases still matter for name variants that DO carry a type_id.
+const { data: aliasRows } = await s.from('champion_aliases').select('alias,champion_id').limit(5000);
+const { userChampions } = buildUserChampions(roster?.champions ?? [], champs ?? [], aliasRows ?? []);
 
 const es = (uc) => uc.effective_stats;
 const PCT = ['hp', 'atk', 'def'];

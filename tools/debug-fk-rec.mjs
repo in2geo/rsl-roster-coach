@@ -38,7 +38,7 @@ console.log(`Roster: ${roster.length} Rare+ champs resolved for ${snap.displayNa
 
 const r = await matchRoster(roster, content);
 console.log(`=== ${content} recommendation ===`);
-console.log(`  stage: ${r.stageLabel ?? r.stageNumber}  | notReady: ${r.notReady}  | verdict: ${r.verdict_band}  | confidence: ${r.confidence_pct}`);
+console.log(`  STAGE: ${r.stage_number_attempted ?? r.stageLabel ?? r.stageNumber}  | notReady: ${r.notReady}  | verdict: ${r.verdict_band}  | confidence: ${r.confidence_pct}`);
 console.log(`  data_warning: ${r.data_warning || '(none)'}`);
 console.log(`  team (${(r.team || []).length}): ${(r.team || []).map(c => c.name).join(', ')}`);
 console.log(`\n  goal coverage:`);

@@ -13,6 +13,9 @@ for (const l of fs.readFileSync('.env.local', 'utf8').split(/\r?\n/)) { const m 
 const BASE = (env.SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
 const H = { apikey: env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}` };
 const rest = async (p) => (await fetch(`${BASE}/rest/v1/${p}`, { headers: H })).json();
+// ALIASES ARE REQUIRED (2026-07-19) — omitting them silently drops champions whose Gestal
+// display name differs from champions.name (e.g. "Thor Faehammer" -> "Thor"). See gestal-context.js.
+const aliasRows = await gc.fetchAliasRows(rest);
 process.env.SUPABASE_URL = env.SUPABASE_URL; process.env.SUPABASE_ANON_KEY = env.SUPABASE_ANON_KEY; process.env.SUPABASE_SERVICE_KEY = env.SUPABASE_SERVICE_KEY;
 const supabase = createClient(BASE, env.SUPABASE_SERVICE_KEY);
 const gc = await import('../lib/gestal-context.js');
@@ -29,7 +32,7 @@ const tagRows = await rest('tags?select=name,is_debuff,bypasses_accuracy_check')
 const tagMeta = Object.fromEntries((tagRows || []).map(t => [t.name, { is_debuff: t.is_debuff, bypasses_accuracy_check: t.bypasses_accuracy_check }]));
 const evalFloor = (formula, stage) => { try { return Function('"use strict";return (' + String(formula).replace(/stage/gi, stage) + ')')(); } catch { return null; } };
 const snap = JSON.parse(fs.readFileSync('gestal-sync/output/DonBrogni_768ae0d91391eff5.json', 'utf8'));
-const { userChampions } = gc.buildUserChampions(snap.champions, db);
+const { userChampions } = gc.buildUserChampions(snap.champions, db, aliasRows);
 const mapped = me.mapRoster(userChampions, { accountDev: 'fair' }).mapped;
 try { await mr.attachDamageScores(mapped, supabase); } catch {}
 for (const c of mapped) c.auras = auraByName.get(c.name) || [];

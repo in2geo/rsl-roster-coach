@@ -83,7 +83,8 @@ for (const [col, vals] of [['type_id', typeIds], ['name', names]]) {
   if (error) { console.error('champions query failed:', error.message); process.exit(1); }
   for (const c of data ?? []) byId.set(c.id, c);
 }
-const { userChampions } = buildUserChampions(roster?.champions ?? [], [...byId.values()]);
+const { data: aliasRows } = await supabase.from('champion_aliases').select('alias,champion_id').limit(5000);
+const { userChampions } = buildUserChampions(roster?.champions ?? [], [...byId.values()], aliasRows ?? []);
 
 // Multipliers: champion_skills → best role-relevant damage multiplier per champion.
 const ids = userChampions.map(u => u.champion?.id).filter(Boolean);

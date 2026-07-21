@@ -22,7 +22,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { buildUserChampions } from '../lib/gestal-context.js';
+import { buildUserChampions, fetchAliasRows } from '../lib/gestal-context.js';
 import { mapRoster } from '../lib/match-engine.js';
 import { scoreTeam } from './bucket-score.mjs';
 import * as cb from '../lib/clan-boss.js';
@@ -32,6 +32,9 @@ const REPO = path.join(__dirname, '..');
 const BASE = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
 const H = { apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}` };
 const rest = async p => (await fetch(`${BASE}/rest/v1/${p}`, { headers: H })).json();
+// ALIASES ARE REQUIRED (2026-07-19) — omitting them silently drops champions whose Gestal
+// display name differs from champions.name (e.g. "Thor Faehammer" -> "Thor"). See gestal-context.js.
+const aliasRows = await fetchAliasRows(rest);
 
 const SEL = 'id,name,type_id,rarity,role,affinity,faction,base_hp,base_atk,base_def,base_spd,base_acc,base_res,base_crit_rate,base_crit_dmg,champion_tags(tag_id,status,tags(name,is_debuff,bypasses_accuracy_check))';
 let db = [];
@@ -48,7 +51,7 @@ const rosterByAccount = {};
 for (const f of fs.readdirSync(path.join(REPO, 'gestal-sync/output')).filter(x => x.endsWith('.json') && !/^gear-corpus/.test(x))) {
   const snap = JSON.parse(fs.readFileSync(path.join(REPO, 'gestal-sync/output', f), 'utf8'));
   if (!snap.accountId) continue;
-  const { userChampions } = buildUserChampions(snap.champions ?? [], db);
+  const { userChampions } = buildUserChampions(snap.champions ?? [], db, aliasRows);
   rosterByAccount[snap.accountId] = Object.fromEntries(mapRoster(userChampions, {}).mapped.map(c => [c.name, c]));
 }
 

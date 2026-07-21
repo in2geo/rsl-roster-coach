@@ -60,7 +60,10 @@ for (let from = 0; ; from += 1000) {
   if (!Array.isArray(d) || !d.length) break; dbChampions = dbChampions.concat(d); if (d.length < 1000) break;
 }
 // alias → canonical DB champion id (so capture short-names like "Deacon" resolve).
-const aliasRows = await rest('champion_aliases?select=alias,champion_id');
+// ALIASES ARE REQUIRED (2026-07-19) — omitting them silently drops champions whose Gestal display
+// name differs from champions.name (e.g. "Thor Faehammer" -> "Thor"). See gestal-context.js.
+// Paged via the shared helper: a plain select is capped at 1000 rows.
+const aliasRows = await gc.fetchAliasRows(rest);
 const aliasToId = new Map((Array.isArray(aliasRows) ? aliasRows : []).map(a => [norm(a.alias), a.champion_id]));
 // tag metadata (ACC-gating) for the phase-aware constructor's reliability weighting.
 const tagRows = await rest('tags?select=name,is_debuff,bypasses_accuracy_check');
@@ -119,7 +122,7 @@ const mappedCache = {};
 async function mappedRosterFor(accountId) {
   if (mappedCache[accountId]) return mappedCache[accountId];
   const j = rosters[accountId]; if (!j) return null;
-  const { userChampions } = gc.buildUserChampions(j.champions, dbChampions);
+  const { userChampions } = gc.buildUserChampions(j.champions, dbChampions, aliasRows);
   const mapped = me.mapRoster(userChampions, { accountDev: 'fair' }).mapped;
   try { await mr.attachDamageScores(mapped, supabase); } catch { /* damage proxy degrades gracefully */ }
   return (mappedCache[accountId] = { userChampions, mapped, snap: j });

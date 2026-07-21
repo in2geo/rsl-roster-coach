@@ -47,6 +47,9 @@ const CFGS = {
 const BASE = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
 const H = { apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}` };
 const rest = async p => (await fetch(`${BASE}/rest/v1/${p}`, { headers: H })).json();
+// ALIASES ARE REQUIRED (2026-07-19) — omitting them silently drops champions whose Gestal
+// display name differs from champions.name (e.g. "Thor Faehammer" -> "Thor"). See gestal-context.js.
+const aliasRows = await fetchAliasRows(rest);
 const SEL = 'id,name,type_id,rarity,role,affinity,faction,base_hp,base_atk,base_def,base_spd,base_acc,base_res,base_crit_rate,base_crit_dmg,champion_tags(tag_id,status,tags(name,is_debuff,bypasses_accuracy_check))';
 let db = [];
 for (let f = 0; ; f += 1000) { const d = await rest(`champions?select=${encodeURIComponent(SEL)}&game_id=eq.raid_shadow_legends&limit=1000&offset=${f}`); if (!Array.isArray(d) || !d.length) break; db = db.concat(d); if (d.length < 1000) break; }
@@ -61,7 +64,7 @@ const rosters = {};
 for (const f of fs.readdirSync(`${REPO}/gestal-sync/output`).filter(x => x.endsWith('.json') && !/^gear-corpus/.test(x))) {
   const s = JSON.parse(fs.readFileSync(`${REPO}/gestal-sync/output/${f}`, 'utf8'));
   if (!s.accountId) continue;
-  const { userChampions } = buildUserChampions(s.champions ?? [], db);
+  const { userChampions } = buildUserChampions(s.champions ?? [], db, aliasRows);
   rosters[s.accountId] = Object.fromEntries(mapRoster(userChampions, {}).mapped.map(c => [c.name, c]));
 }
 

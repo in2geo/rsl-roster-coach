@@ -31,7 +31,9 @@ const typeIds = [...new Set((roster?.champions ?? []).map(c => c.baseTypeId ?? c
 const { data: champs } = await s.from('champions')
   .select('id,name,type_id,rarity,role,affinity,base_atk,base_spd,base_crit_rate,base_crit_dmg,champion_tags(status,tags(name))')
   .eq('game_id', 'raid_shadow_legends').in('type_id', typeIds);
-const { userChampions } = buildUserChampions(roster?.champions ?? [], champs ?? []);
+// See check-stat-estimator: `champs` is type_id-filtered, so null-type_id champions are already out.
+const { data: aliasRows } = await s.from('champion_aliases').select('alias,champion_id').limit(5000);
+const { userChampions } = buildUserChampions(roster?.champions ?? [], champs ?? [], aliasRows ?? []);
 const ids = userChampions.map(u => u.champion?.id).filter(Boolean);
 const { data: skillRows } = await s.from('champion_skills').select('champion_id,damage_multiplier,multiplier_type').in('champion_id', ids).not('damage_multiplier', 'is', null);
 const skillsBy = {}; for (const r of skillRows ?? []) (skillsBy[r.champion_id] ??= []).push(r);

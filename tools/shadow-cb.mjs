@@ -10,7 +10,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
 import { deriveNeeds, constructTeam } from '../lib/team-constructor.js';
-import { buildUserChampions } from '../lib/gestal-context.js';
+import { buildUserChampions, fetchAliasRows } from '../lib/gestal-context.js';
 import { mapRoster, usabilityTier } from '../lib/match-engine.js';
 import { attachDamageScores } from '../lib/multiplier-rank.js';
 import { CB_NEEDS, CB_ACC_FLOOR } from '../lib/cb-shadow-goals.js';
@@ -23,6 +23,9 @@ const ACC_FLOOR = CB_ACC_FLOOR[DIFFICULTY] ?? 170;
 const BASE = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
 const H = { apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}` };
 const rest = async (p) => (await fetch(`${BASE}/rest/v1/${p}`, { headers: H })).json();
+// ALIASES ARE REQUIRED (2026-07-19) — omitting them silently drops champions whose Gestal
+// display name differs from champions.name (e.g. "Thor Faehammer" -> "Thor"). See gestal-context.js.
+const aliasRows = await fetchAliasRows(rest);
 const supabase = createClient(BASE, process.env.SUPABASE_SERVICE_KEY);
 
 // catalog: tags + auras + meta
@@ -63,7 +66,7 @@ console.log(`needs: ${CB_NEEDS.map(n => n.role).join(', ')}\n`);
 for (const file of files) {
   const snap = JSON.parse(fs.readFileSync(path.join(outDir, file), 'utf8'));
   const acct = snap.displayName || file.replace(/_.*/, '');
-  const { userChampions } = buildUserChampions(snap.champions ?? [], db);
+  const { userChampions } = buildUserChampions(snap.champions ?? [], db, aliasRows);
   const mapped = mapRoster(userChampions, {}).mapped;
   try { await attachDamageScores(mapped, supabase); } catch {}
   for (const c of mapped) c.auras = auraByName.get(c.name) || [];
