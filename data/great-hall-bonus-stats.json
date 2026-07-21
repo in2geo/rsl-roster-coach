@@ -15,20 +15,101 @@
       "Whether the Great Hall has non-affinity tabs beyond Affinity Bonuses."
     ],
     "why_it_matters": "⚠ OUR CODE HAS THIS BACKWARDS. `estimate-stats.js: applyAccountBonus()` adds FLAT ACC +40 / RES +30 and DELIBERATELY OMITS HP/ATK/DEF, on the stated belief that 'HP/ATK/DEF Great-Hall bonuses are flat in-game (not % of base)'. The game says the opposite: everything is a % of BASE. Measured against our own champion table (944 rows): 604 champions have base_acc = 0 and the non-zero average is 14, so a +20% ACC bonus is worth ~0-3 ACC, NOT 40. Meanwhile base HP averages 17,439, so the +20% HP bonus we discard is worth ~3,488. We invent ~37 ACC that does not exist (~3.7 Spider stages of the stage x 10 ACC floor) and throw away the part that matters.",
-    "modelling_note": "Needs the player's per-affinity Great Hall LEVELS, which Gestal does NOT export. Until captured, any substitute should at least have the right SHAPE: percentage-of-base on HP/ATK/DEF/C.DMG, and near-zero on ACC/RES."
+    "modelling_note": "Needs the player's per-affinity Great Hall LEVELS, which Gestal does NOT export. Until captured, any substitute should at least have the right SHAPE: percentage-of-base on HP/ATK/DEF/C.DMG, and near-zero on ACC/RES.",
+    "CORRECTION_2026_07_21": "⚠ THE EARLIER READING WAS WRONG. The Help text 'All Bonuses apply to the Champions' Base Stats' was taken to mean EVERY stat is a percentage. A live Great Hall screenshot shows otherwise: the ATK cells read '2 %' while the ACC cells read a bare '5'. So HP/ATK/DEF/C.DMG are PERCENTAGES OF BASE, and ACC/RES are FLAT ADDS. The level->percent curve recorded below (+2/3/4/6/8/10/12/14/17/20%) belongs to the PERCENTAGE stats only; the ACC/RES flat curve is NOT yet known beyond level 1 = +5.",
+    "stat_kinds": {
+      "hp": "percent_of_base",
+      "atk": "percent_of_base",
+      "def": "percent_of_base",
+      "crit_dmg": "percent_of_base",
+      "res": "FLAT (curve unknown)",
+      "acc": "FLAT (level 1 = +5, rest of curve unknown)"
+    },
+    "second_tab": "The Great Hall has a SECOND tab, 'Area Bonuses', alongside 'Affinity Bonuses'. Entirely uncaptured and unmodelled - contents unknown.",
+    "development_level": "The Affinity Bonuses screen is headed 'DEVELOPMENT LEVEL 5' - an additional concept we do not model or capture.",
+    "observed_account": {
+      "note": "Live values from Mike's account 2026-07-21 - shows how SMALL real Great Hall investment is on this corpus, vs the +20/+40 ACC we inject.",
+      "development_level": 5,
+      "Magic": {
+        "atk_pct": 2,
+        "acc_flat": 5
+      },
+      "Force": {
+        "atk_pct": 2,
+        "acc_flat": 5
+      },
+      "Spirit": {
+        "atk_pct": 2
+      },
+      "Void": {},
+      "everything_else": "0/10"
+    }
   },
   "level_to_percent": [
-    { "level": 1,  "percent": 2,  "cost": 50 },
-    { "level": 2,  "percent": 3,  "cost": 150 },
-    { "level": 3,  "percent": 4,  "cost": 300 },
-    { "level": 4,  "percent": 6,  "cost": 400 },
-    { "level": 5,  "percent": 8,  "cost": 500 },
-    { "level": 6,  "percent": 10, "cost": 600 },
-    { "level": 7,  "percent": 12, "cost": 700 },
-    { "level": 8,  "percent": 14, "cost": 800 },
-    { "level": 9,  "percent": 17, "cost": 900 },
-    { "level": 10, "percent": 20, "cost": 1000 }
+    {
+      "level": 1,
+      "percent": 2,
+      "cost": 50
+    },
+    {
+      "level": 2,
+      "percent": 3,
+      "cost": 150
+    },
+    {
+      "level": 3,
+      "percent": 4,
+      "cost": 300
+    },
+    {
+      "level": 4,
+      "percent": 6,
+      "cost": 400
+    },
+    {
+      "level": 5,
+      "percent": 8,
+      "cost": 500
+    },
+    {
+      "level": 6,
+      "percent": 10,
+      "cost": 600
+    },
+    {
+      "level": 7,
+      "percent": 12,
+      "cost": 700
+    },
+    {
+      "level": 8,
+      "percent": 14,
+      "cost": 800
+    },
+    {
+      "level": 9,
+      "percent": 17,
+      "cost": 900
+    },
+    {
+      "level": 10,
+      "percent": 20,
+      "cost": 1000
+    }
   ],
-  "stats": ["hp", "atk", "def", "crit_dmg", "res", "acc"],
-  "affinities": ["Magic", "Force", "Spirit", "Void"]
+  "stats": [
+    "hp",
+    "atk",
+    "def",
+    "crit_dmg",
+    "res",
+    "acc"
+  ],
+  "affinities": [
+    "Magic",
+    "Force",
+    "Spirit",
+    "Void"
+  ],
+  "level_to_percent_note": "PERCENTAGE stats only (HP/ATK/DEF/C.DMG). ACC/RES are flat and follow a different, unknown curve."
 }

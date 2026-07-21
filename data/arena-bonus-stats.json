@@ -6,23 +6,108 @@
     "percent_of_base": true,
     "CRITICAL": "ARENA GRANTS ONLY HP / ATK / DEF. It grants NO ACC, NO RES, NO SPD and NO C.DMG. This is the single most important fact in this file — see below.",
     "why_it_matters": "⚠ It closes the account-level ACC question. `estimate-stats.js: applyAccountBonus()` adds FLAT ACC +40 / RES +30 (good) or +20/+15 (fair) to every champion, described as the 'Great Hall + Arena bundle'. Adding up what those two systems ACTUALLY grant: Arena = 0 ACC, 0 RES. Great Hall = a PERCENTAGE of base, and 604 of our 944 champions have base_acc = 0 (non-zero avg 14), so +20% is worth ~0-3 ACC and ~+7 RES. The third account-level system, Faction Guardians, DOES grant flat ACC (+7/+15/+30 by rarity) but is unassigned on all 7 synced accounts. So the real account-level ACC on this corpus is ~0-3, and we inject 20-40. That is PHANTOM ACC on every champion, on the stat CLAUDE.md says gates content (Spider floor = stage x 10, so +40 ACC is ~4 stages of phantom headroom).",
-    "modelling_note": "Needs the player's Arena TIER, which Gestal does not export. Shape matters more than the number: percentage-of-base on HP/ATK/DEF ONLY."
+    "modelling_note": "Needs the player's Arena TIER, which Gestal does not export. Shape matters more than the number: percentage-of-base on HP/ATK/DEF ONLY.",
+    "CONFIRMED_LIVE_2026_07_21": "Arena panel on Mike's account: 981 Arena Points, Bronze I, CHAMPION BONUSES HP +1% / ATK +1% / DEF +1%. Confirms both the tier table and that Arena grants NO ACC/RES/SPD/C.DMG."
   },
   "tiers": [
-    { "tier": "Bronze I",    "medals": 900,  "hp_pct": 1,  "atk_pct": 1,  "def_pct": 1 },
-    { "tier": "Bronze II",   "medals": 1000, "hp_pct": 2,  "atk_pct": 2,  "def_pct": 2 },
-    { "tier": "Bronze III",  "medals": 1100, "hp_pct": 3,  "atk_pct": 3,  "def_pct": 3 },
-    { "tier": "Bronze IV",   "medals": 1200, "hp_pct": 4,  "atk_pct": 4,  "def_pct": 4 },
-    { "tier": "Silver I",    "medals": 1300, "hp_pct": 6,  "atk_pct": 6,  "def_pct": 6 },
-    { "tier": "Silver II",   "medals": 1400, "hp_pct": 8,  "atk_pct": 8,  "def_pct": 8 },
-    { "tier": "Silver III",  "medals": 1600, "hp_pct": 10, "atk_pct": 10, "def_pct": 10 },
-    { "tier": "Silver IV",   "medals": 1800, "hp_pct": 12, "atk_pct": 12, "def_pct": 12 },
-    { "tier": "Gold I",      "medals": 2000, "hp_pct": 14, "atk_pct": 14, "def_pct": 14 },
-    { "tier": "Gold II",     "medals": 2300, "hp_pct": 16, "atk_pct": 16, "def_pct": 16 },
-    { "tier": "Gold III",    "medals": 2600, "hp_pct": 18, "atk_pct": 18, "def_pct": 18 },
-    { "tier": "Gold IV",     "medals": 2900, "hp_pct": 20, "atk_pct": 20, "def_pct": 20 },
-    { "tier": "Gold V",      "medals": 3200, "hp_pct": 22, "atk_pct": 22, "def_pct": 22 },
-    { "tier": "Platinum",    "medals": 3617, "hp_pct": 25, "atk_pct": 25, "def_pct": 25 }
+    {
+      "tier": "Bronze I",
+      "medals": 900,
+      "hp_pct": 1,
+      "atk_pct": 1,
+      "def_pct": 1
+    },
+    {
+      "tier": "Bronze II",
+      "medals": 1000,
+      "hp_pct": 2,
+      "atk_pct": 2,
+      "def_pct": 2
+    },
+    {
+      "tier": "Bronze III",
+      "medals": 1100,
+      "hp_pct": 3,
+      "atk_pct": 3,
+      "def_pct": 3
+    },
+    {
+      "tier": "Bronze IV",
+      "medals": 1200,
+      "hp_pct": 4,
+      "atk_pct": 4,
+      "def_pct": 4
+    },
+    {
+      "tier": "Silver I",
+      "medals": 1300,
+      "hp_pct": 6,
+      "atk_pct": 6,
+      "def_pct": 6
+    },
+    {
+      "tier": "Silver II",
+      "medals": 1400,
+      "hp_pct": 8,
+      "atk_pct": 8,
+      "def_pct": 8
+    },
+    {
+      "tier": "Silver III",
+      "medals": 1600,
+      "hp_pct": 10,
+      "atk_pct": 10,
+      "def_pct": 10
+    },
+    {
+      "tier": "Silver IV",
+      "medals": 1800,
+      "hp_pct": 12,
+      "atk_pct": 12,
+      "def_pct": 12
+    },
+    {
+      "tier": "Gold I",
+      "medals": 2000,
+      "hp_pct": 14,
+      "atk_pct": 14,
+      "def_pct": 14
+    },
+    {
+      "tier": "Gold II",
+      "medals": 2300,
+      "hp_pct": 16,
+      "atk_pct": 16,
+      "def_pct": 16
+    },
+    {
+      "tier": "Gold III",
+      "medals": 2600,
+      "hp_pct": 18,
+      "atk_pct": 18,
+      "def_pct": 18
+    },
+    {
+      "tier": "Gold IV",
+      "medals": 2900,
+      "hp_pct": 20,
+      "atk_pct": 20,
+      "def_pct": 20
+    },
+    {
+      "tier": "Gold V",
+      "medals": 3200,
+      "hp_pct": 22,
+      "atk_pct": 22,
+      "def_pct": 22
+    },
+    {
+      "tier": "Platinum",
+      "medals": 3617,
+      "hp_pct": 25,
+      "atk_pct": 25,
+      "def_pct": 25
+    }
   ],
   "observed": {
     "note": "The 'You' marker in the supplied screenshot sat at 981 medals — i.e. Bronze I, granting +1% HP/ATK/DEF. Which account this was is unrecorded; do not assume it applies to all 7.",
