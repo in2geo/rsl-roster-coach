@@ -108,7 +108,10 @@ for (const c of cases) {
   const content = makeDragonContent({ stageNumber: c.stage, purpleBarHp: null, waves: null, boss: c.boss });
   const state = makeState({ allies, enemies: [] });
   state.purpleBarLeft = 0;
-  const res = simulate(state, content, { turnCap: 400 });
+  const TRACE = process.argv.includes('--trace') && rows.length === 0;
+  if (TRACE) console.log(`\n── TRACE: ${c.acct} Dragon ${c.stage} [${c.aff}] — actual ${c.actualWon ? 'WIN' : 'LOSS'} in ${c.actualTurns}t/${c.actualSec}s ──`);
+  const res = simulate(state, content, { turnCap: 400, trace: TRACE });
+  if (TRACE) console.log(`── sim says: ${res.won ? 'WIN' : 'LOSS'} in ${res.turns}t (${res.reason}) ──\n`);
   rows.push({ ...c, pred: res });
   if (VERBOSE) {
     console.log(`  ${c.acct} st${c.stage} [${c.aff}] actual ${c.actualWon ? 'WIN ' : 'LOSS'} ${c.actualTurns}t`);
