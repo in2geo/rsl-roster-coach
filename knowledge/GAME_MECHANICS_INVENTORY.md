@@ -94,7 +94,7 @@ Known gaps live in the tag-policy work, not here.
 | Mitigation stacking (multiplicative) | — | ✅ | `combinedDamageTaken()` |
 | Protection mechanics (Shield/Ally Protection/Block Dmg/Unkillable) | ✅ tags | ⚠️ | `PROTECTION_MECHANICS` has damageType/stacks; not in a survival calc |
 | Revive / Self-Revive / ally-gated revive | ✅ | ❌ | tags split 2026-07-21 (seeds 201/203); no sustain math consumes them |
-| Auto-battle AI skill order | ❌ **unreadable from memory** | ⚠️ `auto_reliable` attribute | must be entered by hand (see ai-settings memory) |
+| **Auto-battle AI skill order + triggers** | ⚠️ **RULES KNOWN (Mike 2026-07-22), NOT IN THE DB** | ❌ | **`knowledge/AUTO_BATTLE_AI.md`.** A3→A2→A1 furthest-right-first; **revives LOCKED until an ally dies** (so a reviver cannot PREVENT a death, only recover — Tagoar's ride-along Shield never lands proactively); healers HOARD until ~50-75% HP; executes wait for the range; our champs target LOWEST CURRENT HP%. ⚠ This invalidates `estimateUptimeTurns` (assumes a skill fires every cooldown) for every reviver/healer. ⚠ `skill_ai_configs` + `champion_skills.auto_reliable` migrations WRITTEN AND NEVER APPLIED — verified live 2026-07-22 (404 / column absent); that absence is the **1,092× top gap-backlog item**. |
 | Time budget (~5 min, wall-clock) | ✅ duration | ⚠️ nominal | `DEFAULT_BUDGET_TURNS = 50` proxy |
 | Battle speed multiplier | ❌ reads null | ❌ | unguarded assumption; constant across corpus today |
 | ❓ *others?* | | | **Mike: stat panel + hit-type feedback; add any row not listed** |
