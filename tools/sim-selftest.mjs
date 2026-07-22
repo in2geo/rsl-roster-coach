@@ -203,6 +203,27 @@ const passiveContent = (enemies) => ({ phases: [{ name: 'boss', enemies, actEnem
   near('zero DEF takes full damage', defMitigation(0), 1);
 }
 
+// ── 13. PURPLE-BAR DRAIN — the engine must feed team damage to content.onDamageToBoss ────────
+// QA protocol Layer 3/5 (toy encounter + behavioural invariant). The purple bar is 20% of
+// Hellrazor's Max HP (Mike 2026-07-22) and is depleted by damage the team deals to the boss. The
+// hook (dragon.js onDamageToBoss) existed but the ENGINE never called it — "represented but not
+// consumed", the 5th of that species. This test exists so it can never silently regress: it FAILS
+// on the engine that ignores the hook.
+{
+  let drained = 0;
+  const boss = dummyEnemy({ name: 'Boss', maxHp: 1e6, def: 0, spd: 1 });
+  const hitter = champ({ name: 'H', spd: 100, atk: 1000, affinity: 'Void',
+    skills: [{ slot: 'A1', cooldown: 0, cdLeft: 0, hitsEnemies: true, coeff: 2 }] });
+  const content = { phases: [{ name: 'boss', enemies: [boss], actEnemy() {} }],
+    onDamageToBoss(_state, amount) { drained += amount; } };
+  const st = makeState({ allies: [hitter], enemies: [] });
+  const origLog = console.log; console.log = () => {};
+  simulate(st, content, { turnCap: 1 });                       // exactly one ally turn
+  console.log = origLog;
+  // 1000 ATK x coeff 2 x mitig(def 0)=1 x affinity(Void)=1 x no-crit = 2000 into the boss
+  near('engine feeds team damage to onDamageToBoss (purple-bar drain is wired)', drained, 2000, 1);
+}
+
 // ── report ───────────────────────────────────────────────────────────────────
 console.log(`\n══ SIM SELF-TEST ══  ${pass} passed, ${fail} failed\n`);
 for (const f of failures) console.log(`  ✗ ${f}`);

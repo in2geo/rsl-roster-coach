@@ -9,7 +9,7 @@ Two things here: **(1)** the new Stages 1-9 & 21-25 (proposed, extending the liv
 ## 1. Source mechanics (Hellrazor, Normal)
 
 - **Swipe:** AoE + 50% Decrease ATK (2t). **Wall of Fire (CD3):** AoE + two 5% Poison (3t) + 25% Weaken (2t).
-- **Inhale (CD3):** depletes Hellrazor's Turn Meter and unlocks the secret skill **Scorch**, turning part of his HP purple. **Clear the purple bar with damage** or Scorch fires next turn (**AoE + 1-turn Stun**); enough damage re-locks Scorch. **Scorch is active from stage 7** — so Stages 1-6 are a simpler fight with no purple-bar race.
+- **Inhale (CD3):** depletes Hellrazor's Turn Meter and unlocks the secret skill **Scorch**, turning part of his HP purple. The purple bar is **exactly 20% of Hellrazor's MAX HP, flat across ALL Normal and Hard stages** (Mike + Fandom wiki, verified 2026-07-22). **Clear the purple bar with damage** or Scorch fires next turn (**AoE + 1-turn Stun**); enough damage re-locks Scorch. **Scorch is active from stage 7** — so Stages 1-6 are a simpler fight with no purple-bar race. ⚠ Because Stages 21-25 Normal + **all Hard** cap %MaxHP-damage skills at 10% of boss HP per hit (Almighty Strength), a single %MaxHP nuke can no longer break the 20% bar there — it takes **≥2 hits** (or raw burst / Poison / HP Burn).
 - **Immune** to Stun/Freeze/Sleep/Provoke/Fear + **Decrease Turn Meter AND Decrease SPD** — you can't slow him; speed up your own team instead.
 - **Stages 21-25 only:** Almighty Strength (%MaxHP damage capped at 10%) + Almighty Persistence (Turn Meter −50%).
 - **Affinity rotation:** Magic 1/5/9/13/17/20/22 · Force 2/6/10/14/18/21/25 · Spirit 3/7/11/15/19/24 · Void 4/8/12/16/23.

@@ -97,7 +97,10 @@ for (const r of runs) {
 
 console.log(`\n══ DRAGON TURN-LOOP SIM ══  ${cases.length} captured battles rebuilt\n`);
 if (!hasWaveRows) console.log('  ⚠ UNMODELLED: Dragon has NO wave enemies in dungeon_stage_enemies (25 rows, all boss).');
-console.log('  ⚠ UNMODELLED: purple-bar HP unknown -> Scorch damage check skipped.');
+console.log('  ✅ MODELLED: purple bar = 20% of Hellrazor MAX HP (Mike/Fandom 2026-07-22), drained by team damage.');
+console.log('  ⚠ UNDER-MODELLED: bar-CLEARING damage — %maxHP nukes + damage_multiplier missing on many champs');
+console.log('                  (Ezio/Pelops/Tagoar/Xenomorph deal 0 direct), so Scorch still fires ~always.');
+console.log('  ⚠ TODO stage 21+/Hard: %maxHP damage skills capped at 10% of boss HP per hit (2 hits to break bar).');
 console.log('  ⚠ UNCALIBRATED: DEF_K=1500 is a NOMINAL mitigation curve (real DEF diminishing returns');
 console.log('                  are an unimplemented formulas.js TODO) — the one unvalidated number');
 console.log('                  in the damage path. Enemy stats themselves are transcribed, not synthetic.\n');
@@ -105,7 +108,10 @@ console.log('                  in the damage path. Enemy stats themselves are tr
 const rows = [];
 for (const c of cases) {
   const allies = c.team.map(buildAlly);
-  const content = makeDragonContent({ stageNumber: c.stage, purpleBarHp: null, waves: null, boss: c.boss });
+  // Purple bar = 20% of Hellrazor's Max HP (Mike, verified 2026-07-22) — a REAL threshold, no longer
+  // the null-driven never/always bracket. Interrupting it is a team-DAMAGE check, so this number now
+  // inherits the placeholder-damage error (DEF_K nominal, damage_multiplier 38% populated).
+  const content = makeDragonContent({ stageNumber: c.stage, purpleBarHp: 0.20 * c.boss.maxHp, waves: null, boss: c.boss });
   const state = makeState({ allies, enemies: [] });
   state.purpleBarLeft = 0;
   const TRACE = process.argv.includes('--trace') && rows.length === 0;
