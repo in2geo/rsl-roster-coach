@@ -13,7 +13,7 @@
 // Deterministic, instant, no I/O. Run: node tools/sim-selftest.mjs
 
 import { makeCombatant, makeState, simulate, dealDamage, chooseEnemyTarget,
-         affinityFactor, landChance, defMitigation, CC_SKIPS_TURN } from '../lib/sim/engine.js';
+         affinityFactor, landChance, defMitigation, actEnemyMob, CC_SKIPS_TURN } from '../lib/sim/engine.js';
 import { readSkillKit, classifySkill, canUseSkill, parseCoeff } from '../lib/sim/ai.js';
 
 let pass = 0, fail = 0; const failures = [];
@@ -222,6 +222,27 @@ const passiveContent = (enemies) => ({ phases: [{ name: 'boss', enemies, actEnem
   console.log = origLog;
   // 1000 ATK x coeff 2 x mitig(def 0)=1 x affinity(Void)=1 x no-crit = 2000 into the boss
   near('engine feeds team damage to onDamageToBoss (purple-bar drain is wired)', drained, 2000, 1);
+}
+
+// ── 14. WAVE MOB ACTS — generic enemy attacks an ally, lands its debuff on ACC vs RES ────────
+// The boss has a scripted kit; wave mobs must act from their EXTRACTED kit. This test pins the
+// generic enemy action so the wave phase (the Dragon wall, per Mike) can be modelled at all.
+{
+  const ally = champ({ name: 'Ally', maxHp: 10000, def: 0, res: 50, affinity: 'Void' });
+  const mob = makeCombatant({ name: 'Mob', side: 'enemy', role: 'wave', maxHp: 5000, atk: 1000,
+    acc: 100, affinity: 'Void', critRate: 0, critDmg: 0,
+    skills: [{ slot: 'A1', cooldown: 0, cdLeft: 0, hitsEnemies: true, coeff: 2,
+               debuffs: [{ type: 'Decrease Attack', value: 50, turns: 2 }] }] });
+  const st = makeState({ allies: [ally], enemies: [mob] });
+  actEnemyMob(st, mob);
+  eq('wave mob deals atk x coeff x mitig(def 0) to the ally', ally.hp, 10000 - 2000);
+  eq('wave mob lands its debuff when ACC 100 clears RES 50', ally.debuffs.some(d => d.type === 'Decrease Attack'), true);
+
+  const tanky = champ({ name: 'Tanky', maxHp: 10000, def: 0, res: 300, affinity: 'Void' });
+  const st2 = makeState({ allies: [tanky], enemies: [mob] });
+  mob.skills[0].cdLeft = 0;
+  actEnemyMob(st2, mob);
+  eq('a high-RES ally resists the mob debuff (RES 300 vs ACC 100)', tanky.debuffs.some(d => d.type === 'Decrease Attack'), false);
 }
 
 // ── report ───────────────────────────────────────────────────────────────────

@@ -16,7 +16,7 @@ import { fileURLToPath } from 'url';
 import { buildUserChampions, fetchAliasRows } from '../lib/gestal-context.js';
 import { mapRoster } from '../lib/match-engine.js';
 import { buildRosterIndex, loadNameResolverRest } from '../lib/champion-names.js';
-import { makeCombatant, makeState, simulate } from '../lib/sim/engine.js';
+import { makeCombatant, makeState, simulate, actEnemyMob } from '../lib/sim/engine.js';
 import { readSkillKit } from '../lib/sim/ai.js';
 import { makeDragonContent, HELLRAZOR_IMMUNE } from '../lib/sim/dragon.js';
 
@@ -83,6 +83,41 @@ function buildBoss(stage) {
   return b;
 }
 
+// ── STAGE-16 WAVE PILOT ──────────────────────────────────────────────────────
+// GROUND TRUTH: Mike's HellHades screenshots, 2026-07-22. Void affinity, Level 200, 6★. Stats are
+// the WHITE numbers (orange = HellHades' SUGGESTED PLAYER stats, discarded per data-sourcing rules).
+// Composition CONFIRMED Void by Mike (seeds/205 had it wrong as Spirit). RES/ACC = 100/100 (mobs are
+// NOT == boss's 150/150 on Dragon). Kits come free via champion_id → readSkillKit.
+// PILOT SCOPE: only stage 16 has real waves; every other stage stays unmodelled (waves=null).
+const ST16_MOB_STATS = {
+  Lua:        { hp: 48285, atk: 4848, def: 2599, spd: 97 },
+  Faceless:   { hp: 58185, atk: 4305, def: 2482, spd: 101 },
+  Arbalester: { hp: 45960, atk: 4422, def: 2211, spd: 96 },
+  Renegade:   { hp: 58755, atk: 3336, def: 2444, spd: 95 },
+};
+const ST16_WAVES = [
+  ['Lua', 'Faceless', 'Arbalester', 'Arbalester', 'Renegade'],   // wave 1
+  ['Arbalester', 'Faceless', 'Lua', 'Lua', 'Renegade'],           // wave 2
+];
+function buildWaveMob(name, pos) {
+  const { id } = nameResolver.resolveOrThrow(name, 'Dragon st16 wave mob');
+  const s = ST16_MOB_STATS[name];
+  return makeCombatant({
+    name: `${name}#${pos}`, side: 'enemy', role: 'wave',
+    maxHp: s.hp, atk: s.atk, def: s.def, spd: s.spd, acc: 100, res: 100,
+    critRate: 15, critDmg: 50, affinity: 'Void',
+    skills: readSkillKit(byId[id]?.champion_skills ?? []),
+  });
+}
+function dragonWavesFor(stage) {
+  // OPT-IN pilot (SIM_WAVES=1): the wave model is faithful but the team's OFFENSE is incomplete
+  // (4/5 champs have no coeff, so they can't clear the mobs and the sim wipes on wave 1). Keeping it
+  // off by default avoids silently degrading the headline number on an admittedly-incomplete phase —
+  // it flips back on the moment damage_multiplier extraction lands. Only st16 has real wave data.
+  if (!process.env.SIM_WAVES || stage !== 16) return null;
+  return ST16_WAVES.map(names => ({ enemies: names.map((n, i) => buildWaveMob(n, i + 1)), actEnemy: actEnemyMob }));
+}
+
 const runs = await rest('run_reconciliations?select=account_id,display_name,content,successful,turns,duration_seconds,team_fielded&order=battle_captured_at.desc&limit=2000');
 const cases = [];
 for (const r of runs) {
@@ -114,7 +149,7 @@ for (const c of cases) {
   // Purple bar = 20% of Hellrazor's Max HP (Mike, verified 2026-07-22) — a REAL threshold, no longer
   // the null-driven never/always bracket. Interrupting it is a team-DAMAGE check, so this number now
   // inherits the placeholder-damage error (DEF_K nominal, damage_multiplier 38% populated).
-  const content = makeDragonContent({ stageNumber: c.stage, purpleBarHp: 0.20 * c.boss.maxHp, waves: null, boss: c.boss });
+  const content = makeDragonContent({ stageNumber: c.stage, purpleBarHp: 0.20 * c.boss.maxHp, waves: dragonWavesFor(c.stage), boss: c.boss });
   const state = makeState({ allies, enemies: [] });
   state.purpleBarLeft = 0;
   const TRACE = process.argv.includes('--trace') && rows.length === 0;
