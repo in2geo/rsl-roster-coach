@@ -23,6 +23,13 @@
 // reported separately; they are not equally bad.
 //
 // Run:  node --env-file=.env.local tools/battle-suite.mjs [--by-dungeon] [--failures]
+//                                                        [--brief] [--note "what changed"] [--no-history]
+//
+// HISTORY. Every run compares against the last recorded headline and prints the DELTA, because
+// "a change reports the new number or it isn't evidence" only bites if the number is standing next
+// to the previous one. `knowledge/battle-suite-history.jsonl` is appended ONLY when the headline
+// actually moves — so it is a changelog of the metric (committable, readable), not a log of every
+// reconcile. `--note` labels what caused the move; `--no-history` makes a run read-only.
 
 import fs from 'fs';
 import path from 'path';
@@ -37,6 +44,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, '..');
 const BY_DUNGEON = process.argv.includes('--by-dungeon');
 const SHOW_FAILS = process.argv.includes('--failures');
+const BRIEF      = process.argv.includes('--brief');
+const NO_HISTORY = process.argv.includes('--no-history');
+const NOTE       = (i => i > -1 ? process.argv[i + 1] ?? null : null)(process.argv.indexOf('--note'));
 
 const BASE = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
 const H = { apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}` };
@@ -131,11 +141,35 @@ const score = (rows) => {
 const pct = v => v == null ? '  n/a' : (100 * v).toFixed(1).padStart(5) + '%';
 const s = score(cases);
 
+// ── history + delta ──────────────────────────────────────────────────────────
+const HIST = path.join(REPO, 'knowledge', 'battle-suite-history.jsonl');
+const r3 = v => v == null ? null : Math.round(v * 1000) / 1000;
+let hist = [];
+try { hist = fs.readFileSync(HIST, 'utf8').split(/\r?\n/).filter(Boolean).map(l => JSON.parse(l)); } catch { /* first run */ }
+const prev  = hist.length ? hist[hist.length - 1] : null;
+const entry = { at: new Date().toISOString(), n: s.n, pass: s.pass, balanced: r3(s.balanced),
+                acc: r3(s.acc), majority: r3(s.majority), false_clears: s.fp, false_walls: s.fn, note: NOTE };
+// Append only on an actual move, so the file stays a changelog of the metric rather than a log of
+// every reconcile — otherwise a play session would bury the two entries that mean something.
+const moved = !prev || prev.pass !== entry.pass || prev.n !== entry.n || prev.balanced !== entry.balanced;
+if (moved && !NO_HISTORY) { fs.mkdirSync(path.dirname(HIST), { recursive: true }); fs.appendFileSync(HIST, JSON.stringify(entry) + '\n'); }
+const dBal = (prev && prev.balanced != null && s.balanced != null) ? 100 * (s.balanced - prev.balanced) : null;
+const signed = (v, d = 1) => Math.abs(v) < 0.5 / 10 ** d ? `±${(0).toFixed(d)}` : `${v > 0 ? '+' : '−'}${Math.abs(v).toFixed(d)}`;
+const deltaStr = prev == null ? 'no prior run recorded'
+  : `${signed(dBal ?? 0)}pp · ${signed(s.pass - prev.pass, 0)} battles vs ${prev.at.slice(0, 16).replace('T', ' ')}`;
+
+if (BRIEF) {
+  console.log(`══ BATTLE SUITE  ${s.pass}/${s.n}  balanced ${pct(s.balanced).trim()}  (${deltaStr})`
+    + `  false-clears ${s.fp}  false-walls ${s.fn}`);
+  process.exit(0);
+}
+
 console.log(`\n══ BATTLE SUITE ══  ${s.pass}/${s.n} battles reproduced`);
 console.log(`   skipped: ${Object.entries(skipped).map(([k, v]) => `${k} ${v}`).join(', ')}`);
 console.log(`\n   accuracy            ${pct(s.acc)}   <- flattered by class imbalance, do not track this`);
 console.log(`   majority baseline   ${pct(s.majority)}   <- "always predict the common class", knows nothing`);
 console.log(`   BALANCED ACCURACY   ${pct(s.balanced)}   <- THE NUMBER. a constant predictor scores 50.0%`);
+console.log(`   change              ${deltaStr}`);
 console.log(`\n   won,  predicted win   ${String(s.tp).padStart(4)}   (win recall  ${pct(s.wins ? s.tp / s.wins : null)})`);
 console.log(`   won,  predicted LOSS  ${String(s.fn).padStart(4)}   false wall  — under-sells the player`);
 console.log(`   lost, predicted loss  ${String(s.tn).padStart(4)}   (loss recall ${pct(s.losses ? s.tn / s.losses : null)})`);

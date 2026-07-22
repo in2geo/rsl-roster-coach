@@ -6,7 +6,16 @@
  *
  * Read-only. Usage:
  *   node --env-file=.env.local tools/whats-missing.mjs [--account <id>] [--verbose] [--latest]
+ *                                                     [--all] [--out <file.md>] [--quiet]
+ *
+ * `--all` rolls up EVERY account with a roster snapshot (one account's backlog is one account's
+ * blind spots); `--out` writes the ranked backlog to a markdown file so it is standing rather than
+ * scrollback; `--quiet` prints only the header and the top items. watch-reconcile runs
+ * `--all --out knowledge/gap-backlog.md` on a throttle — this classifier had already found the
+ * team-min HP defect 10× while it was being rediscovered by hand, which is what "built but never
+ * called" costs.
  */
+import fs from 'fs';
 import { readBattleHistory, readGestalRoster } from '../lib/gestal-context.js';
 import { groupAndEvaluateBattles } from '../lib/battle-pipeline.js';
 import { normalizeBattle } from '../lib/clan-boss.js';
@@ -26,14 +35,17 @@ const supabase = createClient(
 const args = process.argv.slice(2);
 const verbose = args.includes('--verbose');
 const latest = args.includes('--latest');
+const ALL_ACCOUNTS = args.includes('--all');
+const QUIET = args.includes('--quiet');
 const accountArg = (() => { const i = args.indexOf('--account'); return i >= 0 ? args[i + 1] : null; })();
+const OUT = (() => { const i = args.indexOf('--out'); return i >= 0 ? args[i + 1] : null; })();
 
 const all = readBattleHistory().map(normalizeBattle);
 if (!all.length) { console.log('No battles logged yet.'); process.exit(0); }
-const accountId = accountArg ?? [...all].sort((a, b) => (b.capturedAt ?? '').localeCompare(a.capturedAt ?? ''))[0].accountId ?? null;
-let battles = all.filter(b => !accountId || b.accountId === accountId);
-if (latest) battles = [[...battles].sort((a, b) => (b.capturedAt ?? '').localeCompare(a.capturedAt ?? ''))[0]];
-const roster = readGestalRoster(accountId);
+const newest = [...all].sort((a, b) => (b.capturedAt ?? '').localeCompare(a.capturedAt ?? ''))[0];
+const accountIds = ALL_ACCOUNTS
+  ? [...new Set(all.map(b => b.accountId).filter(Boolean))]
+  : [accountArg ?? newest.accountId ?? null];
 
 // Clan Boss chest-tier bands per difficulty (for the predicted-vs-actual chest gap).
 const { data: tierRows } = await supabase.from('clan_boss_chest_tiers')
@@ -45,12 +57,23 @@ for (const r of tierRows ?? []) {
 }
 for (const d in tiersByDiff) tiersByDiff[d].sort((a, b) => a.sort_order - b.sort_order);
 
-const { groups, evaluableCount } = await groupAndEvaluateBattles(battles, roster, supabase);
-console.log(`\nWhat are we missing? — ${roster?.displayName ?? accountId ?? 'unknown'} — ${evaluableCount} evaluable battle(s)\n`);
-
 const ICON = { data_missing: '📭', contradiction: '❗', unused_signal: '🧩', no_check: '🕳️' };
 const backlog = new Map(); // "category:id" → { category, id, title, suggestion, count, samples[] }
 const contradictions = []; // rich context for the LLM ask (won-despite-gap → candidate missing tags)
+const covered = [];        // per-account "<name> (N)" for the header
+const rosters = [];        // roster snapshots actually used (the --ask context)
+let totalEvaluable = 0;
+
+for (const accountId of accountIds) {
+let battles = all.filter(b => !accountId || b.accountId === accountId);
+if (latest && !ALL_ACCOUNTS) battles = [[...battles].sort((a, b) => (b.capturedAt ?? '').localeCompare(a.capturedAt ?? ''))[0]];
+const roster = readGestalRoster(accountId);
+if (!roster) continue;   // no snapshot → nothing to rebuild the fielded team from
+rosters.push(roster);
+
+const { groups, evaluableCount } = await groupAndEvaluateBattles(battles, roster, supabase);
+totalEvaluable += evaluableCount;
+covered.push(`${roster?.displayName ?? accountId ?? 'unknown'} (${evaluableCount})`);
 
 for (const g of groups) {
   if (g.evaluation && g.evaluation.seeded === false) continue; // unseeded stage — nothing to reconcile
@@ -90,7 +113,9 @@ for (const g of groups) {
     }
   }
 }
+}
 
+console.log(`\nWhat are we missing? — ${covered.join(', ') || 'no account with a roster snapshot'} — ${totalEvaluable} evaluable battle(s)\n`);
 if (!backlog.size) { console.log('No gaps found (need seeded stages + captured battles).'); process.exit(0); }
 
 // Ranked backlog — most frequent gaps first, grouped by category.
@@ -98,22 +123,48 @@ const order = ['data_missing', 'contradiction', 'unused_signal', 'no_check'];
 const items = [...backlog.values()].sort((a, b) =>
   order.indexOf(a.category) - order.indexOf(b.category) || b.count - a.count);
 
-console.log('BACKLOG — what to capture / check / fix, most frequent first:\n');
+const shown = QUIET ? items.slice(0, 5) : items;
+console.log(QUIET ? `BACKLOG — top ${shown.length} of ${items.length} (full list: ${OUT ?? 'run without --quiet'}):\n`
+                  : 'BACKLOG — what to capture / check / fix, most frequent first:\n');
 let lastCat = null;
-for (const it of items) {
+for (const it of shown) {
   if (it.category !== lastCat) { console.log(`${ICON[it.category]} ${it.category.toUpperCase().replace('_', ' ')}`); lastCat = it.category; }
   console.log(`   (${String(it.count).padStart(3)}×) ${it.title}`);
+  if (QUIET) continue;
   console.log(`         → ${it.suggestion}`);
   for (const s of it.samples.slice(0, 2)) console.log(`           · ${s}`);
 }
-console.log('\n📭 capture more data   ❗ model contradicted (investigate)   🧩 captured-but-unused   🕳️ missing check');
-console.log('Run after each play session; the top items are where the review system improves most.\n');
+if (!QUIET) {
+  console.log('\n📭 capture more data   ❗ model contradicted (investigate)   🧩 captured-but-unused   🕳️ missing check');
+  console.log('Run after each play session; the top items are where the review system improves most.\n');
+}
+
+// ── standing artifact ────────────────────────────────────────────────────────
+// Written, not printed, because the whole point is that a cold-starting session can READ the
+// backlog instead of re-deriving it. Regenerated in full each time — no state to drift.
+if (OUT) {
+  const md = `# Gap Backlog — what the model doesn't yet capture, check, or explain\n\n`
+    + `**Machine-generated by \`tools/whats-missing.mjs\` (lib/battle-gaps.js + lib/assumption-audit.js).\n`
+    + `Do not edit by hand — it is overwritten on every run.** Regenerated ${new Date().toISOString()}\n`
+    + `over ${totalEvaluable} evaluable battle(s) across: ${covered.join(', ')}.\n\n`
+    + `Counts are OCCURRENCES across battles, so the ranking is "how often reality hit this gap",\n`
+    + `not how important it feels. \`contradiction\` rows are the model being WRONG about a specific\n`
+    + `battle — those are the ones that can move \`tools/battle-suite.mjs\`.\n\n`
+    + order.filter(cat => items.some(i => i.category === cat)).map(cat =>
+        `## ${ICON[cat]} ${cat.replace('_', ' ')}\n\n`
+        + items.filter(i => i.category === cat).map(it =>
+            `- **${it.count}× — ${it.title}**\n  - → ${it.suggestion}\n`
+            + it.samples.slice(0, 2).map(s => `  - _${s}_\n`).join('')).join('')
+      ).join('\n');
+  fs.writeFileSync(OUT, md);
+  console.log(`  → wrote ${OUT} (${items.length} distinct gaps)\n`);
+}
 
 // ── LLM ask: reason over the data to surface NOVEL gaps the deterministic list misses ──
 if (args.includes('--ask')) {
   if (!process.env.ANTHROPIC_API_KEY) { console.log('(--ask needs ANTHROPIC_API_KEY in .env.local)\n'); process.exit(0); }
   const backlogArr = items.map(it => ({ category: it.category, title: it.title, count: it.count, suggestion: it.suggestion }));
-  const rosterNote = `${roster?.displayName ?? accountId ?? 'unknown'} — ${(roster?.champions ?? []).filter(c => !c.inStorage).length} champions owned`;
+  const rosterNote = rosters.map(r => `${r?.displayName ?? 'unknown'} — ${(r?.champions ?? []).filter(c => !c.inStorage).length} champions owned`).join(' · ');
   console.log(`🧠 Asking "what are we missing?" — LLM review over ${contradictions.length} contradiction(s) + the backlog…\n`);
   try {
     const review = await reviewGaps({ backlog: backlogArr, contradictions, rosterNote });
