@@ -54,6 +54,10 @@ for (const f of fs.readdirSync(path.join(REPO, 'gestal-sync/output')).filter(x =
 
 const dun = (await rest('dungeons?select=id,name&game_id=eq.raid_shadow_legends')).find(x => x.name === "Dragon's Lair");
 const enemyRows = await rest('dungeon_stage_enemies?select=stage_number,enemy_role,enemy_name,hp,atk,def,spd,res,acc,crit_rate,crit_dmg&dungeon_id=eq.' + dun.id);
+// Probe whether the wave SCHEMA even exists live — migration 2026-07-22_dungeon_stage_enemies_waves
+// adds wave_number/position and may be UNAPPLIED. A non-array reply = the column is absent.
+const waveColsProbe = await rest('dungeon_stage_enemies?select=wave_number&limit=1&dungeon_id=eq.' + dun.id);
+const waveColsApplied = Array.isArray(waveColsProbe);
 const affRows = await rest('dungeon_stage_affinities?select=stage_number,affinity&dungeon_id=eq.' + dun.id);
 const stageAff = Object.fromEntries(affRows.map(r => [r.stage_number, r.affinity]));
 
@@ -72,23 +76,74 @@ for (const r of runs) {
   for (const c of team) fieldCount[c.id] = (fieldCount[c.id] ?? 0) + 1;
 }
 
+// ── expected wave composition from seeds/205 (committed; may be UNAPPLIED to the live DB) ────────
+// The doc's check is "5 expected enemies but only 4 records" — we can only run it against an
+// EXPECTED count, and seeds/205 is where the expected Dragon waves live (composition, not stats).
+const waveSeedText = fs.readFileSync(path.join(REPO, 'seeds/205_dragon_wave_composition.sql'), 'utf8');
+const expectedWaves = {};   // stage -> { total, byWave: {waveNo: count} }
+{
+  const re = /\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*'[^']*'\s*,\s*'[^']*'\s*,\s*(?:\d+|null)\s*,\s*(?:\d+|null)\s*\)/g;
+  let m;
+  while ((m = re.exec(waveSeedText))) {
+    const stage = +m[1], wave = +m[2];
+    (expectedWaves[stage] ??= { total: 0, byWave: {} });
+    expectedWaves[stage].total += 1;
+    expectedWaves[stage].byWave[wave] = (expectedWaves[stage].byWave[wave] ?? 0) + 1;
+  }
+}
+
 // ── findings collector ───────────────────────────────────────────────────────
 const errors = [];    // structural integrity — these FAIL gate 0
 const warns = [];     // MISSING / ESTIMATED — labelled, not fatal
+let dataComplete = true;   // a whole phase missing flips this — a SEPARATE axis from gate-0 integrity
 const note = (bucket, tier, msg) => bucket.push({ tier, msg });
 
-// ── 1. STAGE / ENEMY DATA ──────────────────────────────────────────────────────
 console.log('\n══ DRAGON DATA VALIDATOR — QA rung 1 (gate 0) ══\n');
-console.log('▶ STAGE / ENEMY DATA  (dungeon_stage_enemies, dungeon_stage_affinities)');
+
+// ── 1a. WAVES FIRST — the phase Mike reports as the real wall, checked EXPECTED (seeds/205) vs LIVE.
+// This leads the report on purpose: last session's wave work is a committed seed that was never
+// applied and never consumed by the sim ("represented but not consumed" at the data layer). The gap
+// must be loud, not a footnote — "enemy data clean" must never be readable off this tool again.
+console.log('▶ WAVE DATA  (EXPECTED from seeds/205  vs  APPLIED in the live DB)');
 {
-  // duplicate (stage, role) rows
+  const liveByStage = {};
+  for (const e of enemyRows) if (e.enemy_role === 'wave') liveByStage[e.stage_number] = (liveByStage[e.stage_number] ?? 0) + 1;
+  const stagesInSeed = Object.keys(expectedWaves).map(Number).sort((a, b) => a - b);
+  const totalExpected = Object.values(expectedWaves).reduce((s, w) => s + w.total, 0);
+  const totalLive = Object.values(liveByStage).reduce((s, n) => s + n, 0);
+
+  const gaps = [];
+  for (let s = 1; s <= 25; s++) {
+    const exp = expectedWaves[s]?.total ?? 0, have = liveByStage[s] ?? 0;
+    if (exp > have) gaps.push({ s, exp, have, waves: Object.keys(expectedWaves[s]?.byWave ?? {}).length });
+  }
+
+  console.log(`    schema: wave columns (wave_number/position) applied to the live DB? ${waveColsApplied ? 'YES' : 'NO — migration 2026-07-22_dungeon_stage_enemies_waves is UNAPPLIED'}`);
+  console.log(`    seeds/205 (committed) defines waves for ${stagesInSeed.length}/25 stages — ${totalExpected} mobs (~${Math.round(totalExpected / (stagesInSeed.length || 1))}/stage, 2 waves × 5).`);
+  console.log(`    APPLIED wave rows in the live DB: ${totalLive}.`);
+  if (!waveColsApplied) { dataComplete = false; note(warns, 'MISSING', 'wave schema columns are not applied (migration pending) — the seed cannot be applied until they are'); }
+  if (gaps.length) {
+    dataComplete = false;
+    note(warns, 'MISSING', `${gaps.length} stages expect waves but have none applied (seeds/205 committed, NOT applied)`);
+    console.log(`    ⛔ INCOMPLETE — ${gaps.length}/25 stages expect waves, ${totalLive === 0 ? 'ZERO' : totalLive} applied. Sample (expected → have):`);
+    for (const g of gaps.filter(g => [2, 16, 20, 21].includes(g.s))) console.log(`         stage ${String(g.s).padStart(2)}: ${g.exp} wave mobs across ${g.waves} waves  →  ${g.have}`);
+    console.log(`    ⇒ EVERY Dragon prediction is BOSS-PHASE ONLY, so treat it as LOW CONFIDENCE — the sim is blind to the phase Mike calls the wall.`);
+  } else {
+    console.log('    ✅ every expected wave is present in the live DB.');
+  }
+  console.log(`    ⚠ STAT-SOURCING GAP REMAINS: seeds/205 has NO stats (levels only on st 1/10/16/17/18). Enemy HP/ATK/DEF are`);
+  console.log(`      NOT readable in-game — applying the seed gives COMPOSITION, not a combat-ready wave. This is the open problem.`);
+}
+
+// ── 1b. BOSS + affinity integrity ──────────────────────────────────────────────
+console.log('\n▶ STAGE / BOSS DATA  (dungeon_stage_enemies boss rows, dungeon_stage_affinities)');
+{
   const seen = new Set();
   for (const e of enemyRows) {
-    const k = `${e.stage_number}/${e.enemy_role}`;
-    if (seen.has(k)) note(errors, 'MISSING', `duplicate enemy row: stage ${e.stage_number} role ${e.enemy_role}`);
+    const k = `${e.stage_number}/${e.enemy_role}/${e.wave_number ?? ''}/${e.position ?? ''}`;
+    if (seen.has(k)) note(errors, 'MISSING', `duplicate enemy row: ${k}`);
     seen.add(k);
   }
-  // a boss row for every stage we actually simulate (Scorch stages) + positive stats + affinity
   for (let s = 1; s <= 25; s++) {
     const boss = enemyRows.find(e => e.stage_number === s && e.enemy_role === 'boss');
     if (!boss) { note(errors, 'MISSING', `no boss row for stage ${s}`); continue; }
@@ -96,11 +151,8 @@ console.log('▶ STAGE / ENEMY DATA  (dungeon_stage_enemies, dungeon_stage_affin
     if (boss.crit_rate != null && (boss.crit_rate < 0 || boss.crit_rate > 100)) note(errors, 'MISSING', `stage ${s} boss crit_rate out of 0-100 (${boss.crit_rate})`);
     if (!stageAff[s]) note(warns, 'MISSING', `stage ${s} has no affinity row`);
   }
-  const waveRows = enemyRows.filter(e => e.enemy_role !== 'boss').length;
-  if (waveRows === 0) note(warns, 'MISSING', `NO wave enemies at all (0 rows) — every Dragon stage is boss-only; the sim reports waves as unmodelled`);
-
-  const bossErr = errors.length;
-  console.log(`    boss rows 1-25: ${25 - errors.filter(e => /no boss row/.test(e.msg)).length}/25 present · affinity ${Object.keys(stageAff).length}/25 · wave rows ${waveRows}`);
+  const bossErr = errors.filter(e => !/duplicate/.test(e.msg)).length;
+  console.log(`    boss rows 1-25: ${25 - errors.filter(e => /no boss row/.test(e.msg)).length}/25 present · affinity ${Object.keys(stageAff).length}/25`);
   console.log(`    boss stats: HP=VERIFIED (transcribed) · ATK/DEF/RES=ESTIMATED (shared ladder) · SPD=ESTIMATED (unverified)`);
   console.log(`    ${bossErr ? '⚠ ' + bossErr + ' integrity issue(s) — see FAIL list' : '✅ no integrity issues'}`);
 }
@@ -164,6 +216,18 @@ if (errors.length) {
 if (warns.length) {
   console.log(`\n  ⚠ ${warns.length} MISSING/ESTIMATED data warning(s) — labelled, not fatal:`);
   for (const w of warns) console.log(`      [${w.tier}] ${w.msg}`);
+}
+
+// DATA COMPLETENESS is a SEPARATE axis from structural integrity: the data present can be internally
+// clean (gate 0 PASS) while a whole phase is missing. Conflating the two is how "enemy data clean"
+// got said while the waves — the actual wall — were entirely absent.
+console.log('\n══ DATA COMPLETENESS  (separate axis — a whole phase can be missing while integrity PASSES) ══');
+if (dataComplete) {
+  console.log('  ✅ COMPLETE — every modelled phase has data.');
+} else {
+  console.log('  ⛔ INCOMPLETE — Dragon has 2 wave phases with NO applied enemy data (seeds/205 committed, not applied,');
+  console.log('     and stat-free even if applied). Predictions are BOSS-PHASE ONLY → LOW CONFIDENCE. Gate 0 can PASS');
+  console.log('     on the boss data while the model stays blind to the phase Mike calls the wall.');
 }
 console.log('');
 process.exit(errors.length ? 1 : 0);
