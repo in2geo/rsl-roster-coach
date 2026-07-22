@@ -153,6 +153,21 @@ const firstDeaths = {};
 for (const r of rows) { const d = r.pred.deaths[0]; if (d) firstDeaths[`${d.who} (${d.phase})`] = (firstDeaths[`${d.who} (${d.phase})`] ?? 0) + 1; }
 for (const [w, k] of Object.entries(firstDeaths).sort((a, b) => b[1] - a[1]).slice(0, 10)) console.log(`    ${String(k).padStart(4)}x  ${w}`);
 
+// ── QA: characterise the turn-count error. One wrong scalar shows as a TIGHT ratio
+// distribution; a structural fault shows as a wide one. Do this BEFORE guessing at causes.
+const rat = rows.filter(r => r.actualTurns && r.pred.turns).map(r => ({ ...r, ratio: r.pred.turns / r.actualTurns }));
+if (rat.length) {
+  const q = (a, p) => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(p * (s.length - 1))]; };
+  const rs = rat.map(r => r.ratio);
+  console.log('\n  QA — predicted turns / ACTUAL turns  (1.00 = perfect):');
+  console.log(`    p10 ${q(rs,0.10).toFixed(2)}   p25 ${q(rs,0.25).toFixed(2)}   MEDIAN ${q(rs,0.5).toFixed(2)}   p75 ${q(rs,0.75).toFixed(2)}   p90 ${q(rs,0.90).toFixed(2)}`);
+  const wins = rat.filter(r => r.actualWon), loss = rat.filter(r => !r.actualWon);
+  console.log(`    on real WINS   median ${q(wins.map(r=>r.ratio),0.5).toFixed(2)} (n=${wins.length})`);
+  console.log(`    on real LOSSES median ${loss.length? q(loss.map(r=>r.ratio),0.5).toFixed(2):'n/a'} (n=${loss.length})`);
+  const byS={}; for(const r of rat)(byS[r.stage]??=[]).push(r.ratio);
+  console.log('    by stage:  ' + Object.keys(byS).map(Number).sort((a,b)=>a-b).map(s=>`st${s} ${q(byS[s],0.5).toFixed(2)}`).join('  '));
+}
+
 const allFlags = {};
 for (const r of rows) for (const f of r.pred.flags) allFlags[f] = (allFlags[f] ?? 0) + 1;
 console.log('\n  FLAGS RAISED (what the sim could not model, by frequency):');
