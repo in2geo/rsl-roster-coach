@@ -74,7 +74,10 @@ function buildBoss(stage) {
     maxHp: Number(r.hp), atk: Number(r.atk), def: Number(r.def), spd: Number(r.spd),
     acc: Number(r.acc), res: Number(r.res),
     critRate: Number(r.crit_rate), critDmg: Number(r.crit_dmg), affinity: stageAff[stage],
-    statsTrust: { hp: 'real', atk: 'SYNTHETIC', def: 'SYNTHETIC', res: 'SYNTHETIC', spd: 'unverified' },
+    // GROUND-TRUTH VERIFIED at stage 16 (Mike's Hellrazor screenshot, 2026-07-22): all 8 stats EXACT
+    // — hp 727245, atk 5818, def 3879, spd 100, res 150, acc 150, cr 15, cd 50. The boss table is
+    // TRANSCRIBED, not synthetic; if the sim mis-kills, the suspect is the damage model, not this input.
+    statsTrust: { hp: 'real', atk: 'real', def: 'real', res: 'real', acc: 'real', spd: 'real' },
   });
   b.immune = HELLRAZOR_IMMUNE;
   return b;

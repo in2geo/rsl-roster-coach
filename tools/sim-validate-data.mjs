@@ -153,7 +153,7 @@ console.log('\n▶ STAGE / BOSS DATA  (dungeon_stage_enemies boss rows, dungeon_
   }
   const bossErr = errors.filter(e => !/duplicate/.test(e.msg)).length;
   console.log(`    boss rows 1-25: ${25 - errors.filter(e => /no boss row/.test(e.msg)).length}/25 present · affinity ${Object.keys(stageAff).length}/25`);
-  console.log(`    boss stats: HP=VERIFIED (transcribed) · ATK/DEF/RES=ESTIMATED (shared ladder) · SPD=ESTIMATED (unverified)`);
+  console.log(`    boss stats: st16 GROUND-TRUTH VERIFIED 8/8 exact (Hellrazor screenshot 2026-07-22) → table is transcribed, not synthetic; other stages inherit that trust, spot-check as screenshots arrive`);
   console.log(`    ${bossErr ? '⚠ ' + bossErr + ' integrity issue(s) — see FAIL list' : '✅ no integrity issues'}`);
 }
 
