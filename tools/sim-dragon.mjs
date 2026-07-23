@@ -55,16 +55,26 @@ const stageAff = Object.fromEntries(affRows.map(r => [r.stage_number, r.affinity
 const bossRow = s => enemyRows.find(e => e.stage_number === s && e.enemy_role === 'boss');
 const hasWaveRows = enemyRows.some(e => e.enemy_role !== 'boss');
 
+// PENDING seed 206 (Ezio multipliers): mirror the committed seed here so the sim reflects it WITHOUT
+// touching the live DB — the branch keeps the DB untouched and seeds as files until merge, exactly
+// like the wave data. Precise datamined decimals (in-game card rounds them up to 4/4/5). Delete this
+// overlay once seed 206 is applied. Keyed champion_id -> { skill_name: multiplier }.
+const PENDING_MULT = {
+  '00404172-1b85-49eb-b353-a0aaaf9cca1f': { 'Eagle Dive': '3.8', "Da Vinci's Design": '3.7', 'Hidden Gun': '4.7' },
+};
 function buildAlly(c) {
   const cat = byId[c.id];
   const st = c.estimated_stats ?? {};
+  const pend = PENDING_MULT[c.id];
+  const skillRows = (cat?.champion_skills ?? []).map(r =>
+    pend?.[r.skill_name] && r.damage_multiplier == null ? { ...r, damage_multiplier: pend[r.skill_name] } : r);
   return makeCombatant({
     name: c.name, side: 'ally',
     maxHp: st.hp, atk: st.atk, def: st.def, spd: st.spd,
     acc: st.acc, res: st.res,
     critRate: st.crit_rate ?? st.crate, critDmg: st.crit_dmg ?? st.cdmg,
     affinity: c.affinity ?? cat?.affinity, tags: c.tags ?? [],
-    skills: readSkillKit(cat?.champion_skills ?? []),
+    skills: readSkillKit(skillRows),
   });
 }
 function buildBoss(stage) {
