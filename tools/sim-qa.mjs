@@ -46,6 +46,7 @@ const MANIFEST = [
   ['damage: skill coeff x ATK', 'partial'],            // only 38% of skills carry a coeff
   ['DEF diminishing-returns curve', 'stub'],           // DEF_K=1500 nominal, uncalibrated
   ['multiplier_type (DEF/HP-scaling skills)', 'unimplemented'],  // sim assumes ATK for all
+  ['Decrease DEF consumed in the damage calc', 'unimplemented'], // debuff applied but never lowers effective DEF (rung 6)
   ['[Perfect Veil] = untargetable', 'unimplemented'],  // video: Ezio took ~3.5k all fight; sim one-shots him
   ['%MaxHP damage skills + stage 21+/Hard 10% cap', 'unimplemented'],
   ['execute skills (fire only in kill range)', 'unimplemented'],
@@ -68,9 +69,10 @@ console.log('\n╔════════════════════�
 console.log('║  SIM QA — completeness-aware scorecard  (tests the sim AS-IS)          ║');
 console.log('╚══════════════════════════════════════════════════════════════════════╝');
 
-const spec = runRung('sim-selftest.mjs');       // rung 2 — no DB
-const inv = runRung('sim-invariants.mjs');      // rung 5 — no DB, property-based
-const data = runRung('sim-validate-data.mjs');  // rung 1 — needs DB (inherits env from --env-file)
+const spec = runRung('sim-selftest.mjs');        // rung 2 — no DB
+const inv = runRung('sim-invariants.mjs');       // rung 5 — no DB, property-based
+const sens = runRung('sim-sensitivity.mjs');     // rung 6 — no DB, metamorphic
+const data = runRung('sim-validate-data.mjs');   // rung 1 — needs DB (inherits env from --env-file)
 
 // ── classify every finding into the four buckets ────────────────────────────────
 const ledger = { spec_violation: [], unimplemented: [], missing_data: [], reality_gap: [] };
@@ -79,6 +81,8 @@ if (spec.json) for (const f of spec.json.failures) ledger.spec_violation.push(`s
 else ledger.spec_violation.push('rung 2 (spec self-test) did not report — cannot confirm conformance');
 if (inv.json) for (const f of inv.json.failures) ledger.spec_violation.push(`invariant: ${f}`);
 else ledger.spec_violation.push('rung 5 (invariants) did not report — cannot confirm invariants hold');
+if (sens.json) for (const f of sens.json.failures) ledger.spec_violation.push(`sensitivity: ${f}`);
+else ledger.spec_violation.push('rung 6 (sensitivity) did not report — cannot confirm directions');
 
 for (const [m, st] of MANIFEST) if (st === 'unimplemented' || st === 'stub') ledger.unimplemented.push(`${m}  [${st}]`);
 
@@ -102,6 +106,10 @@ console.log(spec.json ? `    ${specOk ? '✅ PASS' : '✗ FAIL'} — ${spec.json
 console.log('\n▶ BEHAVIOURAL INVARIANTS (rung 5 — property-based over random battles)');
 console.log(inv.json ? `    ${inv.json.fail === 0 ? '✅ PASS' : '✗ FAIL'} — ${inv.json.pass} checks passed, ${inv.json.fail} failed`
                      : '    ⚠ no report');
+
+console.log('\n▶ SENSITIVITY (rung 6 — one-input perturbations move the right way)');
+console.log(sens.json ? `    ${sens.json.fail === 0 ? '✅ PASS' : '✗ FAIL'} — ${sens.json.pass} directions held, ${sens.json.fail} violated`
+                      : '    ⚠ no report');
 
 console.log('\n▶ INPUT DATA (rung 1 — gate 0)');
 if (data.json) {
