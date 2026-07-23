@@ -124,6 +124,29 @@ const countTurns = (allies, enemies, cap, name) => {
   ok('Decrease DEF does NOT change POISON damage (game fact: DoT is DEF-independent)', lossPlain === lossShred && lossPlain > 0, `no-shred lost ${Math.round(lossPlain)}, 60% shred lost ${Math.round(lossShred)}`);
 }
 
+// ── T11: higher CRIT → more damage dealt over a fixed turn budget ─────────────────
+// (closes the mutation-rung coverage gap: critFactor→1.0 previously survived every rung)
+{
+  const mk = (cr, cd) => champ({ critRate: cr, critDmg: cd, atk: 1000, spd: 100, skills: [{ slot: 'A1', cooldown: 0, cdLeft: 0, hitsEnemies: true, coeff: 1 }] });
+  const bNo = boss({ maxHp: 1e9, spd: 1 }), bCrit = boss({ maxHp: 1e9, spd: 1 });
+  run([mk(0, 100)], [bNo], 40); run([mk(100, 100)], [bCrit], 40);
+  const dmgNo = 1e9 - bNo.hp, dmgCrit = 1e9 - bCrit.hp;
+  ok('higher CRIT deals more damage (and the test ran)', dmgCrit > dmgNo && dmgNo > 0, `cr0→${Math.round(dmgNo)}, cr100/cd100→${Math.round(dmgCrit)}`);
+}
+
+// ── T12: a SHORTER cooldown fires the big skill more often → more damage ───────────
+// (closes the mutation-rung coverage gap: frozen cooldowns previously survived every rung. If cd never
+//  ticks, the big skill fires once and never again, so both cd's deal the same → this direction breaks.)
+{
+  const mk = (cd) => champ({ atk: 1000, spd: 100, skills: [
+    { slot: 'A1', cooldown: 0, cdLeft: 0, hitsEnemies: true, coeff: 0.1 },
+    { slot: 'A3', cooldown: cd, cdLeft: 0, hitsEnemies: true, coeff: 5 }] });
+  const bShort = boss({ maxHp: 1e9, spd: 1 }), bLong = boss({ maxHp: 1e9, spd: 1 });
+  run([mk(2)], [bShort], 30); run([mk(8)], [bLong], 30);
+  const dmgShort = 1e9 - bShort.hp, dmgLong = 1e9 - bLong.hp;
+  ok('a shorter cooldown fires the big skill more often → more damage (and the test ran)', dmgShort > dmgLong && dmgLong > 0, `cd2→${Math.round(dmgShort)}, cd8→${Math.round(dmgLong)}`);
+}
+
 // ── informational: sensitivities NOT asserted because they need unimplemented mechanics ──
 const notTested = [
   'Add one Fire-Knight hit → shield removal easier  [needs FK shield module — not built]',

@@ -1,0 +1,123 @@
+{
+  "attrition": {
+    "won": false,
+    "turns": 20,
+    "failedPhase": "boss",
+    "deaths": 2,
+    "revives": 0,
+    "survivors": [],
+    "allies": [
+      {
+        "name": "Bruiser",
+        "hpPct": 0,
+        "alive": false
+      },
+      {
+        "name": "Striker",
+        "hpPct": 0,
+        "alive": false
+      }
+    ]
+  },
+  "sustained": {
+    "won": true,
+    "turns": 166,
+    "failedPhase": null,
+    "deaths": 1,
+    "revives": 0,
+    "survivors": [
+      "Blade",
+      "Cleric"
+    ],
+    "allies": [
+      {
+        "name": "Blade",
+        "hpPct": 89,
+        "alive": true
+      },
+      {
+        "name": "Cleric",
+        "hpPct": 90,
+        "alive": true
+      }
+    ]
+  },
+  "dotGrind": {
+    "won": true,
+    "turns": 14,
+    "failedPhase": null,
+    "deaths": 1,
+    "revives": 0,
+    "survivors": [
+      "Toxin",
+      "Venom"
+    ],
+    "allies": [
+      {
+        "name": "Toxin",
+        "hpPct": 100,
+        "alive": true
+      },
+      {
+        "name": "Venom",
+        "hpPct": 79,
+        "alive": true
+      }
+    ]
+  },
+  "shielded": {
+    "won": false,
+    "turns": 76,
+    "failedPhase": "boss",
+    "deaths": 1,
+    "revives": 0,
+    "survivors": [],
+    "allies": [
+      {
+        "name": "Aegis",
+        "hpPct": 0,
+        "alive": false
+      }
+    ]
+  },
+  "revive": {
+    "won": false,
+    "turns": 47,
+    "failedPhase": "boss",
+    "deaths": 7,
+    "revives": 5,
+    "survivors": [],
+    "allies": [
+      {
+        "name": "Glass",
+        "hpPct": 0,
+        "alive": false
+      },
+      {
+        "name": "Priest",
+        "hpPct": 0,
+        "alive": false
+      }
+    ]
+  },
+  "wavesThenBoss": {
+    "won": false,
+    "turns": 142,
+    "failedPhase": "boss",
+    "deaths": 4,
+    "revives": 0,
+    "survivors": [],
+    "allies": [
+      {
+        "name": "Support",
+        "hpPct": 0,
+        "alive": false
+      },
+      {
+        "name": "Vanguard",
+        "hpPct": 0,
+        "alive": false
+      }
+    ]
+  }
+}

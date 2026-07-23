@@ -75,7 +75,10 @@ const inv = runRung('sim-invariants.mjs');       // rung 5 — no DB, property-b
 const sens = runRung('sim-sensitivity.mjs');     // rung 6 — no DB, metamorphic
 const effects = runRung('sim-effects.mjs');      // fired-vs-consumed — no DB, catches represented-but-not-consumed
 const golden = runRung('sim-golden.mjs');        // rung 4 — no DB, golden-battle fixtures
+const trace = runRung('sim-trace.mjs');          // rung 3b — DB, reality oracle: sim trace vs the recording
+const snapshot = runRung('sim-snapshot.mjs');    // rung 10 — no DB, regression snapshot (runs on pristine engine, before mutation)
 const data = runRung('sim-validate-data.mjs');   // rung 1 — needs DB (inherits env from --env-file)
+const mut = runRung('sim-mutants.mjs');          // rung 9 — no DB, mutation testing: does the suite have teeth?
 
 // ── classify every finding into the four buckets ────────────────────────────────
 const ledger = { spec_violation: [], unimplemented: [], missing_data: [], reality_gap: [] };
@@ -102,6 +105,15 @@ if (golden.json) { for (const f of golden.json.failures) ledger.spec_violation.p
 
 for (const [m, st] of MANIFEST) if (st === 'unimplemented' || st === 'stub') ledger.unimplemented.push(`${m}  [${st}]`);
 
+// SNAPSHOT (rung 10): a drift means the engine no longer matches its LAST-BLESSED behaviour. That is an
+// unintended regression until a human re-blesses (SNAPSHOT_BLESS=1) — the one blocker that is NOT a
+// reality question. It BLOCKS because an unacknowledged behaviour change is exactly the "did we get
+// worse and not notice" failure that reality-comparison can't catch in the known-wrong region. A freshly
+// (re)created baseline (`blessed`) is informational, never a block.
+if (snapshot.json) {
+  if (!snapshot.json.blessed) for (const d of (snapshot.json.drifts || [])) ledger.spec_violation.push(`regression vs baseline: ${d}  — re-bless if intended (SNAPSHOT_BLESS=1)`);
+} else ledger.spec_violation.push('rung 10 (snapshot) did not report — cannot confirm the sim matches its baseline');
+
 if (data.json) {
   for (const w of data.json.warns) ledger.missing_data.push(w);
   for (const c of data.json.coeffBacklog) ledger.missing_data.push(`0-damage champ: ${c.name} — ${c.battles} battles, skills ${c.slots.join('/')}`);
@@ -110,6 +122,28 @@ if (data.json) {
 }
 
 for (const [lv, st] of LEVELS) if (st === 'unsupported') ledger.reality_gap.push(`level NOT scored: ${lv}`);
+
+// TRACE ORACLE (rung 3b): where the sim's turn-by-turn diverges from the recorded fight. A REALITY GAP
+// (bucket 4), never a blocker — the sim is known-incomplete. The value is the LOCALISED first-divergence
+// turn + the unmodelled systems it points at.
+if (trace.json && Array.isArray(trace.json.runs)) {
+  for (const r of trace.json.runs) {
+    if (r.skipped) { ledger.reality_gap.push(`trace ${r.id}: skipped — ${r.skipped}`); continue; }
+    if (r.firstDivergence) ledger.reality_gap.push(`trace ${r.id}: sim & reality first diverge at "${r.firstDivergence}" (sim ${r.simOutcome}/${r.simSurvivors} surv vs real ${r.realOutcome}/${r.realSurvivors})`);
+    else ledger.reality_gap.push(`trace ${r.id}: sim reproduces the recorded fight at the checked checkpoints`);
+  }
+} else if (trace.json?.skipped) ledger.reality_gap.push(`trace oracle skipped — ${trace.json.skipped} (run with --env-file=.env.local)`);
+
+// MUTATION (rung 9): a mutant the suite SHOULD catch but didn't = a toothless guard, so the block gate
+// can no longer be trusted for that behaviour → bucket 1. A stale mutant (source drifted, no longer
+// applies) is the same failure — a teeth-check that silently stopped running. A surviving PROBE is a
+// coverage gap: a real behaviour no rung pins yet → backlog (bucket 2), does not block.
+if (mut.json) {
+  for (const h of mut.json.unexpectedSurvivors) ledger.spec_violation.push(`mutation: suite blind to a bug it should catch — ${h}`);
+  for (const s of mut.json.stale) ledger.spec_violation.push(`mutation: stale mutant no longer applies (source drifted) — ${s}`);
+  for (const g of mut.json.coverageGaps) ledger.unimplemented.push(`mutation coverage gap: no rung catches "${g}"  [demonstrated by sim-mutants]`);
+  if (mut.json.aborted) ledger.spec_violation.push(`mutation: ABORTED — baseline not green (${(mut.json.baselineRed || []).join(', ')}); the suite itself is red`);
+} else ledger.spec_violation.push('rung 9 (mutation) did not report — cannot confirm the suite has teeth');
 
 // ── SCORECARD ───────────────────────────────────────────────────────────────────
 const mark = { implemented: '✅', partial: '◐ ', stub: '◔ ', unimplemented: '○ ' };
@@ -139,11 +173,32 @@ if (golden.json) for (const r of golden.json.runs ?? []) {
   console.log(`    · exact-stat run ${r.id}: sim ${r.predOutcome} / real ${r.actualOutcome} ${r.outcomeMatch ? '✅ reproduced' : '✗ mismatch → bucket 4'} (survivors ${r.predSurvivors}/${r.actualSurvivors})`);
 }
 
+console.log('\n▶ TRACE ORACLE (rung 3b — does the sim reproduce the RECORDED fight, turn by turn?)');
+if (trace.json && Array.isArray(trace.json.runs) && trace.json.runs.length) {
+  for (const r of trace.json.runs) {
+    if (r.skipped) { console.log(`    · ${r.id}: skipped — ${r.skipped}`); continue; }
+    console.log(`    ${r.firstDivergence ? '✗' : '✅'} ${r.id}: ${r.firstDivergence ? `first diverges at "${r.firstDivergence}"  (sim ${r.simOutcome} ${r.simSurvivors} surv / real ${r.realOutcome} ${r.realSurvivors} surv)` : 'reproduces the fight at checked checkpoints'}`);
+  }
+} else if (trace.json?.skipped) console.log(`    ⏳ skipped — ${trace.json.skipped} (needs --env-file=.env.local)`);
+else console.log('    ⚠ no report');
+
+console.log('\n▶ REGRESSION SNAPSHOT (rung 10 — does the engine still do what it did at the last blessing?)');
+if (snapshot.json && snapshot.json.blessed) console.log(`    · baseline (re)created — ${snapshot.json.scenarios} scenario(s) frozen`);
+else if (snapshot.json) console.log(`    ${snapshot.json.fail === 0 ? '✅ MATCHES' : '✗ DRIFT'} — ${snapshot.json.scenarios - snapshot.json.driftScenarios.length}/${snapshot.json.scenarios} scenarios match baseline${snapshot.json.fail ? `  ·  moved: ${snapshot.json.driftScenarios.join(', ')}  (re-bless if intended: SNAPSHOT_BLESS=1)` : ''}`);
+else console.log('    ⚠ no report');
+
 console.log('\n▶ INPUT DATA (rung 1 — gate 0)');
 if (data.json) {
   console.log(`    structural integrity: ${data.json.gate0}`);
   console.log(`    completeness: ${data.json.complete ? '✅ COMPLETE' : '⛔ INCOMPLETE'}   ·   coeff coverage: ${data.json.coeffCoverage}%   ·   0-damage champs: ${data.json.zeroCoeffChamps}`);
 } else console.log('    ⚠ no report (needs --env-file=.env.local)');
+
+console.log('\n▶ MUTATION (rung 9 — do the rungs actually catch injected engine bugs?)');
+if (mut.json && !mut.json.aborted) {
+  console.log(`    kill rate ${mut.json.killRate}% (${mut.json.pass}/${mut.json.total} mutants caught)   ·   ${mut.json.unexpectedSurvivors.length} suite hole(s)   ·   ${mut.json.coverageGaps.length} coverage gap(s)`);
+  if (mut.json.coverageGaps.length) for (const g of mut.json.coverageGaps) console.log(`    · gap: no rung catches "${g}"`);
+} else if (mut.json && mut.json.aborted) console.log(`    ⛔ ABORTED — baseline not green (${(mut.json.baselineRed || []).join(', ')})`);
+else console.log('    ⚠ no report');
 
 console.log('\n▶ MECHANIC MANIFEST (what the sim models, and at what fidelity)');
 const counts = MANIFEST.reduce((a, [, s]) => (a[s] = (a[s] || 0) + 1, a), {});
