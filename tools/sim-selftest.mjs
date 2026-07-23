@@ -248,5 +248,6 @@ const passiveContent = (enemies) => ({ phases: [{ name: 'boss', enemies, actEnem
 // ── report ───────────────────────────────────────────────────────────────────
 console.log(`\n══ SIM SELF-TEST ══  ${pass} passed, ${fail} failed\n`);
 for (const f of failures) console.log(`  ✗ ${f}`);
+console.log('QA_JSON ' + JSON.stringify({ rung: 'spec', pass, fail, failures }));
 if (!fail) console.log('  all specified behaviour holds — gate 1 clear, reality comparison is gate 2\n');
 else { console.log(`\n  ${fail} spec violation(s) — fix these BEFORE comparing to real battles.\n`); process.exit(1); }

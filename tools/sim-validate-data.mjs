@@ -229,5 +229,15 @@ if (dataComplete) {
   console.log('     and stat-free even if applied). Predictions are BOSS-PHASE ONLY → LOW CONFIDENCE. Gate 0 can PASS');
   console.log('     on the boss data while the model stays blind to the phase Mike calls the wall.');
 }
+console.log('QA_JSON ' + JSON.stringify({
+  rung: 'data',
+  gate0: errors.length ? 'FAIL' : 'PASS',
+  complete: dataComplete,
+  errors: errors.map(e => e.msg),
+  warns: warns.map(w => w.msg),
+  coeffCoverage: coeffPct,
+  zeroCoeffChamps: noCoeff.length,
+  coeffBacklog: [...noCoeff].sort((a, b) => b.battles - a.battles).slice(0, 20).map(c => ({ name: c.name, battles: c.battles, slots: c.slots })),
+}));
 console.log('');
 process.exit(errors.length ? 1 : 0);
