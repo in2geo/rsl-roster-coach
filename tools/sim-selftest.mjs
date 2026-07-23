@@ -439,6 +439,21 @@ const passiveContent = (enemies) => ({ phases: [{ name: 'boss', enemies, actEnem
   ok('round-start passive places [Perfect Veil] by t0 (Ezio is untargetable from the start)', hero.buffs.some(b => b.type === 'Perfect Veil'));
 }
 
+// ── 21. [CONTINUOUS HEAL] ticks at start of turn — heal-over-time (the sustain-side "not consumed") ──
+{
+  const kit = readSkillKit([{ slot: 'A2', skill_name: 'Aegis', damage_multiplier: null,
+    skill_summary: 'Places a 15% [Continuous Heal] buff on a target ally for 3 turns.' }]);
+  eq('parser reads the [Continuous Heal] %', kit[0].buffs.find(b => b.type === 'Continuous Heal')?.value, 15);
+
+  const c = champ({ name: 'Hurt', maxHp: 10000, spd: 100 }); c.hp = 4000;
+  c.buffs.push({ type: 'Continuous Heal', value: 15, turnsLeft: 3 });
+  const st = makeState({ allies: [c], enemies: [] });
+  const l = console.log; console.log = () => {};
+  simulate(st, passiveContent([dummyEnemy({ spd: 1 })]), { turnCap: 1 });
+  console.log = l;
+  eq('[Continuous Heal] restores 15% of MAX HP on the buffed champ\'s turn', c.hp, 4000 + 0.15 * 10000);
+}
+
 // ── report ───────────────────────────────────────────────────────────────────
 console.log(`\n══ SIM SELF-TEST ══  ${pass} passed, ${fail} failed\n`);
 for (const f of failures) console.log(`  ✗ ${f}`);
