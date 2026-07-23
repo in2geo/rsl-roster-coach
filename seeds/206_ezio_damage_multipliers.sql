@@ -39,4 +39,4 @@ update champion_skills set
   damage_multiplier = '2', multiplier_type = 'ATK',
   review_notes = 'Passive execute bonus (2 ATK is the rounded card value; precise decimal not sourced): enemy < 25% HP after damage from any Assassin; ignores 100% DEF, cannot crit.',
   source = 'in-game skill card (Mike-supplied) 2026-07-22', verification_status = 'verified'
-where champion_id = '00404172-1b85-49eb-b353-a0aaaf9cca1f' and skill_name = 'Everything Is Permitted';
+where champion_id = '00404172-1b85-49eb-b353-a0aaaf9cca1f' and skill_name = 'Everything Is Permitted [P]';
