@@ -135,8 +135,28 @@ async function main() {
 
     const state = makeState({ allies: built.allies, enemies: [] });
     state.purpleBarLeft = 0;
-    const o = console.log; console.log = () => {};
-    let res; try { res = simulate(state, built.content, { turnCap: 400 }); } finally { console.log = o; }
+    // TRACE=N prints the first N turn-lines of the fight the oracle scores — "look before theorising".
+    const doTrace = !!process.env.TRACE;
+    const traceLines = [];
+    const o = console.log; console.log = (...a) => { if (doTrace) traceLines.push(a.join(' ')); };
+    let res; try { res = simulate(state, built.content, { turnCap: 400, trace: doTrace }); } finally { console.log = o; }
+    if (doTrace) {
+      const n = Number(process.env.TRACE) || 60;
+      console.log(`\n  TRACE — first ${n} turn-lines of ${id}:`);
+      for (const l of traceLines.slice(0, n)) console.log('  ' + l);
+    }
+    // DUMP=Name prints one champion's PARSED kit + which effects actually touched it — to see whether a
+    // mechanic (Magma Shield, Taunt, Lifesteal) is present in the kit and whether it fired.
+    if (process.env.DUMP) {
+      const hero = built.allies.find(a => new RegExp(process.env.DUMP, 'i').test(a.name));
+      if (hero) {
+        console.log(`\n  KIT DUMP — ${hero.name} (lifesteal ${hero.lifesteal ?? 0}):`);
+        for (const s of hero.skills) console.log(`    ${s.slot}${s.isPassive ? ' [P]' + (s.passiveTrigger ? '(' + s.passiveTrigger + ')' : '(no-trigger)') : ''}  cd${s.cooldown ?? 0}  coeff=${s.coeff ?? '-'}${s.coeffStat && s.coeffStat !== 'atk' ? '(' + s.coeffStat + ')' : ''}  buffs=[${(s.buffs || []).map(b => b.type + (b.pctOfCasterMaxHp ? ' ' + Math.round(b.pctOfCasterMaxHp * 100) + '%HP' : b.value ? ' ' + b.value : '')).join(', ')}]  debuffs=[${(s.debuffs || []).map(d => d.type).join(', ')}]${s.healPct ? '  heal=' + s.healPct : ''}${s.revives ? '  REVIVE' : ''}`);
+        const evs = (res.effects || []).filter(e => e.source === hero.name || e.target === hero.name);
+        const byKind = {}; for (const e of evs) { const k = `${e.kind}${e.subtype ? ':' + e.subtype : ''}`; byKind[k] = (byKind[k] || 0) + 1; }
+        console.log(`    effects touching ${hero.name}: ${Object.entries(byKind).map(([k, v]) => k + '×' + v).join('  ') || '(none)'}`);
+      }
+    }
 
     const { checks, firstDiverge } = compare(fixture, res);
 
