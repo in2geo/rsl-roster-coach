@@ -5,8 +5,36 @@
 **supersedes `HANDOFF_2026-07-22_turn-loop.md`** as the current front (that AM session built the turn
 simulator; this PM session built the **QA TOOL** for it).
 
-**All work is on branch `session/turn-loop-2026-07-22`, PUSHED to origin, ~17 commits, NOT merged, no
-PR opened. The DB is UNTOUCHED — the migration + seeds 205/206 are files only.**
+**All work is on branch `session/turn-loop-2026-07-22`, PUSHED to origin, NOT merged, no PR opened.**
+⚠ **DB POSTURE CHANGED (2026-07-22 PM+):** seeds **206 (Ezio) and 207 (Dragon-16 team) are now APPLIED**
+to the live DB — the "DB untouched" claim no longer holds. Only seed 205 (Dragon waves) + the wave
+migration remain file-only.
+
+---
+
+## ⏫ CONTINUATION (2026-07-22 PM+) — what changed since the section below was written
+
+1. **New rung: FIRED vs CONSUMED** (`tools/sim-effects.mjs` + `recordEffect` ledger in `engine.js`).
+   Catches "represented but not consumed" AUTOMATICALLY (two metrics per effect). Wired into `sim-qa`.
+   ⭐ The distinction to keep: **PRODUCER-side** (effect fired, zero state change — caught generically)
+   vs **CONSUMER-side** (a buff PRESENT in the list but ignored at the point of use — shield-absorb,
+   veil-targeting — needs point-of-use asserts). Two DEMONSTRATED blanks now emitted (bucket 2): no
+   passive-trigger system, and enemy targeting ignores `[Perfect Veil]`. See `[[fired-vs-consumed-rung-2026-07-22]]`.
+2. **Rung 4 loop CLOSED** — `sim-golden.mjs` now RUNS the sim on the fixture's exact builds and scores
+   outcome/survival vs the golden (bucket-4 mismatch, non-blocking). The `dragon16-donbambus` fixture:
+   sim LOSS / real WIN, survivors 0/5.
+3. **`multiplier_type` IMPLEMENTED** — the sim now reads the `champion_skills.multiplier_type` COLUMN
+   (was never fetched) and scales damage off ATK/**HP**/**DEF** (`normStat`/`scaleStat`). Vergis was
+   ALREADY `3.9`/`DEF` in the DB — reading the column fixed him for free (represented-but-not-consumed
+   at the query layer). Seeds 206/207 applied: Ezio ATK, Tagoar/Bambus ATK, **Pelops HP-scaled**.
+   `PENDING_MULT` overlays deleted (DB is now the single source). See `[[multiplier-capture-convention]]`.
+4. **DOMINANT FINDING, now CONTROLLED:** with offense fully wired (rung-4 `zeroDmg` empty, coeff
+   coverage 39→52%), the golden STILL wipes → **the remaining error is SURVIVAL, not offense** — the
+   unmodelled passives/auras/protection (Perfect Veil, Ally Protection, DR passives, +25% HP auras,
+   Pelops Lifesteal). This is the next work: the **passive-trigger system** is the highest-leverage build.
+5. **OPEN:** Bambus golden top-damage ~506k does NOT reconcile with his 3.8/5.6 ATK @ 819 ATK (no Poison
+   in kit) — unexplained. And a proposed **DB→model fidelity rung** (assert every populated column is
+   read + round-trips correctly — what would have caught the Vergis drop) is designed but NOT built.
 
 ---
 

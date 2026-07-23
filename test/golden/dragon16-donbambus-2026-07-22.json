@@ -5,6 +5,7 @@
   "result": { "outcome": "WIN", "time_seconds": 411, "turns": 150, "survivors": 5 },
   "_names": "team/per_hero/damage_rank use the VICTORY-SCREEN display names; resolve to champions.name via lib/champion-names.js before sim use (e.g. Ezio→Ezio Auditore, Pelops→Pelops the Victor, Bambus→Bambus Fourleaf).",
   "team": ["Ezio", "Vergis", "Bambus", "Pelops", "Tagoar"],
+  "roster": { "Ezio": "Ezio Auditore", "Vergis": "Vergis", "Bambus": "Bambus Fourleaf", "Pelops": "Pelops the Victor", "Tagoar": "Tagoar" },
 
   "expected": {
     "failure_location": "wave 2",
