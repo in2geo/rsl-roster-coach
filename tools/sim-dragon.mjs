@@ -30,7 +30,7 @@ const H = { apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${p
 const rest = async p => (await fetch(`${BASE}/rest/v1/${p}`, { headers: H })).json();
 
 const SEL = 'id,name,type_id,rarity,role,affinity,faction,base_hp,base_atk,base_def,base_spd,base_acc,base_res,base_crit_rate,base_crit_dmg,'
-  + 'champion_tags(tag_id,status,tags(name)),champion_skills(slot,skill_name,skill_summary,cooldown_base,cooldown_booked,damage_multiplier)';
+  + 'champion_tags(tag_id,status,tags(name)),champion_skills(slot,skill_name,skill_summary,cooldown_base,cooldown_booked,damage_multiplier,multiplier_type)';
 let db = [];
 for (let f = 0; ; f += 1000) {
   const d = await rest(`champions?select=${encodeURIComponent(SEL)}&game_id=eq.raid_shadow_legends&limit=1000&offset=${f}`);
@@ -49,32 +49,24 @@ for (const f of fs.readdirSync(path.join(REPO, 'gestal-sync/output')).filter(x =
 }
 
 const dun = (await rest('dungeons?select=id,name&game_id=eq.raid_shadow_legends')).find(x => x.name === "Dragon's Lair");
-const enemyRows = await rest('dungeon_stage_enemies?select=stage_number,enemy_role,enemy_name,hp,atk,def,spd,res,acc,crit_rate,crit_dmg&dungeon_id=eq.' + dun.id);
+const enemyRows = await rest('dungeon_stage_enemies?select=stage_number,enemy_role,enemy_name,wave_number,position,champion_id,hp,atk,def,spd,res,acc,crit_rate,crit_dmg&dungeon_id=eq.' + dun.id);
 const affRows = await rest('dungeon_stage_affinities?select=stage_number,affinity&dungeon_id=eq.' + dun.id);
 const stageAff = Object.fromEntries(affRows.map(r => [r.stage_number, r.affinity]));
 const bossRow = s => enemyRows.find(e => e.stage_number === s && e.enemy_role === 'boss');
 const hasWaveRows = enemyRows.some(e => e.enemy_role !== 'boss');
 
-// PENDING seed 206 (Ezio multipliers): mirror the committed seed here so the sim reflects it WITHOUT
-// touching the live DB — the branch keeps the DB untouched and seeds as files until merge, exactly
-// like the wave data. Precise datamined decimals (in-game card rounds them up to 4/4/5). Delete this
-// overlay once seed 206 is applied. Keyed champion_id -> { skill_name: multiplier }.
-const PENDING_MULT = {
-  '00404172-1b85-49eb-b353-a0aaaf9cca1f': { 'Eagle Dive': '3.8', "Da Vinci's Design": '3.7', 'Hidden Gun': '4.7' },
-};
+// Ezio's multipliers (seed 206) and the Dragon-16 team's (seed 207) are APPLIED to the live DB — the
+// former PENDING_MULT overlay is gone; kits come straight from champion_skills (incl. multiplier_type).
 function buildAlly(c) {
   const cat = byId[c.id];
   const st = c.estimated_stats ?? {};
-  const pend = PENDING_MULT[c.id];
-  const skillRows = (cat?.champion_skills ?? []).map(r =>
-    pend?.[r.skill_name] && r.damage_multiplier == null ? { ...r, damage_multiplier: pend[r.skill_name] } : r);
   return makeCombatant({
     name: c.name, side: 'ally',
     maxHp: st.hp, atk: st.atk, def: st.def, spd: st.spd,
     acc: st.acc, res: st.res,
     critRate: st.crit_rate ?? st.crate, critDmg: st.crit_dmg ?? st.cdmg,
     affinity: c.affinity ?? cat?.affinity, tags: c.tags ?? [],
-    skills: readSkillKit(skillRows),
+    skills: readSkillKit(cat?.champion_skills ?? []),
   });
 }
 function buildBoss(stage) {
@@ -93,39 +85,29 @@ function buildBoss(stage) {
   return b;
 }
 
-// ── STAGE-16 WAVE PILOT ──────────────────────────────────────────────────────
-// GROUND TRUTH: Mike's HellHades screenshots, 2026-07-22. Void affinity, Level 200, 6★. Stats are
-// the WHITE numbers (orange = HellHades' SUGGESTED PLAYER stats, discarded per data-sourcing rules).
-// Composition CONFIRMED Void by Mike (seeds/205 had it wrong as Spirit). RES/ACC = 100/100 (mobs are
-// NOT == boss's 150/150 on Dragon). Kits come free via champion_id → readSkillKit.
-// PILOT SCOPE: only stage 16 has real waves; every other stage stays unmodelled (waves=null).
-const ST16_MOB_STATS = {
-  Lua:        { hp: 48285, atk: 4848, def: 2599, spd: 97 },
-  Faceless:   { hp: 58185, atk: 4305, def: 2482, spd: 101 },
-  Arbalester: { hp: 45960, atk: 4422, def: 2211, spd: 96 },
-  Renegade:   { hp: 58755, atk: 3336, def: 2444, spd: 95 },
-};
-const ST16_WAVES = [
-  ['Lua', 'Faceless', 'Arbalester', 'Arbalester', 'Renegade'],   // wave 1
-  ['Arbalester', 'Faceless', 'Lua', 'Lua', 'Renegade'],           // wave 2
-];
-function buildWaveMob(name, pos) {
-  const { id } = nameResolver.resolveOrThrow(name, 'Dragon st16 wave mob');
-  const s = ST16_MOB_STATS[name];
+// ── WAVE MOBS FROM THE DB ──────────────────────────────────────────────────────
+// Composition + enemy stats are the screenshot-verified worksheet (repo/data/dragon_wave_data.xlsx),
+// applied via seed 211 (dungeon_stage_enemies, enemy_role='wave', all 25 Normal stages). Mobs are REAL
+// champions: kit + affinity inherited from champion_id (verified 2026-07-23 that each mob's canonical
+// affinity == its stage wave affinity, so no per-row affinity is stored). Waves are now ON by default
+// for every stage that has rows — the SIM_WAVES opt-in and the st16-only pilot are retired.
+const waveRows = enemyRows.filter(e => e.enemy_role === 'wave');
+function buildWaveMob(r) {
+  const cat = byId[r.champion_id];
   return makeCombatant({
-    name: `${name}#${pos}`, side: 'enemy', role: 'wave',
-    maxHp: s.hp, atk: s.atk, def: s.def, spd: s.spd, acc: 100, res: 100,
-    critRate: 15, critDmg: 50, affinity: 'Void',
-    skills: readSkillKit(byId[id]?.champion_skills ?? []),
+    name: `${r.enemy_name}#${r.position}`, side: 'enemy', role: 'wave',
+    maxHp: Number(r.hp), atk: Number(r.atk), def: Number(r.def), spd: Number(r.spd),
+    acc: Number(r.acc), res: Number(r.res), critRate: Number(r.crit_rate), critDmg: Number(r.crit_dmg),
+    affinity: cat?.affinity, skills: readSkillKit(cat?.champion_skills ?? []),
   });
 }
 function dragonWavesFor(stage) {
-  // OPT-IN pilot (SIM_WAVES=1): the wave model is faithful but the team's OFFENSE is incomplete
-  // (4/5 champs have no coeff, so they can't clear the mobs and the sim wipes on wave 1). Keeping it
-  // off by default avoids silently degrading the headline number on an admittedly-incomplete phase —
-  // it flips back on the moment damage_multiplier extraction lands. Only st16 has real wave data.
-  if (!process.env.SIM_WAVES || stage !== 16) return null;
-  return ST16_WAVES.map(names => ({ enemies: names.map((n, i) => buildWaveMob(n, i + 1)), actEnemy: actEnemyMob }));
+  const rows = waveRows.filter(e => e.stage_number === stage);
+  if (!rows.length) return null;
+  return [...new Set(rows.map(e => e.wave_number))].sort((a, b) => a - b).map(wn => ({
+    enemies: rows.filter(e => e.wave_number === wn).sort((a, b) => a.position - b.position).map(buildWaveMob),
+    actEnemy: actEnemyMob,
+  }));
 }
 
 const runs = await rest('run_reconciliations?select=account_id,display_name,content,successful,turns,duration_seconds,team_fielded&order=battle_captured_at.desc&limit=2000');
@@ -146,8 +128,8 @@ for (const r of runs) {
 console.log(`\n══ DRAGON TURN-LOOP SIM ══  ${cases.length} captured battles rebuilt\n`);
 if (!hasWaveRows) console.log('  ⚠ UNMODELLED: Dragon has NO wave enemies in dungeon_stage_enemies (25 rows, all boss).');
 console.log('  ✅ MODELLED: purple bar = 20% of Hellrazor MAX HP (Mike/Fandom 2026-07-22), drained by team damage.');
-console.log('  ⚠ UNDER-MODELLED: bar-CLEARING damage — %maxHP nukes + damage_multiplier missing on many champs');
-console.log('                  (Ezio/Pelops/Tagoar/Xenomorph deal 0 direct), so Scorch still fires ~always.');
+console.log('  ⚠ UNDER-MODELLED: bar-CLEARING damage — Ezio/Pelops/Tagoar/Bambus/Vergis coeffs APPLIED (seeds 206/207,');
+console.log('                  Pelops HP-scaled, Vergis DEF-scaled); %maxHP nukes + other champs (e.g. Xenomorph) still 0. Bambus ~506k unreconciled.');
 console.log('  ⚠ TODO stage 21+/Hard: %maxHP damage skills capped at 10% of boss HP per hit (2 hits to break bar).');
 console.log('  ⚠ UNCALIBRATED: DEF_K=1500 is a NOMINAL mitigation curve (real DEF diminishing returns');
 console.log('                  are an unimplemented formulas.js TODO) — the one unvalidated number');

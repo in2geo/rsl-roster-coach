@@ -105,10 +105,29 @@ const countTurns = (allies, enemies, cap, name) => {
   ok('CC on enemies reduces their actions (and the test ran)', withCc <= noCc && noCc > 0, `noCC→${noCc} mob turns, withCC→${withCc}`);
 }
 
+// ── T9: [Decrease Defense] on an enemy → MORE ATTACK damage into it ───────────────
+{
+  const mk = () => champ({ atk: 2000, spd: 100, skills: [{ slot: 'A1', cooldown: 0, cdLeft: 0, hitsEnemies: true, coeff: 1 }] });
+  const bare = boss({ maxHp: 1e9, def: 3000, spd: 1 });
+  const shredded = boss({ maxHp: 1e9, def: 3000, spd: 1 }); applyDebuff(shredded, { type: 'Decrease Defense', value: 60, turns: 5 });
+  run([mk()], [bare], 1); run([mk()], [shredded], 1);
+  const dmgBare = 1e9 - bare.hp, dmgShred = 1e9 - shredded.hp;
+  ok('Decrease DEF↑ raises ATTACK damage dealt (and the test ran)', dmgShred > dmgBare && dmgBare > 0, `no-shred→${Math.round(dmgBare)}, 60% shred→${Math.round(dmgShred)}`);
+}
+
+// ── T10 (CARVE-OUT): [Decrease Defense] does NOTHING to POISON damage (DoT is DEF-independent) ──
+{
+  const mk = (shred) => { const c = champ({ def: 3000, spd: 100, skills: [{ slot: 'A1', cooldown: 0, cdLeft: 0, hitsEnemies: false }] }); c.debuffs.push({ type: 'Poison', pct: 0.05, stacks: 2, turnsLeft: 5 }); if (shred) c.debuffs.push({ type: 'Decrease Defense', value: 60, turnsLeft: 5 }); return c; };
+  const plain = mk(false), shredded = mk(true);
+  run([plain], [boss({ spd: 1 })], 1); run([shredded], [boss({ spd: 1 })], 1);
+  const lossPlain = plain.maxHp - plain.hp, lossShred = shredded.maxHp - shredded.hp;
+  ok('Decrease DEF does NOT change POISON damage (game fact: DoT is DEF-independent)', lossPlain === lossShred && lossPlain > 0, `no-shred lost ${Math.round(lossPlain)}, 60% shred lost ${Math.round(lossShred)}`);
+}
+
 // ── informational: sensitivities NOT asserted because they need unimplemented mechanics ──
 const notTested = [
   'Add one Fire-Knight hit → shield removal easier  [needs FK shield module — not built]',
-  'Decrease DEF → more ATTACK damage  [Decrease DEF debuff is applied but NOT consumed in the damage calc — unimplemented]',
+  '[Ignore Defense] skill flag → more ATTACK damage  [skill-level DEF-ignore not parsed yet — unimplemented]',
 ];
 
 // ── report ───────────────────────────────────────────────────────────────────

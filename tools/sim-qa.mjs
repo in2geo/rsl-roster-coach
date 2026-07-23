@@ -45,10 +45,11 @@ const MANIFEST = [
   ['wave-mob combat (generic, opt-in pilot)', 'implemented'],
   ['damage: skill coeff x ATK', 'partial'],            // only 38% of skills carry a coeff
   ['DEF diminishing-returns curve', 'stub'],           // DEF_K=1500 nominal, uncalibrated
-  ['multiplier_type (DEF/HP-scaling skills)', 'unimplemented'],  // sim assumes ATK for all
-  ['Decrease DEF consumed in the damage calc', 'unimplemented'], // debuff applied but never lowers effective DEF (rung 6)
-  ['[Perfect Veil] = untargetable', 'unimplemented'],  // video: Ezio took ~3.5k all fight; sim one-shots him
-  ['%MaxHP damage skills + stage 21+/Hard 10% cap', 'unimplemented'],
+  ['multiplier_type (ATK/HP/DEF-scaling skills)', 'implemented'],  // parseCoeff reads the stat, calc scales off it; DATA must carry "N HP"/"N DEF" (bare = ATK)
+  ['passive triggers (start-of-turn / start-of-battle)', 'partial'],  // firePassives places passive buffs/debuffs; on-hit/on-death/on-crit/each-round triggers still unmodelled (flagged)
+  ['Decrease DEF consumed in the damage calc', 'implemented'], // effectiveDef() lowers DEF on ATK-vs-DEF hits only (DoT untouched); reads the debuff's own magnitude, no constant
+  ['[Perfect Veil] = untargetable', 'implemented'],  // single-target selection hard-skips a veiled ally/enemy; AoE hits through (was: video Ezio took ~3.5k all fight; sim one-shot him)
+  ['%MaxHP damage skills + stage 21+/Hard 10% cap', 'partial'],  // pure %maxHP nuke (DEF-independent) + the 10%/hit cap done; compound "%maxHP or ATK" left to ATK term + flagged
   ['execute skills (fire only in kill range)', 'unimplemented'],
   ['enemy-side buffs / heals / revives on waves', 'unimplemented'],
 ];
@@ -72,6 +73,7 @@ console.log('╚═════════════════════�
 const spec = runRung('sim-selftest.mjs');        // rung 2 — no DB
 const inv = runRung('sim-invariants.mjs');       // rung 5 — no DB, property-based
 const sens = runRung('sim-sensitivity.mjs');     // rung 6 — no DB, metamorphic
+const effects = runRung('sim-effects.mjs');      // fired-vs-consumed — no DB, catches represented-but-not-consumed
 const golden = runRung('sim-golden.mjs');        // rung 4 — no DB, golden-battle fixtures
 const data = runRung('sim-validate-data.mjs');   // rung 1 — needs DB (inherits env from --env-file)
 
@@ -84,8 +86,19 @@ if (inv.json) for (const f of inv.json.failures) ledger.spec_violation.push(`inv
 else ledger.spec_violation.push('rung 5 (invariants) did not report — cannot confirm invariants hold');
 if (sens.json) for (const f of sens.json.failures) ledger.spec_violation.push(`sensitivity: ${f}`);
 else ledger.spec_violation.push('rung 6 (sensitivity) did not report — cannot confirm directions');
+// FIRED-vs-CONSUMED: a fired effect that never lands (no documented reason) is the sim disagreeing
+// with its own design — the "represented but not consumed" species — so it BLOCKS (bucket 1). A
+// DEMONSTRATED BLANK (a passive that never fires because there is no trigger system) is a known-
+// missing mechanic → bucket 2, does not block.
+if (effects.json) { for (const f of effects.json.failures) ledger.spec_violation.push(`effect not consumed: ${f}`);
+                    for (const b of effects.json.blanks) ledger.unimplemented.push(`${b}  [demonstrated by sim-effects, not hand-declared]`); }
+else ledger.spec_violation.push('fired-vs-consumed rung did not report — cannot confirm effects land');
 if (golden.json) { for (const f of golden.json.failures) ledger.spec_violation.push(`golden fixture malformed: ${f}`);
-                   for (const p of golden.json.pendingInputs) ledger.missing_data.push(`golden ${p}`); }
+                   for (const p of golden.json.pendingInputs) ledger.missing_data.push(`golden ${p}`);
+                   // A golden OUTCOME mismatch is a reality gap (bucket 4), NOT a spec failure: the sim is
+                   // known-incomplete, so it labels "sim can't yet reproduce this real fight" — never blocks.
+                   for (const r of golden.json.runs ?? []) if (r.outcomeMatch === false)
+                     ledger.reality_gap.push(`golden ${r.id}: sim ${r.predOutcome} vs real ${r.actualOutcome} (survivors ${r.predSurvivors}/${r.actualSurvivors}; 0-dmg: ${(r.zeroDmg||[]).join(', ') || 'none'})`); }
 
 for (const [m, st] of MANIFEST) if (st === 'unimplemented' || st === 'stub') ledger.unimplemented.push(`${m}  [${st}]`);
 
@@ -114,9 +127,17 @@ console.log('\n▶ SENSITIVITY (rung 6 — one-input perturbations move the righ
 console.log(sens.json ? `    ${sens.json.fail === 0 ? '✅ PASS' : '✗ FAIL'} — ${sens.json.pass} directions held, ${sens.json.fail} violated`
                       : '    ⚠ no report');
 
-console.log('\n▶ GOLDEN BATTLES (rung 4 — real recorded fights, fixture-validated)');
+console.log('\n▶ FIRED vs CONSUMED (does every effect that fires actually land in world state?)');
+console.log(effects.json ? `    ${effects.json.fail === 0 ? '✅ PASS' : '✗ FAIL'} — ${effects.json.pass} checks passed, ${effects.json.fail} unexplained non-consumption(s) · ${effects.json.blanks.length} demonstrated blank(s)`
+                         : '    ⚠ no report');
+
+console.log('\n▶ GOLDEN BATTLES (rung 4 — real recorded fights, fixture-validated + sim replayed on exact builds)');
 console.log(golden.json ? `    ${golden.json.fail === 0 ? '✅' : '✗'} ${golden.json.fixtures} fixture(s), ${golden.json.pass} consistency checks passed, ${golden.json.fail} failed · ${golden.json.pendingInputs.length} pending exact builds`
                         : '    ⚠ no report');
+if (golden.json) for (const r of golden.json.runs ?? []) {
+  if (r.skipped) { console.log(`    · exact-stat run ${r.id}: skipped — ${r.skipped}`); continue; }
+  console.log(`    · exact-stat run ${r.id}: sim ${r.predOutcome} / real ${r.actualOutcome} ${r.outcomeMatch ? '✅ reproduced' : '✗ mismatch → bucket 4'} (survivors ${r.predSurvivors}/${r.actualSurvivors})`);
+}
 
 console.log('\n▶ INPUT DATA (rung 1 — gate 0)');
 if (data.json) {

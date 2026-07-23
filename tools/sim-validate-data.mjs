@@ -34,7 +34,7 @@ const rest = async p => (await fetch(`${BASE}/rest/v1/${p}`, { headers: H })).js
 // Full SELECT — buildUserChampions/mapRoster need identity + base stats to resolve rosters; a slim
 // projection silently yields an empty roster index (0 fielded champs). Mirror sim-dragon.mjs.
 const SEL = 'id,name,type_id,rarity,role,affinity,faction,base_hp,base_atk,base_def,base_spd,base_acc,base_res,base_crit_rate,base_crit_dmg,'
-  + 'champion_tags(tag_id,status,tags(name)),champion_skills(slot,skill_name,skill_summary,cooldown_base,cooldown_booked,damage_multiplier)';
+  + 'champion_tags(tag_id,status,tags(name)),champion_skills(slot,skill_name,skill_summary,cooldown_base,cooldown_booked,damage_multiplier,multiplier_type)';
 let db = [];
 for (let f = 0; ; f += 1000) {
   const d = await rest(`champions?select=${encodeURIComponent(SEL)}&game_id=eq.raid_shadow_legends&limit=1000&offset=${f}`);
@@ -53,7 +53,7 @@ for (const f of fs.readdirSync(path.join(REPO, 'gestal-sync/output')).filter(x =
 }
 
 const dun = (await rest('dungeons?select=id,name&game_id=eq.raid_shadow_legends')).find(x => x.name === "Dragon's Lair");
-const enemyRows = await rest('dungeon_stage_enemies?select=stage_number,enemy_role,enemy_name,hp,atk,def,spd,res,acc,crit_rate,crit_dmg&dungeon_id=eq.' + dun.id);
+const enemyRows = await rest('dungeon_stage_enemies?select=stage_number,enemy_role,enemy_name,wave_number,position,champion_id,hp,atk,def,spd,res,acc,crit_rate,crit_dmg&dungeon_id=eq.' + dun.id);
 // Probe whether the wave SCHEMA even exists live — migration 2026-07-22_dungeon_stage_enemies_waves
 // adds wave_number/position and may be UNAPPLIED. A non-array reply = the column is absent.
 const waveColsProbe = await rest('dungeon_stage_enemies?select=wave_number&limit=1&dungeon_id=eq.' + dun.id);

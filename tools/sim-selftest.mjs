@@ -12,9 +12,9 @@
 //
 // Deterministic, instant, no I/O. Run: node tools/sim-selftest.mjs
 
-import { makeCombatant, makeState, simulate, dealDamage, chooseEnemyTarget,
-         affinityFactor, landChance, defMitigation, actEnemyMob, CC_SKIPS_TURN } from '../lib/sim/engine.js';
-import { readSkillKit, classifySkill, canUseSkill, parseCoeff } from '../lib/sim/ai.js';
+import { makeCombatant, makeState, simulate, dealDamage, chooseEnemyTarget, chooseAllyTarget, isUntargetable,
+         affinityFactor, landChance, defMitigation, effectiveDef, actEnemyMob, scaleStat, applyDebuff, CC_SKIPS_TURN } from '../lib/sim/engine.js';
+import { readSkillKit, classifySkill, canUseSkill, parseCoeff, parseMaxHpPct, classifyPassiveTrigger } from '../lib/sim/ai.js';
 
 let pass = 0, fail = 0; const failures = [];
 const ok = (name, cond, detail = '') => {
@@ -189,12 +189,25 @@ const passiveContent = (enemies) => ({ phases: [{ name: 'boss', enemies, actEnem
   eq('cooldown parses from "4 Turns" (mixed-type column)', shield[0].cooldown, 4);
 }
 
-// ── 11. COEFFICIENT PARSING — three formats in one free-text column ─────────
+// ── 11. COEFFICIENT PARSING — value + scaling stat (multiplier_type) ─────────
 {
-  eq('bare coefficient', parseCoeff('4.65'), 4.65);
-  eq('"N ATK" form', parseCoeff('2.5 ATK'), 2.5);
-  eq('compound form takes the ATK term', parseCoeff('0.02 Enemy MAX HP / 2.5 ATK'), 2.5);
+  eq('bare coefficient value', parseCoeff('4.65')?.value, 4.65);
+  eq('bare coefficient defaults to ATK scaling', parseCoeff('4.65')?.stat, 'atk');
+  eq('"N ATK" form value', parseCoeff('2.5 ATK')?.value, 2.5);
+  eq('"N HP" scales off HP (Pelops)', parseCoeff('0.4 HP')?.stat, 'hp');
+  eq('"N HP" value', parseCoeff('0.4 HP')?.value, 0.4);
+  eq('"N DEF" scales off DEF (Vergis)', parseCoeff('3.9 DEF')?.stat, 'def');
+  eq('"N DEF" value', parseCoeff('3.9 DEF')?.value, 3.9);
+  eq('compound form takes the ATK term', parseCoeff('0.02 Enemy MAX HP / 2.5 ATK')?.value, 2.5);
+  eq('pure Enemy MAX HP is NOT read as attacker HP (separate mechanic)', parseCoeff('0.02 Enemy MAX HP'), null);
   eq('null stays null (never defaulted)', parseCoeff(null), null);
+
+  // the multiplier_type COLUMN is the authority — Vergis is stored as bare '3.9' + column 'DEF'.
+  const vk = readSkillKit([{ slot: 'A1', skill_name: 'Pierce', skill_summary: 'Attacks 1 enemy.', damage_multiplier: '3.9', multiplier_type: 'DEF' }]);
+  eq('multiplier_type column sets coeffStat (bare value + DEF column)', vk[0].coeffStat, 'def');
+  eq('coeff value still comes from damage_multiplier', vk[0].coeff, 3.9);
+  const noType = readSkillKit([{ slot: 'A1', skill_name: 'X', skill_summary: 'Attacks 1 enemy.', damage_multiplier: '4', multiplier_type: null }]);
+  eq('a null multiplier_type falls back to ATK', noType[0].coeffStat, 'atk');
 }
 
 // ── 12. MITIGATION is monotonic ──────────────────────────────────────────────
@@ -243,6 +256,163 @@ const passiveContent = (enemies) => ({ phases: [{ name: 'boss', enemies, actEnem
   mob.skills[0].cdLeft = 0;
   actEnemyMob(st2, mob);
   eq('a high-RES ally resists the mob debuff (RES 300 vs ACC 100)', tanky.debuffs.some(d => d.type === 'Decrease Attack'), false);
+}
+
+// ── 15. multiplier_type — DAMAGE SCALES OFF THE DECLARED STAT, not always ATK ──
+// The Pelops (0.4 HP) / Vergis (3.9 DEF) fix: a coeff must multiply by the attacker's coeffStat.
+{
+  eq('scaleStat reads ATK by default', scaleStat({ atk: 1000, def: 500, maxHp: 20000 }, 'atk'), 1000);
+  eq('scaleStat reads HP when stat=hp', scaleStat({ atk: 1000, def: 500, maxHp: 20000 }, 'hp'), 20000);
+  eq('scaleStat reads DEF when stat=def', scaleStat({ atk: 1000, def: 500, maxHp: 20000 }, 'def'), 500);
+
+  // end-to-end: an HP-scaling hit lands maxHp×coeff, NOT atk×coeff
+  const hpHero = champ({ maxHp: 20000, atk: 1000, spd: 100,
+    skills: [{ slot: 'A1', cooldown: 0, cdLeft: 0, hitsEnemies: true, coeff: 0.5, coeffStat: 'hp' }] });
+  const boss = dummyEnemy({ maxHp: 1e9, def: 0, spd: 1 });
+  const st = makeState({ allies: [hpHero], enemies: [] });
+  const l = console.log; console.log = () => {};
+  simulate(st, { phases: [{ name: 'boss', enemies: [boss], actEnemy() {} }] }, { turnCap: 1 });
+  console.log = l;
+  eq('HP-scaling skill hits for MAX HP × coeff (0.5×20000), not ATK × coeff', 1e9 - boss.hp, 10000);
+
+  // a skill with no coeffStat still defaults to ATK (back-compat with every existing fixture)
+  const atkHero = champ({ maxHp: 20000, atk: 1000, spd: 100,
+    skills: [{ slot: 'A1', cooldown: 0, cdLeft: 0, hitsEnemies: true, coeff: 2 }] });   // no coeffStat
+  const boss2 = dummyEnemy({ maxHp: 1e9, def: 0, spd: 1 });
+  const st2 = makeState({ allies: [atkHero], enemies: [] });
+  const l2 = console.log; console.log = () => {};
+  simulate(st2, { phases: [{ name: 'boss', enemies: [boss2], actEnemy() {} }] }, { turnCap: 1 });
+  console.log = l2;
+  eq('a coeffStat-less skill still scales off ATK (2×1000)', 1e9 - boss2.hp, 2000);
+}
+
+// ── 16. PASSIVE-TRIGGER SYSTEM — passives place their effects at the right trigger ───
+// The Ezio one-shot, half one: a passive [Perfect Veil] that never landed because there was no
+// mechanism to fire passives at all (demonstrated blank, sim-effects Part C).
+{
+  eq('classify "start of each turn" as a start-of-turn trigger',
+     classifyPassiveTrigger('Places a [Perfect Veil] buff on this Champion at the start of each turn.'), 'startOfTurn');
+  eq('classify "at the start of the battle" as a start-of-battle trigger',
+     classifyPassiveTrigger('At the start of the battle, places a [Shield] buff on all allies.'), 'startOfBattle');
+  eq('a passive with no readable trigger classifies as null (flagged, never fired blind)',
+     classifyPassiveTrigger("Increases this Champion's DEF by 20%."), null);
+
+  // end-to-end: a start-of-turn passive [Perfect Veil] actually lands on its champion
+  const kit = readSkillKit([
+    { slot: 'A1', skill_name: 'Poke', skill_summary: 'Attacks 1 enemy.', cooldown_base: '0', damage_multiplier: '1' },
+    { slot: 'Passive', skill_name: 'Ghostwalk [P]', skill_summary: 'Places a [Perfect Veil] buff on this Champion at the start of each turn.', cooldown_base: null, damage_multiplier: null },
+  ]);
+  eq('passive trigger parsed onto the skill', kit.find(s => s.isPassive)?.passiveTrigger, 'startOfTurn');
+  const hero = champ({ name: 'Ghost', spd: 100, skills: kit });
+  const st = makeState({ allies: [hero], enemies: [] });
+  const l = console.log; console.log = () => {};
+  simulate(st, passiveContent([dummyEnemy({ maxHp: 1e9, spd: 1 })]), { turnCap: 3 });
+  console.log = l;
+  eq('start-of-turn passive places [Perfect Veil] on its champion', hero.buffs.some(b => b.type === 'Perfect Veil'), true);
+
+  // TEETH: a passive whose trigger we CANNOT read must NOT fire — we do not blindly apply every passive
+  const kit2 = readSkillKit([
+    { slot: 'A1', skill_name: 'Poke', skill_summary: 'Attacks 1 enemy.', cooldown_base: '0', damage_multiplier: '1' },
+    { slot: 'Passive', skill_name: 'Onslaught [P]', skill_summary: 'Whenever this Champion is hit by a critical hit, places a [Shield] buff on this Champion.', cooldown_base: null, damage_multiplier: null },
+  ]);
+  const hero2 = champ({ name: 'NoTrig', spd: 100, skills: kit2 });
+  const st2 = makeState({ allies: [hero2], enemies: [] });
+  const l2 = console.log; console.log = () => {};
+  simulate(st2, passiveContent([dummyEnemy({ maxHp: 1e9, spd: 1 })]), { turnCap: 3 });
+  console.log = l2;
+  eq('an on-crit passive (unmodelled trigger) does NOT place its [Shield] at start of turn', hero2.buffs.some(b => b.type === 'Shield'), false);
+  ok('...and that unmodelled passive is flagged as unread', kit2.find(s => s.isPassive)?.unread.includes('passive-trigger'));
+}
+
+// ── 17. [PERFECT VEIL] = UNTARGETABLE — single-target skips it, AoE hits through it ──
+// The Ezio one-shot, half two: single-target enemy attacks must skip a veiled ally.
+{
+  const veiled = champ({ name: 'Veiled', maxHp: 10000 }); veiled.hp = 1000;    // 10% — the lowest HP%
+  const exposed = champ({ name: 'Exposed', maxHp: 10000 }); exposed.hp = 9000; // 90%
+  eq('single-target normally picks the lowest HP% ally', chooseAllyTarget([veiled, exposed])?.name, 'Veiled');
+  veiled.buffs.push({ type: 'Perfect Veil', turnsLeft: 3 });
+  ok('isUntargetable recognises [Perfect Veil]', isUntargetable(veiled));
+  eq('single-target SKIPS the veiled ally for the exposed one', chooseAllyTarget([veiled, exposed])?.name, 'Exposed');
+
+  // TEETH: if EVERY ally is veiled the protection lapses — a veil cannot leave the attacker no target
+  exposed.buffs.push({ type: 'Perfect Veil', turnsLeft: 3 });
+  eq('all allies veiled -> veil offers no cover, lowest HP% is picked', chooseAllyTarget([veiled, exposed])?.name, 'Veiled');
+
+  // our champs hitting enemies honor the same rule (one shared code path)
+  const vEnemy = dummyEnemy({ name: 'VE', maxHp: 100 }); vEnemy.hp = 10; vEnemy.buffs.push({ type: 'Perfect Veil', turnsLeft: 2 });
+  const exEnemy = dummyEnemy({ name: 'XE', maxHp: 100 }); exEnemy.hp = 90;
+  eq('champ single-target skips a veiled enemy', chooseEnemyTarget([vEnemy, exEnemy])?.name, 'XE');
+
+  // AoE hits THROUGH a veil (untargetability is single-target only)
+  const va = champ({ name: 'VA', maxHp: 10000, def: 0, res: 0 }); va.buffs.push({ type: 'Perfect Veil', turnsLeft: 3 });
+  const mob = makeCombatant({ name: 'AoeMob', side: 'enemy', role: 'wave', maxHp: 5000, atk: 1000, acc: 100,
+    affinity: 'Void', critRate: 0, critDmg: 0,
+    skills: [{ slot: 'A2', cooldown: 0, cdLeft: 0, hitsEnemies: true, aoe: true, coeff: 2 }] });
+  const stv = makeState({ allies: [va], enemies: [mob] });
+  actEnemyMob(stv, mob);
+  ok('AoE damages a [Perfect Veil] ally (veil blocks single-target only)', va.hp < 10000);
+}
+
+// ── 18. [DECREASE DEFENSE] LOWERS EFFECTIVE DEF — ATTACK damage only (damage-mechanics.js §1/§2) ──
+{
+  const bare = champ({ def: 3000 });
+  eq('no shred -> effective DEF is the raw DEF', effectiveDef(bare), 3000);
+  const shred = champ({ def: 3000 }); applyDebuff(shred, { type: 'Decrease Defense', value: 60, turns: 2 });
+  near('60% Decrease DEF -> effective DEF is 40% of raw', effectiveDef(shred), 1200);
+  // magnitude comes from the debuff's own value, not a constant: a 30% weak version cuts less
+  const weak = champ({ def: 3000 }); applyDebuff(weak, { type: 'Decrease Defense', value: 30, turns: 2 });
+  near('30% (weak) Decrease DEF -> effective DEF is 70% of raw', effectiveDef(weak), 2100);
+  // does not stack: two Decrease DEF take the LARGEST, never sum past the real DEF
+  const two = champ({ def: 3000 }); applyDebuff(two, { type: 'Decrease Defense', value: 30, turns: 2 }); two.debuffs.push({ type: 'Decrease Defense', value: 60, turnsLeft: 2 });
+  near('multiple Decrease DEF do not stack (largest wins)', effectiveDef(two), 1200);
+
+  // end-to-end: a shredded enemy takes strictly MORE attack damage than an identical bare enemy
+  const hitter = () => champ({ atk: 2000, spd: 100, skills: [{ slot: 'A1', cooldown: 0, cdLeft: 0, hitsEnemies: true, coeff: 1 }] });
+  const eBare = dummyEnemy({ maxHp: 1e9, spd: 1 }); eBare.def = 3000;
+  const eShred = dummyEnemy({ maxHp: 1e9, spd: 1 }); eShred.def = 3000; applyDebuff(eShred, { type: 'Decrease Defense', value: 60, turns: 5 });
+  const l = console.log; console.log = () => {};
+  simulate(makeState({ allies: [hitter()], enemies: [] }), passiveContent([eBare]), { turnCap: 1 });
+  simulate(makeState({ allies: [hitter()], enemies: [] }), passiveContent([eShred]), { turnCap: 1 });
+  console.log = l;
+  ok('a DEF-shredded enemy takes strictly more ATTACK damage', (1e9 - eShred.hp) > (1e9 - eBare.hp),
+     `bare ${Math.round(1e9 - eBare.hp)}, shred ${Math.round(1e9 - eShred.hp)}`);
+}
+
+// ── 19. %MaxHP DAMAGE — DEF-independent, and capped to 10%/hit on stage 21+/Hard ──
+{
+  // parse: pure %maxHP, column-authoritative, and the compound carve-out
+  eq('pure "X Enemy MAX HP" reads a %maxHP fraction', parseMaxHpPct('0.02 Enemy MAX HP', null), 0.02);
+  eq('bare value + "Enemy MAX HP" column reads the fraction', parseMaxHpPct('0.05', 'Enemy MAX HP'), 0.05);
+  eq('compound "%maxHP / ATK" is NOT a pure %maxHP nuke (left to parseCoeff)', parseMaxHpPct('0.02 Enemy MAX HP / 2.5 ATK', null), null);
+  eq('attacker "N HP" scaling is NOT %maxHP', parseMaxHpPct('0.4 HP', 'HP'), null);
+  eq('null stays null', parseMaxHpPct(null, null), null);
+
+  const kit = readSkillKit([{ slot: 'A3', skill_name: 'Rupture', skill_summary: 'Attacks 1 enemy.', cooldown_base: '4', damage_multiplier: '0.15 Enemy MAX HP' }]);
+  eq('a %maxHP skill carries maxHpPct', kit[0].maxHpPct, 0.15);
+  eq('...and has NO attacker-scaling coeff (never double-counted)', kit[0].coeff, null);
+
+  // end-to-end: DEF-independent — a high-DEF and a low-DEF target of equal MAX HP take the SAME hit
+  const nuke = () => champ({ atk: 2000, spd: 100, skills: [{ slot: 'A1', cooldown: 0, cdLeft: 0, hitsEnemies: true, maxHpPct: 0.1 }] });
+  const tanky = dummyEnemy({ maxHp: 100000, spd: 1 }); tanky.def = 5000;
+  const squish = dummyEnemy({ maxHp: 100000, spd: 1 }); squish.def = 0;
+  const l = console.log; console.log = () => {};
+  simulate(makeState({ allies: [nuke()], enemies: [] }), passiveContent([tanky]), { turnCap: 1 });
+  simulate(makeState({ allies: [nuke()], enemies: [] }), passiveContent([squish]), { turnCap: 1 });
+  console.log = l;
+  eq('%maxHP hits 10% of MAX HP regardless of DEF (DEF-independent)', 100000 - tanky.hp, 10000);
+  eq('...and the low-DEF target takes the exact same %maxHP damage', 100000 - squish.hp, 10000);
+
+  // the stage-21+/Hard cap: a 20% skill is limited to 10% per hit when the content sets the cap
+  const capContent = (enemies, cap) => ({ phases: [{ name: 'boss', enemies, actEnemy() {} }], maxHpDamageCap: cap });
+  const big = () => champ({ spd: 100, skills: [{ slot: 'A1', cooldown: 0, cdLeft: 0, hitsEnemies: true, maxHpPct: 0.2 }] });
+  const capped = dummyEnemy({ maxHp: 100000, spd: 1 });
+  const uncapped = dummyEnemy({ maxHp: 100000, spd: 1 });
+  const l2 = console.log; console.log = () => {};
+  simulate(makeState({ allies: [big()], enemies: [] }), capContent([capped], 0.10), { turnCap: 1 });
+  simulate(makeState({ allies: [big()], enemies: [] }), capContent([uncapped], null), { turnCap: 1 });
+  console.log = l2;
+  eq('stage 21+/Hard caps a 20% %maxHP skill to 10% per hit', 100000 - capped.hp, 10000);
+  eq('uncapped (Normal <21), the full 20% lands', 100000 - uncapped.hp, 20000);
 }
 
 // ── report ───────────────────────────────────────────────────────────────────
