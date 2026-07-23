@@ -498,6 +498,30 @@ const passiveContent = (enemies) => ({ phases: [{ name: 'boss', enemies, actEnem
   eq('lone protected ally (no others to share with) takes the full hit', 20000 - solo.hp, 10000);
 }
 
+// ── 24. THE PELOPS ENGINE — per-buff recipient + Taunt-targeting + on-attacked [HP Burn] ──
+{
+  // per-buff recipient: a skill can buff ALL allies but taunt only THIS champion
+  const kit = readSkillKit([{ slot: 'A3', skill_name: "Victor's Bounty", cooldown_base: '4', damage_multiplier: null,
+    skill_summary: 'Places a 50% [Increase ATK] buff and a [Magma Shield] buff on all allies for 2 turns. Also places a [Taunt] buff on this Champion for 2 turns.' }]);
+  ok('Taunt is placed on THIS champion (self)', kit[0].buffs.find(b => b.type === 'Taunt')?.self === true);
+  ok('Magma Shield is placed on all allies (team)', kit[0].buffs.find(b => b.type === 'Magma Shield')?.self === false);
+
+  // Taunt-targeting: an attacker must hit the taunting ally, not the lowest-HP% one
+  const tank = champ({ name: 'Tank', maxHp: 30000 }); tank.buffs.push({ type: 'Taunt', turnsLeft: 2 });
+  const squishy = champ({ name: 'Squishy', maxHp: 10000 }); squishy.hp = 2000;   // lowest HP%
+  eq('a [Taunt] ally is targeted over the lowest-HP% ally', chooseAllyTarget([tank, squishy])?.name, 'Tank');
+
+  // on-attacked passive: the mob that hits Pelops receives his passive's [HP Burn]
+  const pel = champ({ name: 'Pelops', maxHp: 30000, def: 0, skills: readSkillKit([{ slot: 'Passive', skill_name: 'Master of Games [P]',
+    skill_summary: 'Whenever an enemy attacks this Champion, has a 100% chance of placing a [HP Burn] debuff on that enemy for 2 turns.' }]) });
+  eq('the passive classifies as onAttacked', pel.skills[0].passiveTrigger, 'onAttacked');
+  pel.buffs.push({ type: 'Taunt', turnsLeft: 3 });
+  const mob = makeCombatant({ name: 'Mob', side: 'enemy', role: 'wave', maxHp: 50000, atk: 1000, acc: 100, affinity: 'Void', critRate: 0, critDmg: 0,
+    skills: [{ slot: 'A1', cooldown: 0, cdLeft: 0, hitsEnemies: true, coeff: 1 }] });
+  actEnemyMob(makeState({ allies: [pel], enemies: [mob] }), mob);
+  ok('a mob that attacks Pelops receives [HP Burn]', mob.debuffs.some(d => d.type === 'HP Burn'));
+}
+
 // ── report ───────────────────────────────────────────────────────────────────
 console.log(`\n══ SIM SELF-TEST ══  ${pass} passed, ${fail} failed\n`);
 for (const f of failures) console.log(`  ✗ ${f}`);
