@@ -415,6 +415,30 @@ const passiveContent = (enemies) => ({ phases: [{ name: 'boss', enemies, actEnem
   eq('uncapped (Normal <21), the full 20% lands', 100000 - uncapped.hp, 20000);
 }
 
+// ── 20. THE EZIO ONE-SHOT — round-start veil trigger + self-condition [Veil] is NOT a placement ──
+{
+  eq('classify "start of each Round" as a round trigger',
+     classifyPassiveTrigger('Places a [Perfect Veil] buff on this Champion at the start of each Round.'), 'startOfRound');
+  // policy #20: a [Perfect Veil] inside a self-CONDITION ("if this Champion is under [X]") is a
+  // prerequisite, NOT a placement — else Ezio veils the whole team off his own condition clause.
+  const cond = readSkillKit([{ slot: 'A3', skill_name: 'Hidden Gun', damage_multiplier: '5',
+    skill_summary: 'Attacks 1 enemy. This effect cannot be resisted if this Champion is under a [Veil] or [Perfect Veil] buff.' }]);
+  eq('a [Perfect Veil] inside an "if under" condition is NOT parsed as placed', cond[0].buffs.length, 0);
+  // a passive that genuinely PLACES it at round start is still kept + triggered
+  const place = readSkillKit([{ slot: 'Passive', skill_name: 'Sync [P]', cooldown_base: null, damage_multiplier: null,
+    skill_summary: 'Places a [Perfect Veil] buff on this Champion for 2 turns at the start of each Round.' }]);
+  eq('a round-start [Perfect Veil] passive is triggered', place[0].passiveTrigger, 'startOfRound');
+  ok('...and carries the Perfect Veil buff', place[0].buffs.some(b => b.type === 'Perfect Veil'));
+
+  // end-to-end: the veil is up from battle start (t0), before any enemy can act
+  const hero = champ({ name: 'Sync', spd: 100, skills: place });
+  const st = makeState({ allies: [hero], enemies: [] });
+  const l = console.log; console.log = () => {};
+  simulate(st, passiveContent([dummyEnemy({ maxHp: 1e9, spd: 1 })]), { turnCap: 1 });
+  console.log = l;
+  ok('round-start passive places [Perfect Veil] by t0 (Ezio is untargetable from the start)', hero.buffs.some(b => b.type === 'Perfect Veil'));
+}
+
 // ── report ───────────────────────────────────────────────────────────────────
 console.log(`\n══ SIM SELF-TEST ══  ${pass} passed, ${fail} failed\n`);
 for (const f of failures) console.log(`  ✗ ${f}`);
