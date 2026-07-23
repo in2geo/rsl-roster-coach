@@ -1,0 +1,52 @@
+{
+  "_source": "Video C:/Users/in2ge/Videos/2026-07-22 17-42-03.mp4, build-screen pan at the end (Demon Lord Hard run). Read from frames by Claude 2026-07-22.",
+  "_note": "'Total Stats' = base + gear (green). These are the CHAMPION-level effective stats and do NOT include in-battle account bonuses (Arena / Great Hall / Faction Guardians), which add on top. A champion's build is the same across all content, so these are reusable for any battle the champ appears in.",
+  "_caveats": [
+    "Ezio's base HP/ATK read DIFFERENTLY on two frames (116: HP 11,175 / ATK 1,012; 085: HP 12,346 / ATK 888) — the build-screen totals fluctuated between frames. Treat Ezio's numbers as approximate until a stable reading is captured.",
+    "Ezio, Pelops, Kael came from the Demon-Lord video build pan; Bambus and Tagoar were supplied directly by Mike as build screenshots 2026-07-22. Builds are champion-level (same across content) so Ezio/Pelops/Bambus/Tagoar are reusable for the Dragon-16 team — only VERGIS remains uncaptured."
+  ],
+  "champions": [
+    {
+      "name": "Ezio Auditore", "level": 50, "stars": 5, "rarity": "Legendary", "affinity": "Attack",
+      "gear_sets": ["Perception (2-set: ACC +40, SPD +5%)"], "power": 13725,
+      "total_stats": { "hp": 15929, "atk": 1810, "def": 1080, "spd": 130, "crit_rate": 78, "crit_dmg": 60, "res": 49, "acc": 129 },
+      "base_plus_gear": { "hp": "11175+4754", "atk": "1012+798", "def": "721+359", "spd": "94+36", "crit_rate": "15+63", "crit_dmg": "50+10", "res": "30+19", "acc": "0+129" },
+      "flag": "base HP/ATK unstable across frames — see _caveats"
+    },
+    {
+      "name": "Pelops the Victor", "level": 60, "stars": 6, "rarity": "Legendary", "affinity": "HP",
+      "gear_sets": ["Lifesteal (4-set: heals 30% of damage dealt)"], "power": 15893,
+      "total_stats": { "hp": 28543, "atk": 1631, "def": 1725, "spd": 141, "crit_rate": 66, "crit_dmg": 82, "res": 57, "acc": 70 },
+      "base_plus_gear": { "hp": "22140+6403", "atk": "738+893", "def": "1299+426", "spd": "97+44", "crit_rate": "15+51", "crit_dmg": "50+32", "res": "30+27", "acc": "0+70" },
+      "flag": "LIFESTEAL GEAR — the app assumes NO champion has Lifesteal/Regen/Immortal; Pelops's sustain partly comes from this and is currently discarded by the model."
+    },
+    {
+      "name": "Kael", "level": 38, "stars": 5, "rarity": "Rare", "affinity": "Attack",
+      "gear_sets": ["(sets not confirmed from the frame)"], "power": 8793,
+      "total_stats": { "hp": 11316, "atk": 1214, "def": 776, "spd": 163, "crit_rate": 71, "crit_dmg": 74, "res": 64, "acc": 15 },
+      "base_plus_gear": { "hp": "8325+2991", "atk": "704+510", "def": "576+200", "spd": "103+60", "crit_rate": "15+56", "crit_dmg": "50+24", "res": "30+34", "acc": "0+15" },
+      "flag": "Demon-Lord team only; not on the Dragon-16 team."
+    },
+    {
+      "name": "Bambus Fourleaf", "level": 50, "stars": 5, "rarity": "Legendary", "affinity": "Support",
+      "gear_sets": ["(sets not confirmed; HP-heavy: +10,746 HP from gear)"], "power": 10350,
+      "total_stats": { "hp": 25686, "atk": 819, "def": 1120, "spd": 172, "crit_rate": 33, "crit_dmg": 70, "res": 77, "acc": 54 },
+      "base_plus_gear": { "hp": "14940+10746", "atk": "615+204", "def": "899+221", "spd": "105+67", "crit_rate": "15+18", "crit_dmg": "50+20", "res": "30+47", "acc": "0+54" },
+      "flag": "Top damage dealer on Dragon (~506k) despite ATK 819 — his damage is POISON/DoT (%maxHP), currently no coeff in our data. On the Dragon-16 team."
+    },
+    {
+      "name": "Tagoar", "level": 50, "stars": 5, "rarity": "Epic", "affinity": "Support",
+      "gear_sets": ["Speed (2-set: SPD +12%)"], "power": 6948,
+      "total_stats": { "hp": 24283, "atk": 1002, "def": 1117, "spd": 154, "crit_rate": 20, "crit_dmg": 66, "res": 46, "acc": 46 },
+      "base_plus_gear": { "hp": "12750+11533", "atk": "810+192", "def": "648+469", "spd": "98+56", "crit_rate": "15+5", "crit_dmg": "50+16", "res": "30+16", "acc": "0+46" },
+      "flag": "Team healer (~92k healing on Dragon). On the Dragon-16 team."
+    },
+    {
+      "name": "Vergis", "level": 40, "stars": 4, "rarity": "Epic", "affinity": "Defense",
+      "gear_sets": ["Life (2-set: HP +15%)"], "power": 7602,
+      "total_stats": { "hp": 16681, "atk": 661, "def": 1249, "spd": 147, "crit_rate": 33, "crit_dmg": 60, "res": 77, "acc": 33 },
+      "base_plus_gear": { "hp": "7770+8911", "atk": "470+191", "def": "649+600", "spd": "98+49", "crit_rate": "15+18", "crit_dmg": "50+10", "res": "30+47", "acc": "0+33" },
+      "flag": "DEF-SCALING: A1 Pierce = 3.9 x DEF. His DEF is 1,249 but the sim reads his multiplier as ATK (661), under-counting the ONE champ dealing direct damage on Dragon. Completes the Dragon-16 team."
+    }
+  ]
+}

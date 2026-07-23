@@ -72,6 +72,7 @@ console.log('╚═════════════════════�
 const spec = runRung('sim-selftest.mjs');        // rung 2 — no DB
 const inv = runRung('sim-invariants.mjs');       // rung 5 — no DB, property-based
 const sens = runRung('sim-sensitivity.mjs');     // rung 6 — no DB, metamorphic
+const golden = runRung('sim-golden.mjs');        // rung 4 — no DB, golden-battle fixtures
 const data = runRung('sim-validate-data.mjs');   // rung 1 — needs DB (inherits env from --env-file)
 
 // ── classify every finding into the four buckets ────────────────────────────────
@@ -83,6 +84,8 @@ if (inv.json) for (const f of inv.json.failures) ledger.spec_violation.push(`inv
 else ledger.spec_violation.push('rung 5 (invariants) did not report — cannot confirm invariants hold');
 if (sens.json) for (const f of sens.json.failures) ledger.spec_violation.push(`sensitivity: ${f}`);
 else ledger.spec_violation.push('rung 6 (sensitivity) did not report — cannot confirm directions');
+if (golden.json) { for (const f of golden.json.failures) ledger.spec_violation.push(`golden fixture malformed: ${f}`);
+                   for (const p of golden.json.pendingInputs) ledger.missing_data.push(`golden ${p}`); }
 
 for (const [m, st] of MANIFEST) if (st === 'unimplemented' || st === 'stub') ledger.unimplemented.push(`${m}  [${st}]`);
 
@@ -110,6 +113,10 @@ console.log(inv.json ? `    ${inv.json.fail === 0 ? '✅ PASS' : '✗ FAIL'} —
 console.log('\n▶ SENSITIVITY (rung 6 — one-input perturbations move the right way)');
 console.log(sens.json ? `    ${sens.json.fail === 0 ? '✅ PASS' : '✗ FAIL'} — ${sens.json.pass} directions held, ${sens.json.fail} violated`
                       : '    ⚠ no report');
+
+console.log('\n▶ GOLDEN BATTLES (rung 4 — real recorded fights, fixture-validated)');
+console.log(golden.json ? `    ${golden.json.fail === 0 ? '✅' : '✗'} ${golden.json.fixtures} fixture(s), ${golden.json.pass} consistency checks passed, ${golden.json.fail} failed · ${golden.json.pendingInputs.length} pending exact builds`
+                        : '    ⚠ no report');
 
 console.log('\n▶ INPUT DATA (rung 1 — gate 0)');
 if (data.json) {

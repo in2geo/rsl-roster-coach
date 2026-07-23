@@ -1,0 +1,49 @@
+{
+  "id": "dragon16-donbambus-2026-07-22",
+  "_source": "First video (C:/Users/in2ge/Videos/2026-07-22 16-58-52.mp4) + note session (RAID_Dragon_16_Battle_Review_Notes.docx), 2026-07-22.",
+  "content": { "dungeon": "Dragon's Lair", "difficulty": "Normal", "stage": 16, "mode": "Full Auto", "speed": "1x" },
+  "result": { "outcome": "WIN", "time_seconds": 411, "turns": 150, "survivors": 5 },
+  "_names": "team/per_hero/damage_rank use the VICTORY-SCREEN display names; resolve to champions.name via lib/champion-names.js before sim use (e.g. Ezio→Ezio Auditore, Pelops→Pelops the Victor, Bambus→Bambus Fourleaf).",
+  "team": ["Ezio", "Vergis", "Bambus", "Pelops", "Tagoar"],
+
+  "expected": {
+    "failure_location": "wave 2",
+    "failure_location_note": "Risk is concentrated in Wave 2, NOT the boss. A temporary death occurred in wave 2 and was recovered by a revive; the team reached Round 3 (boss) intact. A boss-only score misses this.",
+    "damage_rank": ["Bambus", "Ezio", "Pelops", "Tagoar", "Vergis"],
+    "top_healer": "Tagoar",
+    "per_hero": {
+      "Ezio":   { "damage": 332966, "taken": 3509,  "healing": 0 },
+      "Vergis": { "damage": 41818,  "taken": 31833, "healing": 39397 },
+      "Bambus": { "damage": 506399, "taken": 22143, "healing": 0 },
+      "Pelops": { "damage": 259218, "taken": 25650, "healing": 45460 },
+      "Tagoar": { "damage": 71280,  "taken": 4446,  "healing": 92193 }
+    }
+  },
+
+  "timeline": [
+    { "turn": 5,   "phase": "wave 1", "obs": "all five allies active", "confidence": "high" },
+    { "turn": 46,  "phase": "wave 1", "obs": "wave 1 nearly cleared; final enemy under sustained debuffs", "confidence": "high" },
+    { "turn": 49,  "phase": "wave 2", "obs": "wave 2 begins", "confidence": "high" },
+    { "turn": 75,  "phase": "wave 2", "obs": "Vergis DEAD; 2 wave-2 enemies dead; enemies carry HP Burn/Poison Sensitivity/Decrease DEF/Decrease SPD/Enfeeble/Decrease ACC", "confidence": "high" },
+    { "turn": 86,  "phase": "wave 2 -> boss", "obs": "final wave-2 enemy killed; Round 3 begins with ALL FIVE alive — the wave-2 death was recovered by revive", "confidence": "high" },
+    { "turn": 93,  "phase": "boss", "obs": "Dragon Inhale/purple-bar window; team begins the damage check", "confidence": "medium" },
+    { "turn": 114, "phase": "boss", "obs": "boss carries several harmful effects; team intact", "confidence": "high" },
+    { "turn": 134, "phase": "boss", "obs": "team-wide shields/protection refreshed while Dragon below half HP", "confidence": "high" },
+    { "turn": 150, "phase": "boss", "obs": "Dragon defeated; victory; all five survivors", "confidence": "high" }
+  ],
+
+  "inputs": {
+    "_status": "COMPLETE — all 5 exact builds captured. See data/observed-builds/2026-07-22-demon-lord.json. This fixture is now RUNNABLE.",
+    "Ezio":          { "build": "data/observed-builds/2026-07-22-demon-lord.json", "status": "captured (⚠ base stats unstable across frames)" },
+    "Pelops":        { "build": "data/observed-builds/2026-07-22-demon-lord.json", "status": "captured (Lifesteal 4-set — model discards this sustain)" },
+    "Bambus":        { "build": "data/observed-builds/2026-07-22-demon-lord.json", "status": "captured (HP-heavy; ~506k via DoT, no coeff)" },
+    "Tagoar":        { "build": "data/observed-builds/2026-07-22-demon-lord.json", "status": "captured (Speed 2-set; team healer)" },
+    "Vergis":        { "build": "data/observed-builds/2026-07-22-demon-lord.json", "status": "captured (DEF-scaling A1; sim mis-reads as ATK)" }
+  },
+
+  "qa_notes": [
+    "This fixture is the OUTPUT half of a golden battle (result + timeline + per-hero totals). It becomes fully RUNNABLE once all five exact builds are captured for THIS Dragon team.",
+    "The sim (SIM_WAVES=1) currently predicts a WAVE-1 WIPE for this team — golden says WIN with all 5 alive at 150t. That mismatch is the recorded finding: survival is under-modelled (Perfect-Veil untargetable on Ezio; Lifesteal gear on Pelops; heavy healing from Tagoar), and 3/5 champs still lack coeffs.",
+    "Damage is DoT-dominated over 150 turns; Bambus (top, ~506k) has no coeff in our data."
+  ]
+}
