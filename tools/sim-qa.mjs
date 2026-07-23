@@ -131,6 +131,7 @@ if (trace.json && Array.isArray(trace.json.runs)) {
     if (r.skipped) { ledger.reality_gap.push(`trace ${r.id}: skipped — ${r.skipped}`); continue; }
     if (r.firstDivergence) ledger.reality_gap.push(`trace ${r.id}: sim & reality first diverge at "${r.firstDivergence}" (sim ${r.simOutcome}/${r.simSurvivors} surv vs real ${r.realOutcome}/${r.realSurvivors})`);
     else ledger.reality_gap.push(`trace ${r.id}: sim reproduces the recorded fight at the checked checkpoints`);
+    if (r.perHeroHeadline) ledger.reality_gap.push(`trace ${r.id} per-hero: ${r.perHeroHeadline}`);
   }
 } else if (trace.json?.skipped) ledger.reality_gap.push(`trace oracle skipped — ${trace.json.skipped} (run with --env-file=.env.local)`);
 
@@ -178,6 +179,7 @@ if (trace.json && Array.isArray(trace.json.runs) && trace.json.runs.length) {
   for (const r of trace.json.runs) {
     if (r.skipped) { console.log(`    · ${r.id}: skipped — ${r.skipped}`); continue; }
     console.log(`    ${r.firstDivergence ? '✗' : '✅'} ${r.id}: ${r.firstDivergence ? `first diverges at "${r.firstDivergence}"  (sim ${r.simOutcome} ${r.simSurvivors} surv / real ${r.realOutcome} ${r.realSurvivors} surv)` : 'reproduces the fight at checked checkpoints'}`);
+    if (r.perHeroHeadline) console.log(`        per-hero: ${r.perHeroHeadline}`);
   }
 } else if (trace.json?.skipped) console.log(`    ⏳ skipped — ${trace.json.skipped} (needs --env-file=.env.local)`);
 else console.log('    ⚠ no report');

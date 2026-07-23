@@ -83,6 +83,35 @@ function compare(fixture, res) {
   return { checks: checks.sort((a, b) => a.at - b.at), firstDiverge };
 }
 
+// ── PER-HERO: aggregate damage dealt / healing done / damage taken from the sim's effect ledger and
+// line each champion up against the recording's exact per-hero numbers. This is where "right RESULT for
+// the wrong REASONS" gets caught — the sim can clear a wave while the wrong champion is carrying it.
+//
+// ATTRIBUTION HONESTY (the ledger's current limits, surfaced not hidden — each is a real finding):
+//   · a champion is credited only with DIRECT damage/heals (source == the champion). DoT (Poison/HP
+//     Burn) is recorded under 'Poison'/'HP Burn', and [Continuous Heal] under the buff — NOT the caster
+//     — so those land in UNATTRIBUTED pools. Real Bambus (506k, pure DoT) is the headline example.
+//   · 'taken' is credited by TARGET (works for DoT and wave hits), but boss-phase direct hits are dealt
+//     in dragon.js WITHOUT a ledger entry, so 'taken' reflects waves + DoT, not boss damage.
+function perHero(fixture, res) {
+  const team = fixture.team || [];
+  const ally = new Set(team);
+  const sim = Object.fromEntries(team.map(n => [n, { dealt: 0, healing: 0, taken: 0 }]));
+  let dotToEnemies = 0, contHeal = 0;
+  for (const e of res.effects || []) {
+    const amt = e.amount || 0;
+    if (e.kind === 'damage' && ally.has(e.source) && amt > 0) sim[e.source].dealt += amt;
+    if (e.kind === 'heal' && ally.has(e.source) && amt > 0) sim[e.source].healing += amt;
+    if ((e.kind === 'damage' || e.kind === 'dot') && ally.has(e.target) && amt > 0) sim[e.target].taken += amt;
+    if (e.kind === 'dot' && !ally.has(e.target) && amt > 0) dotToEnemies += amt + (e.splash || 0);
+    if (e.kind === 'heal' && !ally.has(e.source) && e.subtype === 'Continuous Heal' && amt > 0) contHeal += amt;
+  }
+  const rows = team.map(n => ({ name: n, real: fixture.expected?.per_hero?.[n] || null, sim: sim[n] }));
+  return { rows, dotToEnemies, contHeal };
+}
+// within 30% → ✓; a real 0 wants a near-0 sim; otherwise ✗ (a reality gap, not a hard fail)
+const closeEnough = (real, s) => real == null ? null : (real === 0 ? s < 1000 : (s >= real * 0.7 && s <= real * 1.3));
+
 async function main() {
   if (!files.length) { console.log('\n══ SIM TRACE ORACLE (rung 3b) ══  no golden fixtures in test/golden/*.json\n'); emit({ fixtures: 0 }); return; }
   if (!HAS_DB) {
@@ -137,11 +166,39 @@ async function main() {
       if (new Set(missing).size > 12) console.log(`      … +${new Set(missing).size - 12} more`);
     }
 
+    // ── PER-HERO comparison — is each champion doing the RIGHT work? ──
+    const ph = perHero(fixture, res);
+    const fmt = (n) => n == null ? '—' : Math.round(n).toLocaleString();
+    const mk = (b) => b == null ? ' ' : (b ? '✓' : '✗');
+    console.log('\n  PER-HERO (recording vs sim) — is each champion doing the RIGHT work, or is a plausible result coming from the wrong source?');
+    console.log('    hero       metric     recorded          sim');
+    console.log('    ' + '─'.repeat(58));
+    for (const r of ph.rows) {
+      const real = r.real || {};
+      const line = (label, rv, sv) => console.log(`    ${label.padEnd(10)} ${''.padEnd(9)} ${fmt(rv).padStart(12)}   ${fmt(sv).padStart(12)}   ${mk(closeEnough(rv, sv))}`);
+      console.log(`    ${r.name}`);
+      line('  damage', real.damage, r.sim.dealt);
+      line('  healing', real.healing, r.sim.healing);
+      line('  taken', real.taken, r.sim.taken);
+    }
+    console.log('\n    ⚠ attribution (sim credits only DIRECT damage/heals to a champion — real findings, not noise):');
+    console.log(`        DoT dealt to enemies, UNATTRIBUTED to any champ: ${fmt(ph.dotToEnemies)}  ← real Bambus 506k is DoT the sim can't yet credit to him`);
+    console.log(`        [Continuous Heal] ticks, UNATTRIBUTED to caster:  ${fmt(ph.contHeal)}`);
+    console.log(`        boss-phase direct hits are not ledgered (dragon.js) → 'taken' reflects waves + DoT, not boss damage`);
+
+    // the single most diagnostic per-hero fact: Ezio's damage taken tests whether [Perfect Veil] protects him
+    const ezio = ph.rows.find(r => /Ezio/i.test(r.name));
+    const perHeroHeadline = ezio && ezio.real ? `Ezio taken: real ${fmt(ezio.real.taken)} / sim ${fmt(ezio.sim.taken)} (${closeEnough(ezio.real.taken, ezio.sim.taken) ? 'Perfect Veil holds' : 'Perfect Veil NOT protecting him'})` : null;
+
     outcomes.push({ id, stage: built.stage,
       simOutcome: res.won ? 'WIN' : 'LOSS', realOutcome: fixture.result?.outcome,
       simSurvivors: (res.survivors || []).length, realSurvivors: fixture.result?.survivors,
       firstDivergence: firstDiverge ? firstDiverge.name : null,
       divergences: checks.filter(c => !c.match).map(c => `${c.name}: real=${c.real} sim=${c.sim}`),
+      perHero: ph.rows.map(r => ({ name: r.name, realDamage: r.real?.damage, simDamage: Math.round(r.sim.dealt),
+        realHealing: r.real?.healing, simHealing: Math.round(r.sim.healing), realTaken: r.real?.taken, simTaken: Math.round(r.sim.taken) })),
+      dotUnattributed: Math.round(ph.dotToEnemies), contHealUnattributed: Math.round(ph.contHeal),
+      perHeroHeadline,
       unmodelledFlags: [...new Set(missing)].slice(0, 20) });
   }
 
