@@ -334,9 +334,13 @@ const passiveContent = (enemies) => ({ phases: [{ name: 'boss', enemies, actEnem
   ok('isUntargetable recognises [Perfect Veil]', isUntargetable(veiled));
   eq('single-target SKIPS the veiled ally for the exposed one', chooseAllyTarget([veiled, exposed])?.name, 'Exposed');
 
-  // TEETH: if EVERY ally is veiled the protection lapses — a veil cannot leave the attacker no target
+  // TEETH: [Perfect Veil] does NOT lapse — if EVERY ally is Perfect-Veiled, single-target has NO target
+  // (this is exactly what lets a Perfect-Veil champ SOLO waves untouched). Plain [Veil] DOES lapse.
   exposed.buffs.push({ type: 'Perfect Veil', turnsLeft: 3 });
-  eq('all allies veiled -> veil offers no cover, lowest HP% is picked', chooseAllyTarget([veiled, exposed])?.name, 'Veiled');
+  eq('all allies Perfect-Veiled -> single-target whiffs (no target)', chooseAllyTarget([veiled, exposed]), null);
+  const pv1 = champ({ name: 'PV1', maxHp: 10000 }); pv1.buffs.push({ type: 'Veil', turnsLeft: 2 });
+  const pv2 = champ({ name: 'PV2', maxHp: 10000 }); pv2.hp = 3000; pv2.buffs.push({ type: 'Veil', turnsLeft: 2 });
+  eq('plain [Veil] DOES lapse when all are veiled -> lowest HP% picked', chooseAllyTarget([pv1, pv2])?.name, 'PV2');
 
   // our champs hitting enemies honor the same rule (one shared code path)
   const vEnemy = dummyEnemy({ name: 'VE', maxHp: 100 }); vEnemy.hp = 10; vEnemy.buffs.push({ type: 'Perfect Veil', turnsLeft: 2 });
