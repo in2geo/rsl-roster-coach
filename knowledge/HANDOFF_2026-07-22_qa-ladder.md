@@ -54,11 +54,11 @@ climbing the ladder. Fixing the sim is a separate, deliberately-prioritised acti
 |---|---|---|
 | 1 data validator | `sim-validate-data.mjs` | ✅ |
 | 2 spec self-test (52) | `sim-selftest.mjs` | ✅ |
+| 4 golden battles | `sim-golden.mjs` | ✅ first fixture COMPLETE + RUNNABLE |
 | 5 invariants (8884, property-based) | `sim-invariants.mjs` | ✅ |
 | 6 sensitivity (8 + carve-outs) | `sim-sensitivity.mjs` | ✅ |
 | **orchestrator + 4-bucket ledger** | `sim-qa.mjs` | ✅ |
 | 3 toy encounters | (in selftest, Dragon-only) | 🟡 FK/Spider need content modules |
-| 4 golden battles | — | ⬜ (the video is a ready source) |
 | 7/8 reality scoring at supported levels | declared in sim-qa, not wired | 🟡 |
 
 **⚙ THE TEETH DISCIPLINE — validate the QA model itself.** A rung that cannot fail is worthless. Feed
@@ -69,8 +69,21 @@ non-vacuous guard (`baseline > 0` etc.). Rung 6 encodes GAME FACTS as machine-ch
 **DEF cuts ATTACK damage (9000→4000) but does NOTHING to POISON (2000→2000)**; a naive sensitivity
 table would assert a direction the game doesn't have.
 
-**NEXT on the ladder:** rung 4 (golden battles, from a recorded fight) and/or wire rung 7/8 (score the
-SUPPORTED reality levels — outcome + failure-location — into the orchestrator). Rung 3 waits on FK/Spider.
+**GOLDEN BATTLES (rung 4) — a recording + note session = a fixture.** `test/golden/*.json` holds
+hand-verified real fights: exact INPUTS (per-champion builds) + exact OUTPUT (result, per-hero totals,
+turn-by-turn timeline w/ confidence). `sim-golden.mjs` validates each fixture's consistency and reports
+readiness (RUNNABLE vs PENDING-INPUTS). **The first fixture (`dragon16-donbambus-2026-07-22`) is COMPLETE
++ RUNNABLE** — all 5 exact builds captured from Mike's screenshots (`data/observed-builds/`). The BUILDS
+themselves red-penned the model: **Pelops runs LIFESTEAL gear** (app assumes nobody does) and **Vergis
+is DEF-scaling** (sim reads his multiplier as ATK) — both discarded/mis-read, both feeding "survival is
+the gap." **Video → builds capability:** `imageio-ffmpeg` frames → read the build screens for exact
+effective stats (also validates `estimate-stats.js`).
+
+**⭐ TOP NEXT ITEM — close rung 4's loop:** wire the EXACT-STAT RUN into `sim-golden.mjs` — run the sim
+on the 5 real builds and score outcome + failure-location vs the golden. Prediction: still fails on
+SURVIVAL, now with NO estimation excuse (the real builds are tanky: Bambus 25.7k HP, Pelops 28.5k +
+Lifesteal, Tagoar 24.3k + heals). Then wire rung 7/8 (score SUPPORTED reality levels into the
+orchestrator). Rung 3 waits on FK/Spider.
 
 ---
 
