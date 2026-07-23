@@ -477,6 +477,27 @@ const passiveContent = (enemies) => ({ phases: [{ name: 'boss', enemies, actEnem
   eq('overflow past the shield still reaches ally HP', a3.hp, 20000 - 3000);
 }
 
+// ── 23. [ALLY PROTECTION] redistributes a hit among the OTHER protected allies (survival keystone) ──
+{
+  const AP = () => ({ type: 'Ally Protection', value: 50, turnsLeft: 2 });
+  const t = champ({ name: 'T', maxHp: 20000, def: 0 }); t.buffs.push(AP());
+  const p1 = champ({ name: 'P1', maxHp: 20000, def: 0 }); p1.buffs.push(AP());
+  const p2 = champ({ name: 'P2', maxHp: 20000, def: 0 }); p2.buffs.push(AP());
+  const unp = champ({ name: 'U', maxHp: 20000, def: 0 });                 // NOT under the buff
+  const atk = makeCombatant({ name: 'A', side: 'enemy', maxHp: 1e9 });
+  dealDamage(t, 10000, 'direct', atk, [t, p1, p2, unp]);
+  eq('protected target takes (100-50)% = 5000', 20000 - t.hp, 5000);
+  eq('each of the 2 other protected allies takes 50%/2 = 2500', 20000 - p1.hp, 2500);
+  eq('...shared equally', 20000 - p2.hp, 2500);
+  eq('an UNprotected ally gets nothing from the split', 20000 - unp.hp, 0);
+  // total damage is CONSERVED (redistributed, not reduced): 5000 + 2500 + 2500 = 10000
+  near('Ally Protection redistributes, it does not reduce the total', (20000 - t.hp) + (20000 - p1.hp) + (20000 - p2.hp), 10000, 1);
+  // a lone protected ally (no other protected allies) takes the full hit
+  const solo = champ({ name: 'S', maxHp: 20000, def: 0 }); solo.buffs.push(AP());
+  dealDamage(solo, 10000, 'direct', atk, [solo, unp]);
+  eq('lone protected ally (no others to share with) takes the full hit', 20000 - solo.hp, 10000);
+}
+
 // ── report ───────────────────────────────────────────────────────────────────
 console.log(`\n══ SIM SELF-TEST ══  ${pass} passed, ${fail} failed\n`);
 for (const f of failures) console.log(`  ✗ ${f}`);
