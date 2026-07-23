@@ -454,6 +454,29 @@ const passiveContent = (enemies) => ({ phases: [{ name: 'boss', enemies, actEnem
   eq('[Continuous Heal] restores 15% of MAX HP on the buffed champ\'s turn', c.hp, 4000 + 0.15 * 10000);
 }
 
+// ── 22. MAGMA SHIELD reflects absorbed damage back to the attacker (Pelops's identity) ──
+{
+  const ally = champ({ maxHp: 20000 }); ally.buffs.push({ type: 'Magma Shield', value: 5000, turnsLeft: 2 });
+  const atk = makeCombatant({ name: 'Atk', side: 'enemy', maxHp: 100000 });
+  const r = dealDamage(ally, 3000, 'direct', atk);
+  eq('Magma Shield absorbs the hit', r.absorbed, 3000);
+  eq('...and reflects an EQUAL amount to the attacker', atk.hp, 100000 - 3000);
+  near('reflected == absorbed', r.reflected, 3000);
+
+  // a plain [Shield] absorbs but does NOT reflect
+  const a2 = champ({ maxHp: 20000 }); a2.buffs.push({ type: 'Shield', value: 5000, turnsLeft: 2 });
+  const atk2 = makeCombatant({ name: 'Atk2', side: 'enemy', maxHp: 100000 });
+  dealDamage(a2, 3000, 'direct', atk2);
+  eq('plain [Shield] does NOT reflect', atk2.hp, 100000);
+
+  // reflect equals only what the Magma Shield ABSORBED — overflow past it doesn't reflect
+  const a3 = champ({ maxHp: 20000 }); a3.hp = 20000; a3.buffs.push({ type: 'Magma Shield', value: 2000, turnsLeft: 2 });
+  const atk3 = makeCombatant({ name: 'Atk3', side: 'enemy', maxHp: 100000 });
+  dealDamage(a3, 5000, 'direct', atk3);
+  eq('reflect = the amount absorbed (2000), not the full hit', atk3.hp, 100000 - 2000);
+  eq('overflow past the shield still reaches ally HP', a3.hp, 20000 - 3000);
+}
+
 // ── report ───────────────────────────────────────────────────────────────────
 console.log(`\n══ SIM SELF-TEST ══  ${pass} passed, ${fail} failed\n`);
 for (const f of failures) console.log(`  ✗ ${f}`);
