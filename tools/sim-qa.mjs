@@ -69,13 +69,16 @@ console.log('║  SIM QA — completeness-aware scorecard  (tests the sim AS-IS)
 console.log('╚══════════════════════════════════════════════════════════════════════╝');
 
 const spec = runRung('sim-selftest.mjs');       // rung 2 — no DB
+const inv = runRung('sim-invariants.mjs');      // rung 5 — no DB, property-based
 const data = runRung('sim-validate-data.mjs');  // rung 1 — needs DB (inherits env from --env-file)
 
 // ── classify every finding into the four buckets ────────────────────────────────
 const ledger = { spec_violation: [], unimplemented: [], missing_data: [], reality_gap: [] };
 
-if (spec.json) for (const f of spec.json.failures) ledger.spec_violation.push(f);
+if (spec.json) for (const f of spec.json.failures) ledger.spec_violation.push(`spec: ${f}`);
 else ledger.spec_violation.push('rung 2 (spec self-test) did not report — cannot confirm conformance');
+if (inv.json) for (const f of inv.json.failures) ledger.spec_violation.push(`invariant: ${f}`);
+else ledger.spec_violation.push('rung 5 (invariants) did not report — cannot confirm invariants hold');
 
 for (const [m, st] of MANIFEST) if (st === 'unimplemented' || st === 'stub') ledger.unimplemented.push(`${m}  [${st}]`);
 
@@ -95,6 +98,10 @@ const specOk = spec.json && spec.json.fail === 0;
 console.log('\n▶ SPEC CONFORMANCE (rung 2 — does the sim obey its own design?)');
 console.log(spec.json ? `    ${specOk ? '✅ PASS' : '✗ FAIL'} — ${spec.json.pass} passed, ${spec.json.fail} failed`
                       : '    ⚠ no report');
+
+console.log('\n▶ BEHAVIOURAL INVARIANTS (rung 5 — property-based over random battles)');
+console.log(inv.json ? `    ${inv.json.fail === 0 ? '✅ PASS' : '✗ FAIL'} — ${inv.json.pass} checks passed, ${inv.json.fail} failed`
+                     : '    ⚠ no report');
 
 console.log('\n▶ INPUT DATA (rung 1 — gate 0)');
 if (data.json) {
