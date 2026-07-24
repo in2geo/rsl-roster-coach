@@ -157,6 +157,38 @@ async function main() {
         console.log(`    effects touching ${hero.name}: ${Object.entries(byKind).map(([k, v]) => k + '×' + v).join('  ') || '(none)'}`);
       }
     }
+    // TURNLOG=lo-hi (or =N for 1..N) — the GRANULAR per-turn ledger: every effect that fired each turn,
+    // from the engine's own effect record. This is the "go one turn at a time and verify everything that
+    // was supposed to happen did happen" view — nothing aggregated, nothing inferred.
+    if (process.env.TURNLOG) {
+      const rng = String(process.env.TURNLOG);
+      const [lo, hi] = rng.includes('-') ? rng.split('-').map(Number) : [1, Number(rng) || 9999];
+      const byTurn = {};
+      for (const e of res.effects || []) (byTurn[e.turn] ??= { fx: [], log: [] }).fx.push(e);
+      for (const l of res.log || []) (byTurn[l.turn] ??= { fx: [], log: [] }).log.push(l);
+      const nf = (n) => n == null ? '' : Math.round(n).toLocaleString();
+      console.log(`\n  ══ TURN-BY-TURN LEDGER — ${id}, turns ${lo}–${hi} ══`);
+      for (const t of Object.keys(byTurn).map(Number).sort((a, b) => a - b).filter(t => t >= lo && t <= hi)) {
+        const { fx, log } = byTurn[t];
+        const act = fx.find(e => e.slot && !/\[P\]/.test(String(e.source)));
+        const phase = fx[0]?.phase ?? log[0]?.phase ?? '';
+        console.log(`\n  ── t${String(t).padStart(3)}  [${phase}]  ${act ? act.source + ' ' + act.slot : '(dot/tick)'} ──`);
+        for (const e of fx) {
+          const miss = e.consumed === false ? `  ✗ ${e.note || 'not consumed'}` : '';
+          const amt = e.amount != null ? ` ${nf(e.amount)}` : '';
+          if (e.kind === 'damage') console.log(`      dmg     ${e.source} → ${e.target}${amt}${e.subtype ? ' [' + e.subtype + ']' : ''}${miss}`);
+          else if (e.kind === 'dot') console.log(`      ${(e.subtype || 'dot').padEnd(7)} → ${e.target}${amt}${e.splash ? ` (+${nf(e.splash)} splash)` : ''}`);
+          else if (e.kind === 'debuff') console.log(`      debuff  ${e.source} → ${e.target}  [${e.subtype}]${miss}`);
+          else if (e.kind === 'buff') console.log(`      buff    ${e.source} → ${e.target}  [${e.subtype}]${miss}`);
+          else if (e.kind === 'heal') console.log(`      heal    ${e.source} → ${e.target}${amt}${e.subtype ? ' [' + e.subtype + ']' : ''}${miss}`);
+          else if (e.kind === 'reflect') console.log(`      reflect → ${e.target}${amt} [${e.subtype}]`);
+          else if (e.kind === 'cc') console.log(`      CC      ${e.target}  [${e.subtype}] — turn lost`);
+          else if (e.kind === 'revive') console.log(`      REVIVE  ${e.target}`);
+          else if (e.kind === 'cleanse') console.log(`      cleanse ${e.target}${miss}`);
+        }
+        for (const l of log) console.log(`      ● ${String(l.event).toUpperCase()} ${l.who || ''}${l.by ? ' by ' + l.by : ''}${l.barLeft != null ? ` (bar ${nf(l.barLeft)})` : ''}`);
+      }
+    }
 
     const { checks, firstDiverge } = compare(fixture, res);
 
