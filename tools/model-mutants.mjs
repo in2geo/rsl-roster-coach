@@ -61,6 +61,9 @@ const MUTANTS = [
   { name: 'heal uncapped — HP can exceed MAX (only the invariants rung sees this)', expectKill: true,
     find: 'const before = t.hp; t.hp = Math.min(t.maxHp, t.hp + amt);',
     repl: 'const before = t.hp; t.hp = t.hp + amt;' },
+  { name: 'ignore_shield ignored (shields absorb an ignore-shield hit anyway)', expectKill: true,
+    find: "const dd = dealDamage(t, raw, 'direct', actor, opponents, !!fl.ignore_shield);",
+    repl: "const dd = dealDamage(t, raw, 'direct', actor, opponents, false);" },
 ];
 
 const ORIGINAL = fs.readFileSync(INTERP, 'utf8');

@@ -328,3 +328,8 @@ Add to this list freely; each one is a test case for the format.
   (Simulator-side, NOT a Model-QA issue): the connected run shifted victory→boss-wipe — veil-skip happens
   BEFORE taunt in chooseSingleTarget, so during taunt gaps Ezio's single-target incoming redistributes onto
   squishier allies. Flag for the reality layer (real Ezio = 3,820 taken, all 5 survive), not to chase now.
+- **2026-07-24** — **(b) mechanics: ignore-shield.** `dealDamage` gained an `ignoreShield` param (bypasses
+  [Shield]/[Magma Shield] straight to HP); `dealOneHit` passes the formula `ignore_shield` flag. Set on
+  F_EZIO_A3, F_FACELESS_A3, F_LUA_A3 — clears 3 deferred clauses. Toy battle in sim-recipe-c-test (Faceless
+  A3 bypasses a 5k shield → HP, shield intact; normal skill absorbed). Teeth mutant added → 13/13, 100%.
+  The test caught a real interaction: Ezio A3 STEALS buffs before attacking, so no shield remains to ignore.

@@ -72,5 +72,17 @@ console.log('\n=== II-C state manipulation — code produces expected results? =
   check('STEAL_BUFF moves enemy buff to caster', !foe.buffs.some((b) => b.type === 'Increase DEF') && ez.buffs.some((b) => b.type === 'Increase DEF'), `foe=${foe.buffs.length} ezio=${ez.buffs.length}`);
 }
 
+// 8 — IGNORE_SHIELD: Faceless A3 bypasses a [Shield] straight to HP; a normal skill is absorbed.
+// (Ezio A3 also ignores shields but STEALS buffs first, so there's no shield left — use Faceless, which
+// ignores the shield without stealing it.)
+{
+  const atk = makeCombatant({ name: 'Faceless', side: 'ally', atk: 2000, affinity: 'Void', critRate: 0 });
+  const shielded = () => { const t = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e9, def: 1000, affinity: 'Void' }); t.buffs.push({ type: 'Shield', value: 5000, turnsLeft: 2 }); return t; };
+  const t1 = shielded(); const r1 = applyRecipe(makeState({ allies: [atk], enemies: [t1], seed: null }), atk, RECIPES['FACELESS-A3'])[0];   // ignore_shield
+  const t2 = shielded(); const r2 = applyRecipe(makeState({ allies: [atk], enemies: [t2], seed: null }), atk, RECIPES['BAMBUS-A1'])[0];   // normal — absorbed
+  check('IGNORE_SHIELD: Faceless A3 bypasses the shield (HP damage, shield intact)', r1.hp_damage > 0 && r1.shield_damage === 0 && (t1.buffs.find(b => b.type === 'Shield')?.value ?? 0) === 5000, `hp ${r1.hp_damage}, shieldDmg ${r1.shield_damage}, shield ${t1.buffs.find(b => b.type === 'Shield')?.value}`);
+  check('IGNORE_SHIELD control: a normal skill IS absorbed by the shield', r2.shield_damage > 0 && r2.hp_damage === 0, `shieldDmg ${r2.shield_damage}, hp ${r2.hp_damage}`);
+}
+
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
 process.exit(fail ? 1 : 0);
