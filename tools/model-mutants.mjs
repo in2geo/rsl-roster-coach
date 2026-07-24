@@ -105,6 +105,10 @@ const MUTANTS = [
   { name: 'target-conditional ignore-DEF ignored (Pelops A2 does not ignore DEF under [HP Burn])', expectKill: true,
     find: 'if (F.ignoreDefIfTargetUnder && (t.debuffs ?? []).some((d) => d.type === F.ignoreDefIfTargetUnder.debuff))',
     repl: 'if (false && (t.debuffs ?? []).some((d) => d.type === F.ignoreDefIfTargetUnder.debuff))' },
+  // ── Lifesteal CONSUMER on the recipe path (interpreter.js dealOneHit) — heal % of damage dealt ──
+  { name: 'lifesteal not consumed on the recipe path (heal zeroed)', expectKill: true,
+    find: 'const heal = Math.min((actor.maxHp ?? 0) - actor.hp, actor.lifesteal * dealt);',
+    repl: 'const heal = Math.min((actor.maxHp ?? 0) - actor.hp, actor.lifesteal * dealt * 0);' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8') };

@@ -430,6 +430,16 @@ Add to this list freely; each one is a test case for the format.
   conditions read as unaccounted placements — the policy-#17/#20 distinction, in the tool). Golden + snapshot
   held (scene enemies carry no HP Burn → conditionals inert there). Full DB ladder green (11/11). PELOPS-A1 now
   EXECUTABLE. Remaining Pelops deferred: A2 sub-50% steal+Stun (II-C); passive "once per enemy skill" nuance.
+- **2026-07-24** — **REALITY-GAP FIX: lifesteal not consumed on the recipe path.** Chasing the DonBambus
+  Dragon-16 residual (the ONLY first-party-validated cell), `sim-trace` showed Pelops healing 0 vs the reality
+  anchor 45,460. Root cause: the engine's `applySkill` applies lifesteal-off-damage (line ~643) but the RECIPE
+  path `interpreter.dealOneHit` did NOT — so every recipe-driven tool (sim-trace/run/suite) ran a Lifesteal
+  tank with 0 lifesteal healing. Migrated the consumer into dealOneHit (mirror of applySkill; caps at MAX HP).
+  MEASURED: Pelops healing 0 → 30,986 (reality 45,460 — remaining gap is his still-low offense/DoT attribution).
+  Win rate ~flat (~63%) — lifesteal was NOT the binding constraint; the residual now points at (1) Vergis
+  Second Wind [Continuous Heal] heals 0 vs real 39,397 → he dies wave 2 (next thread), (2) Ezio Perfect Veil
+  over-taken 4×. Teeth: new mutant killed by recipe-c-test → 25/25, 100%. Golden + snapshot held (no
+  lifesteal champ deals damage in golden turns 1–8). Full DB ladder green (11/11).
 - **2026-07-24 (SESSION WRAP)** — **GRADUATION + the magnitude gap.** Turn loop + RNG wired into the
   Simulator (`tools/sim-suite.mjs`, seam=`battle-suite.predict()`): Dragon subset 61.7% vs aggregate 49.4%.
   Leader aura + lifesteal + recipes now active in the metric. Gear-set-id map FIXED from the game's

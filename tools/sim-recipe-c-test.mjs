@@ -84,5 +84,17 @@ console.log('\n=== II-C state manipulation — code produces expected results? =
   check('IGNORE_SHIELD control: a normal skill IS absorbed by the shield', r2.shield_damage > 0 && r2.hp_damage === 0, `shieldDmg ${r2.shield_damage}, hp ${r2.hp_damage}`);
 }
 
+// N — LIFESTEAL (gear 4-set): a champion heals 30% of the damage it deals, on the RECIPE path (dealOneHit).
+// The primary sustain source for a Lifesteal tank; it was consumed on the old engine path but not here.
+{
+  const pel = makeCombatant({ name: 'Pelops', side: 'ally', atk: 0, maxHp: 100000, affinity: 'Void', critRate: 0, critDmg: 0, lifesteal: 0.30 });
+  pel.hp = 50000;   // damaged, so the heal is visible (not capped at MAX)
+  const t = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e9, def: 1000, affinity: 'Void' });
+  const r = applyRecipe(makeState({ allies: [pel], enemies: [t], seed: null }), pel, RECIPES['PELOPS-A1'])[0];
+  // Pelops A1 = 0.25×100,000=25,000 ×defMit(1000)=0.6 → 15,000 dealt; lifesteal 30% → +4,500
+  const healed = pel.hp - 50000;
+  check('LIFESTEAL: recipe-path attacker heals 30% of damage dealt (0.30×15,000 = 4,500)', r.hp_damage === 15000 && healed === 4500, `dealt=${r.hp_damage} healed=${healed}`);
+}
+
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
 process.exit(fail ? 1 : 0);
