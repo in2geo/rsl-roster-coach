@@ -300,3 +300,10 @@ Add to this list freely; each one is a test case for the format.
   EXTEND_EFFECT, exact-damage/crit) — all 3 now closed by `tools/sim-recipe-d-test.mjs` (11/11) + an
   exact-damage-with-crit assertion in `sim-recipe-test.mjs`. Model rungs so far: recipe-test a/b/c/d,
   validate-recipes, model-mutants. Owed: snapshot, invariants, sensitivity, orchestrator, DB→recipe fidelity.
+- **2026-07-24** — **Model QA ladder climbed 4 more rungs.** `model-invariants.mjs` (L5, 800 randomised
+  scenarios + determinism — proven-teeth via a heal-uncap mutant only it catches); `model-sensitivity.mjs`
+  (L6, 9/9 directions + HP-not-ATK carve-outs); `model-mutants.mjs` now 12/12 killed 100% (suite = a/b/c/d +
+  invariants + sensitivity); **`model-qa.mjs` orchestrator** — one command, 4-bucket scorecard, VERDICT
+  SPEC-CONFORMANT (8 rungs green, 39 deferred clauses tracked as unimplemented, layers 7–10 not-scored /
+  Simulator-side). The orchestrator caught that `sim-validate-recipes` couldn't see passive `triggers`/
+  `modifiers` → fixed `coverageText` to read them (0 REVIEW again). Owed: snapshot, DB→recipe fidelity.

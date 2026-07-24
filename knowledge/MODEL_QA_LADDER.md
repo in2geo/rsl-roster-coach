@@ -48,11 +48,12 @@ meta-disciplines.** Layers 7–10 stay with the Simulator.
 | II-C state toy battles | 2/3 | `tools/sim-recipe-c-test.mjs` | ✅ 7/7 |
 | II-D passives/modifiers/EXTEND toy battles | 2/3 | `tools/sim-recipe-d-test.mjs` | ✅ 11/11 |
 | scoped hand-calc golden (turn-by-turn) | 4 | done ad-hoc (turns 1–8 hand-verified) | ⬜ formalize |
-| behavioural invariants (property-based) | 5 | — | ⬜ TODO |
-| sensitivity (metamorphic + carve-outs) | 6 | — | ⬜ TODO |
-| **teeth (mutation)** | meta | `tools/model-mutants.mjs` | ✅ **11/11 killed, 100%, 0 holes, 0 gaps** |
+| behavioural invariants (property-based) | 5 | `tools/model-invariants.mjs` | ✅ 800 scenarios + determinism; proven-teeth (heal-uncap mutant) |
+| sensitivity (metamorphic + carve-outs) | 6 | `tools/model-sensitivity.mjs` | ✅ 9/9 directions + HP-not-ATK carve-outs |
+| **teeth (mutation)** | meta | `tools/model-mutants.mjs` | ✅ **12/12 killed, 100%, 0 holes, 0 gaps** (suite = a/b/c/d + invariants + sensitivity) |
+| **Model QA orchestrator (4-bucket ledger)** | — | `tools/model-qa.mjs` | ✅ one scorecard; SPEC-CONFORMANT |
 | snapshot (regression) | meta | — | ⬜ TODO |
-| Model QA orchestrator (4-bucket ledger) | — | — | ⬜ TODO (fold the rungs in) |
+| DB→recipe fidelity (every column read + round-trips) | 1 | — | ⬜ TODO |
 
 The exact-damage / connected-run comparison against reality (`sim-recipe-fight.mjs`, `sim-run.mjs`) is
 **Layer-B / Simulator-side** — kept out of the Model ladder on purpose.
@@ -76,13 +77,13 @@ battles green **and killed by the teeth rung**, layer-5/6 where applicable. Then
 
 ## How to run the Model QA today
 
+**One command — the orchestrator runs every rung and prints a 4-bucket scorecard:**
 ```
-node tools/sim-recipe-test.mjs      # II-A
-node tools/sim-recipe-b-test.mjs    # II-B
-node tools/sim-recipe-c-test.mjs    # II-C
-node tools/sim-recipe-d-test.mjs    # II-D
-node tools/model-mutants.mjs        # TEETH — proves the above catch bugs (must be 0 suite holes)
-node --env-file=.env.local tools/sim-validate-recipes.mjs   # layer 1: card→recipe coverage
+node --env-file=.env.local tools/model-qa.mjs      # full ladder incl. the DB coverage rung
+node tools/model-qa.mjs                              # no-DB rungs only
 ```
+Individual rungs (each standalone, emits a QA_JSON line): `sim-recipe-test/-b/-c/-d-test.mjs` (toy),
+`model-invariants.mjs` (L5), `model-sensitivity.mjs` (L6), `model-mutants.mjs` (teeth — must be 0 suite
+holes), `sim-validate-recipes.mjs` (L1 coverage, DB).
 
-Next build order: **snapshot → invariants → sensitivity → orchestrator**, then the DB→recipe fidelity rung.
+Next build order: **snapshot (regression)** → **DB→recipe fidelity** → formalise the scoped hand-calc golden.

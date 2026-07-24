@@ -19,7 +19,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const INTERP = path.join(__dirname, '..', 'lib', 'sim', 'interpreter.js');
 
 // The Model's no-DB toy-battle rungs = the suite under test. A mutant is KILLED if ANY goes red.
-const RUNGS = ['sim-recipe-test.mjs', 'sim-recipe-b-test.mjs', 'sim-recipe-c-test.mjs', 'sim-recipe-d-test.mjs'];
+const RUNGS = ['sim-recipe-test.mjs', 'sim-recipe-b-test.mjs', 'sim-recipe-c-test.mjs', 'sim-recipe-d-test.mjs', 'model-invariants.mjs', 'model-sensitivity.mjs'];
 
 // expectKill:true — a Model rung MUST catch this; surviving = a SUITE HOLE (blocks).
 // expectKill:false — a PROBE; surviving is a reported COVERAGE GAP (a Model mechanic no rung pins yet).
@@ -58,6 +58,9 @@ const MUTANTS = [
   { name: 'crit removed from DEAL_DAMAGE (exact-damage math)', expectKill: true,
     find: 'const critM = fl.crit ? critMult(state, actor.critRate, actor.critDmg) : 1;',
     repl: 'const critM = fl.crit ? 1 : 1;' },
+  { name: 'heal uncapped — HP can exceed MAX (only the invariants rung sees this)', expectKill: true,
+    find: 'const before = t.hp; t.hp = Math.min(t.maxHp, t.hp + amt);',
+    repl: 'const before = t.hp; t.hp = t.hp + amt;' },
 ];
 
 const ORIGINAL = fs.readFileSync(INTERP, 'utf8');

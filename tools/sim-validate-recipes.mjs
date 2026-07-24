@@ -51,6 +51,13 @@ function coverageText(rec) {
     if (a.op === 'DEAL_DAMAGE') parts.push('attack damage');
     if (a.effect?.type) parts.push(a.effect.type);
   }
+  // passive TRIGGERS (event → response actions) and continuous MODIFIERS carry the card's clauses too
+  for (const tr of rec.triggers || []) {
+    parts.push(tr.on || '');
+    for (const a of tr.actions || []) { parts.push(a.op); if (a.effect?.type) parts.push(a.effect.type); }
+    if (tr.when?.arg) parts.push(tr.when.arg);
+  }
+  for (const m of rec.modifiers || []) { parts.push('damage reduction ' + (m.kind || '')); if (m.when?.arg) parts.push(m.when.arg); }
   parts.push(...(rec.deferred || []));
   return parts.join(' | ').toLowerCase();
 }
