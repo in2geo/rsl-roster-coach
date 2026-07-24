@@ -3,7 +3,7 @@
 // the teeth check (model-mutants) can see them and they cannot silently break. No DB. Deterministic.
 // Run: node tools/sim-recipe-d-test.mjs
 import { makeCombatant, makeState, setChanceMode, chooseAllyTarget } from '../lib/sim/engine.js';
-import { applyRecipe, fireTriggers, incomingDamage } from '../lib/sim/interpreter.js';
+import { applyRecipe, fireTriggers, incomingDamage, passiveImmunities } from '../lib/sim/interpreter.js';
 import { RECIPES } from '../lib/sim/recipes.js';
 
 let pass = 0, fail = 0;
@@ -29,6 +29,15 @@ console.log('\n=== II-D reactive passives + damage modifiers + EXTEND_EFFECT (to
   const veiled = ez.buffs.some(b => b.type === 'Perfect Veil');
   const target = chooseAllyTarget([ez, ally]);   // single-target enemy pick MUST skip the veiled Ezio
   check('Ezio Perfect Veil: round_start places it AND single-target skips the veiled (lowest-HP) Ezio', veiled && target?.name === 'A', `veiled=${veiled} target=${target?.name}`); }
+
+// ── Pelops passive immunities ([Stun]/[HP Burn]/[Petrification]) ──
+{ const hpBurn = { slot: 'X', actions: [{ seq: 10, op: 'ACQUIRE_TARGETS', target: 'single' }, { seq: 20, op: 'PLACE_DEBUFF', target: 'intended_set', effect: { type: 'HP Burn', duration: 2, chance: 1.0, accuracy_check: false } }] };
+  const foe = () => makeCombatant({ name: 'Foe', side: 'enemy', acc: 300, affinity: 'Void' });
+  const pel = makeCombatant({ name: 'Pelops', side: 'ally', maxHp: 28000, res: 0, affinity: 'Void' }); pel.immune = passiveImmunities('Pelops');
+  applyRecipe(makeState({ allies: [pel], enemies: [foe()], seed: null }), foe(), hpBurn);
+  const ally = makeCombatant({ name: 'A', side: 'ally', maxHp: 20000, res: 0, affinity: 'Void' });   // control — not immune
+  applyRecipe(makeState({ allies: [ally], enemies: [foe()], seed: null }), foe(), hpBurn);
+  check('Pelops passive: immune to [HP Burn] (control ally gets it)', !pel.debuffs.some(d => d.type === 'HP Burn') && ally.debuffs.some(d => d.type === 'HP Burn'), `pelops=${pel.debuffs.length} ally=${ally.debuffs.length}`); }
 
 // ── incoming-damage MODIFIERS ──
 const modScene = (owners, target) => { const st = makeState({ allies: [...owners, target], enemies: [], seed: null }); return st; };

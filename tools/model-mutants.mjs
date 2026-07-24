@@ -64,6 +64,8 @@ const MUTANTS = [
   { name: 'ignore_shield ignored (shields absorb an ignore-shield hit anyway)', expectKill: true,
     find: "const dd = dealDamage(t, raw, 'direct', actor, opponents, !!fl.ignore_shield);",
     repl: "const dd = dealDamage(t, raw, 'direct', actor, opponents, false);" },
+  { name: 'passive immunities dropped (Pelops no longer immune to HP Burn)', expectKill: true,
+    find: 'out.push(...r.immune);', repl: 'out.push();' },
 ];
 
 const ORIGINAL = fs.readFileSync(INTERP, 'utf8');

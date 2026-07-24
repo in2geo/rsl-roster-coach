@@ -333,3 +333,9 @@ Add to this list freely; each one is a test case for the format.
   F_EZIO_A3, F_FACELESS_A3, F_LUA_A3 — clears 3 deferred clauses. Toy battle in sim-recipe-c-test (Faceless
   A3 bypasses a 5k shield → HP, shield intact; normal skill absorbed). Teeth mutant added → 13/13, 100%.
   The test caught a real interaction: Ezio A3 STEALS buffs before attacking, so no shield remains to ignore.
+- **2026-07-24** — **(b) mechanics: Pelops passive immunities** ([Stun]/[HP Burn]/[Petrification]).
+  `PELOPS-PASSIVE.immune` list; `installRecipeRun` applies passive immunities per ally (new
+  `passiveImmunities()` helper); consumer is the existing `placeDebuffs` immune check. Toy battle in
+  sim-recipe-d-test (HP Burn blocked on Pelops, lands on a control ally); teeth mutant → 14/14, 100%.
+  Coverage validator `coverageText` now reads the `immune` field (0 REVIEW). Deferred backlog 39→37.
+  Three (b) mechanics done this session: Perfect Veil · ignore-shield · immunities — each into the QA'd ladder.

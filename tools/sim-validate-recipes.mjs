@@ -58,6 +58,7 @@ function coverageText(rec) {
     if (tr.when?.arg) parts.push(tr.when.arg);
   }
   for (const m of rec.modifiers || []) { parts.push('damage reduction ' + (m.kind || '')); if (m.when?.arg) parts.push(m.when.arg); }
+  for (const im of rec.immune || []) parts.push('immune ' + im);   // passive immunities
   parts.push(...(rec.deferred || []));
   return parts.join(' | ').toLowerCase();
 }
