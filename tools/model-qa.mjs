@@ -25,7 +25,9 @@ const RUNGS = [
   { file: 'sim-recipe-d-test.mjs',  name: 'II-D passives toy',       layer: '2/3',  db: false },
   { file: 'model-invariants.mjs',   name: 'invariants (property)',   layer: '5',    db: false },
   { file: 'model-sensitivity.mjs',  name: 'sensitivity (metamorphic)', layer: '6',  db: false },
+  { file: 'model-snapshot.mjs',     name: 'regression snapshot',     layer: 'meta', db: false },
   { file: 'sim-validate-recipes.mjs', name: 'card→recipe coverage',  layer: '1',    db: true },
+  { file: 'model-fidelity.mjs',     name: 'DB→recipe fidelity',      layer: '1',    db: true },
 ];
 
 function run(file) {

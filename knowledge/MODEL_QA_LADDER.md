@@ -41,8 +41,8 @@ meta-disciplines.** Layers 7–10 stay with the Simulator.
 
 | rung | layer | file | status |
 |---|---|---|---|
-| card→recipe coverage | 1 | `tools/sim-validate-recipes.mjs` | ✅ built (steps 3–6 of the import pipeline) |
-| DB→recipe fidelity (every populated column read + round-trips) | 1 | — | ⬜ TODO |
+| card→recipe coverage | 1 | `tools/sim-validate-recipes.mjs` | ✅ built (steps 3–6; reads passive triggers/modifiers) |
+| DB→recipe fidelity (every populated column read + round-trips) | 1 | `tools/model-fidelity.mjs` | ✅ 21 damage recipes reflect damage_multiplier + multiplier_type |
 | II-A damage toy battles (+ exact-damage-with-crit) | 2/3 | `tools/sim-recipe-test.mjs` | ✅ 7/7 |
 | II-B placement toy battles | 2/3 | `tools/sim-recipe-b-test.mjs` | ✅ 8/8 |
 | II-C state toy battles | 2/3 | `tools/sim-recipe-c-test.mjs` | ✅ 7/7 |
@@ -51,8 +51,8 @@ meta-disciplines.** Layers 7–10 stay with the Simulator.
 | behavioural invariants (property-based) | 5 | `tools/model-invariants.mjs` | ✅ 800 scenarios + determinism; proven-teeth (heal-uncap mutant) |
 | sensitivity (metamorphic + carve-outs) | 6 | `tools/model-sensitivity.mjs` | ✅ 9/9 directions + HP-not-ATK carve-outs |
 | **teeth (mutation)** | meta | `tools/model-mutants.mjs` | ✅ **12/12 killed, 100%, 0 holes, 0 gaps** (suite = a/b/c/d + invariants + sensitivity) |
-| **Model QA orchestrator (4-bucket ledger)** | — | `tools/model-qa.mjs` | ✅ one scorecard; SPEC-CONFORMANT |
-| snapshot (regression) | meta | — | ⬜ TODO |
+| **Model QA orchestrator (4-bucket ledger)** | — | `tools/model-qa.mjs` | ✅ **one scorecard, 10 rungs, SPEC-CONFORMANT** |
+| snapshot (regression) | meta | `tools/model-snapshot.mjs` | ✅ 29 fingerprints frozen (`test/snapshots/model-snapshot.json`); re-bless: `SNAPSHOT_BLESS=1` |
 | DB→recipe fidelity (every column read + round-trips) | 1 | — | ⬜ TODO |
 
 The exact-damage / connected-run comparison against reality (`sim-recipe-fight.mjs`, `sim-run.mjs`) is

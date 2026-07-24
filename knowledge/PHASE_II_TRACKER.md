@@ -307,3 +307,9 @@ Add to this list freely; each one is a test case for the format.
   SPEC-CONFORMANT (8 rungs green, 39 deferred clauses tracked as unimplemented, layers 7–10 not-scored /
   Simulator-side). The orchestrator caught that `sim-validate-recipes` couldn't see passive `triggers`/
   `modifiers` → fixed `coverageText` to read them (0 REVIEW again). Owed: snapshot, DB→recipe fidelity.
+- **2026-07-24** — **Model QA ladder COMPLETE — 10 rungs, all green, VERDICT SPEC-CONFORMANT.** Added
+  `model-snapshot.mjs` (regression: 29 fingerprints frozen in `test/snapshots/model-snapshot.json`, re-bless
+  via SNAPSHOT_BLESS=1) and `model-fidelity.mjs` (L1 DB→recipe fidelity: 21 damage recipes reflect
+  damage_multiplier + multiplier_type — the check that would've caught Vergis DEF-as-ATK). Full ladder:
+  teeth(100%) · toy a/b/c/d · invariants(L5) · sensitivity(L6) · snapshot · coverage(L1) · fidelity(L1),
+  all under `tools/model-qa.mjs`. Only optional item left: formalise the scoped hand-calc golden (L4).
