@@ -363,3 +363,12 @@ Add to this list freely; each one is a test case for the format.
   the roster path isn't wired (Pelops/tanks under-survive) — that's the next lever. Seam = predict();
   Simulator keeps stats+corpus+metric, imports the whole turn engine. Enemy content gates expansion
   beyond Dragon (only dungeon with a full dungeon_stage_enemies table today).
+- **2026-07-24 (SESSION WRAP)** — **GRADUATION + the magnitude gap.** Turn loop + RNG wired into the
+  Simulator (`tools/sim-suite.mjs`, seam=`battle-suite.predict()`): Dragon subset 61.7% vs aggregate 49.4%.
+  Leader aura + lifesteal + recipes now active in the metric. Gear-set-id map FIXED from the game's
+  `ArtifactSetKindId` enum (id 9 = Lifesteal). `tools/sim-inputs.mjs` = battle-start stat dump. Diagnostic
+  thread: the sim under-survives Dragon-16 (reality: full team 11/11; sim ~50% bimodal). Localized: NOT the
+  RNG — the sim models a near-tie (offense 3.3× too LOW, incoming 3–6× too HIGH), so crit swings it. Coeffs
+  are KNOWN (Bambus 3.8/5.6 ATK, Pelops 0.25/0.4 HP) → IMPLEMENT missing mechanics (HP-Burn splash, Poison
+  Sensitivity, masteries, Perfect-Veil-untargetable, Ally Protection), do NOT tune. Full cold-start:
+  `knowledge/HANDOFF_2026-07-24_simulator-graduation-and-magnitude-gap.md`.
