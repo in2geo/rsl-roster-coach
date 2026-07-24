@@ -89,6 +89,10 @@ const MUTANTS = [
   { name: 'dynamic scaler neutralised (Pelops A2 +10%/debuff-turn ignored)', expectKill: true,
     find: 'return 1 + Math.min(ds.capBonus ?? Infinity, (ds.pctPer ?? 0) * count);',
     repl: 'return 1 + Math.min(ds.capBonus ?? Infinity, (ds.pctPer ?? 0) * count * 0);' },
+  // ── Arbalester A3 per-target-debuff ADDITIVE term (interpreter.js formulaBase) — +1×ATK per debuff count ──
+  { name: 'per-target-debuff term dropped (Arbalester A3 "(2+Total Debuff)" ignored)', expectKill: true,
+    find: 'if (F.perTargetDebuff) base += F.perTargetDebuff.coeff * (target?.debuffs?.length ?? 0)',
+    repl: 'if (F.perTargetDebuff) base += 0 * F.perTargetDebuff.coeff * (target?.debuffs?.length ?? 0)' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8') };

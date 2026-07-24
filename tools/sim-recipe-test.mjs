@@ -153,5 +153,15 @@ console.log('\n=== Recipe interpreter — isolated damage tests ===\n');
   check('Pelops A2 — bonus caps at +200% (25 turns → ×3.0 = 72,000)', a2({ tgtDebuffs: [D(25)] }).raw_damage === 72000, `raw ${a2({ tgtDebuffs: [D(25)] }).raw_damage}`);
 }
 
+// 12 — ARBALESTER A3 per-target-debuff ADDITIVE term: "(2 + Total Debuff) × ATK" = +1×ATK per debuff COUNT
+// on the target (additive to the base coeff, NOT a multiplier). atk=2000, enemyDef=1000 → defMit 0.6:
+//   0 debuffs → 2×2000×0.6 = 2,400 ; 3 debuffs → (2+3)×2000×0.6 = 6,000. (count, not turn-weighted.)
+{
+  const hit = (nDebuffs) => { const a = scene({ atk: 2000, enemyDebuffs: nDebuffs }); return run(a.state, a.attacker, 'Arbalester', 'A3')[0]; };
+  check('Arbalester A3 — 0 debuffs → 2×ATK = 2,400', hit(0).raw_damage === 2400, `raw ${hit(0).raw_damage}`);
+  check('Arbalester A3 — 3 debuffs → (2+3)×ATK = 6,000', hit(3).raw_damage === 6000, `raw ${hit(3).raw_damage}`);
+  check('Arbalester A3 — +1×ATK per debuff (0→3 adds exactly 3×ATK×defMit = 3,600)', hit(3).raw_damage - hit(0).raw_damage === 3600);
+}
+
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
 process.exit(fail ? 1 : 0);

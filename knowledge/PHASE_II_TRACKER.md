@@ -405,6 +405,16 @@ Add to this list freely; each one is a test case for the format.
   40,800 · 25→CAP ×3.0 72,000. **Snapshot re-blessed** — PELOPS-A2 drifted 6624→9274 = exactly ×1.4 (the
   scene loads enemies with Poison+Weaken = 4 debuff-turns); verified the change is the scaler, not a
   regression, before blessing. Golden held (Pelops casts A3 not A2 in turns 1–8). Full DB ladder green (11/11).
+- **2026-07-24** — **(b) mechanics: Arbalester A3 per-target-debuff ADDITIVE term.** DB-verified
+  `damage_multiplier: "(2 + Total Debuff) ATK"`, `multiplier_type: 'formula'` → static base 2×ATK + 1×ATK per
+  debuff COUNT on the target. Distinct SHAPE from Pelops A2's multiplicative scaler: it is ADDITIVE to the
+  base coefficient, so it's a `F.perTargetDebuff = {coeff, stat}` field consumed in `interpreter.formulaBase`
+  (which now takes the target). Reads debuffs.length → NO constant. Cleared Arbalester A3's deferred; deferred
+  32→31. Teeth: new mutant killed by recipe-test → 21/21, 100%. Exact tests (atk 2000, defMit 0.6): 0 debuffs
+  → 2×ATK 2,400; 3 → (2+3)×ATK 6,000; delta = exactly 3×ATK×defMit. **Snapshot re-blessed** — ARBALESTER-A3
+  drifted 2760→5520 = exactly (2+2)×ATK (scene target carries Poison+Weaken = 2 debuffs); verified it's the
+  term applying, not a regression. Golden held. Full DB ladder green (11/11). The two dynamic-damage shapes —
+  multiplicative amp (Pelops) and additive-per-debuff-count (Arbalester) — are now both data-driven.
 - **2026-07-24 (SESSION WRAP)** — **GRADUATION + the magnitude gap.** Turn loop + RNG wired into the
   Simulator (`tools/sim-suite.mjs`, seam=`battle-suite.predict()`): Dragon subset 61.7% vs aggregate 49.4%.
   Leader aura + lifesteal + recipes now active in the metric. Gear-set-id map FIXED from the game's
