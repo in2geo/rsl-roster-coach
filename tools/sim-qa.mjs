@@ -76,6 +76,7 @@ const sens = runRung('sim-sensitivity.mjs');     // rung 6 — no DB, metamorphi
 const effects = runRung('sim-effects.mjs');      // fired-vs-consumed — no DB, catches represented-but-not-consumed
 const golden = runRung('sim-golden.mjs');        // rung 4 — no DB, golden-battle fixtures
 const trace = runRung('sim-trace.mjs');          // rung 3b — DB, reality oracle: sim trace vs the recording
+const actions = runRung('sim-actions.mjs');      // action verification — DB, mechanics-derived per-turn ACTION check
 const snapshot = runRung('sim-snapshot.mjs');    // rung 10 — no DB, regression snapshot (runs on pristine engine, before mutation)
 const data = runRung('sim-validate-data.mjs');   // rung 1 — needs DB (inherits env from --env-file)
 const mut = runRung('sim-mutants.mjs');          // rung 9 — no DB, mutation testing: does the suite have teeth?
@@ -135,6 +136,14 @@ if (trace.json && Array.isArray(trace.json.runs)) {
   }
 } else if (trace.json?.skipped) ledger.reality_gap.push(`trace oracle skipped — ${trace.json.skipped} (run with --env-file=.env.local)`);
 
+// ACTION VERIFICATION (sim vs the encoded game-mechanic action rules). NON-BLOCKING: it checks
+// sim-vs-RULE, not sim-vs-reality — a divergence means the sim doesn't follow the encoded rule, which
+// must be CONFIRMED against a recording before we know if the sim or the rule is wrong (see
+// knowledge/action-verification-review-request.md). So it's a flagged reality gap, not a spec block.
+if (actions.json && !actions.json.skipped) {
+  if (actions.json.diverged > 0) { const f = actions.json.firstDivergence; ledger.reality_gap.push(`action divergence (t${f.turn} ${f.actor}): rule expects ${f.expected}, sim used ${f.actual} — confirm vs a recording (sim-vs-rule, not reality)`); }
+} else if (actions.json?.skipped) ledger.reality_gap.push(`action verification skipped — ${actions.json.skipped}`);
+
 // MUTATION (rung 9): a mutant the suite SHOULD catch but didn't = a toothless guard, so the block gate
 // can no longer be trusted for that behaviour → bucket 1. A stale mutant (source drifted, no longer
 // applies) is the same failure — a teeth-check that silently stopped running. A surviving PROBE is a
@@ -182,6 +191,11 @@ if (trace.json && Array.isArray(trace.json.runs) && trace.json.runs.length) {
     if (r.perHeroHeadline) console.log(`        per-hero: ${r.perHeroHeadline}`);
   }
 } else if (trace.json?.skipped) console.log(`    ⏳ skipped — ${trace.json.skipped} (needs --env-file=.env.local)`);
+else console.log('    ⚠ no report');
+
+console.log('\n▶ ACTION VERIFICATION (sim vs the encoded game-mechanic action rules — predictor, not reality)');
+if (actions.json && !actions.json.skipped) console.log(`    ${actions.json.diverged === 0 ? '✅' : '✗'} ${actions.json.matched}/${actions.json.actions} actions follow the rules${actions.json.diverged ? `  ·  first: t${actions.json.firstDivergence.turn} ${actions.json.firstDivergence.actor} — rule ${actions.json.firstDivergence.expected} vs sim ${actions.json.firstDivergence.actual} (confirm vs recording)` : ''}`);
+else if (actions.json?.skipped) console.log(`    ⏳ skipped — ${actions.json.skipped}`);
 else console.log('    ⚠ no report');
 
 console.log('\n▶ REGRESSION SNAPSHOT (rung 10 — does the engine still do what it did at the last blessing?)');
