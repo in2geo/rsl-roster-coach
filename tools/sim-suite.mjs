@@ -25,7 +25,7 @@ import { makeCombatant, makeState, simulate, actEnemyMob } from '../lib/sim/engi
 import { readSkillKit, CONFIRMED_SKILL_ORDER } from '../lib/sim/ai.js';
 import { makeDragonContent, HELLRAZOR_IMMUNE } from '../lib/sim/dragon.js';
 import { buildUserChampions, fetchAliasRows } from '../lib/gestal-context.js';
-import { mapRoster } from '../lib/match-engine.js';
+import { mapRoster, pickLeaderFrom, applyLeaderAura } from '../lib/match-engine.js';
 import { buildRosterIndex, loadNameResolverRest } from '../lib/champion-names.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -50,6 +50,9 @@ for (let f = 0; ; f += 1000) {
 const byId = Object.fromEntries(db.map(c => [c.id, c]));
 const aliasRows = await fetchAliasRows(rest);
 const nameResolver = await loadNameResolverRest(rest);
+// Leader auras (live all fight) — reuse the PRODUCT's correct logic: pickLeaderFrom + applyLeaderAura.
+// SPD/ATK/DEF/HP auras are %-of-BASE (not total); area/restriction aware. Dragon floors ACC/RES.
+const auraRows = await rest('champion_auras?select=champion_id,aura_type,aura_value,aura_area,aura_restriction,aura_summary');
 
 // ── Dragon enemy table + per-stage affinity (the opposing side the turn loop needs) ──
 const dun = (await rest('dungeons?select=id,name&game_id=eq.raid_shadow_legends')).find(x => x.name === DUNGEON);
@@ -119,7 +122,7 @@ function predictTurnLoop(team, stage) {
 
 // ── cases (same source + filter as battle-suite; scoped to Dragon) ──
 const runs = await rest('run_reconciliations?select=account_id,display_name,content,successful,duration_seconds,turns,team_fielded&order=battle_captured_at.desc&limit=2000');
-const cases = [], skipped = { no_outcome: 0, not_dragon: 0, no_stage: 0, no_enemies: 0, no_roster: 0, partial_team: 0 };
+const cases = [], leaderTally = {}, skipped = { no_outcome: 0, not_dragon: 0, no_stage: 0, no_enemies: 0, no_roster: 0, partial_team: 0 };
 for (const r of runs) {
   if (r.successful !== true && r.successful !== false) { skipped.no_outcome++; continue; }
   const m = String(r.content ?? '').match(/^(.*?)\s+Stage\s+(\d+)/i);
@@ -132,7 +135,12 @@ for (const r of runs) {
   let tf = r.team_fielded; if (typeof tf === 'string') { try { tf = JSON.parse(tf); } catch { tf = []; } }
   const team = (tf ?? []).map(h => roster.get(h.name)).filter(Boolean);
   if (team.length < 3) { skipped.partial_team++; continue; }
-  const p = predictTurnLoop(team, stage);
+  // Leader aura, folded into estimated_stats ONCE per case (deterministic; same for every seed).
+  const auras = auraRows.filter(a => team.some(c => c.id === a.champion_id));
+  const leader = pickLeaderFrom(team, auras, { contentArea: 'dungeon', thresholdStats: ['acc', 'res'] });
+  const auraTeam = applyLeaderAura(team, leader);
+  const p = predictTurnLoop(auraTeam, stage);
+  leaderTally[leader ? `${leader.name} (${leader.aura_type} ${leader.aura_value})` : '(no aura)'] = (leaderTally[leader ? `${leader.name} (${leader.aura_type} ${leader.aura_value})` : '(no aura)'] ?? 0) + 1;
   cases.push({ acct: r.display_name ?? r.account_id, stage, actualWin: r.successful, ...p, dur: r.duration_seconds, turns: r.turns });
 }
 
@@ -146,6 +154,7 @@ const pct = v => v == null ? '  n/a' : (100 * v).toFixed(1).padStart(5) + '%';
 
 console.log(`\n══ SIM SUITE (turn loop + RNG) ══  Dragon's Lair · N=${N} seeded battles/case`);
 console.log(`   cases: ${cases.length}   skipped: ${Object.entries(skipped).map(([k, v]) => `${k} ${v}`).join(', ')}`);
+console.log(`   leader aura applied: ${Object.entries(leaderTally).map(([k, v]) => `${k} ×${v}`).join(' · ')}`);
 console.log(`\n   BALANCED ACCURACY   ${pct(balanced)}   <- turn loop vs the aggregate's Dragon line`);
 console.log(`   win recall          ${pct(winRecall)}   (won, predicted win ${tp}/${wins.length})`);
 console.log(`   loss recall         ${pct(lossRecall)}   (lost, predicted loss ${tn}/${losses.length})`);
