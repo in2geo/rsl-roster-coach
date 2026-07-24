@@ -47,7 +47,7 @@ meta-disciplines.** Layers 7–10 stay with the Simulator.
 | II-B placement toy battles | 2/3 | `tools/sim-recipe-b-test.mjs` | ✅ 8/8 |
 | II-C state toy battles | 2/3 | `tools/sim-recipe-c-test.mjs` | ✅ 7/7 |
 | II-D passives/modifiers/EXTEND toy battles | 2/3 | `tools/sim-recipe-d-test.mjs` | ✅ 11/11 |
-| scoped hand-calc golden (turn-by-turn) | 4 | done ad-hoc (turns 1–8 hand-verified) | ⬜ formalize |
+| scoped hand-calc golden (turn-by-turn) | 4 | `tools/model-golden.mjs` | ✅ turns 1–8 hand-derived, actor·skill·exact-damage; reports first divergence |
 | behavioural invariants (property-based) | 5 | `tools/model-invariants.mjs` | ✅ 800 scenarios + determinism; proven-teeth (heal-uncap mutant) |
 | sensitivity (metamorphic + carve-outs) | 6 | `tools/model-sensitivity.mjs` | ✅ 9/9 directions + HP-not-ATK carve-outs |
 | **teeth (mutation)** | meta | `tools/model-mutants.mjs` | ✅ **12/12 killed, 100%, 0 holes, 0 gaps** (suite = a/b/c/d + invariants + sensitivity) |

@@ -28,6 +28,7 @@ const RUNGS = [
   { file: 'model-snapshot.mjs',     name: 'regression snapshot',     layer: 'meta', db: false },
   { file: 'sim-validate-recipes.mjs', name: 'card→recipe coverage',  layer: '1',    db: true },
   { file: 'model-fidelity.mjs',     name: 'DB→recipe fidelity',      layer: '1',    db: true },
+  { file: 'model-golden.mjs',       name: 'hand-calc golden (turns 1–8)', layer: '4', db: true },
 ];
 
 function run(file) {

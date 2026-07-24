@@ -313,3 +313,10 @@ Add to this list freely; each one is a test case for the format.
   damage_multiplier + multiplier_type — the check that would've caught Vergis DEF-as-ATK). Full ladder:
   teeth(100%) · toy a/b/c/d · invariants(L5) · sensitivity(L6) · snapshot · coverage(L1) · fidelity(L1),
   all under `tools/model-qa.mjs`. Only optional item left: formalise the scoped hand-calc golden (L4).
+- **2026-07-24** — **Model QA ladder FULLY COMPLETE — 11 rungs, all green.** Added `model-golden.mjs` (L4
+  scoped hand-calc golden: Dragon-16 turns 1–8, actor·skill·exact-damage hand-derived, reports first
+  divergence — catches composition bugs the single-recipe snapshot can't). Every layer of the LOCAL half of
+  the Simulator QA Protocol is now built: L1 coverage+fidelity · L2/3 toy a/b/c/d · L4 golden · L5 invariants ·
+  L6 sensitivity · meta teeth(100%)+snapshot · orchestrator `model-qa.mjs`. VERDICT SPEC-CONFORMANT.
+  Next in order: (b) resume building Model mechanics from the deferred backlog (each now lands into a QA'd
+  ladder), or (c) Simulator-side layers 7–10 (reality) once plumbing graduates.
