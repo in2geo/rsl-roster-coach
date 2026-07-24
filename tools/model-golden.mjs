@@ -21,13 +21,17 @@ const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FIX = path.join(REPO, 'test', 'golden', 'dragon16-donbambus-2026-07-22.json');
 
 // ── THE GOLDEN — hand-derived per-turn facts (actor · slot · exact damage to each target) ──
+// Turn 1 is Bambus A3, which places team-wide [Increase ATK] 50%. Since the buff→stat CONSUMER was built
+// (statFactor, 2026-07-24), every ATK-scaling ALLY attacker on turns 2/5/6 hits ×1.5 — re-derived below
+// (each was exactly round(rawₚᵣₑ × 1.5); the sole cause, verified turn-by-turn). Turns 7/8 are ENEMY hits on
+// Pelops → no Increase ATK on their side → unchanged. This composed run is the mechanic's end-to-end proof.
 const GOLDEN = [
-  { turn: 1, actor: 'Bambus', slot: 'A3', dmg: {} },                                                   // buffs+debuffs, no damage
-  { turn: 2, actor: 'Tagoar', slot: 'A2', dmg: { 'Lua#1': 1582, 'Faceless#2': 1628, 'Arbalester#3': 1747, 'Arbalester#4': 1747, 'Renegade#5': 1644 } },
+  { turn: 1, actor: 'Bambus', slot: 'A3', dmg: {} },                                                   // buffs+debuffs (incl. team [Increase ATK] 50%), no damage
+  { turn: 2, actor: 'Tagoar', slot: 'A2', dmg: { 'Lua#1': 2373, 'Faceless#2': 2442, 'Arbalester#3': 2621, 'Arbalester#4': 2621, 'Renegade#5': 2466 } },  // ×1.5 under [Increase ATK]
   { turn: 3, actor: 'Vergis', slot: 'A2', dmg: {} },                                                    // Aegis — no damage
   { turn: 4, actor: 'Pelops', slot: 'A3', dmg: {} },                                                    // Victor's Bounty — no damage
-  { turn: 5, actor: 'Ezio',   slot: 'A2', dmg: { 'Lua#1': 4005, 'Faceless#2': 4123, 'Arbalester#3': 4424, 'Arbalester#4': 4424, 'Renegade#5': 4163 } },
-  { turn: 6, actor: 'Bambus', slot: 'A2', dmg: { 'Lua#1': 2129, 'Faceless#2': 2192, 'Arbalester#3': 2352, 'Arbalester#4': 2352, 'Renegade#5': 2213 } },
+  { turn: 5, actor: 'Ezio',   slot: 'A2', dmg: { 'Lua#1': 6008, 'Faceless#2': 6185, 'Arbalester#3': 6636, 'Arbalester#4': 6636, 'Renegade#5': 6244 } },  // ×1.5 under [Increase ATK]
+  { turn: 6, actor: 'Bambus', slot: 'A2', dmg: { 'Lua#1': 3194, 'Faceless#2': 3288, 'Arbalester#3': 3528, 'Arbalester#4': 3528, 'Renegade#5': 3319 } },  // ×1.5 under [Increase ATK]
   { turn: 7, actor: 'Faceless#2', slot: 'A3', dmg: { 'Pelops': 5553 } },                                // Ice Bolt → taunted Pelops, halved by Ally Protection
   { turn: 8, actor: 'Lua#1', slot: 'A3', dmg: { 'Pelops': 5725 } },                                     // Lucky Shot → Pelops
 ];

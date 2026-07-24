@@ -17,6 +17,10 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const INTERP = path.join(__dirname, '..', 'lib', 'sim', 'interpreter.js');
+const ENGINE = path.join(__dirname, '..', 'lib', 'sim', 'engine.js');
+// The Model's core spans BOTH the recipe interpreter AND the engine mechanics it calls (damage math, the
+// buff→stat consumer). A mutant names its file; default is the interpreter. Both are snapshot + restored.
+const FILE = (m) => (m.file === 'engine' ? ENGINE : INTERP);
 
 // The Model's no-DB toy-battle rungs = the suite under test. A mutant is KILLED if ANY goes red.
 const RUNGS = ['sim-recipe-test.mjs', 'sim-recipe-b-test.mjs', 'sim-recipe-c-test.mjs', 'sim-recipe-d-test.mjs', 'model-invariants.mjs', 'model-sensitivity.mjs'];
@@ -66,10 +70,16 @@ const MUTANTS = [
     repl: "const dd = dealDamage(t, raw, 'direct', actor, opponents, false);" },
   { name: 'passive immunities dropped (Pelops no longer immune to HP Burn)', expectKill: true,
     find: 'out.push(...r.immune);', repl: 'out.push();' },
+  // ── buff→stat CONSUMER (engine.js statFactor) — the [Increase/Decrease ATK/DEF] damage layer ──
+  { name: 'stat buffs ignored ([Increase ATK/DEF] made inert)', expectKill: true, file: 'engine',
+    find: 'const up = best(m.up, c.buffs);', repl: 'const up = 0 * best(m.up, c.buffs);' },
+  { name: 'stat debuffs ignored ([Decrease Attack/Defense] made inert)', expectKill: true, file: 'engine',
+    find: 'const down = Math.min(1, best(m.down, c.debuffs));', repl: 'const down = 0 * Math.min(1, best(m.down, c.debuffs));' },
 ];
 
-const ORIGINAL = fs.readFileSync(INTERP, 'utf8');
-const restore = () => { try { if (fs.readFileSync(INTERP, 'utf8') !== ORIGINAL) fs.writeFileSync(INTERP, ORIGINAL); } catch { fs.writeFileSync(INTERP, ORIGINAL); } };
+const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8') };
+const ORIGINAL = SNAP[INTERP];   // back-compat alias (baseline stale-find checks below still read the interpreter)
+const restore = () => { for (const f of [INTERP, ENGINE]) { try { if (fs.readFileSync(f, 'utf8') !== SNAP[f]) fs.writeFileSync(f, SNAP[f]); } catch { fs.writeFileSync(f, SNAP[f]); } } };
 process.on('exit', restore);
 process.on('SIGINT', () => { restore(); process.exit(130); });
 process.on('SIGTERM', () => { restore(); process.exit(143); });
@@ -90,9 +100,10 @@ if (baselineRed.length) {
 
 const results = [];
 for (const m of MUTANTS) {
-  const occ = ORIGINAL.split(m.find).length - 1;
+  const f = FILE(m), src = SNAP[f];
+  const occ = src.split(m.find).length - 1;
   if (occ !== 1) { results.push({ ...m, stale: true, occ }); continue; }
-  fs.writeFileSync(INTERP, ORIGINAL.replace(m.find, m.repl));
+  fs.writeFileSync(f, src.replace(m.find, m.repl));
   const killers = RUNGS.filter(rungRed).map(s => s.replace(/^sim-|\.mjs$/g, ''));
   restore();
   results.push({ ...m, killed: killers.length > 0, killers });

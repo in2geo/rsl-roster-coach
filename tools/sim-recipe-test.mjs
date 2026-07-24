@@ -93,5 +93,44 @@ console.log('\n=== Recipe interpreter — isolated damage tests ===\n');
   check('exact damage incl crit — 3.8×3000 × crit1.5 × defMit0.6 = 10,260', r[0]?.raw_damage === 10260, `raw ${r[0]?.raw_damage}`);
 }
 
+// 9 — BUFF→STAT CONSUMER: [Increase/Decrease ATK/DEF] fold into the damage math (exact numbers).
+// Bambus A1 = 3.8×ATK, def_mit = 1500/(1500+def), crit/affinity/variance off. Base with atk=3000, def=1000:
+//   3.8 × 3000 × (1500/2500=0.6) = 6,840.  Each buff/debuff reads its OWN magnitude — no constant.
+{
+  const B = (type, value) => ({ type, value, turnsLeft: 2 });
+  const statHit = ({ atkBuffs = [], atkDebuffs = [], tgtBuffs = [], tgtDebuffs = [], atk = 3000, tdef = 1000 }) => {
+    const a = makeCombatant({ name: 'Bambus', side: 'ally', atk, affinity: 'Void', critRate: 0, critDmg: 0 });
+    a.buffs.push(...atkBuffs); a.debuffs.push(...atkDebuffs);
+    const t = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e9, def: tdef, affinity: 'Void' });
+    t.buffs.push(...tgtBuffs); t.debuffs.push(...tgtDebuffs);
+    return applyRecipe(makeState({ allies: [a], enemies: [t], seed: null }), a, RECIPES['BAMBUS-A1'])[0];
+  };
+  const base = statHit({});
+  check('stat consumer — baseline 3.8×3000 × defMit0.6 = 6,840', base.raw_damage === 6840, `raw ${base.raw_damage}`);
+  // [Increase DEF] 60 on TARGET → effDef 1600, defMit 1500/3100 → 3.8×3000×0.48387 = 5,516
+  check('[Increase DEF] on target lowers landed damage (6,840 → 5,516)', statHit({ tgtBuffs: [B('Increase DEF', 60)] }).raw_damage === 5516);
+  // [Decrease Attack] 50 on ATTACKER → effATK 1500 → 3.8×1500×0.6 = 3,420
+  check('[Decrease Attack] on attacker halves its damage (6,840 → 3,420)', statHit({ atkDebuffs: [B('Decrease Attack', 50)] }).raw_damage === 3420);
+  // [Increase ATK] 50 on ATTACKER → effATK 4500 → 3.8×4500×0.6 = 10,260
+  check('[Increase ATK] on attacker raises its damage (6,840 → 10,260)', statHit({ atkBuffs: [B('Increase ATK', 50)] }).raw_damage === 10260);
+  // non-stacking: two [Increase DEF] 60 == one (Raid refreshes, never stacks magnitude)
+  check('two [Increase DEF] do NOT stack — same as one (5,516)', statHit({ tgtBuffs: [B('Increase DEF', 60), B('Increase DEF', 60)] }).raw_damage === 5516);
+  // net of opposing mods on one unit: (1+0.5)(1−0.5)=0.75 → effATK 2250 → 3.8×2250×0.6 = 5,130
+  check('[Increase ATK]+[Decrease Attack] net to ×0.75 (5,130)', statHit({ atkBuffs: [B('Increase ATK', 50)], atkDebuffs: [B('Decrease Attack', 50)] }).raw_damage === 5130);
+}
+
+// 10 — THE CROSS-EFFECT: a DEF-scaling attacker (Vergis, offense uses effective DEF) under [Increase DEF]
+// hits ~60% harder. This is why offense and defense share ONE statFactor — the buff can't be inert on either side.
+{
+  const vergis = (buffs) => {
+    const v = makeCombatant({ name: 'Vergis', side: 'ally', atk: 0, def: 1500, affinity: 'Void', critRate: 0, critDmg: 0 });
+    v.buffs.push(...buffs);
+    const t = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e9, def: 1000, affinity: 'Void' });
+    return applyRecipe(makeState({ allies: [v], enemies: [t], seed: null }), v, RECIPES['VERGIS-A1'])[0];
+  };
+  const vb = vergis([]), vi = vergis([{ type: 'Increase DEF', value: 60, turnsLeft: 2 }]);
+  check('Vergis (DEF-scaler) under [Increase DEF] hits ×1.6 (offense reads effective DEF)', Math.abs(vi.raw_damage / vb.raw_damage - 1.6) < 0.01, `base ${vb.raw_damage} buffed ${vi.raw_damage}`);
+}
+
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
 process.exit(fail ? 1 : 0);

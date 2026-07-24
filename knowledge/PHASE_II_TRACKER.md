@@ -339,3 +339,14 @@ Add to this list freely; each one is a test case for the format.
   sim-recipe-d-test (HP Burn blocked on Pelops, lands on a control ally); teeth mutant → 14/14, 100%.
   Coverage validator `coverageText` now reads the `immune` field (0 REVIEW). Deferred backlog 39→37.
   Three (b) mechanics done this session: Perfect Veil · ignore-shield · immunities — each into the QA'd ladder.
+- **2026-07-24** — **(b) mechanics: buff→stat CONSUMER** ([Increase/Decrease ATK/DEF] fold into damage).
+  `engine.statFactor(c, stat)` folds same-stat buffs/debuffs into ONE multiplier (non-stacking = max; net
+  (1+up)(1−down)); reads each effect's own magnitude → NO constant. `effectiveDef` refactored onto it (adds
+  the newly-consumed [Increase DEF] half); new `effectiveScaleStat` routes the ATTACKER's scaling stat, so a
+  DEF-scaler (Vergis) under [Increase DEF] hits ×1.6 — offense+defense share ONE consumer, buff inert on neither
+  side. Interpreter `formulaBase` uses it. 6 exact toy battles (II-A) + Vergis cross-effect. TEETH generalised
+  to mutate engine.js too → 16/16 (100%), both stat mutants killed. GOLDEN re-derived: turns 2/5/6 ×1.5 under
+  Bambus A3's team [Increase ATK] 50% — all 15 diffs = exactly round(×1.5), the composed end-to-end proof.
+  Highest-leverage build yet: lights up the top-of-frequency brackets game-wide ([Decrease DEF] 237×,
+  [Increase ATK] 182×, [Decrease ATK] 168×, [Increase DEF] 155×). Closed Tagoar-A1 deferred; backlog 37→36.
+  SPD-on-turn-order is the clean follow-on (scheduler still reads raw c.spd).
