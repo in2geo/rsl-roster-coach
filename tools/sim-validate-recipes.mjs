@@ -46,15 +46,24 @@ const isPassive = (r) => /passive/i.test(String(r.slot || '')) || /\[P\]\s*$/.te
 function coverageText(rec) {
   if (!rec) return '';
   const parts = [rec.name || ''];
+  // an effect's placement type PLUS the debuffs it CONDITIONS on (unresistable-if / chance-if-caster-under):
+  // those source brackets are prerequisites the recipe now handles in data, not placements — but they must
+  // still count as accounted so the source's [HP Burn]/[Decrease DEF] conditions don't read as unaccounted.
+  const pushEffect = (ef) => {
+    if (!ef) return;
+    if (ef.type) parts.push(ef.type);
+    if (ef.unresistableIfTargetUnder) parts.push(ef.unresistableIfTargetUnder);
+    if (ef.chanceIfCasterUnder?.debuff) parts.push(ef.chanceIfCasterUnder.debuff);
+  };
   for (const a of rec.actions || []) {
     parts.push(a.op);
     if (a.op === 'DEAL_DAMAGE') parts.push('attack damage');
-    if (a.effect?.type) parts.push(a.effect.type);
+    pushEffect(a.effect);
   }
   // passive TRIGGERS (event → response actions) and continuous MODIFIERS carry the card's clauses too
   for (const tr of rec.triggers || []) {
     parts.push(tr.on || '');
-    for (const a of tr.actions || []) { parts.push(a.op); if (a.effect?.type) parts.push(a.effect.type); }
+    for (const a of tr.actions || []) { parts.push(a.op); pushEffect(a.effect); }
     if (tr.when?.arg) parts.push(tr.when.arg);
   }
   for (const m of rec.modifiers || []) { parts.push('damage reduction ' + (m.kind || '')); if (m.when?.arg) parts.push(m.when.arg); }

@@ -415,6 +415,21 @@ Add to this list freely; each one is a test case for the format.
   drifted 2760→5520 = exactly (2+2)×ATK (scene target carries Poison+Weaken = 2 debuffs); verified it's the
   term applying, not a regression. Golden held. Full DB ladder green (11/11). The two dynamic-damage shapes —
   multiplicative amp (Pelops) and additive-per-debuff-count (Arbalester) — are now both data-driven.
+- **2026-07-24** — **(b) mechanics: Pelops HP-Burn CLUSTER (4 clauses).** Three data-driven, flaggable
+  conditional capabilities added to the interpreter, all reading effect data (NO constant): (1)
+  `effectiveChance` — a placement chance DROPS when the CASTER is under a named debuff (`chanceIfCasterUnder`):
+  Pelops passive HP Burn 100%→50%, Petrification 50%→25% under [Decrease DEF]; (2) `isUnresistable` — stage-2
+  ACC/RES is BYPASSED when the TARGET is under a named debuff (`unresistableIfTargetUnder`): A1 [Decrease ATK]
+  unresistable if target [HP Burn] (CLAUDE.md policy #17 — placement chance unchanged, only resistance skipped);
+  (3) dealOneHit conditional ignore-DEF (`ignoreDefIfTargetUnder`): A2 ignore 50% DEF if target [HP Burn].
+  Also added the passive's 2nd trigger action (Petrification). Cleared A1 unresist + A2 ignore-DEF + passive
+  HP-Burn-conditional + Petrification; deferred 31→28. Teeth: 3 new mutants killed by recipe-d-test → 24/24,
+  100%. Tests: passive land-rates over 4000 seeds (HP Burn 1.00/0.52, Petrification 0.50/0.25); A1
+  resisted→unresistable under [HP Burn]; A2 16,000→24,000 (DEF halved, same debuff-turns control). Coverage
+  validator taught to read the new condition-reference fields (else the source's [HP Burn]/[Decrease DEF]
+  conditions read as unaccounted placements — the policy-#17/#20 distinction, in the tool). Golden + snapshot
+  held (scene enemies carry no HP Burn → conditionals inert there). Full DB ladder green (11/11). PELOPS-A1 now
+  EXECUTABLE. Remaining Pelops deferred: A2 sub-50% steal+Stun (II-C); passive "once per enemy skill" nuance.
 - **2026-07-24 (SESSION WRAP)** — **GRADUATION + the magnitude gap.** Turn loop + RNG wired into the
   Simulator (`tools/sim-suite.mjs`, seam=`battle-suite.predict()`): Dragon subset 61.7% vs aggregate 49.4%.
   Leader aura + lifesteal + recipes now active in the metric. Gear-set-id map FIXED from the game's

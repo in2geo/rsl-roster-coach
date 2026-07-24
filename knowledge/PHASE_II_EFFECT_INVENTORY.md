@@ -65,9 +65,9 @@ built) · ⚠ authored-but-CONSUMER-missing (placed, but nothing reads it yet).
 |---|---|---|---|---|---|---|
 | 39 | A1 | 0.25×HP attack | 1 enemy | damage | A | ✅ |
 | 40 | A1 | 50% [Decrease ATK] @75% 2t | enemy hit | debuff | B | ⚠ placed; consumed only vs boss hits |
-| 41 | A1 | ↑ unresist/unblock if target [HP Burn] | — | condition | D | 📝 |
+| 41 | A1 | ↑ unresist/unblock if target [HP Burn] | — | condition | D | ✅ (unresistableIfTargetUnder) |
 | 42 | A2 | 0.4×HP attack | 1 enemy | damage | A | ✅ |
-| 43 | A2 | ignore 50% DEF if target [HP Burn] | enemy hit | mitigation | A | 📝 (conditional) |
+| 43 | A2 | ignore 50% DEF if target [HP Burn] | enemy hit | mitigation | A | ✅ (ignoreDefIfTargetUnder) |
 | 44 | A2 | +10% dmg per debuff-turn on self&target, ≤200% | self-scaling | damage | A | ✅ (dynamic scaler — interpreter.dynamicScaleFactor) |
 | 45 | A2 | if dmg<50% MaxHP: steal buffs + [Stun] 2t | enemy hit | steal/CC | C | 📝 |
 | 46 | **A3** | 50% [Increase ATK] 2t | all allies | buff | B | 📝 **(was uncatalogued)** |
@@ -76,8 +76,8 @@ built) · ⚠ authored-but-CONSUMER-missing (placed, but nothing reads it yet).
 | 49 | A3 | −20% damage taken while self not [Decrease DEF] | all allies | trigger | D | 📝 (team DR) |
 | 50 | A3 | one-copy-only / not-on-dead-dupe rule | — | exception | E | 📝 |
 | 51 | P | immune [Stun]/[HP Burn]/[Petrification] | self | immunity | D | 📝 |
-| 52 | P | 100% [HP Burn] on attacker (50% if self Decr-DEF) | attacker | trigger | D | 📝 (engine has partial) |
-| 53 | P | 50% [Petrification] on attacker (25% if Decr-DEF) | attacker | trigger | D | 📝 |
+| 52 | P | 100% [HP Burn] on attacker (50% if self Decr-DEF) | attacker | trigger | D | ✅ (chanceIfCasterUnder) |
+| 53 | P | 50% [Petrification] on attacker (25% if Decr-DEF) | attacker | trigger | D | ✅ (chanceIfCasterUnder) |
 
 ## Tagoar (Magic)
 

@@ -93,6 +93,18 @@ const MUTANTS = [
   { name: 'per-target-debuff term dropped (Arbalester A3 "(2+Total Debuff)" ignored)', expectKill: true,
     find: 'if (F.perTargetDebuff) base += F.perTargetDebuff.coeff * (target?.debuffs?.length ?? 0)',
     repl: 'if (F.perTargetDebuff) base += 0 * F.perTargetDebuff.coeff * (target?.debuffs?.length ?? 0)' },
+  // ── Pelops passive: caster-conditional chance (interpreter.js effectiveChance) — HP Burn/Petri halve under [Decrease DEF] ──
+  { name: 'caster-conditional chance ignored (Pelops passive stays 100/50% under [Decrease DEF])', expectKill: true,
+    find: '(ef.chanceIfCasterUnder && (actor.debuffs ?? []).some((d) => d.type === ef.chanceIfCasterUnder.debuff))',
+    repl: '(false && (actor.debuffs ?? []).some((d) => d.type === ef.chanceIfCasterUnder.debuff))' },
+  // ── Pelops A1: target-conditional resistance bypass (interpreter.js isUnresistable) — unresistable if target [HP Burn] ──
+  { name: 'target-conditional unresistable ignored (Pelops A1 Decrease ATK still resisted under [HP Burn])', expectKill: true,
+    find: '(ef.unresistableIfTargetUnder && (t.debuffs ?? []).some((d) => d.type === ef.unresistableIfTargetUnder))',
+    repl: '(false && (t.debuffs ?? []).some((d) => d.type === ef.unresistableIfTargetUnder))' },
+  // ── Pelops A2: target-conditional ignore-DEF (interpreter.js dealOneHit) — ignore 50% DEF if target [HP Burn] ──
+  { name: 'target-conditional ignore-DEF ignored (Pelops A2 does not ignore DEF under [HP Burn])', expectKill: true,
+    find: 'if (F.ignoreDefIfTargetUnder && (t.debuffs ?? []).some((d) => d.type === F.ignoreDefIfTargetUnder.debuff))',
+    repl: 'if (false && (t.debuffs ?? []).some((d) => d.type === F.ignoreDefIfTargetUnder.debuff))' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8') };

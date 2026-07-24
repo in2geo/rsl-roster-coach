@@ -79,5 +79,46 @@ const modScene = (owners, target) => { const st = makeState({ allies: [...owners
   const idef = ally.buffs.find(b => b.type === 'Increase DEF');
   check('EXTEND_EFFECT: a pre-existing 2-turn buff becomes 3 after Bambus A2', idef && idef.turnsLeft === 3, `turnsLeft ${idef?.turnsLeft}`); }
 
+// ── Pelops passive "Master of Games": HP Burn + Petrification on attacker, chance HALVED under [Decrease DEF] ──
+// Chances are RNG (100/50, 50/25) → measure land-rate over seeded trials (the caster-conditional chance).
+function pelopsOnAttackedRate(debuffType, pelopsUnderDecrDef, n = 4000) {
+  let landed = 0;
+  for (let s = 1; s <= n; s++) {
+    const pel = makeCombatant({ name: 'Pelops', side: 'ally', maxHp: 28000, affinity: 'Void' });
+    if (pelopsUnderDecrDef) pel.debuffs.push({ type: 'Decrease Defense', turnsLeft: 2 });
+    const mob = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 50000, res: 0, affinity: 'Void' });
+    fireTriggers(makeState({ allies: [pel], enemies: [mob], seed: s }), pel, 'attacked', { attacker: mob });
+    if (mob.debuffs.some(d => d.type === debuffType)) landed++;
+  }
+  return landed / n;
+}
+{ const r = pelopsOnAttackedRate('HP Burn', false); check('Pelops passive: [HP Burn] on attacker ~100%', r > 0.99, `rate ${r.toFixed(3)}`); }
+{ const r = pelopsOnAttackedRate('HP Burn', true);  check('Pelops passive: [HP Burn] drops to ~50% under [Decrease DEF]', r > 0.45 && r < 0.55, `rate ${r.toFixed(3)}`); }
+{ const r = pelopsOnAttackedRate('Petrification', false); check('Pelops passive: [Petrification] on attacker ~50%', r > 0.45 && r < 0.55, `rate ${r.toFixed(3)}`); }
+{ const r = pelopsOnAttackedRate('Petrification', true);  check('Pelops passive: [Petrification] drops to ~25% under [Decrease DEF]', r > 0.20 && r < 0.30, `rate ${r.toFixed(3)}`); }
+
+// ── Pelops A1: [Decrease ATK] cannot be resisted/blocked if the target is under [HP Burn] (policy #17) ──
+{ const pelA1 = (targetHpBurn) => {
+    const pel = makeCombatant({ name: 'Pelops', side: 'ally', atk: 0, maxHp: 28000, acc: 0, affinity: 'Void' });
+    const t = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e9, def: 500, res: 300, affinity: 'Void' });   // high RES → resists normally (acc 0)
+    if (targetHpBurn) t.debuffs.push({ type: 'HP Burn', turnsLeft: 2 });
+    applyRecipe(makeState({ allies: [pel], enemies: [t], seed: null }), pel, RECIPES['PELOPS-A1']);
+    return t.debuffs.some(d => d.type === 'Decrease Attack');
+  };
+  check('Pelops A1: [Decrease ATK] RESISTED vs high-RES target (acc 0, res 300)', pelA1(false) === false);
+  check('Pelops A1: [Decrease ATK] UNRESISTABLE when the target is under [HP Burn]', pelA1(true) === true); }
+
+// ── Pelops A2: ignore 50% DEF if the target is under [HP Burn]. Control carries the SAME debuff-turns of a
+// neutral debuff (Weaken) so the dynamic scaler is identical and only the ignore-DEF differs. ──
+{ const pelA2 = (targetDebuff) => {
+    const pel = makeCombatant({ name: 'Pelops', side: 'ally', atk: 0, maxHp: 100000, affinity: 'Void', critRate: 0, critDmg: 0 });
+    const t = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e9, def: 3000, affinity: 'Void' });
+    t.debuffs.push({ type: targetDebuff, turnsLeft: 2 });   // 2 debuff-turns either way → scaler ×1.2 for both
+    return applyRecipe(makeState({ allies: [pel], enemies: [t], seed: null }), pel, RECIPES['PELOPS-A2'])[0].raw_damage;
+  };
+  // base 0.4×100k=40,000 ×scaler1.2=48,000. Weaken: defMit 1500/4500 → 16,000. HP Burn: DEF halved → defMit 1500/3000=0.5 → 24,000.
+  const ctrl = pelA2('Weaken'), burn = pelA2('HP Burn');
+  check('Pelops A2: ignore-50%-DEF only vs [HP Burn] (16,000 → 24,000, same debuff-turns)', ctrl === 16000 && burn === 24000, `ctrl=${ctrl} burn=${burn}`); }
+
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
 process.exit(fail ? 1 : 0);
