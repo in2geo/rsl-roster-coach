@@ -19,7 +19,9 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { makeState, simulate } from '../lib/sim/engine.js';
+import { installRecipeRun } from '../lib/sim/interpreter.js';
 import { buildDragonBattle } from '../lib/sim/dragon-fixture.js';
+const SEED = (process.env.SEED != null && process.env.SEED !== '') ? Number(process.env.SEED) : null;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, '..');
@@ -133,8 +135,9 @@ async function main() {
     const built = await buildDragonBattle({ rest, fixture, repoRoot: REPO });
     if (built.skip) { outcomes.push({ id, skipped: built.skip }); continue; }
 
-    const state = makeState({ allies: built.allies, enemies: [] });
+    const state = makeState({ allies: built.allies, enemies: [], seed: SEED });   // SEED=n → seeded (losing) run; unset → deterministic
     state.purpleBarLeft = 0;
+    installRecipeRun(state);   // recipe path (Perfect Veil / immunities / Second Wind / incoming mods), matching sim-run/sim-suite
     // TRACE=N prints the first N turn-lines of the fight the oracle scores — "look before theorising".
     const doTrace = !!process.env.TRACE;
     const traceLines = [];
