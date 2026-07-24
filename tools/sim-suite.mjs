@@ -22,7 +22,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { makeCombatant, makeState, simulate, actEnemyMob } from '../lib/sim/engine.js';
-import { readSkillKit, CONFIRMED_SKILL_ORDER } from '../lib/sim/ai.js';
+import { installRecipeRun } from '../lib/sim/interpreter.js';
+import { readSkillKit, CONFIRMED_SKILL_ORDER, gearLifesteal } from '../lib/sim/ai.js';
 import { makeDragonContent, HELLRAZOR_IMMUNE } from '../lib/sim/dragon.js';
 import { buildUserChampions, fetchAliasRows } from '../lib/gestal-context.js';
 import { mapRoster, pickLeaderFrom, applyLeaderAura } from '../lib/match-engine.js';
@@ -84,33 +85,44 @@ function buildDragonEnemies(stage) {
 }
 
 // Build one ally combatant from a mapped-roster champ (real effective stats + kit).
-function allyCombatant(champ) {
+// `lsById` maps champion id -> lifesteal fraction (from the account's gear sets; 0 if none).
+function allyCombatant(champ, lsById = {}) {
   const es = champ.estimated_stats ?? {};
   return makeCombatant({ name: champ.name, side: 'ally',
     maxHp: es.hp, atk: es.atk, def: es.def, spd: es.spd, acc: es.acc, res: es.res,
     critRate: es.crit_rate ?? es.crate, critDmg: es.crit_dmg ?? es.cdmg,
-    affinity: champ.affinity, lifesteal: 0,                          // v1 GAP: gear-set lifesteal not sourced for the roster path
+    affinity: champ.affinity, lifesteal: lsById[champ.id] ?? 0,      // Lifesteal/Bloodthirst gear -> 30% heal of damage dealt
     bossMastery: !!champ.has_boss_mastery,                           // real Warmaster flag from masteryIds
     skillOrder: CONFIRMED_SKILL_ORDER[champ.name] ?? null,
     skills: readSkillKit(byId[champ.id]?.champion_skills ?? []) });
 }
 
-// ── rosters (identical construction to battle-suite so cases line up) ──
-const rosterByAccount = {};
+// ── rosters (identical construction to battle-suite so cases line up) + per-account lifesteal by gear ──
+const rosterByAccount = {}, lifestealByAccount = {};
 for (const f of fs.readdirSync(path.join(REPO, 'gestal-sync/output')).filter(x => x.endsWith('.json') && !/^gear-corpus/.test(x))) {
   const snap = JSON.parse(fs.readFileSync(path.join(REPO, 'gestal-sync/output', f), 'utf8'));
   if (!snap.accountId) continue;
   const { userChampions } = buildUserChampions(snap.champions ?? [], db, aliasRows);
   rosterByAccount[snap.accountId] = buildRosterIndex(mapRoster(userChampions, {}).mapped, nameResolver);
+  // gear-derived lifesteal per champion NAME (Lifesteal / Bloodthirst 4-set = 30% of damage dealt)
+  const ls = {};
+  for (const c of snap.champions ?? []) {
+    const counts = {}; for (const a of c.equippedArtifacts ?? []) if (a.set) counts[a.set] = (counts[a.set] ?? 0) + 1;
+    const setNames = Object.entries(counts).filter(([, n]) => n >= 4).map(([s]) => s);   // lifesteal is a 4-set
+    const frac = gearLifesteal(setNames) || (setNames.some(s => /bloodthirst/i.test(s)) ? 0.30 : 0);
+    if (frac) ls[c.name] = frac;
+  }
+  lifestealByAccount[snap.accountId] = ls;
 }
 
 // ── the Monte-Carlo turn-loop predictor ──
-function predictTurnLoop(team, stage) {
+function predictTurnLoop(team, stage, lsById = {}) {
   let wins = 0;
   for (let seed = 1; seed <= N; seed++) {
-    const allies = team.map(allyCombatant);
+    const allies = team.map(c => allyCombatant(c, lsById));
     const { content } = buildDragonEnemies(stage);
     const state = makeState({ allies, enemies: [], seed }); state.purpleBarLeft = 0;
+    installRecipeRun(state);   // run recipes for champs that have them (Perfect Veil, immunities, Second Wind, incoming mods); others fall back to applySkill
     const l = console.log; console.log = () => {};
     const res = simulate(state, content, { turnCap: 400 });
     console.log = l;
@@ -122,7 +134,8 @@ function predictTurnLoop(team, stage) {
 
 // ── cases (same source + filter as battle-suite; scoped to Dragon) ──
 const runs = await rest('run_reconciliations?select=account_id,display_name,content,successful,duration_seconds,turns,team_fielded&order=battle_captured_at.desc&limit=2000');
-const cases = [], leaderTally = {}, skipped = { no_outcome: 0, not_dragon: 0, no_stage: 0, no_enemies: 0, no_roster: 0, partial_team: 0 };
+const cases = [], leaderTally = {}; let lifestealHits = 0;
+const skipped = { no_outcome: 0, not_dragon: 0, no_stage: 0, no_enemies: 0, no_roster: 0, partial_team: 0 };
 for (const r of runs) {
   if (r.successful !== true && r.successful !== false) { skipped.no_outcome++; continue; }
   const m = String(r.content ?? '').match(/^(.*?)\s+Stage\s+(\d+)/i);
@@ -135,11 +148,16 @@ for (const r of runs) {
   let tf = r.team_fielded; if (typeof tf === 'string') { try { tf = JSON.parse(tf); } catch { tf = []; } }
   const team = (tf ?? []).map(h => roster.get(h.name)).filter(Boolean);
   if (team.length < 3) { skipped.partial_team++; continue; }
+  // lifesteal per champ id, matched by the fielded name or the DB name (alias-tolerant).
+  const lsMap = lifestealByAccount[r.account_id] ?? {};
+  const lsById = {};
+  for (const h of tf ?? []) { const c = roster.get(h.name); if (c && (lsMap[h.name] ?? lsMap[c.name])) lsById[c.id] = lsMap[h.name] ?? lsMap[c.name]; }
   // Leader aura, folded into estimated_stats ONCE per case (deterministic; same for every seed).
   const auras = auraRows.filter(a => team.some(c => c.id === a.champion_id));
   const leader = pickLeaderFrom(team, auras, { contentArea: 'dungeon', thresholdStats: ['acc', 'res'] });
   const auraTeam = applyLeaderAura(team, leader);
-  const p = predictTurnLoop(auraTeam, stage);
+  for (const [, v] of Object.entries(lsById)) if (v > 0) lifestealHits++;
+  const p = predictTurnLoop(auraTeam, stage, lsById);
   leaderTally[leader ? `${leader.name} (${leader.aura_type} ${leader.aura_value})` : '(no aura)'] = (leaderTally[leader ? `${leader.name} (${leader.aura_type} ${leader.aura_value})` : '(no aura)'] ?? 0) + 1;
   cases.push({ acct: r.display_name ?? r.account_id, stage, actualWin: r.successful, ...p, dur: r.duration_seconds, turns: r.turns });
 }
@@ -155,6 +173,7 @@ const pct = v => v == null ? '  n/a' : (100 * v).toFixed(1).padStart(5) + '%';
 console.log(`\n══ SIM SUITE (turn loop + RNG) ══  Dragon's Lair · N=${N} seeded battles/case`);
 console.log(`   cases: ${cases.length}   skipped: ${Object.entries(skipped).map(([k, v]) => `${k} ${v}`).join(', ')}`);
 console.log(`   leader aura applied: ${Object.entries(leaderTally).map(([k, v]) => `${k} ×${v}`).join(' · ')}`);
+console.log(`   lifesteal champs applied (across ${cases.length} cases): ${lifestealHits}`);
 console.log(`\n   BALANCED ACCURACY   ${pct(balanced)}   <- turn loop vs the aggregate's Dragon line`);
 console.log(`   win recall          ${pct(winRecall)}   (won, predicted win ${tp}/${wins.length})`);
 console.log(`   loss recall         ${pct(lossRecall)}   (lost, predicted loss ${tn}/${losses.length})`);
