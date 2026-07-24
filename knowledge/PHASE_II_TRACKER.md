@@ -350,3 +350,16 @@ Add to this list freely; each one is a test case for the format.
   Highest-leverage build yet: lights up the top-of-frequency brackets game-wide ([Decrease DEF] 237×,
   [Increase ATK] 182×, [Decrease ATK] 168×, [Increase DEF] 155×). Closed Tagoar-A1 deferred; backlog 37→36.
   SPD-on-turn-order is the clean follow-on (scheduler still reads raw c.spd).
+- **2026-07-24** — **GRADUATION STEP 1: turn loop + RNG wired into the Simulator (Dragon subset).**
+  `tools/sim-suite.mjs` — the same captured-battle WIN/LOSS test as battle-suite, but `predict()` now
+  builds BOTH sides as combatants from real modifier-inclusive stats (gestal `effectiveStats`) and runs
+  the seeded MONTE-CARLO (`lib/sim/simulate`, N seeds → win-rate; predict WIN iff rate ≥ 0.5, threshold
+  PINNED not fitted). Head-to-head on 108 identical Dragon cases, N=25:
+    · turn loop  BALANCED 61.7%  · false-clears 7
+    · aggregate  BALANCED 49.4%  · false-clears 21   (battle-suite --by-dungeon)
+  = +12.3pp, dangerous false-clears cut by 2/3, NO constant tuned. Confirms the turn loop beats the
+  aggregate (which can't clear 50% on Dragon — the "Spider st5==st20" blindness). Headroom is the 41
+  FALSE WALLS (real wins called losses): the sim is pessimistic because lifesteal gear-set sourcing for
+  the roster path isn't wired (Pelops/tanks under-survive) — that's the next lever. Seam = predict();
+  Simulator keeps stats+corpus+metric, imports the whole turn engine. Enemy content gates expansion
+  beyond Dragon (only dungeon with a full dungeon_stage_enemies table today).
