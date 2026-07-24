@@ -85,6 +85,10 @@ const MUTANTS = [
   { name: 'Reflect Damage ignored (nothing reflected to the attacker)', expectKill: true, file: 'engine',
     find: 'const reflectBuffDmg = reflectPct > 0 ? Math.round(reflectPct * amount) : 0;',
     repl: 'const reflectBuffDmg = reflectPct > 0 ? Math.round(0 * reflectPct * amount) : 0;' },
+  // ── Pelops A2 DYNAMIC SCALER (interpreter.js dynamicScaleFactor) — +10%/debuff-turn on self & target ──
+  { name: 'dynamic scaler neutralised (Pelops A2 +10%/debuff-turn ignored)', expectKill: true,
+    find: 'return 1 + Math.min(ds.capBonus ?? Infinity, (ds.pctPer ?? 0) * count);',
+    repl: 'return 1 + Math.min(ds.capBonus ?? Infinity, (ds.pctPer ?? 0) * count * 0);' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8') };

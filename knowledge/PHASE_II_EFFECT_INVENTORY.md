@@ -68,7 +68,7 @@ built) · ⚠ authored-but-CONSUMER-missing (placed, but nothing reads it yet).
 | 41 | A1 | ↑ unresist/unblock if target [HP Burn] | — | condition | D | 📝 |
 | 42 | A2 | 0.4×HP attack | 1 enemy | damage | A | ✅ |
 | 43 | A2 | ignore 50% DEF if target [HP Burn] | enemy hit | mitigation | A | 📝 (conditional) |
-| 44 | A2 | +10% dmg per debuff-turn on self&target, ≤200% | self-scaling | damage | A | 📝 (dynamic scaler) |
+| 44 | A2 | +10% dmg per debuff-turn on self&target, ≤200% | self-scaling | damage | A | ✅ (dynamic scaler — interpreter.dynamicScaleFactor) |
 | 45 | A2 | if dmg<50% MaxHP: steal buffs + [Stun] 2t | enemy hit | steal/CC | C | 📝 |
 | 46 | **A3** | 50% [Increase ATK] 2t | all allies | buff | B | 📝 **(was uncatalogued)** |
 | 47 | A3 | [Magma Shield] 30% caster MaxHP 2t | all allies | shield | C | 📝 (survival keystone) |

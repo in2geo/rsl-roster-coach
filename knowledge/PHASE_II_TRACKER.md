@@ -395,6 +395,16 @@ Add to this list freely; each one is a test case for the format.
   recipe-d-test → 19/19, 100%. Toy test: 30% of a 10000 hit → 3000 back, no-buff control → 0. Golden held
   (Vergis casts A2 not A1 in turns 1–8). Full DB ladder green (11/11), SPEC-CONFORMANT. Remaining slice work
   is the catalogued-only (📝) C+D triggers/conditions/activations/exceptions — the survival/identity mass.
+- **2026-07-24** — **(b) mechanics: Pelops A2 DYNAMIC SCALER.** Expressed as recipe DATA on the formula
+  (`F_PELOPS_A2.dynamicScaler = {source:'debuff_turns', of:'self_and_target', pctPer:0.10, capBonus:2.0}`),
+  consumed by a generic `interpreter.dynamicScaleFactor` that a champion doesn't hardcode: +10% dmg per TURN
+  REMAINING (Σ turnsLeft) on debuffs on self & target, bonus capped +200%. Turn-WEIGHTED, not a debuff count.
+  Unknown source/of → FLAG + ×1 (no silent default). NO constant. Cleared 1 of Pelops A2's 3 deferred (ignore-
+  DEF-if-HP-Burn + steal+Stun still deferred); deferred 33→32. Teeth: new mutant killed by recipe-test →
+  20/20, 100%. Exact tests (hp 100k, defMit 0.6): 0 turns→24,000 · 4→×1.4 33,600 · 7 (self+target)→×1.7
+  40,800 · 25→CAP ×3.0 72,000. **Snapshot re-blessed** — PELOPS-A2 drifted 6624→9274 = exactly ×1.4 (the
+  scene loads enemies with Poison+Weaken = 4 debuff-turns); verified the change is the scaler, not a
+  regression, before blessing. Golden held (Pelops casts A3 not A2 in turns 1–8). Full DB ladder green (11/11).
 - **2026-07-24 (SESSION WRAP)** — **GRADUATION + the magnitude gap.** Turn loop + RNG wired into the
   Simulator (`tools/sim-suite.mjs`, seam=`battle-suite.predict()`): Dragon subset 61.7% vs aggregate 49.4%.
   Leader aura + lifesteal + recipes now active in the metric. Gear-set-id map FIXED from the game's

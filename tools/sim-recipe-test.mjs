@@ -132,5 +132,26 @@ console.log('\n=== Recipe interpreter — isolated damage tests ===\n');
   check('Vergis (DEF-scaler) under [Increase DEF] hits ×1.6 (offense reads effective DEF)', Math.abs(vi.raw_damage / vb.raw_damage - 1.6) < 0.01, `base ${vb.raw_damage} buffed ${vi.raw_damage}`);
 }
 
+// 11 — PELOPS A2 DYNAMIC SCALER: +10% dmg per TURN REMAINING on debuffs on self & target, bonus ≤ +200%.
+// F_PELOPS_A2 = 0.4×HP, def_mit 1500/2500 = 0.6, crit/affinity/variance off. hp=100000, target def=1000:
+//   base = 0.4 × 100,000 × 0.6 = 24,000. Each debuff-turn = +10% (reads turnsLeft — turn-weighted, not a count).
+{
+  const D = (turnsLeft) => ({ type: 'Dbf', turnsLeft });
+  const a2 = ({ selfDebuffs = [], tgtDebuffs = [] } = {}) => {
+    const p = makeCombatant({ name: 'Pelops', side: 'ally', atk: 0, maxHp: 100000, affinity: 'Void', critRate: 0, critDmg: 0 });
+    p.debuffs.push(...selfDebuffs);
+    const t = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e9, def: 1000, affinity: 'Void' });
+    t.debuffs.push(...tgtDebuffs);
+    return applyRecipe(makeState({ allies: [p], enemies: [t], seed: null }), p, RECIPES['PELOPS-A2'])[0];
+  };
+  check('Pelops A2 — no debuffs → base 0.4×100k × defMit0.6 = 24,000', a2().raw_damage === 24000, `raw ${a2().raw_damage}`);
+  // target 2 debuffs × 2 turns = 4 debuff-turns → +40% → ×1.4 → 33,600
+  check('Pelops A2 — 4 debuff-turns on target → ×1.4 = 33,600', a2({ tgtDebuffs: [D(2), D(2)] }).raw_damage === 33600, `raw ${a2({ tgtDebuffs: [D(2), D(2)] }).raw_damage}`);
+  // self 3 turns + target 4 turns = 7 debuff-turns → +70% → ×1.7 → 40,800 (self AND target both count)
+  check('Pelops A2 — self+target both count (7 turns → ×1.7 = 40,800)', a2({ selfDebuffs: [D(3)], tgtDebuffs: [D(2), D(2)] }).raw_damage === 40800);
+  // 25 debuff-turns → bonus +250% CAPPED to +200% → ×3.0 → 72,000 (not ×3.5)
+  check('Pelops A2 — bonus caps at +200% (25 turns → ×3.0 = 72,000)', a2({ tgtDebuffs: [D(25)] }).raw_damage === 72000, `raw ${a2({ tgtDebuffs: [D(25)] }).raw_damage}`);
+}
+
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
 process.exit(fail ? 1 : 0);
