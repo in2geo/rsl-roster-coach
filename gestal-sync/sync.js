@@ -77,18 +77,36 @@ const SLOT = {
   6: 'Ring', 7: 'Amulet', 8: 'Banner',
 };
 
-// Gear set IDs sourced from the RSL in-game index
+// Gear set id -> name. AUTHORITATIVE: the game's own `ArtifactSetKindId` enum (GameAssembly.dll
+// dump.cs, Il2CppDumper v6.7.46, TypeDefIndex 11378), mapped to in-game set names via the Artifact
+// Set Guide. Replaces the prior HAND-GUESSED table, which had ids 9/13/15/17 (and most >9) WRONG —
+// e.g. id 9 is Lifesteal (enum LifeDrain), NOT Perception. That single mislabel hid every lifesteal
+// build from the sim (Pelops's 30% self-heal read as 0). Enum values are stable across patches (new
+// sets append), so this holds until Plarium adds a set past the ids below (then re-grep the enum).
 const GEAR_SET = {
-  1:  'Life',          2:  'Offense',        3:  'Defense',
-  4:  'Speed',         5:  'Critical Rate',  6:  'Critical Damage',
-  7:  'Accuracy',      8:  'Resistance',     9:  'Perception',
-  10: 'Immortal',      11: 'Regeneration',   12: 'Savage',
-  13: 'Cruel',         15: 'Daze',           17: 'Retaliation',
-  18: 'Stun',          20: 'Stoneskin',      21: 'Destroy',
-  22: 'Divine Offense',23: 'Divine Defense', 24: 'Divine Speed',
-  26: 'Frostbite',     27: 'Stalwart',       28: 'Reflex',
-  29: 'Cursed',        30: 'Deflection',     31: 'Avenging',
-  33: 'Lethal',        36: 'Immunity',       62: 'Phantom Touch',
+  1:  'Life',            2:  'Offense',              3:  'Defense',
+  4:  'Speed',           5:  'Critical Rate',        6:  'Critical Damage',
+  7:  'Accuracy',        8:  'Resistance',           9:  'Lifesteal',
+  10: 'Fury',            11: 'Daze',                 12: 'Cursed',
+  13: 'Frost',           14: 'Frenzy',               15: 'Curing',
+  16: 'Immunity',        17: 'Shield',               18: 'Relentless',
+  19: 'Savage',          20: 'Destroy',              21: 'Stun',
+  22: 'Toxic',           23: 'Taunting',             24: 'Retaliation',
+  25: 'Avenging',        26: 'Stalwart',             27: 'Reflex',
+  28: 'CriticalHeal',    29: 'Cruel',                30: 'Immortal',
+  31: 'Divine Offense',  32: 'Divine Critical Rate', 33: 'Divine Life',
+  34: 'Divine Speed',    35: 'Swift Parry',          36: 'Deflection',
+  37: 'Resilience',      38: 'Perception',           39: 'Affinitybreaker',
+  40: 'Untouchable',     41: 'Fatal',                42: 'Frostbite',
+  43: 'Bloodthirst',     44: 'Guardian',             45: 'Fortitude',
+  46: 'Lethal',          48: 'Stoneskin',            49: 'Killstroke',
+  50: 'Instinct',        51: 'Bolster',              52: 'Defiant',
+  53: 'Impulse',         54: 'Zeal',                 57: 'Righteous',
+  58: 'Supersonic',      61: 'Feral',                62: 'Pinpoint',
+  64: 'Rebirth',         65: 'Chronophage',
+  // accessory-only kinds (game enum ids 1000+)
+  1000: 'Refresh',       1001: 'Cleansing',          1002: 'Bloodshield',
+  1003: 'Reaction',      1004: 'Revenge',
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
