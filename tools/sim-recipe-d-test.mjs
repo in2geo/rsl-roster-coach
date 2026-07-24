@@ -2,7 +2,7 @@
 // EXTEND_EFFECT. These were verified once in throwaway inline runs; this commits them as a durable rung so
 // the teeth check (model-mutants) can see them and they cannot silently break. No DB. Deterministic.
 // Run: node tools/sim-recipe-d-test.mjs
-import { makeCombatant, makeState, setChanceMode } from '../lib/sim/engine.js';
+import { makeCombatant, makeState, setChanceMode, chooseAllyTarget } from '../lib/sim/engine.js';
 import { applyRecipe, fireTriggers, incomingDamage } from '../lib/sim/interpreter.js';
 import { RECIPES } from '../lib/sim/recipes.js';
 
@@ -21,6 +21,14 @@ console.log('\n=== II-D reactive passives + damage modifiers + EXTEND_EFFECT (to
   check('Second Wind: HP <50% → 15% [Continuous Heal]', v.buffs.some(b => b.type === 'Continuous Heal' && b.value === 15)); }
 { const v = V(); v.hp = 9000; fireTriggers(makeState({ allies: [v], enemies: [], seed: null }), v, 'hp_below', {});
   check('Second Wind: HP ≥50% → no continuous heal', !v.buffs.some(b => b.type === 'Continuous Heal')); }
+
+// ── Ezio Perfect Veil (round_start trigger → untargetable) ──
+{ const ez = makeCombatant({ name: 'Ezio', side: 'ally', maxHp: 16000 }); ez.hp = 2000;   // LOWEST HP% — would be the pick without a veil
+  const ally = makeCombatant({ name: 'A', side: 'ally', maxHp: 20000 }); ally.hp = 10000;
+  fireTriggers(makeState({ allies: [ez, ally], enemies: [], seed: null }), ez, 'round_start', {});
+  const veiled = ez.buffs.some(b => b.type === 'Perfect Veil');
+  const target = chooseAllyTarget([ez, ally]);   // single-target enemy pick MUST skip the veiled Ezio
+  check('Ezio Perfect Veil: round_start places it AND single-target skips the veiled (lowest-HP) Ezio', veiled && target?.name === 'A', `veiled=${veiled} target=${target?.name}`); }
 
 // ── incoming-damage MODIFIERS ──
 const modScene = (owners, target) => { const st = makeState({ allies: [...owners, target], enemies: [], seed: null }); return st; };

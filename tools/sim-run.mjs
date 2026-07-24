@@ -9,7 +9,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { makeState, simulate, setChanceMode } from '../lib/sim/engine.js';
 import { buildDragonBattle } from '../lib/sim/dragon-fixture.js';
-import { applyRecipe, recipeFor } from '../lib/sim/interpreter.js';
+import { installRecipeRun } from '../lib/sim/interpreter.js';
 
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FIX = path.join(REPO, 'test', 'golden', 'dragon16-donbambus-2026-07-22.json');
@@ -37,7 +37,7 @@ async function main() {
   setChanceMode('all');   // stated chance policy: everything lands (both sides)
   const state = makeState({ allies: built.allies, enemies: [], seed: null });
   state.purpleBarLeft = 0;
-  state.recipeAct = (st, actor, skill) => { const r = recipeFor(actor, skill.slot); if (!r) return false; applyRecipe(st, actor, r); return true; };
+  installRecipeRun(state);   // recipeAct + start-of-turn/round triggers (Ezio Perfect Veil) + battle-start round buffs
 
   const res = simulate(state, built.content, { turnCap: 400 });
 

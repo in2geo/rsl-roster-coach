@@ -15,7 +15,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { makeState, simulate, setChanceMode } from '../lib/sim/engine.js';
 import { buildDragonBattle } from '../lib/sim/dragon-fixture.js';
-import { applyRecipe, recipeFor } from '../lib/sim/interpreter.js';
+import { installRecipeRun } from '../lib/sim/interpreter.js';
 
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FIX = path.join(REPO, 'test', 'golden', 'dragon16-donbambus-2026-07-22.json');
@@ -44,7 +44,7 @@ for (const a of built.allies) { a.spd = Math.round(a.spd * 1.19); a.maxHp = Math
 
 setChanceMode('all');
 const st = makeState({ allies: built.allies, enemies: [], seed: null }); st.purpleBarLeft = 0;
-st.recipeAct = (s, actor, skill) => { const r = recipeFor(actor, skill.slot); if (!r) return false; applyRecipe(s, actor, r); return true; };
+installRecipeRun(st);
 const acts = {}; st.onAction = (s, actor, skill) => { acts[s.turn] = { actor: actor.name, slot: skill.slot }; };
 const res = simulate(st, built.content, { turnCap: 8 });
 

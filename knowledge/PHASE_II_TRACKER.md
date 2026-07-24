@@ -320,3 +320,11 @@ Add to this list freely; each one is a test case for the format.
   L6 sensitivity · meta teeth(100%)+snapshot · orchestrator `model-qa.mjs`. VERDICT SPEC-CONFORMANT.
   Next in order: (b) resume building Model mechanics from the deferred backlog (each now lands into a QA'd
   ladder), or (c) Simulator-side layers 7–10 (reality) once plumbing graduates.
+- **2026-07-24** — **(b) mechanics: Ezio Perfect Veil built.** `round_start` trigger places [Perfect Veil]
+  on self (untargetable — consumer is engine `chooseSingleTarget`). New `installRecipeRun(state)` wires
+  recipeAct + start-of-turn/round triggers + battle-start round buffs (engine gained a `state.onTurnStart`
+  hook; harnesses sim-run/model-golden use it). Toy battle in sim-recipe-d-test (veil placed + lowest-HP
+  veiled Ezio skipped). Ladder still SPEC-CONFORMANT (golden turns 1–8 unchanged, teeth 100%). ⚠ OBSERVATION
+  (Simulator-side, NOT a Model-QA issue): the connected run shifted victory→boss-wipe — veil-skip happens
+  BEFORE taunt in chooseSingleTarget, so during taunt gaps Ezio's single-target incoming redistributes onto
+  squishier allies. Flag for the reality layer (real Ezio = 3,820 taken, all 5 survive), not to chase now.
