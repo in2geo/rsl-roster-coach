@@ -22,18 +22,24 @@ const FIX = path.join(REPO, 'test', 'golden', 'dragon16-donbambus-2026-07-22.jso
 
 // ── THE GOLDEN — hand-derived per-turn facts (actor · slot · exact damage to each target) ──
 // Turn 1 is Bambus A3, which places team-wide [Increase ATK] 50%. Since the buff→stat CONSUMER was built
-// (statFactor, 2026-07-24), every ATK-scaling ALLY attacker on turns 2/5/6 hits ×1.5 — re-derived below
-// (each was exactly round(rawₚᵣₑ × 1.5); the sole cause, verified turn-by-turn). Turns 7/8 are ENEMY hits on
-// Pelops → no Increase ATK on their side → unchanged. This composed run is the mechanic's end-to-end proof.
+// (statFactor, 2026-07-24), every ATK-scaling ALLY attacker on turns 2/5/6 hits ×1.5 (each was exactly
+// round(rawₚᵣₑ × 1.5); verified turn-by-turn).
+// Turns 7/8 RE-DERIVED for the SPD turn-order CONSUMER (engine.effectiveSpeed in nextActor, 2026-07-24):
+// Tagoar A2 (t2) places [Increase SPD] 30% on all allies; once consumed, the whole team fills turn meter at
+// ×1.30, so ALLY Tagoar cycles back and cuts in at t7 AHEAD of the enemies. Hand-verified from the post-t6
+// turn meters (time-to-100 = (100−tm)/eff): Tagoar 21.5/237.9 = 0.0904 beats Faceless#2 11.5/101 = 0.1139
+// (at raw 183 Tagoar would be 0.1175 and LOSE — the old order). Then t8 Faceless#2 (2.4/101 = 0.0238) wins.
+// The enemy hit is UNCHANGED — Faceless#2 → Pelops is the same 5553, merely displaced one turn later; the
+// old t8 (Lua#1 → Pelops) slides to t9, outside the 8-turn window. A pure reorder, not a damage change.
 const GOLDEN = [
-  { turn: 1, actor: 'Bambus', slot: 'A3', dmg: {} },                                                   // buffs+debuffs (incl. team [Increase ATK] 50%), no damage
-  { turn: 2, actor: 'Tagoar', slot: 'A2', dmg: { 'Lua#1': 2373, 'Faceless#2': 2442, 'Arbalester#3': 2621, 'Arbalester#4': 2621, 'Renegade#5': 2466 } },  // ×1.5 under [Increase ATK]
+  { turn: 1, actor: 'Bambus', slot: 'A3', dmg: {} },                                                   // buffs+debuffs (incl. team [Increase ATK] 50% + [Increase SPD] via Tagoar next turn), no damage
+  { turn: 2, actor: 'Tagoar', slot: 'A2', dmg: { 'Lua#1': 2373, 'Faceless#2': 2442, 'Arbalester#3': 2621, 'Arbalester#4': 2621, 'Renegade#5': 2466 } },  // ×1.5 under [Increase ATK]; also places team [Increase SPD] 30%
   { turn: 3, actor: 'Vergis', slot: 'A2', dmg: {} },                                                    // Aegis — no damage
   { turn: 4, actor: 'Pelops', slot: 'A3', dmg: {} },                                                    // Victor's Bounty — no damage
   { turn: 5, actor: 'Ezio',   slot: 'A2', dmg: { 'Lua#1': 6008, 'Faceless#2': 6185, 'Arbalester#3': 6636, 'Arbalester#4': 6636, 'Renegade#5': 6244 } },  // ×1.5 under [Increase ATK]
   { turn: 6, actor: 'Bambus', slot: 'A2', dmg: { 'Lua#1': 3194, 'Faceless#2': 3288, 'Arbalester#3': 3528, 'Arbalester#4': 3528, 'Renegade#5': 3319 } },  // ×1.5 under [Increase ATK]
-  { turn: 7, actor: 'Faceless#2', slot: 'A3', dmg: { 'Pelops': 5553 } },                                // Ice Bolt → taunted Pelops, halved by Ally Protection
-  { turn: 8, actor: 'Lua#1', slot: 'A3', dmg: { 'Pelops': 5725 } },                                     // Lucky Shot → Pelops
+  { turn: 7, actor: 'Tagoar', slot: 'A1', dmg: { 'Arbalester#3': 2550 } },                              // ally cuts in (team [Increase SPD] 30%): 1.8×ATK ×2 → lowest-HP enemy
+  { turn: 8, actor: 'Faceless#2', slot: 'A3', dmg: { 'Pelops': 5553 } },                                // Ice Bolt → taunted Pelops, halved by Ally Protection (was t7 pre-SPD-consumer)
 ];
 
 if (!process.env.SUPABASE_URL) { console.log('\n⏳ golden — skipped (needs --env-file=.env.local)\n'); console.log('QA_JSON ' + JSON.stringify({ rung: 'model-golden', pass: 0, fail: 0, skipped: 'no DB' })); process.exit(0); }

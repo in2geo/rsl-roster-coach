@@ -363,6 +363,38 @@ Add to this list freely; each one is a test case for the format.
   the roster path isn't wired (Pelops/tanks under-survive) — that's the next lever. Seam = predict();
   Simulator keeps stats+corpus+metric, imports the whole turn engine. Enemy content gates expansion
   beyond Dragon (only dungeon with a full dungeon_stage_enemies table today).
+- **2026-07-24** — **(b) mechanics: SPD turn-order CONSUMER.** `engine.effectiveSpeed(c) = c.spd × statFactor(c,'spd')`;
+  `nextActor` (the scheduler) now fills turn meter off effective speed, so [Increase SPD]/[Decrease Speed] —
+  previously placed-but-inert — shift turn order. NO constant (statFactor reads each effect's own `value`).
+  Consumes 2 effects (Bambus A1 Decrease Speed on enemies, Tagoar A2 Increase SPD on allies); deferred 36→35.
+  Teeth: new mutant "SPD ignored by scheduler (raw c.spd)" killed by model-sensitivity → 17/17, 100%. New L6
+  directions (Increase→more turns, Decrease→fewer) exercise the real `nextActor` (now exported). **Golden
+  re-derived turns 7/8** — the team [Increase SPD] 30% (Tagoar A2 @t2) makes ally Tagoar cut in at t7 ahead of
+  the enemies (hand-verified from post-t6 turn meters: time-to-100 Tagoar 0.0904 < Faceless#2 0.1139; at raw
+  183 Tagoar would lose = the old order); the Faceless#2→Pelops hit is the SAME 5553, merely displaced to t8.
+  A pure reorder. Full DB ladder green (11/11), SPEC-CONFORMANT. Next placed-but-inert consumers: Poison
+  Sensitivity (amplify), Reflect Damage.
+- **2026-07-24** — **(b) mechanics: Poison Sensitivity CONSUMER.** `engine.poisonSensitivity(c)` reads the
+  target's [Poison Sensitivity] `value` (Ezio A2 = 25%); `tickDots` now multiplies each [Poison] tick by
+  `(1 + sensitivity)` — a NON-DEF %maxHP amplifier (damage-mechanics.js §Poison Sensitivity). NO constant
+  (reads data); non-stacking (max), matching statFactor's refresh-not-stack rule. Clears Ezio A2's amplify
+  deferred; deferred 35→34; placed-but-inert 2→1 (only Reflect Damage left). Teeth: new mutant "Poison
+  Sensitivity ignored (amplifier dropped)" killed by model-sensitivity → 18/18, 100%. New L6 direction
+  exercises the real `tickDots` (now exported): 25% → exactly ×1.25 (5000→6250). Golden unaffected (DoT ticks
+  are kind:'dot', outside its damage comparison). Full DB ladder green (11/11), SPEC-CONFORMANT. This is the
+  2nd of the handoff's top-2 offense levers for the magnitude gap (HP-Burn ally-splash is the other).
+- **2026-07-24** — **(b) mechanics: Reflect Damage CONSUMER + ALL placed-but-inert effects now consumed.**
+  `engine.reflectDamage(c)` reads the target's [Reflect Damage] `value` (Vergis A1 = 30%); `dealDamage` now
+  makes the ATTACKER take value% of the inflicted `amount` (glossary: "any attacker … takes 15/30% of the
+  damage they inflicted"), reflected straight to attacker HP bypassing the attacker's shields (no loop),
+  mirroring the existing Magma-Shield reflect. Does NOT lifesteal (not the champion's own attack). NO constant
+  (value from data); non-stacking (max). Recorded on BOTH damage paths (applySkill + interpreter dealOneHit).
+  ⚠ RULE ASSUMPTION flagged: reflects pre-shield inflicted damage (shield-on-target interaction unconfirmed —
+  reality layer to adjudicate). Clears Vergis A1's deferred; deferred 34→33. **Placed-but-inert 1→0: every
+  effect the slice PLACES now has a consumer.** Teeth: new mutant "Reflect Damage ignored" killed by
+  recipe-d-test → 19/19, 100%. Toy test: 30% of a 10000 hit → 3000 back, no-buff control → 0. Golden held
+  (Vergis casts A2 not A1 in turns 1–8). Full DB ladder green (11/11), SPEC-CONFORMANT. Remaining slice work
+  is the catalogued-only (📝) C+D triggers/conditions/activations/exceptions — the survival/identity mass.
 - **2026-07-24 (SESSION WRAP)** — **GRADUATION + the magnitude gap.** Turn loop + RNG wired into the
   Simulator (`tools/sim-suite.mjs`, seam=`battle-suite.predict()`): Dragon subset 61.7% vs aggregate 49.4%.
   Leader aura + lifesteal + recipes now active in the metric. Gear-set-id map FIXED from the game's

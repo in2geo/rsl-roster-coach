@@ -5,7 +5,7 @@
 // baseline vs one-input-perturbed, with a non-vacuous guard (baseline > 0) so a vacuous "0 vs 0" can't pass.
 // A wrong direction is a spec violation → blocks. No DB, deterministic. Run: node tools/model-sensitivity.mjs
 
-import { makeCombatant, makeState } from '../lib/sim/engine.js';
+import { makeCombatant, makeState, nextActor, tickDots } from '../lib/sim/engine.js';
 import { applyRecipe, incomingDamage } from '../lib/sim/interpreter.js';
 import { RECIPES } from '../lib/sim/recipes.js';
 
@@ -52,6 +52,39 @@ console.log('\n══ MODEL SENSITIVITY (layer 6) — directions + game-fact car
   const st2 = makeState({ allies: [], enemies: [], seed: null }); const tgt2 = makeCombatant({ name: 'A', side: 'ally', maxHp: 20000 }); st2.allies.push(tgt2);
   const without = incomingDamage(st2, tgt2, 1000);
   T('Pelops −20% present → less incoming than without it', without === 1000 && withMod < without, `with=${withMod} without=${without}`); void withP; }
+
+// ── SPD turn-order consumer: the scheduler must honour [Increase SPD]/[Decrease Speed] ──
+// Two identical combatants; modify A's speed via a buff/debuff; run the REAL scheduler K steps and count
+// turns. If nextActor ignored the modifier (raw c.spd), A and B would tie — so these directions have teeth
+// on the scheduler, not just on statFactor.
+function turnCounts(aBuffs = [], aDebuffs = [], baseSpd = 100, steps = 40) {
+  const A = makeCombatant({ name: 'A', side: 'ally', spd: baseSpd, maxHp: 1e6, affinity: 'Void' });
+  const B = makeCombatant({ name: 'B', side: 'ally', spd: baseSpd, maxHp: 1e6, affinity: 'Void' });
+  A.buffs = aBuffs; A.debuffs = aDebuffs;
+  const st = makeState({ allies: [A, B], enemies: [], seed: null });
+  const c = { A: 0, B: 0 };
+  for (let i = 0; i < steps; i++) { const act = nextActor(st); if (act) c[act.name]++; }
+  return c;
+}
+{ const c = turnCounts(); T('SPD baseline: equal SPD → equal turns', c.A > 0 && c.A === c.B, `A=${c.A} B=${c.B}`); }
+{ const c = turnCounts([{ type: 'Increase SPD', value: 30 }]); T('+[Increase SPD] → more turns than an equal-SPD ally', c.A > 0 && c.A > c.B, `buffed=${c.A} plain=${c.B}`); }
+{ const c = turnCounts([], [{ type: 'Decrease Speed', value: 30 }]); T('+[Decrease Speed] → fewer turns than an equal-SPD ally', c.B > 0 && c.A < c.B, `slowed=${c.A} plain=${c.B}`); }
+
+// ── Poison Sensitivity consumer: [Poison Sensitivity] amplifies each [Poison] tick ──
+// tickDots the same Poison on a target WITH vs WITHOUT [Poison Sensitivity 25%]; the sensitised tick must be
+// exactly ×1.25. Exercises the real tickDots, so a mutant dropping the amplifier fails here (teeth).
+function poisonTick(sensitivityValue) {
+  const c = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 100000, affinity: 'Void' });
+  c.debuffs.push({ type: 'Poison', pct: 0.05, stacks: 1, turnsLeft: 2 });
+  if (sensitivityValue != null) c.debuffs.push({ type: 'Poison Sensitivity', value: sensitivityValue, turnsLeft: 2 });
+  const before = c.hp;
+  tickDots(makeState({ allies: [], enemies: [c], seed: null }), c);
+  return before - c.hp;
+}
+{ const base = poisonTick(null), amp = poisonTick(25);
+  T('+[Poison Sensitivity] → more Poison tick damage', base > 0 && amp > base, `base=${base} sens25=${amp}`); }
+{ const base = poisonTick(null), amp = poisonTick(25);   // 5000 → 6250, exact
+  T('[Poison Sensitivity] 25% amplifies the tick by exactly ×1.25', base > 0 && amp === base * 1.25, `base=${base} sens25=${amp}`); }
 
 // ── carve-outs (directions the game does NOT have) ──
 { // HEAL scales off caster MAX HP, not ATK → changing ATK must NOT change the heal

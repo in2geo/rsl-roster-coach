@@ -17,7 +17,7 @@ built) · ⚠ authored-but-CONSUMER-missing (placed, but nothing reads it yet).
 |---|---|---|---|---|---|---|
 | 1 | A1 | 3.8×ATK attack | 1 enemy | damage | A | ✅ |
 | 2 | A1 | AoE-if target ≥2 debuffs | all enemies | targeting | A | ✅ |
-| 3 | A1 | 30% Decrease SPD @75% 2t | enemy hit | debuff | B | ⚠ placed, no speed consumer |
+| 3 | A1 | 30% Decrease SPD @75% 2t | enemy hit | debuff | B | ✅ consumed (turn order — engine.effectiveSpeed) |
 | 4 | A1 | [Sleep] 1t, unresistable | self | debuff | D | 📝 (coupled to passive) |
 | 5 | A2 | 5.6×ATK attack | all enemies | damage | A | ✅ |
 | 6 | A2 | [Shield] 30% caster MaxHP 2t | all allies | shield | C | 📝 |
@@ -44,7 +44,7 @@ built) · ⚠ authored-but-CONSUMER-missing (placed, but nothing reads it yet).
 | 22 | A1 | ↑ unresistable if self [Veil] | — | condition | D | 📝 |
 | 23 | A2 | 4×ATK attack | all enemies | damage | A | ✅ |
 | 24 | A2 | 2× 5% [Poison] @75% 2t | all enemies | debuff | B | ✅ (DoT consumed) |
-| 25 | A2 | 25% [Poison Sensitivity] @75% 2t | all enemies | debuff | B | ⚠ placed, no amplify consumer |
+| 25 | A2 | 25% [Poison Sensitivity] @75% 2t | all enemies | debuff | B | ✅ consumed (amplifies Poison tick — engine.poisonSensitivity in tickDots) |
 | 26 | A2 | unresistable if self [Veil] | — | condition | D | 📝 |
 | 27 | A2 | instantly activate [Poison] on enemies ≥4 debuffs | all enemies | activation | D | 📝 |
 | 28 | A2 | [Stone Skin]→2 [Bomb] @75% (2t detonate) instead | all enemies | exception | E | 📝 |
@@ -86,7 +86,7 @@ built) · ⚠ authored-but-CONSUMER-missing (placed, but nothing reads it yet).
 | 54 | A1 | 1.8×ATK attack ×2 hits | 1 enemy | damage | A | ✅ |
 | 55 | A1 | 60% [Increase DEF] 2t | lowest-HP ally | buff | B | ⚠ placed, no DEF-buff consumer |
 | 56 | A2 | 3.7×ATK attack | all enemies | damage | A | ✅ |
-| 57 | A2 | 30% [Increase SPD] 2t | all allies | buff | B | ⚠ placed, no SPD-buff consumer |
+| 57 | A2 | 30% [Increase SPD] 2t | all allies | buff | B | ✅ consumed (turn order — engine.effectiveSpeed) |
 | 58 | A2 | heal 15% caster MaxHP | all allies | heal | C | 📝 |
 | 59 | A3 | revive dead @30% HP | all allies | revive | C | 📝 (key) |
 | 60 | A3 | [Shield] 20% caster MaxHP 2t | all allies | shield | C | 📝 |
@@ -97,7 +97,7 @@ built) · ⚠ authored-but-CONSUMER-missing (placed, but nothing reads it yet).
 | # | skill | effect | recipient | cat | M | status |
 |---|---|---|---|---|---|---|
 | 62 | A1 | 3.9×DEF attack | 1 enemy | damage | A | ✅ |
-| 63 | A1 | 30% [Reflect Damage] @40% 2t | random ally | buff | B | ⚠ placed, no reflect consumer |
+| 63 | A1 | 30% [Reflect Damage] @40% 2t | random ally | buff | B | ✅ consumed (attacker takes value% — engine.reflectDamage in dealDamage) |
 | 64 | **A2** | 15% [Continuous Heal] 3t | target ally | heal-o-t | C | 📝 |
 | 65 | **A2** | 30% [Increase SPD] 3t | target ally | buff | B | 📝 **(was uncatalogued)** |
 | 66 | **A2** | 30% [Reflect Damage] 3t | target ally | buff | B | 📝 **(was uncatalogued)** |
@@ -121,5 +121,8 @@ built) · ⚠ authored-but-CONSUMER-missing (placed, but nothing reads it yet).
 **The correction:** II-B is **not** fully done — 7 of 17 II-B effects are authored (the ones on damage skills);
 **10 remain**, of which **8 were never catalogued** until this doc (Bambus A3 ×5, Pelops A3 Increase ATK,
 Vergis A2 Increase SPD/DEF/Reflect). Those get authored to finish II-B honestly.
-**⚠ = 4 placed-but-inert** (Decrease Speed, Poison Sensitivity, Increase DEF/SPD, Reflect) — real placement,
-consumer still owed. **The survival mass is C+D (35 effects)** — the whole reason Phase II exists.
+**⚠ = 0 placed-but-inert** — every effect PLACED in the slice now has a consumer (2026-07-24). Consumers:
+Increase/Decrease ATK/DEF via engine.statFactor; Decrease Speed + Increase SPD via engine.effectiveSpeed in
+the scheduler; Poison Sensitivity via engine.poisonSensitivity in tickDots; Reflect Damage via
+engine.reflectDamage in dealDamage. **The remaining work is C+D effects still catalogued-only (📝) — triggers,
+conditions, activations, exceptions** — the survival/identity mass that is the whole reason Phase II exists.

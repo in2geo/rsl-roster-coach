@@ -2,7 +2,7 @@
 // EXTEND_EFFECT. These were verified once in throwaway inline runs; this commits them as a durable rung so
 // the teeth check (model-mutants) can see them and they cannot silently break. No DB. Deterministic.
 // Run: node tools/sim-recipe-d-test.mjs
-import { makeCombatant, makeState, setChanceMode, chooseAllyTarget } from '../lib/sim/engine.js';
+import { makeCombatant, makeState, setChanceMode, chooseAllyTarget, dealDamage } from '../lib/sim/engine.js';
 import { applyRecipe, fireTriggers, incomingDamage, passiveImmunities } from '../lib/sim/interpreter.js';
 import { RECIPES } from '../lib/sim/recipes.js';
 
@@ -57,6 +57,19 @@ const modScene = (owners, target) => { const st = makeState({ allies: [...owners
   const small = incomingDamage(makeState({ allies: [ez], enemies: [], seed: null }), ez, 5000) === 5000;    // < 50% → never
   setChanceMode('threshold');
   check('Ezio nullify: >50%-MAX-HP hit → 0 (all-land); small hit unchanged', nulled && small); }
+
+// ── Reflect Damage buff (Vergis A1): the attacker takes value% of the damage it inflicted ──
+{ const attacker = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 50000, affinity: 'Void' });
+  const target = makeCombatant({ name: 'Vergis', side: 'ally', maxHp: 40000, affinity: 'Void' });
+  target.buffs.push({ type: 'Reflect Damage', value: 30, turnsLeft: 2 });
+  const before = attacker.hp;
+  const dd = dealDamage(target, 10000, 'direct', attacker, null);
+  check('Reflect Damage 30%: attacker takes 3000 back off a 10000 hit', before - attacker.hp === 3000 && dd.reflectBuffDmg === 3000, `back=${before - attacker.hp}`); }
+{ const attacker = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 50000, affinity: 'Void' });
+  const target = makeCombatant({ name: 'Ally', side: 'ally', maxHp: 40000, affinity: 'Void' });   // no reflect buff
+  const before = attacker.hp;
+  dealDamage(target, 10000, 'direct', attacker, null);
+  check('no [Reflect Damage] → attacker takes nothing back', before - attacker.hp === 0); }
 
 // ── EXTEND_EFFECT (Bambus A2 extends all ally buff durations +1) ──
 { const bambus = makeCombatant({ name: 'Bambus', side: 'ally', atk: 844, maxHp: 26457, affinity: 'Void' });

@@ -75,6 +75,16 @@ const MUTANTS = [
     find: 'const up = best(m.up, c.buffs);', repl: 'const up = 0 * best(m.up, c.buffs);' },
   { name: 'stat debuffs ignored ([Decrease Attack/Defense] made inert)', expectKill: true, file: 'engine',
     find: 'const down = Math.min(1, best(m.down, c.debuffs));', repl: 'const down = 0 * Math.min(1, best(m.down, c.debuffs));' },
+  // ── SPD turn-order CONSUMER (engine.js nextActor) — [Increase SPD]/[Decrease Speed] shift turn order ──
+  { name: 'SPD modifiers ignored by scheduler (nextActor reverts to raw c.spd)', expectKill: true, file: 'engine',
+    find: 'const spd = (c) => effectiveSpeed(c);', repl: 'const spd = (c) => (c.spd ?? 0);' },
+  // ── Poison Sensitivity CONSUMER (engine.js tickDots) — amplifies each [Poison] tick ──
+  { name: 'Poison Sensitivity ignored (tick amplifier dropped)', expectKill: true, file: 'engine',
+    find: 'const sens = 1 + poisonSensitivity(c);', repl: 'const sens = 1 + 0 * poisonSensitivity(c);' },
+  // ── Reflect Damage CONSUMER (engine.js dealDamage) — attacker takes value% of the inflicted damage ──
+  { name: 'Reflect Damage ignored (nothing reflected to the attacker)', expectKill: true, file: 'engine',
+    find: 'const reflectBuffDmg = reflectPct > 0 ? Math.round(reflectPct * amount) : 0;',
+    repl: 'const reflectBuffDmg = reflectPct > 0 ? Math.round(0 * reflectPct * amount) : 0;' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8') };
