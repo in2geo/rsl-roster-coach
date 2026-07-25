@@ -469,6 +469,21 @@ Add to this list freely; each one is a test case for the format.
   with no PRODUCER: the sim's enemies don't place sponge-able debuffs on our allies yet (boss Decrease ATK/
   Poison/Weaken, wave Decrease SPD/ACC unmodeled/deferred). Correct mechanic, dormant until enemy ally-debuff
   placement exists — that is the next lever if pushing DonBambus past 88%.
+- **2026-07-24** — **ENEMY ALLY-DEBUFF PRODUCER + the self-Sleep duration bug (Sleeping Sage now ACTIVE).**
+  The sponge was inert for TWO reasons, both fixed: (1) the boss placed its ally-debuffs (Wall of Fire
+  Poison+Weaken, Swipe **Decrease Attack**) via engine `applyDebuff` DIRECTLY, bypassing the recipe
+  `placeDebuffs` where the sponge lives → wired a `state.onAllyDebuffed` hook (installRecipeRun) that dragon.js
+  calls, routing the boss's ally-debuffs through `interpreter.maybeSponge` (now exported, self-contained). (2)
+  **The self-[Sleep] duration was 1**, and `expireDurations(actor)` ticks at the END of the placement turn →
+  Sleep 1→0 removed the same turn → Bambus was NEVER asleep between turns (the sponge window never opened; and
+  his "0 turns lost" was the Sleep evaporating, not the wake working). Mike's live-battle hint nailed it. Fix:
+  self-Sleep **duration 2** = "held until his next turn" (survives the placement-turn tick; the passive removes
+  it at his turn before natural expiry). Also: the dump now respects IMMUNITY (Hellrazor immune to Stun ≠
+  resistance). MEASURED (seed 7): 15 debuffs SPONGED onto Bambus, Decrease Attack DUMPED onto the boss 9× (→
+  halves its own hits); **Bambus asleep 42/42 wave-1 turns, 0 lost** — reproduces Mike's live battle exactly
+  ("asleep every turn except 1, never loses turn order"; wave 1 clears ~t43 real vs ~t39 sim). Win rate ~flat
+  (20-21/24) — the sponge's cleanse+Decrease-Attack-on-boss is offset by Bambus holding the sponged Poison DoT;
+  mechanic is CORRECT (matches reality), net battle impact neutral here. Teeth 28/28; full DB ladder green.
 - **2026-07-24 (SESSION WRAP)** — **GRADUATION + the magnitude gap.** Turn loop + RNG wired into the
   Simulator (`tools/sim-suite.mjs`, seam=`battle-suite.predict()`): Dragon subset 61.7% vs aggregate 49.4%.
   Leader aura + lifesteal + recipes now active in the metric. Gear-set-id map FIXED from the game's
