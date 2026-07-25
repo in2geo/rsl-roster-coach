@@ -3,7 +3,7 @@
 // the teeth check (model-mutants) can see them and they cannot silently break. No DB. Deterministic.
 // Run: node tools/sim-recipe-d-test.mjs
 import { makeCombatant, makeState, setChanceMode, chooseAllyTarget, chooseSingleTarget, dealDamage, simulate, actEnemyMob } from '../lib/sim/engine.js';
-import { applyRecipe, fireTriggers, incomingDamage, passiveImmunities, installRecipeRun } from '../lib/sim/interpreter.js';
+import { applyRecipe, fireTriggers, incomingDamage, passiveImmunities, installRecipeRun, tickPassiveCooldowns } from '../lib/sim/interpreter.js';
 import { RECIPES } from '../lib/sim/recipes.js';
 
 let pass = 0, fail = 0;
@@ -21,6 +21,20 @@ console.log('\n=== II-D reactive passives + damage modifiers + EXTEND_EFFECT (to
   check('Second Wind: HP <50% → 15% [Continuous Heal]', v.buffs.some(b => b.type === 'Continuous Heal' && b.value === 15)); }
 { const v = V(); v.hp = 9000; fireTriggers(makeState({ allies: [v], enemies: [], seed: null }), v, 'hp_below', {});
   check('Second Wind: HP ≥50% → no continuous heal', !v.buffs.some(b => b.type === 'Continuous Heal')); }
+
+// ── Second Wind [Shield] PASSIVE-TRIGGER COOLDOWN (base 3): the shield fires at most once per 3 owner-turns.
+// Three big hits back-to-back (no owner turn between) → it fires ONCE, the next two are suppressed on cooldown;
+// after 3 owner-turn ticks it can fire again. Without the cooldown consumer it re-shields every hit (unkillable). ──
+{
+  const v = V(); const s = makeState({ allies: [v], enemies: [], seed: null });
+  const bigHit = () => fireTriggers(s, v, 'hit_taken', { hitAmount: 2000 });   // 2000 = 12.5% of 16000 MAX HP ≥ 10%
+  bigHit(); bigHit(); bigHit();
+  const fired = () => (s.effects || []).filter(e => e.kind === 'passive-cd' && e.fired).length;
+  const supp  = (s.effects || []).filter(e => e.kind === 'passive-cd' && !e.fired).length;
+  check('Second Wind cooldown: 3 back-to-back big hits → [Shield] fires ONCE (2 suppressed on cd)', fired() === 1 && supp === 2, `fired=${fired()} suppressed=${supp}`);
+  tickPassiveCooldowns(v); tickPassiveCooldowns(v); tickPassiveCooldowns(v);   // 3 owner-turns → cd 3→0
+  bigHit();
+  check('Second Wind cooldown: after 3 owner-turn ticks the [Shield] can fire again', fired() === 2, `total fired=${fired()}`); }
 
 // ── Ezio Perfect Veil (round_start trigger → untargetable) ──
 { const ez = makeCombatant({ name: 'Ezio', side: 'ally', maxHp: 16000 }); ez.hp = 2000;   // LOWEST HP% — would be the pick without a veil

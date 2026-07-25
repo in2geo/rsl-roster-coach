@@ -134,6 +134,11 @@ const MUTANTS = [
   { name: 'round boundary fires every turn (Perfect Veil never lapses — the old 100%-uptime bug)', expectKill: true, file: 'engine',
     find: 'if (!state.roundActed || livingNow.every(c => state.roundActed.has(c))) {',
     repl: 'if (true) {' },
+  // ── Passive-trigger COOLDOWN (interpreter.js fireTriggers) — Vergis Second Wind [Shield] gated at cd 3;
+  // ignoring the gate re-procs the shield every hit (the boss-phase over-survival bug) ──
+  { name: 'passive-trigger cooldown ignored (Second Wind [Shield] re-procs every hit)', expectKill: true,
+    find: 'if ((owner.passiveCd[key] ?? 0) > 0) {',
+    repl: 'if (false) {' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8') };
