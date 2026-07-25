@@ -80,8 +80,13 @@ console.log('\n=== II-C state manipulation — code produces expected results? =
   const shielded = () => { const t = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e9, def: 1000, affinity: 'Void' }); t.buffs.push({ type: 'Shield', value: 5000, turnsLeft: 2 }); return t; };
   const t1 = shielded(); const r1 = applyRecipe(makeState({ allies: [atk], enemies: [t1], seed: null }), atk, RECIPES['FACELESS-A3'])[0];   // ignore_shield
   const t2 = shielded(); const r2 = applyRecipe(makeState({ allies: [atk], enemies: [t2], seed: null }), atk, RECIPES['BAMBUS-A1'])[0];   // normal — absorbed
-  check('IGNORE_SHIELD: Faceless A3 bypasses the shield (HP damage, shield intact)', r1.hp_damage > 0 && r1.shield_damage === 0 && (t1.buffs.find(b => b.type === 'Shield')?.value ?? 0) === 5000, `hp ${r1.hp_damage}, shieldDmg ${r1.shield_damage}, shield ${t1.buffs.find(b => b.type === 'Shield')?.value}`);
+  check('IGNORE_SHIELD: Faceless A3 bypasses [Shield] (HP damage, shield intact)', r1.hp_damage > 0 && r1.shield_damage === 0 && (t1.buffs.find(b => b.type === 'Shield')?.value ?? 0) === 5000, `hp ${r1.hp_damage}, shieldDmg ${r1.shield_damage}, shield ${t1.buffs.find(b => b.type === 'Shield')?.value}`);
   check('IGNORE_SHIELD control: a normal skill IS absorbed by the shield', r2.shield_damage > 0 && r2.hp_damage === 0, `shieldDmg ${r2.shield_damage}, hp ${r2.hp_damage}`);
+  // "ignore [Shield]" is a DIFFERENT buff from [Magma Shield] — it must NOT bypass Magma Shield (Pelops's tank
+  // identity). Card text: Lua/Faceless A3 "ignore [Shield] and [Block Damage]", NOT Magma Shield.
+  const magma = () => { const t = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e9, def: 1000, affinity: 'Void' }); t.buffs.push({ type: 'Magma Shield', value: 10000, turnsLeft: 2 }); return t; };
+  const t3 = magma(); const r3 = applyRecipe(makeState({ allies: [atk], enemies: [t3], seed: null }), atk, RECIPES['FACELESS-A3'])[0];   // ignore_shield must NOT bypass Magma Shield
+  check('IGNORE_SHIELD does NOT bypass [Magma Shield] (absorbed, not straight to HP)', r3.shield_damage > 0 && r3.hp_damage === 0, `shieldDmg ${r3.shield_damage}, hp ${r3.hp_damage}`);
 }
 
 // N — LIFESTEAL (gear 4-set): a champion heals 30% of the damage it deals, on the RECIPE path (dealOneHit).

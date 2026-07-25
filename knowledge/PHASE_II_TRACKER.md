@@ -440,6 +440,20 @@ Add to this list freely; each one is a test case for the format.
   Second Wind [Continuous Heal] heals 0 vs real 39,397 → he dies wave 2 (next thread), (2) Ezio Perfect Veil
   over-taken 4×. Teeth: new mutant killed by recipe-c-test → 25/25, 100%. Golden + snapshot held (no
   lifesteal champ deals damage in golden turns 1–8). Full DB ladder green (11/11).
+- **2026-07-24** — **REALITY-GAP FIX (BIG): `ignore_shield` wrongly bypassed [Magma Shield]. Win rate 63%→88%.**
+  Chasing DonBambus losing seeds: the tank Pelops died in wave 2 with a FULL 8,563 Magma Shield unused — every
+  hit went straight to HP. Root cause: enemy Lua/Faceless A3 carry `ignore_shield:true` (DB card: "ignore
+  [Shield] and [Block Damage]"), but the engine's shield loop matched `/Shield/` so it bypassed BOTH [Shield]
+  AND [Magma Shield]. **[Shield] ≠ [Magma Shield]** — they are distinct game buffs; "ignore [Shield]" does NOT
+  touch Magma Shield, which is Pelops's whole tank identity (Mike: "barely ever out of their shields"; Magma
+  eats the taunted hit → reflects → Pelops lifesteals off the reflection). Fix: `ignore_shield` skips
+  `b.type === 'Shield'` ONLY. MEASURED on the sole first-party cell: win rate **15/24 → 21/24** (reality 11/11);
+  Pelops taken 85,504→47,795 (real 25,650), healed 13,894→32,259 (real 45,460), Magma reflected 0→40,520 (also
+  fixed the recipe-path magma-reflect LEDGER omission in dealOneHit). Teeth: new mutant killed by recipe-c-test
+  → 26/26, 100%; new assertion "ignore_shield does NOT bypass [Magma Shield]". Golden + snapshot held. Full DB
+  ladder green (11/11). Remaining residual (3/24 losses): still-high incoming on squishies (boss-phase hits not
+  ledgered) + Pelops offense/DoT attribution; Mike's leads — waves carry HP Burn from Pelops reflect (→ A2
+  ignore-DEF + splash), Bambus extends shields +1t (EXTEND_EFFECT, built).
 - **2026-07-24 (SESSION WRAP)** — **GRADUATION + the magnitude gap.** Turn loop + RNG wired into the
   Simulator (`tools/sim-suite.mjs`, seam=`battle-suite.predict()`): Dragon subset 61.7% vs aggregate 49.4%.
   Leader aura + lifesteal + recipes now active in the metric. Gear-set-id map FIXED from the game's

@@ -109,6 +109,10 @@ const MUTANTS = [
   { name: 'lifesteal not consumed on the recipe path (heal zeroed)', expectKill: true,
     find: 'const heal = Math.min((actor.maxHp ?? 0) - actor.hp, actor.lifesteal * dealt);',
     repl: 'const heal = Math.min((actor.maxHp ?? 0) - actor.hp, actor.lifesteal * dealt * 0);' },
+  // ── ignore_shield must NOT bypass [Magma Shield] (engine.js dealDamage) — Pelops's tank identity ──
+  { name: 'ignore_shield wrongly bypasses [Magma Shield] too (kills the tank)', expectKill: true, file: 'engine',
+    find: "if (ignoreShield && b.type === 'Shield') continue;",
+    repl: 'if (ignoreShield) continue;' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8') };
