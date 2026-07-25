@@ -121,6 +121,14 @@ const MUTANTS = [
   { name: 'Sleeping Sage sponge never fires (ally debuffs not absorbed)', expectKill: true,
     find: 'if (!rollChance(state?.rng?.debuff, 0.75)) return;',
     repl: 'if (true) return;' },
+  // ── Enemy AI targeting: LOWEST MAX HP rule (engine.chooseSingleTarget), not lowest current HP% ──
+  { name: 'AI targeting reverts to lowest current-HP% (ignores the max-HP glass-cannon rule)', expectKill: true, file: 'engine',
+    find: 'if ((a.maxHp ?? 0) !== (b.maxHp ?? 0)) return (a.maxHp ?? 0) < (b.maxHp ?? 0) ? a : b;',
+    repl: 'if (false && (a.maxHp ?? 0) !== (b.maxHp ?? 0)) return (a.maxHp ?? 0) < (b.maxHp ?? 0) ? a : b;' },
+  // ── Enfeeble CONSUMER (interpreter dealOneHit) — an Enfeebled attacker can only land weak hits (×0.70) ──
+  { name: 'Enfeeble not consumed (Enfeebled attacker still hits full, not weak)', expectKill: true,
+    find: "const affM  = (actor.debuffs ?? []).some((d) => d.type === 'Enfeeble') ? 0.70 :",
+    repl: "const affM  = false ? 0.70 :" },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8') };

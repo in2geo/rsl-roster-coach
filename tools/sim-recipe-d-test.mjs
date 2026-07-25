@@ -2,7 +2,7 @@
 // EXTEND_EFFECT. These were verified once in throwaway inline runs; this commits them as a durable rung so
 // the teeth check (model-mutants) can see them and they cannot silently break. No DB. Deterministic.
 // Run: node tools/sim-recipe-d-test.mjs
-import { makeCombatant, makeState, setChanceMode, chooseAllyTarget, dealDamage } from '../lib/sim/engine.js';
+import { makeCombatant, makeState, setChanceMode, chooseAllyTarget, chooseSingleTarget, dealDamage } from '../lib/sim/engine.js';
 import { applyRecipe, fireTriggers, incomingDamage, passiveImmunities } from '../lib/sim/interpreter.js';
 import { RECIPES } from '../lib/sim/recipes.js';
 
@@ -140,13 +140,44 @@ function pelopsOnAttackedRate(debuffType, pelopsUnderDecrDef, n = 4000) {
 }
 { // sponge: a debuff placed on an ally transfers to an asleep Bambus (force the 75% via all-land)
   setChanceMode('all');
-  const bam = makeCombatant({ name: 'Bambus', side: 'ally', affinity: 'Void' }); bam.debuffs.push({ type: 'Sleep', turnsLeft: 1 });
-  const ally = makeCombatant({ name: 'Ally', side: 'ally', maxHp: 20000, res: 0, affinity: 'Void' }); ally.hp = 1000;   // lowest HP% → the foe's single-target pick
+  const bam = makeCombatant({ name: 'Bambus', side: 'ally', maxHp: 26000, affinity: 'Void' }); bam.debuffs.push({ type: 'Sleep', turnsLeft: 1 });
+  const ally = makeCombatant({ name: 'Ally', side: 'ally', maxHp: 15000, res: 0, affinity: 'Void' });   // LOWEST max HP → the foe's single-target pick (glass-cannon rule), so the debuff lands on it and must sponge to Bambus
   const foe = makeCombatant({ name: 'Foe', side: 'enemy', acc: 300, affinity: 'Void' });
   const decDef = { slot: 'X', actions: [{ seq: 10, op: 'ACQUIRE_TARGETS', target: 'single' }, { seq: 20, op: 'PLACE_DEBUFF', target: 'intended_set', effect: { type: 'Decrease Defense', magnitude: 60, duration: 2, chance: 1.0, accuracy_check: false } }] };
   applyRecipe(makeState({ allies: [bam, ally], enemies: [foe], seed: null }), foe, decDef);
   setChanceMode('threshold');
   check('Sleeping Sage: a debuff on an ally sponges to the asleep Bambus', bam.debuffs.some(d => d.type === 'Decrease Defense') && !ally.debuffs.some(d => d.type === 'Decrease Defense'));
+}
+
+// ── Enemy AI targeting: LOWEST MAX HP (glass-cannon rule #3), not lowest current HP%; [Perfect Veil] hides
+// the true-lowest (Ezio) so the NEXT lowest (Vergis) is tunneled — even at full HP behind a shield. ──
+{ const mk = (n, maxHp, { veil = false, shield = false, hpPct = 1 } = {}) => {
+    const c = makeCombatant({ name: n, side: 'ally', maxHp }); c.hp = maxHp * hpPct;
+    if (veil) c.buffs.push({ type: 'Perfect Veil', turnsLeft: 2 });
+    if (shield) c.buffs.push({ type: 'Shield', value: 5000, turnsLeft: 2 });
+    return c; };
+  const team = [
+    mk('Ezio', 15929, { veil: true }),                 // TRUE lowest max HP, but Perfect-Veil hidden
+    mk('Vergis', 16681, { shield: true, hpPct: 1.0 }),  // 2nd-lowest max HP, FULL HP + shield
+    mk('Bambus', 25686, { hpPct: 0.25 }),               // scratched to 25% — the OLD (current-HP%) code picks this
+    mk('Pelops', 28543), mk('Tagoar', 24283),
+  ];
+  const pick = chooseSingleTarget(team);
+  check('AI tunnels lowest-max-HP TARGETABLE (Vergis), not the veiled Ezio nor the scratched Bambus', pick?.name === 'Vergis', 'picked ' + pick?.name);
+  // and if that lowest-max-HP champ TAUNTS, taunt overrides (Pelops pulls it)
+  const withTaunt = team.map(c => c.name === 'Pelops' ? (c.buffs.push({ type: 'Taunt', turnsLeft: 2 }), c) : c);
+  check('AI: [Taunt] overrides the max-HP rule (Pelops pulls it)', chooseSingleTarget(withTaunt)?.name === 'Pelops');
+}
+
+// ── Enfeeble on the ATTACKER forces weak hits (×0.70), overriding affinity (Bambus A3 debuffs the mobs) ──
+{ const hit = (enfeeble) => {
+    const a = makeCombatant({ name: 'Mob', side: 'enemy', atk: 3000, affinity: 'Void', critRate: 0, critDmg: 0 });
+    if (enfeeble) a.debuffs.push({ type: 'Enfeeble', turnsLeft: 2 });
+    const t = makeCombatant({ name: 'Ally', side: 'ally', maxHp: 1e9, def: 1000, affinity: 'Void' });
+    return applyRecipe(makeState({ allies: [t], enemies: [a], seed: null }), a, RECIPES['FACELESS-A1'])[0].raw_damage;   // 3×ATK
+  };
+  const normal = hit(false), enf = hit(true);
+  check('Enfeeble on attacker → weak hit ×0.70 (mobs hit 30% softer)', normal > 0 && enf === Math.round(normal * 0.70), `normal=${normal} enfeebled=${enf}`);
 }
 
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);

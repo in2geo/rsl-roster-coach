@@ -39,7 +39,7 @@ const GOLDEN = [
   { turn: 5, actor: 'Ezio',   slot: 'A2', dmg: { 'Lua#1': 6008, 'Faceless#2': 6185, 'Arbalester#3': 6636, 'Arbalester#4': 6636, 'Renegade#5': 6244 } },  // ×1.5 under [Increase ATK]
   { turn: 6, actor: 'Bambus', slot: 'A2', dmg: { 'Lua#1': 3194, 'Faceless#2': 3288, 'Arbalester#3': 3528, 'Arbalester#4': 3528, 'Renegade#5': 3319 } },  // ×1.5 under [Increase ATK]
   { turn: 7, actor: 'Tagoar', slot: 'A1', dmg: { 'Arbalester#3': 2550 } },                              // ally cuts in (team [Increase SPD] 30%): 1.8×ATK ×2 → lowest-HP enemy
-  { turn: 8, actor: 'Faceless#2', slot: 'A3', dmg: { 'Pelops': 5553 } },                                // Ice Bolt → taunted Pelops, halved by Ally Protection (was t7 pre-SPD-consumer)
+  { turn: 8, actor: 'Faceless#2', slot: 'A3', dmg: { 'Pelops': 3887 } },                                // Ice Bolt → taunted Pelops (taunt overrides the max-HP rule); ×0.70 WEAK because Faceless is under [Enfeeble] from Bambus A3 t1 (5553 → 3887, the Enfeeble consumer)
 ];
 
 if (!process.env.SUPABASE_URL) { console.log('\n⏳ golden — skipped (needs --env-file=.env.local)\n'); console.log('QA_JSON ' + JSON.stringify({ rung: 'model-golden', pass: 0, fail: 0, skipped: 'no DB' })); process.exit(0); }
