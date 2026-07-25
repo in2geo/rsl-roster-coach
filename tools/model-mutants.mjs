@@ -129,6 +129,11 @@ const MUTANTS = [
   { name: 'Enfeeble not consumed (Enfeebled attacker still hits full, not weak)', expectKill: true,
     find: "const affM  = (actor.debuffs ?? []).some((d) => d.type === 'Enfeeble') ? 0.70 :",
     repl: "const affM  = false ? 0.70 :" },
+  // ── Round-based Perfect Veil TIMING (engine.js round boundary) — round_start fires ONCE per round, not per
+  // turn; firing every turn re-veils a fast Ezio forever (the old 100%-uptime bug), killing the down>0 check ──
+  { name: 'round boundary fires every turn (Perfect Veil never lapses — the old 100%-uptime bug)', expectKill: true, file: 'engine',
+    find: 'if (!state.roundActed || livingNow.every(c => state.roundActed.has(c))) {',
+    repl: 'if (true) {' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8') };

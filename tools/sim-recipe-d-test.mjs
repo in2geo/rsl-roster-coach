@@ -2,8 +2,8 @@
 // EXTEND_EFFECT. These were verified once in throwaway inline runs; this commits them as a durable rung so
 // the teeth check (model-mutants) can see them and they cannot silently break. No DB. Deterministic.
 // Run: node tools/sim-recipe-d-test.mjs
-import { makeCombatant, makeState, setChanceMode, chooseAllyTarget, chooseSingleTarget, dealDamage } from '../lib/sim/engine.js';
-import { applyRecipe, fireTriggers, incomingDamage, passiveImmunities } from '../lib/sim/interpreter.js';
+import { makeCombatant, makeState, setChanceMode, chooseAllyTarget, chooseSingleTarget, dealDamage, simulate, actEnemyMob } from '../lib/sim/engine.js';
+import { applyRecipe, fireTriggers, incomingDamage, passiveImmunities, installRecipeRun } from '../lib/sim/interpreter.js';
 import { RECIPES } from '../lib/sim/recipes.js';
 
 let pass = 0, fail = 0;
@@ -29,6 +29,24 @@ console.log('\n=== II-D reactive passives + damage modifiers + EXTEND_EFFECT (to
   const veiled = ez.buffs.some(b => b.type === 'Perfect Veil');
   const target = chooseAllyTarget([ez, ally]);   // single-target enemy pick MUST skip the veiled Ezio
   check('Ezio Perfect Veil: round_start places it AND single-target skips the veiled (lowest-HP) Ezio', veiled && target?.name === 'A', `veiled=${veiled} target=${target?.name}`); }
+
+// ── Round-based Perfect Veil TIMING (the round-boundary fix): the veil re-applies once per ROUND, not per
+// TURN, so a FAST Ezio (who takes several turns per round) OUTRUNS his 2-turn veil and it LAPSES mid-round
+// → uptime is NOT 100%. The old bug fired round_start every turn (veil never dropped, down===0); the mutant
+// that reverts to per-turn firing is killed by the down>0 assertion. Deterministic (seed=null). ──
+{
+  const basic = (slot, coeff) => ({ slot, isPassive: false, cooldown: 0, coeff, coeffStat: 'atk', hitsEnemies: true, aoe: false });
+  const ezio = makeCombatant({ name: 'Ezio Auditore', side: 'ally', maxHp: 30000, spd: 250, atk: 500, critRate: 0, critDmg: 0, affinity: 'Void', skills: [basic('A1', 0.1)] });
+  const ally = makeCombatant({ name: 'Ally', side: 'ally', maxHp: 40000, spd: 80, atk: 100, critRate: 0, critDmg: 0, affinity: 'Void', skills: [basic('A1', 0.1)] });
+  const mob = (n) => makeCombatant({ name: 'Mob#' + n, side: 'enemy', maxHp: 1e9, spd: 80, atk: 100, critRate: 0, critDmg: 0, affinity: 'Void', skills: [basic('A1', 0.01)] });
+  const st = makeState({ allies: [ezio, ally], enemies: [], seed: null });
+  installRecipeRun(st);
+  let up = 0, down = 0;
+  st.onAction = () => { if (!ezio.alive) return; ezio.buffs.some(b => b.type === 'Perfect Veil') ? up++ : down++; };   // sample veil presence each turn
+  const content = { phases: [{ name: 'wave 1', enemies: [mob(1), mob(2), mob(3)], actEnemy: actEnemyMob }], maxHpDamageCap: null };
+  simulate(st, content, { turnCap: 40 });
+  check('round-based Perfect Veil: a FAST Ezio’s veil LAPSES between rounds (uptime ≠ 100%)', up > 0 && down > 0, `up=${up} down=${down}`);
+}
 
 // ── Pelops passive immunities ([Stun]/[HP Burn]/[Petrification]) ──
 { const hpBurn = { slot: 'X', actions: [{ seq: 10, op: 'ACQUIRE_TARGETS', target: 'single' }, { seq: 20, op: 'PLACE_DEBUFF', target: 'intended_set', effect: { type: 'HP Burn', duration: 2, chance: 1.0, accuracy_check: false } }] };
