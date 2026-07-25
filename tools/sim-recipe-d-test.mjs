@@ -120,5 +120,34 @@ function pelopsOnAttackedRate(debuffType, pelopsUnderDecrDef, n = 4000) {
   const ctrl = pelA2('Weaken'), burn = pelA2('HP Burn');
   check('Pelops A2: ignore-50%-DEF only vs [HP Burn] (16,000 → 24,000, same debuff-turns)', ctrl === 16000 && burn === 24000, `ctrl=${ctrl} burn=${burn}`); }
 
+// ── Bambus "Sleeping Sage": self-[Sleep], wake-without-skip, dump, sponge ──
+{ // A1 places [Sleep] on self
+  const bam = makeCombatant({ name: 'Bambus', side: 'ally', atk: 800, affinity: 'Void' });
+  const mob = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e9, def: 1000, affinity: 'Void' });
+  applyRecipe(makeState({ allies: [bam], enemies: [mob], seed: null }), bam, RECIPES['BAMBUS-A1']);
+  check('Sleeping Sage: Bambus A1 places [Sleep] on self', bam.debuffs.some(d => d.type === 'Sleep'));
+}
+{ // wake: start_of_turn removes [Sleep] (so the CC-skip check that follows finds nothing) and dumps to highest-RES enemy
+  const bam = makeCombatant({ name: 'Bambus', side: 'ally', affinity: 'Void' });
+  bam.debuffs.push({ type: 'Sleep', turnsLeft: 1 }, { type: 'Decrease Defense', value: 60, turnsLeft: 2 });
+  const lowRes = makeCombatant({ name: 'Low', side: 'enemy', res: 20, affinity: 'Void' });
+  const hiRes = makeCombatant({ name: 'Hi', side: 'enemy', res: 200, affinity: 'Void' });
+  fireTriggers(makeState({ allies: [bam], enemies: [lowRes, hiRes], seed: null }), bam, 'start_of_turn');
+  check('Sleeping Sage: wake removes [Sleep] (no turn lost — CC check finds nothing)', !bam.debuffs.some(d => d.type === 'Sleep'));
+  // [Sleep] is REMOVED, not dumped — the highest-RES enemy gets the real debuff but NOT [Sleep] (a wake that
+  // failed to remove Sleep would splice it onto the enemy AND make Bambus skip his turn).
+  check('Sleeping Sage: dumps real debuffs to the HIGHEST-RES enemy, never [Sleep]', hiRes.debuffs.some(d => d.type === 'Decrease Defense') && !hiRes.debuffs.some(d => d.type === 'Sleep') && !lowRes.debuffs.length && !bam.debuffs.length);
+}
+{ // sponge: a debuff placed on an ally transfers to an asleep Bambus (force the 75% via all-land)
+  setChanceMode('all');
+  const bam = makeCombatant({ name: 'Bambus', side: 'ally', affinity: 'Void' }); bam.debuffs.push({ type: 'Sleep', turnsLeft: 1 });
+  const ally = makeCombatant({ name: 'Ally', side: 'ally', maxHp: 20000, res: 0, affinity: 'Void' }); ally.hp = 1000;   // lowest HP% → the foe's single-target pick
+  const foe = makeCombatant({ name: 'Foe', side: 'enemy', acc: 300, affinity: 'Void' });
+  const decDef = { slot: 'X', actions: [{ seq: 10, op: 'ACQUIRE_TARGETS', target: 'single' }, { seq: 20, op: 'PLACE_DEBUFF', target: 'intended_set', effect: { type: 'Decrease Defense', magnitude: 60, duration: 2, chance: 1.0, accuracy_check: false } }] };
+  applyRecipe(makeState({ allies: [bam, ally], enemies: [foe], seed: null }), foe, decDef);
+  setChanceMode('threshold');
+  check('Sleeping Sage: a debuff on an ally sponges to the asleep Bambus', bam.debuffs.some(d => d.type === 'Decrease Defense') && !ally.debuffs.some(d => d.type === 'Decrease Defense'));
+}
+
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
 process.exit(fail ? 1 : 0);

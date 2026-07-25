@@ -113,6 +113,14 @@ const MUTANTS = [
   { name: 'ignore_shield wrongly bypasses [Magma Shield] too (kills the tank)', expectKill: true, file: 'engine',
     find: "if (ignoreShield && b.type === 'Shield') continue;",
     repl: 'if (ignoreShield) continue;' },
+  // ── Bambus Sleeping Sage: wake must remove [Sleep] before the CC check (else he skips turns) ──
+  { name: 'Sleeping Sage wake does not remove [Sleep] (Bambus would skip turns)', expectKill: true,
+    find: "owner.debuffs = owner.debuffs.filter((d) => d.type !== 'Sleep');",
+    repl: "owner.debuffs = owner.debuffs.filter((d) => d.type !== 'NoSuchDebuff');" },
+  // ── Bambus sponge: a debuff on an ally must transfer to the asleep Bambus ──
+  { name: 'Sleeping Sage sponge never fires (ally debuffs not absorbed)', expectKill: true,
+    find: 'if (!rollChance(state?.rng?.debuff, 0.75)) return;',
+    repl: 'if (true) return;' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8') };

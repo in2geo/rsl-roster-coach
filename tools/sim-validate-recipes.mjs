@@ -68,6 +68,7 @@ function coverageText(rec) {
   }
   for (const m of rec.modifiers || []) { parts.push('damage reduction ' + (m.kind || '')); if (m.when?.arg) parts.push(m.when.arg); }
   for (const im of rec.immune || []) parts.push('immune ' + im);   // passive immunities
+  parts.push(...(rec.covers || []));   // extra source terms a code-implemented mechanic accounts for (e.g. Sleeping Sage's transfer + its exclusion list)
   parts.push(...(rec.deferred || []));
   return parts.join(' | ').toLowerCase();
 }

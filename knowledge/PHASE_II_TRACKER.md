@@ -454,6 +454,21 @@ Add to this list freely; each one is a test case for the format.
   ladder green (11/11). Remaining residual (3/24 losses): still-high incoming on squishies (boss-phase hits not
   ledgered) + Pelops offense/DoT attribution; Mike's leads — waves carry HP Burn from Pelops reflect (→ A2
   ignore-DEF + splash), Bambus extends shields +1t (EXTEND_EFFECT, built).
+- **2026-07-24** — **(b) mechanics: Bambus "Sleeping Sage" (self-Sleep sponge) — built, correct, currently INERT.**
+  His identity. A1/A2/A3 place [Sleep] on self (unresistable); a `start_of_turn` trigger (WAKE_FROM_SLEEP)
+  removes [Sleep] via `state.onTurnStart` — which fires BEFORE the engine's CC-skip check, so **Bambus never
+  loses a turn** (verified: 41 Sleep placements, 0 turns lost to Sleep; the only 3 lost turns are the boss's
+  Stun) — then dumps his held debuffs onto the highest-RES enemy. While asleep, a debuff landing on an ally
+  transfers to him (75%, except a hard-CC list) via `interpreter.maybeSponge` (passive declares `sponge:true`).
+  New op WAKE_FROM_SLEEP + PLACE_DEBUFF `target:'self'`. Teeth: 2 new mutants (wake-no-remove, sponge-never-
+  fires) → 28/28, 100%; the wake mutant exposed a SUITE HOLE first (the dump masked it) → strengthened the
+  assertion ([Sleep] is removed, never dumped). Cleared 3 self-Sleep deferreds; deferred 28→26. Coverage got a
+  `covers` escape-hatch for code-implemented mechanics (the sponge exclusion list). Snapshot re-blessed (the 3
+  actives now place [Sleep] on the caster — verified Sleep-only). Golden held (no turn-skip). Full DB ladder
+  green (11/11). **MEASURED: win rate UNCHANGED 21/24 — 0 debuffs sponged, 0 dumped.** The sponge is a CONSUMER
+  with no PRODUCER: the sim's enemies don't place sponge-able debuffs on our allies yet (boss Decrease ATK/
+  Poison/Weaken, wave Decrease SPD/ACC unmodeled/deferred). Correct mechanic, dormant until enemy ally-debuff
+  placement exists — that is the next lever if pushing DonBambus past 88%.
 - **2026-07-24 (SESSION WRAP)** — **GRADUATION + the magnitude gap.** Turn loop + RNG wired into the
   Simulator (`tools/sim-suite.mjs`, seam=`battle-suite.predict()`): Dragon subset 61.7% vs aggregate 49.4%.
   Leader aura + lifesteal + recipes now active in the metric. Gear-set-id map FIXED from the game's
