@@ -17,6 +17,7 @@
     "Lifesteal×1"
    ],
    "lifesteal": 0,
+   "base_spd": 94,
    "total_stats": {
     "hp": 15818,
     "atk": 1780,
@@ -41,6 +42,7 @@
     "Frost×1"
    ],
    "lifesteal": 0.3,
+   "base_spd": 97,
    "total_stats": {
     "hp": 28322,
     "atk": 1609,
@@ -67,6 +69,7 @@
     "Fury×1"
    ],
    "lifesteal": 0,
+   "base_spd": 105,
    "total_stats": {
     "hp": 25537,
     "atk": 801,
@@ -92,6 +95,7 @@
     "Accuracy×1"
    ],
    "lifesteal": 0,
+   "base_spd": 98,
    "total_stats": {
     "hp": 24157,
     "atk": 978,
@@ -118,6 +122,7 @@
     "Speed×1"
    ],
    "lifesteal": 0,
+   "base_spd": 98,
    "total_stats": {
     "hp": 16603,
     "atk": 647,

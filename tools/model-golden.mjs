@@ -14,7 +14,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { makeState, simulate, setChanceMode } from '../lib/sim/engine.js';
-import { buildDragonBattle } from '../lib/sim/dragon-fixture.js';
+import { buildDragonBattle, applyBattleLayers } from '../lib/sim/dragon-fixture.js';
 import { installRecipeRun } from '../lib/sim/interpreter.js';
 
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -24,13 +24,13 @@ const FIX = path.join(REPO, 'test', 'golden', 'dragon16-donbambus-2026-07-22.jso
 // Turn 1 is Bambus A3, which places team-wide [Increase ATK] 50%. Since the buff→stat CONSUMER was built
 // (statFactor, 2026-07-24), every ATK-scaling ALLY attacker on turns 2/5/6 hits ×1.5 (each was exactly
 // round(rawₚᵣₑ × 1.5); verified turn-by-turn).
-// Turns 7/8 RE-DERIVED for the SPD turn-order CONSUMER (engine.effectiveSpeed in nextActor, 2026-07-24):
-// Tagoar A2 (t2) places [Increase SPD] 30% on all allies; once consumed, the whole team fills turn meter at
-// ×1.30, so ALLY Tagoar cycles back and cuts in at t7 AHEAD of the enemies. Hand-verified from the post-t6
-// turn meters (time-to-100 = (100−tm)/eff): Tagoar 21.5/237.9 = 0.0904 beats Faceless#2 11.5/101 = 0.1139
-// (at raw 183 Tagoar would be 0.1175 and LOSE — the old order). Then t8 Faceless#2 (2.4/101 = 0.0238) wins.
-// The enemy hit is UNCHANGED — Faceless#2 → Pelops is the same 5553, merely displaced one turn later; the
-// old t8 (Lua#1 → Pelops) slides to t9, outside the 8-turn window. A pure reorder, not a damage change.
+// Turn 7 RE-DERIVED 2026-07-26 for the BASE-ONLY LEADER AURA fix (dragon-fixture.applyBattleLayers): the Ezio
+// SPD aura now adds +19% of BASE speed, NOT the geared total (auras never scale gear speed — True Speed §4), so
+// the whole team is slightly slower. The old geared-aura made Tagoar's [Increase SPD] cut in at t7 ahead of the
+// enemies; with correct speeds that NO LONGER happens — the fastest mob Faceless#2 (SPD 101) takes t7. The SPD
+// turn-order consumer is still exercised and is separately pinned (sim-recipe-d-test + the model-mutants "SPD
+// modifiers ignored" mutant), so this golden now covers turns 1-7. t7's hit is the SAME Faceless#2 → Pelops 3887
+// that was the old t8 (Ice Bolt ×0.70 [Enfeeble], ATK-based → speed-independent), no longer displaced by Tagoar.
 //
 // DAMAGE RE-DERIVED 2026-07-25 for the source-verified DEF-MITIGATION curve (M = 1 − 0.85·(1−e^(−2D/50L)),
 // replacing the old linear placeholder). The ally-attack turns (2/5/6/7) drop to the new mitigation; the
@@ -47,8 +47,7 @@ const GOLDEN = [
   { turn: 4, actor: 'Pelops', slot: 'A3', dmg: {} },                                                    // Victor's Bounty — no damage
   { turn: 5, actor: 'Ezio',   slot: 'A2', dmg: { 'Lua#1': 4930, 'Faceless#2': 5130, 'Arbalester#3': 5659, 'Arbalester#4': 5659, 'Renegade#5': 5199 } },  // ×1.5 under [Increase ATK]
   { turn: 6, actor: 'Bambus', slot: 'A2', dmg: { 'Lua#1': 2621, 'Faceless#2': 2727, 'Arbalester#3': 3008, 'Arbalester#4': 3008, 'Renegade#5': 2764 } },  // ×1.5 under [Increase ATK]
-  { turn: 7, actor: 'Tagoar', slot: 'A1', dmg: { 'Arbalester#3': 2174 } },                              // ally cuts in (team [Increase SPD] 30%): 1.8×ATK ×2 → lowest-HP enemy
-  { turn: 8, actor: 'Faceless#2', slot: 'A3', dmg: { 'Pelops': 3887 } },                                // Ice Bolt → taunted Pelops (taunt overrides the max-HP rule); ×0.70 WEAK because Faceless is under [Enfeeble] from Bambus A3 t1 (5553 → 3887, the Enfeeble consumer)
+  { turn: 7, actor: 'Faceless#2', slot: 'A3', dmg: { 'Pelops': 3887 } },                                // FIRST enemy turn (base-only aura → no Tagoar cut-in): Ice Bolt → taunted Pelops (taunt overrides the max-HP rule); ×0.70 WEAK because Faceless is under [Enfeeble] from Bambus A3 t1 (5553 → 3887, the Enfeeble consumer)
 ];
 
 if (!process.env.SUPABASE_URL) { console.log('\n⏳ golden — skipped (needs --env-file=.env.local)\n'); console.log('QA_JSON ' + JSON.stringify({ rung: 'model-golden', pass: 0, fail: 0, skipped: 'no DB' })); process.exit(0); }
@@ -59,7 +58,7 @@ const rest = async (p) => (await fetch(`${BASE}/rest/v1/${p}`, { headers: H })).
 const fixture = JSON.parse(fs.readFileSync(FIX, 'utf8'));
 const built = await buildDragonBattle({ rest, fixture, repoRoot: REPO });
 if (built.skip) { console.log('golden skipped:', built.skip); console.log('QA_JSON ' + JSON.stringify({ rung: 'model-golden', pass: 0, fail: 0, skipped: built.skip })); process.exit(0); }
-for (const a of built.allies) { a.spd = Math.round(a.spd * 1.19); a.maxHp = Math.round(a.maxHp * 1.03); a.hp = a.maxHp; a.atk = Math.round(a.atk * 1.03); a.def = Math.round(a.def * 1.03); }
+applyBattleLayers(built.allies);   // base-only SPD aura + arena (True Speed §4) — see dragon-fixture.applyBattleLayers
 
 setChanceMode('all');
 const st = makeState({ allies: built.allies, enemies: [], seed: null }); st.purpleBarLeft = 0;

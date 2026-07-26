@@ -74,6 +74,16 @@ NOT the same as: matches the real game, or is complete. A stage is **bulletproof
   the lost stage-17 coverage); build the genuinely-missing primitives (damage-based self-heal, repeat-if extra
   hit, heal-crit, random-target) golden-safety first. → TODO.
 
+## Fidelity fixes landed
+- **Leader SPD aura scales BASE speed only** (2026-07-26) — auras never scale geared/gear speed (True Speed §4).
+  Centralized in `dragon-fixture.applyBattleLayers` (shared by sim-fixture-volume / sim-run / model-golden);
+  base SPD sourced from the Gestal sync's ACTUAL `baseStats.spd` (build-from-sync → build file), DB max-ascension
+  as fallback. Corrected stage-16 volume 42.3% → 38.0% (team is genuinely slower — implement-don't-fit, number
+  moved DOWN). `model-golden` re-derived to turns 1-7 (Tagoar no longer cuts in at t7). Open follow-ups:
+  (a) arena ×1.03 is still applied to TOTAL not BASE (same error class, smaller); (b) the PRODUCT path needs a
+  name→stats engine with LEVEL + ASCENSION scaling (sync is testing-only) — see memory
+  `app-assigns-stats-sync-is-testing-only-2026-07-26`.
+
 ## Discipline (unchanged, load-bearing)
 We NEVER tune a magnitude to fit reality. A sim≠reality gap is a MISSING/WRONG mechanic to implement, never a
 dial. Verify skill data from the live DB. Golden/snapshot must stay byte-identical across a behavior-preserving

@@ -8,7 +8,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { makeState, simulate, setChanceMode } from '../lib/sim/engine.js';
-import { buildDragonBattle } from '../lib/sim/dragon-fixture.js';
+import { buildDragonBattle, applyBattleLayers } from '../lib/sim/dragon-fixture.js';
 import { installRecipeRun } from '../lib/sim/interpreter.js';
 
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -18,21 +18,14 @@ const BASE = process.env.SUPABASE_URL.replace(/\/rest\/v1\/?$/, '');
 const H = { apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}` };
 const rest = async (p) => (await fetch(`${BASE}/rest/v1/${p}`, { headers: H })).json();
 
-// stat layers — Ezio aura (SPD +19% to all allies) + Bronze III arena (+3% HP/ATK/DEF to all allies)
-const AURA_SPD = 1.19, ARENA = 1.03;
-function applyLayers(allies) {
-  for (const a of allies) {
-    a.spd = Math.round(a.spd * AURA_SPD);
-    a.maxHp = Math.round(a.maxHp * ARENA); a.hp = a.maxHp;
-    a.atk = Math.round(a.atk * ARENA); a.def = Math.round(a.def * ARENA);
-  }
-}
+// stat layers — Ezio aura (SPD +19% of BASE, all allies) + Bronze III arena (+3% HP/ATK/DEF, all allies).
+// Shared base-only-aura helper (True Speed §4); see dragon-fixture.applyBattleLayers.
 
 async function main() {
   const fixture = JSON.parse(fs.readFileSync(FIX, 'utf8'));
   const built = await buildDragonBattle({ rest, fixture, repoRoot: REPO });
   if (built.skip) { console.log('skipped:', built.skip); return; }
-  applyLayers(built.allies);
+  applyBattleLayers(built.allies);
 
   setChanceMode('all');   // stated chance policy: everything lands (both sides)
   const state = makeState({ allies: built.allies, enemies: [], seed: null });

@@ -14,7 +14,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { makeState, simulate } from '../lib/sim/engine.js';
-import { buildDragonBattle } from '../lib/sim/dragon-fixture.js';
+import { buildDragonBattle, applyBattleLayers } from '../lib/sim/dragon-fixture.js';
 import { installRecipeRun } from '../lib/sim/interpreter.js';
 
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -31,15 +31,12 @@ const rest = async (p) => (await fetch(`${BASE}/rest/v1/${p}`, { headers: H })).
 const fixture = JSON.parse(fs.readFileSync(FIX, 'utf8'));
 const probe = await buildDragonBattle({ rest, fixture, repoRoot: REPO });
 if (probe.skip) { console.log('skipped:', probe.skip); process.exit(0); }
+if (probe.noBaseSpd?.length) console.log(`  ⚠ base SPD missing (leader aura under-applied) for: ${probe.noBaseSpd.join(', ')}`);
 
 let wins = 0; const turnsArr = []; const survArr = []; const wipePhase = {};
 for (let seed = 1; seed <= N; seed++) {
   const built = await buildDragonBattle({ rest, fixture, repoRoot: REPO });
-  for (const a of built.allies) {
-    a.spd = Math.round(a.spd * AURA_SPD);
-    a.maxHp = Math.round(a.maxHp * ARENA); a.hp = a.maxHp;
-    a.atk = Math.round(a.atk * ARENA); a.def = Math.round(a.def * ARENA);
-  }
+  applyBattleLayers(built.allies);   // base-only SPD aura + arena (True Speed §4) — see dragon-fixture.applyBattleLayers
   const st = makeState({ allies: built.allies, enemies: [], seed }); st.purpleBarLeft = 0;
   installRecipeRun(st);
   const res = simulate(st, built.content, { turnCap: 400 });

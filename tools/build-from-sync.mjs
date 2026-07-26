@@ -49,6 +49,7 @@ for (const nm of TEAM) {
     name: g.name, level: g.level, stars: g.stars, rarity: g.rarity, affinity: g.affinity,
     gear_sets,
     lifesteal,
+    base_spd: g.baseStats?.spd ?? null,   // ACTUAL base SPD at current level+ascension — the leader SPD aura scales BASE only (True Speed §4); NOT the DB max-ascension value
     total_stats: { hp: e.hp, atk: e.atk, def: e.def, spd: e.spd, crit_rate: e.crate, crit_dmg: e.cdmg, res: e.res, acc: e.acc },
   });
 }
