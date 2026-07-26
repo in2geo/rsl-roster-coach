@@ -199,6 +199,10 @@ const MUTANTS = [
   { name: 'random-target-per-hit dropped (hits revert to the fixed ACQUIRE target)', expectKill: true,
     find: 'if (F.randomTargetPerHit) {                 // "attacks N times at random": each hit re-picks a random living target',
     repl: 'if (false) {                 // "attacks N times at random": each hit re-picks a random living target' },
+  // ── SELF_DAMAGE (interpreter) — Renegade A3 must cost the caster 30% of its own MAX HP ──
+  { name: 'SELF_DAMAGE neutralised (Renegade A3 self-cost zeroed)', expectKill: true,
+    find: 'actor.hp = Math.max(0, actor.hp - dmg);',
+    repl: 'actor.hp = Math.max(0, actor.hp - dmg * 0);' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8'), [DRAGON]: fs.readFileSync(DRAGON, 'utf8') };

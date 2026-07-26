@@ -118,5 +118,17 @@ console.log('\n=== II-C state manipulation — code produces expected results? =
   check(`LIFESTEAL: recipe-path attacker heals 30% of damage dealt (0.30×${expDealt})`, r.hp_damage === expDealt && Math.abs(healed - 0.30 * r.hp_damage) < 1, `dealt=${r.hp_damage} healed=${healed.toFixed(1)}`);
 }
 
+// N — SELF_DAMAGE: Renegade A3 costs 30% of its OWN max HP, bypassing DEF/shields, and is lethal below 30%.
+{
+  const ren = () => makeCombatant({ name: 'Renegade', side: 'enemy', maxHp: 20000, atk: 1000, def: 1000, affinity: 'Void' });
+  const foe = makeCombatant({ name: 'Hero', side: 'ally', maxHp: 1e9, affinity: 'Void' });
+  const r1 = ren();   // full HP → loses exactly 30% of max (6000)
+  applyRecipe(makeState({ allies: [foe], enemies: [r1], seed: null }), r1, RECIPES['RENEGADE-A3']);
+  check('SELF_DAMAGE: Renegade A3 costs 30% of MAX HP (20000 → 14000)', r1.hp === 14000, `hp ${r1.hp}`);
+  const r2 = ren(); r2.hp = 4000;   // 20% < 30% → the self-damage is LETHAL (floors at 0)
+  applyRecipe(makeState({ allies: [foe], enemies: [r2], seed: null }), r2, RECIPES['RENEGADE-A3']);
+  check('SELF_DAMAGE: lethal below 30% HP (4000 → 0)', r2.hp === 0, `hp ${r2.hp}`);
+}
+
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
 process.exit(fail ? 1 : 0);
