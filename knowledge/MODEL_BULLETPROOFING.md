@@ -97,17 +97,19 @@ NOT the same as: matches the real game, or is complete. A stage is **bulletproof
 - `b3841fa` **8/18** — extra-hit proc (RNG roll type #12). New append-only `proc` stream + `extraHitChance`
   flag rolled in interpreter DEAL_DAMAGE → cleared Faceless A1 AND st17 Crossbowman A1. No golden drift (15% <
   seed=null threshold). RNG_REGISTRY row 12 + stream table updated.
-- Catalog **15 → 11** this session (st17 also 17 → 16). Ladder 15/15, teeth 48/48 (100%) throughout. Branch has
-  5 unpushed commits (7fe1d64, 9bec488, 68497c2, b3841fa, + this).
-- **Remaining 11 all need a NEW PRIMITIVE** (the wire-existing-op clauses are done):
-  - **random-target-per-hit** (Renegade A2 last clause + st17 Apothecary A1) — ⚠ WILL DRIFT the golden/snapshot
-    (changes which ally each mob hit lands on); needs a deterministic seed=null fallback for the `target` stream.
-  - crit-conditional AoE (Lua A1), lifesteal-on-crit (Lua A2) — both need the crit OUTCOME exposed from
-    computeRawHit (critM>1 is unreliable when critDmg=0) + an EV path (like Warmaster) for seed=null.
-  - self-destroy (Renegade A3), REDUCE_EFFECT_DURATION (Bambus A2) — each a new OP (operations.js registry +
-    validate + interpreter handler + model-ops-consistency rung).
-  - counterattack event (Ezio P2), debuff-activation (Ezio A2), Stone-Skin→Bomb named exception (Ezio A2,
-    hardest), sleep-break-on-hit (Bambus P), steal+stun (Pelops A2).
+- `448d006` **9/18** — random-target-per-hit (Renegade A2 + st17 Apothecary A1). New `pickRandomLiving` +
+  `randomTargetPerHit` flag; non-random path byte-identical → NO drift (fixtures collapse to index 0).
+- `7397f3a` **10/18** — Renegade A3 self-destroy. New `SELF_DAMAGE` op (30% own MaxHP, lethal). Snapshot re-blessed.
+- `df9f70e` **11/18** — Bambus A2 buff-duration decrease. `REDUCE_EFFECT_DURATION` op (mirror of EXTEND_EFFECT).
+  Snapshot re-blessed; "no buffs to reduce/extend" added to the benign fired/consumed whitelist.
+- Catalog **15 → 8** this session (st17 17 → 14). Ladder 15/15, teeth 51/51 (100%) throughout. **9 unpushed commits.**
+- **Remaining 8** (2 are BLOCKED/hardest):
+  - ⛔ **BLOCKED on Mike** — Bambus A2 "+3% ally [Shield] value per enemy buff decreased": base (%shield-value vs
+    %Bambus-MaxHP) is UNVERIFIED in the skill text. IMPLEMENT-DON'T-FIT forbids guessing. Ask before building.
+  - **crit-conditional family** (Lua A1 AoE-on-crit, Lua A2 lifesteal-on-crit) — one core refactor: expose the crit
+    OUTCOME from computeRawHit (critM>1 is unreliable at critDmg=0) + an EV path for seed=null. WILL drift golden+snapshot.
+  - counterattack event (Ezio P2), debuff-activation (Ezio A2), sleep-break-on-hit (Bambus P), steal+Stun-on-low-dmg
+    (Pelops A2), and the Ezio A2 Stone-Skin→Bomb named exception (the hardest — a branch, last).
 
 ## Discipline (unchanged, load-bearing)
 We NEVER tune a magnitude to fit reality. A sim≠reality gap is a MISSING/WRONG mechanic to implement, never a
