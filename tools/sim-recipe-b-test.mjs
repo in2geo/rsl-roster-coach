@@ -109,5 +109,25 @@ console.log('\n=== II-B placement — does the code produce the EXPECTED behavio
   check('buff placement chance — Vergis A1 Reflect @40% → ~0.40', near(r, 0.40), `measured ${r.toFixed(3)}`);
 }
 
+// 9 — Renegade A2 [Decrease SPD] @50% chance, acc≥res (landChance=1) → ~0.50 (first PLACE_DEBUFF is Decrease Speed)
+{
+  const r = landRate('RENEGADE-A2', { acc: 200, enemyRes: 0 });
+  check('placement chance — Renegade A2 Decrease SPD @50% → ~0.50', near(r, 0.50), `measured ${r.toFixed(3)}`);
+}
+// 10 — Renegade A2 conditional [Decrease ACC]: lands ONLY if the target has an active buff. Guaranteed placement
+// (no % chance) subject to accuracy — so with acc≥res it lands iff the target is buffed, and never otherwise.
+{
+  const run = (giveBuff) => {
+    const atk = makeCombatant({ name: 'Renegade', side: 'ally', atk: 3000, acc: 500, affinity: 'Void', critRate: 0 });
+    const enemy = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e9, def: 1000, res: 0, affinity: 'Void' });
+    if (giveBuff) enemy.buffs.push({ type: 'Increase DEF', value: 60, turnsLeft: 2 });
+    const st = makeState({ allies: [atk], enemies: [enemy], seed: 7 });
+    applyRecipe(st, atk, single(RECIPES['RENEGADE-A2']));
+    return enemy.debuffs.some((d) => d.type === 'Decrease ACC');
+  };
+  check('condition target_has_buffs — Decrease ACC lands when target is buffed', run(true) === true);
+  check('condition target_has_buffs — Decrease ACC withheld when target has no buff', run(false) === false);
+}
+
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
 process.exit(fail ? 1 : 0);

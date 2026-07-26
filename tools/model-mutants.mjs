@@ -172,6 +172,10 @@ const MUTANTS = [
   { name: 'is_boss condition broken (Bambus A3 boss Decrease-ATK branch never fires)', expectKill: true,
     find: "if (cond.kind === 'is_boss')      return t.role === 'boss';",
     repl: "if (cond.kind === 'is_boss')      return false;" },
+  // ── target_has_buffs per-target branch (Renegade A2: Decrease ACC only on a buffed target) ──
+  { name: 'target_has_buffs condition broken (Renegade A2 conditional Decrease-ACC never fires)', expectKill: true,
+    find: "if (cond.kind === 'target_has_buffs') return (t.buffs ?? []).length > 0;",
+    repl: "if (cond.kind === 'target_has_buffs') return false;" },
   // ── [Heal Reduction] consumer (engine.healReduction) — a heal into a Heal-Reduced target must be cut ──
   { name: '[Heal Reduction] not consumed (heals land at full despite the debuff)', expectKill: true, file: 'engine',
     find: '/Heal Reduction/i.test(d.type)', repl: '/NoSuchReduction/i.test(d.type)' },
