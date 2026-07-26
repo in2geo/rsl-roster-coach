@@ -79,10 +79,15 @@ NOT the same as: matches the real game, or is complete. A stage is **bulletproof
   Centralized in `dragon-fixture.applyBattleLayers` (shared by sim-fixture-volume / sim-run / model-golden);
   base SPD sourced from the Gestal sync's ACTUAL `baseStats.spd` (build-from-sync → build file), DB max-ascension
   as fallback. Corrected stage-16 volume 42.3% → 38.0% (team is genuinely slower — implement-don't-fit, number
-  moved DOWN). `model-golden` re-derived to turns 1-7 (Tagoar no longer cuts in at t7). Open follow-ups:
-  (a) arena ×1.03 is still applied to TOTAL not BASE (same error class, smaller); (b) the PRODUCT path needs a
-  name→stats engine with LEVEL + ASCENSION scaling (sync is testing-only) — see memory
-  `app-assigns-stats-sync-is-testing-only-2026-07-26`.
+  moved DOWN). `model-golden` re-derived to turns 1-7 (Tagoar no longer cuts in at t7).
+- **Arena bonus scales BASE HP/ATK/DEF only** (2026-07-26) — same fix as the aura, in `applyBattleLayers`; base
+  HP/ATK/DEF sourced from the sync (`build-from-sync` → build file), SYNC-ONLY (no DB fallback — DB base
+  HP/ATK/DEF are max-LEVEL and would over-credit an under-leveled champ; a build without them falls back to the
+  old total-based arena, which keeps the frozen `model-golden` fixture unchanged). Volume 38.0% → 36.0%.
+  ⚠ OPEN (CLAUDE.md #7): whether Classic Arena bonuses apply in PvE AT ALL is unverified — if not, arena should
+  be removed entirely, a bigger call than base-vs-total.
+- Remaining follow-up: the PRODUCT path needs a name→stats engine with LEVEL + ASCENSION scaling (the sync is a
+  testing instrument, not the shipped stat source) — see memory `app-assigns-stats-sync-is-testing-only-2026-07-26`.
 
 ## Discipline (unchanged, load-bearing)
 We NEVER tune a magnitude to fit reality. A sim≠reality gap is a MISSING/WRONG mechanic to implement, never a

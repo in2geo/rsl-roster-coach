@@ -18,6 +18,9 @@
    ],
    "lifesteal": 0,
    "base_spd": 94,
+   "base_hp": 11175,
+   "base_atk": 1012,
+   "base_def": 721,
    "total_stats": {
     "hp": 15818,
     "atk": 1780,
@@ -43,6 +46,9 @@
    ],
    "lifesteal": 0.3,
    "base_spd": 97,
+   "base_hp": 22140,
+   "base_atk": 738,
+   "base_def": 1299,
    "total_stats": {
     "hp": 28322,
     "atk": 1609,
@@ -70,6 +76,9 @@
    ],
    "lifesteal": 0,
    "base_spd": 105,
+   "base_hp": 14940,
+   "base_atk": 615,
+   "base_def": 899,
    "total_stats": {
     "hp": 25537,
     "atk": 801,
@@ -96,6 +105,9 @@
    ],
    "lifesteal": 0,
    "base_spd": 98,
+   "base_hp": 12750,
+   "base_atk": 810,
+   "base_def": 648,
    "total_stats": {
     "hp": 24157,
     "atk": 978,
@@ -123,6 +135,9 @@
    ],
    "lifesteal": 0,
    "base_spd": 98,
+   "base_hp": 7770,
+   "base_atk": 470,
+   "base_def": 649,
    "total_stats": {
     "hp": 16603,
     "atk": 647,
