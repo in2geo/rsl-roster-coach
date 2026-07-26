@@ -66,8 +66,8 @@ const MUTANTS = [
     find: 'const critM = fl.crit ? critMult(state, effectiveCritRate(actor), actor.critDmg) : 1;',
     repl: 'const critM = fl.crit ? 1 : 1;' },
   { name: 'heal uncapped — HP can exceed MAX (only the invariants rung sees this)', expectKill: true,
-    find: 'const before = t.hp; t.hp = Math.min(t.maxHp, t.hp + amt);',
-    repl: 'const before = t.hp; t.hp = t.hp + amt;' },
+    find: 'const before = t.hp; t.hp = Math.min(t.maxHp, t.hp + amt * (1 - healReduction(t)));',
+    repl: 'const before = t.hp; t.hp = t.hp + amt * (1 - healReduction(t));' },
   { name: 'ignore_shield ignored (shields absorb an ignore-shield hit anyway)', expectKill: true,
     find: "const dd = dealDamage(t, raw, 'direct', actor, opponents, !!fl.ignore_shield);",
     repl: "const dd = dealDamage(t, raw, 'direct', actor, opponents, false);" },
@@ -110,8 +110,8 @@ const MUTANTS = [
     repl: 'if (false && (t.debuffs ?? []).some((d) => d.type === F.ignoreDefIfTargetUnder.debuff))' },
   // ── Lifesteal CONSUMER on the recipe path (interpreter.js dealOneHit) — heal % of damage dealt ──
   { name: 'lifesteal not consumed on the recipe path (heal zeroed)', expectKill: true,
-    find: 'const heal = Math.min((actor.maxHp ?? 0) - actor.hp, actor.lifesteal * dealt);',
-    repl: 'const heal = Math.min((actor.maxHp ?? 0) - actor.hp, actor.lifesteal * dealt * 0);' },
+    find: 'const heal = Math.min((actor.maxHp ?? 0) - actor.hp, actor.lifesteal * dealt * (1 - healReduction(actor)));',
+    repl: 'const heal = Math.min((actor.maxHp ?? 0) - actor.hp, actor.lifesteal * dealt * (1 - healReduction(actor)) * 0);' },
   // ── ignore_shield must NOT bypass [Magma Shield] (engine.js dealDamage) — Pelops's tank identity ──
   { name: 'ignore_shield wrongly bypasses [Magma Shield] too (kills the tank)', expectKill: true, file: 'engine',
     find: "if (ignoreShield && b.type === 'Shield') continue;",
@@ -172,6 +172,9 @@ const MUTANTS = [
   { name: 'is_boss condition broken (Bambus A3 boss Decrease-ATK branch never fires)', expectKill: true,
     find: "if (cond.kind === 'is_boss')      return t.role === 'boss';",
     repl: "if (cond.kind === 'is_boss')      return false;" },
+  // ── [Heal Reduction] consumer (engine.healReduction) — a heal into a Heal-Reduced target must be cut ──
+  { name: '[Heal Reduction] not consumed (heals land at full despite the debuff)', expectKill: true, file: 'engine',
+    find: '/Heal Reduction/i.test(d.type)', repl: '/NoSuchReduction/i.test(d.type)' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8'), [DRAGON]: fs.readFileSync(DRAGON, 'utf8') };

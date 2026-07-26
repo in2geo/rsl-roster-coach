@@ -139,6 +139,17 @@ console.log('\n=== Hellrazor boss sequence (Model-side fired-and-applied, determ
   check('Bambus A3: a wave mob gets [Enfeeble], not the boss branch', mob.debuffs.some(d => d.type === 'Enfeeble') && !mob.debuffs.some(d => d.type === 'Decrease Attack'));
 }
 
+// ── [Heal Reduction] consumer: a heal into a 100%-Heal-Reduction target is fully blocked (Renegade A1 places it) ──
+{
+  const tag = makeCombatant({ name: 'Tagoar', side: 'ally', maxHp: 24000, affinity: 'Void' }); tag.hp = 10000;
+  const hurt = makeCombatant({ name: 'Hurt', side: 'ally', maxHp: 20000, affinity: 'Void' }); hurt.hp = 5000;
+  hurt.debuffs.push({ type: 'Heal Reduction', value: 100, turnsLeft: 1 });
+  const s = makeState({ allies: [tag, hurt], enemies: [], seed: null });
+  applyRecipe(s, tag, RECIPES['TAGOAR-A2']);   // Tagoar A2 heals ALL allies 15% of caster MAX HP
+  check('[Heal Reduction] 100% fully blocks the heal', hurt.hp === 5000, `hp ${hurt.hp}`);
+  check('[Heal Reduction] control: an unafflicted ally IS healed', tag.hp > 10000, `hp ${tag.hp}`);
+}
+
 console.log(`\n  ${fail ? '✗' : '✓'} boss sequence: ${pass} passed, ${fail} failed`);
 if (catalog.length) { console.log('\n  CATALOG (boss behaviours to verify vs the source — not failures):'); for (const c of catalog) console.log(`    - ${c}`); }
 console.log('\nQA_JSON ' + JSON.stringify({ rung: 'model-boss', pass, fail, catalog }));
