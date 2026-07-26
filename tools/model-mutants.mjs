@@ -63,8 +63,8 @@ const MUTANTS = [
     find: 'for (const b of t.buffs) { b.turnsLeft += turns; n++; }',
     repl: 'for (const b of t.buffs) { b.turnsLeft += 0; n++; }' },
   { name: 'crit removed from DEAL_DAMAGE (exact-damage math)', expectKill: true, file: 'engine',
-    find: 'const critM = fl.crit ? critMult(state, effectiveCritRate(actor), actor.critDmg) : 1;',
-    repl: 'const critM = fl.crit ? 1 : 1;' },
+    find: 'const critM = cr.mult;',
+    repl: 'const critM = 1;' },
   { name: 'heal uncapped — HP can exceed MAX (only the invariants rung sees this)', expectKill: true,
     find: 'const before = t.hp; t.hp = Math.min(t.maxHp, t.hp + amt * (1 - healReduction(t)));',
     repl: 'const before = t.hp; t.hp = t.hp + amt * (1 - healReduction(t));' },
@@ -207,6 +207,14 @@ const MUTANTS = [
   { name: 'REDUCE_EFFECT_DURATION no-op (enemy buff durations not decreased)', expectKill: true,
     find: 'for (const b of t.buffs) { b.turnsLeft -= turns; n++; }',
     repl: 'for (const b of t.buffs) { b.turnsLeft -= turns * 0; n++; }' },
+  // ── crit-heal rider (interpreter) — Lua A2 must heal 2.5% per critical hit ──
+  { name: 'crit-heal rider zeroed (Lua A2 does not heal on crit)', expectKill: true,
+    find: 'const heal = Math.min((actor.maxHp ?? 0) - actor.hp, critP * F.critHealPct * (actor.maxHp ?? 0) * (1 - healReduction(actor)));',
+    repl: 'const heal = Math.min((actor.maxHp ?? 0) - actor.hp, critP * F.critHealPct * (actor.maxHp ?? 0) * (1 - healReduction(actor)) * 0);' },
+  // ── crit-splash rider (interpreter) — Lua A1 must splash 50% of the hit to other enemies on crit ──
+  { name: 'crit-splash rider zeroed (Lua A1 does not splash on crit)', expectKill: true,
+    find: 'const splash = critP * F.critSplashPct * raw;',
+    repl: 'const splash = critP * F.critSplashPct * raw * 0;' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8'), [DRAGON]: fs.readFileSync(DRAGON, 'utf8') };

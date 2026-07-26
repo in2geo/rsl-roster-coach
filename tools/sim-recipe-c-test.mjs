@@ -141,5 +141,32 @@ console.log('\n=== II-C state manipulation — code produces expected results? =
   check('REDUCE_EFFECT_DURATION: enemy buff 1t → dropped off (reduced to 0)', !e2.buffs.some(b => b.type === 'Increase DEF'), `has=${e2.buffs.some(b => b.type === 'Increase DEF')}`);
 }
 
+// N — CRIT-HEAL rider (Lua A2): "each critical hit heals this Champion by 2.5% HP". EV path (seed=null): at
+// 100% crit every hit heals; 3 hits × 2.5% × 20000 = +1500. At 0% crit, no heal.
+{
+  const lua = makeCombatant({ name: 'Lua', side: 'ally', atk: 1000, maxHp: 20000, critRate: 100, critDmg: 0, affinity: 'Void' }); lua.hp = 10000;
+  const e = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e9, def: 1000, affinity: 'Void' });
+  applyRecipe(makeState({ allies: [lua], enemies: [e], seed: null }), lua, RECIPES['LUA-A2']);
+  check('crit-heal (Lua A2): 3 hits at 100% crit heal 2.5% each (10000 → 11500)', lua.hp === 11500, `hp ${lua.hp}`);
+  const lua0 = makeCombatant({ name: 'Lua', side: 'ally', atk: 1000, maxHp: 20000, critRate: 0, critDmg: 0, affinity: 'Void' }); lua0.hp = 10000;
+  const e0 = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e9, def: 1000, affinity: 'Void' });
+  applyRecipe(makeState({ allies: [lua0], enemies: [e0], seed: null }), lua0, RECIPES['LUA-A2']);
+  check('crit-heal control: 0% crit → no heal (stays 10000)', lua0.hp === 10000, `hp ${lua0.hp}`);
+}
+// N — CRIT-SPLASH rider (Lua A1): "deals 50% of the inflicted damage to all enemies if critical". EV path:
+// at 100% crit the OTHER enemy takes splash; at 0% crit it is untouched.
+{
+  const mk = (cr) => {
+    const lua = makeCombatant({ name: 'Lua', side: 'ally', atk: 2000, maxHp: 20000, critRate: cr, critDmg: 0, affinity: 'Void' });
+    const e1 = makeCombatant({ name: 'Primary', side: 'enemy', maxHp: 1e9, def: 1000, affinity: 'Void' });
+    const e2 = makeCombatant({ name: 'Other', side: 'enemy', maxHp: 1e9, def: 1000, affinity: 'Void' });
+    applyRecipe(makeState({ allies: [lua], enemies: [e1, e2], seed: null }), lua, RECIPES['LUA-A1']);
+    return { e1, e2 };
+  };
+  const hot = mk(100), cold = mk(0);
+  check('crit-splash (Lua A1): 100% crit splashes 50% to the OTHER enemy', hot.e2.hp < 1e9 && hot.e1.hp < 1e9, `other took ${1e9 - hot.e2.hp}`);
+  check('crit-splash control: 0% crit → OTHER enemy untouched (primary still hit)', cold.e2.hp === 1e9 && cold.e1.hp < 1e9, `other took ${1e9 - cold.e2.hp}`);
+}
+
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
 process.exit(fail ? 1 : 0);
