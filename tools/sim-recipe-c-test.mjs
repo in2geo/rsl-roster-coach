@@ -89,6 +89,21 @@ console.log('\n=== II-C state manipulation — code produces expected results? =
   check('IGNORE_SHIELD does NOT bypass [Magma Shield] (absorbed, not straight to HP)', r3.shield_damage > 0 && r3.hp_damage === 0, `shieldDmg ${r3.shield_damage}, hp ${r3.hp_damage}`);
 }
 
+// 8b — BLOCK DAMAGE consumer + IGNORE_BLOCK_DAMAGE: a [Block Damage] buff negates a normal hit entirely;
+// Faceless/Lua A3 (ignore_block_damage) bypass it and land on HP. [Block Damage] is NOT a pool — a normal hit
+// is fully blocked with the buff still present afterward.
+{
+  const atk = makeCombatant({ name: 'Faceless', side: 'ally', atk: 2000, affinity: 'Void', critRate: 0 });
+  const blocked = () => { const t = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e9, def: 1000, affinity: 'Void' }); t.buffs.push({ type: 'Block Damage', turnsLeft: 2 }); return t; };
+  const t1 = blocked(); const r1 = applyRecipe(makeState({ allies: [atk], enemies: [t1], seed: null }), atk, RECIPES['BAMBUS-A1'])[0];    // normal — fully blocked
+  const t2 = blocked(); const r2 = applyRecipe(makeState({ allies: [atk], enemies: [t2], seed: null }), atk, RECIPES['FACELESS-A3'])[0]; // ignore_block_damage — lands
+  const t3 = blocked(); const r3 = applyRecipe(makeState({ allies: [atk], enemies: [t3], seed: null }), atk, RECIPES['LUA-A3'])[0];      // ignore_block_damage — lands
+  check('BLOCK DAMAGE: a normal hit is fully blocked (0 to HP, 0 to shield, buff intact)',
+    r1.hp_damage === 0 && r1.shield_damage === 0 && t1.buffs.some((b) => b.type === 'Block Damage'), `hp ${r1.hp_damage}, shieldDmg ${r1.shield_damage}`);
+  check('IGNORE_BLOCK_DAMAGE: Faceless A3 bypasses [Block Damage] (lands on HP)', r2.hp_damage > 0, `hp ${r2.hp_damage}`);
+  check('IGNORE_BLOCK_DAMAGE: Lua A3 bypasses [Block Damage] (lands on HP)', r3.hp_damage > 0, `hp ${r3.hp_damage}`);
+}
+
 // N — LIFESTEAL (gear 4-set): a champion heals 30% of the damage it deals, on the RECIPE path (dealOneHit).
 // The primary sustain source for a Lifesteal tank; it was consumed on the old engine path but not here.
 {

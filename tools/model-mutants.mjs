@@ -69,8 +69,8 @@ const MUTANTS = [
     find: 'const before = t.hp; t.hp = Math.min(t.maxHp, t.hp + amt * (1 - healReduction(t)));',
     repl: 'const before = t.hp; t.hp = t.hp + amt * (1 - healReduction(t));' },
   { name: 'ignore_shield ignored (shields absorb an ignore-shield hit anyway)', expectKill: true,
-    find: "const dd = dealDamage(t, raw, 'direct', actor, opponents, !!fl.ignore_shield);",
-    repl: "const dd = dealDamage(t, raw, 'direct', actor, opponents, false);" },
+    find: "const dd = dealDamage(t, raw, 'direct', actor, opponents, !!fl.ignore_shield, !!fl.ignore_block_damage);",
+    repl: "const dd = dealDamage(t, raw, 'direct', actor, opponents, false, !!fl.ignore_block_damage);" },
   { name: 'passive immunities dropped (Pelops no longer immune to HP Burn)', expectKill: true,
     find: 'out.push(...r.immune);', repl: 'out.push();' },
   // ── buff→stat CONSUMER (engine.js statFactor) — the [Increase/Decrease ATK/DEF] damage layer ──
@@ -183,6 +183,14 @@ const MUTANTS = [
   { name: 'ACC modifiers not consumed (effectiveAcc ignores [Increase/Decrease ACC])', expectKill: true, file: 'engine',
     find: "export const effectiveAcc = (c) => (c.acc ?? 0) * statFactor(c, 'acc');",
     repl: 'export const effectiveAcc = (c) => (c.acc ?? 0);' },
+  // ── [Block Damage] consumer (engine.dealDamage) — a [Block Damage] buff must negate a normal direct hit ──
+  { name: '[Block Damage] not consumed (a normal hit lands despite the buff)', expectKill: true, file: 'engine',
+    find: "if (kind === 'direct' && !ignoreBlockDamage && target.buffs.some((b) => b.type === 'Block Damage')) {",
+    repl: "if (false && kind === 'direct' && !ignoreBlockDamage && target.buffs.some((b) => b.type === 'Block Damage')) {" },
+  // ── ignore_block_damage bypass (engine.dealDamage) — Faceless/Lua A3 must bypass [Block Damage] ──
+  { name: 'ignore_block_damage ignored (Faceless/Lua A3 still blocked by [Block Damage])', expectKill: true, file: 'engine',
+    find: "!ignoreBlockDamage && target.buffs.some((b) => b.type === 'Block Damage')",
+    repl: "true && target.buffs.some((b) => b.type === 'Block Damage')" },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8'), [DRAGON]: fs.readFileSync(DRAGON, 'utf8') };
