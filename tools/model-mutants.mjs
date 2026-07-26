@@ -237,6 +237,21 @@ const MUTANTS = [
   { name: 'damageGate defeated (Pelops A2 steal+[Stun] fire on ANY hit, ignoring the <50% gate)', expectKill: true,
     find: 'return set.filter((t) => dmgOn(t) < pct * (t.maxHp || Infinity));',
     repl: 'return set.filter((t) => true);' },
+  // ── Ezio A2 [Bomb] (interpreter.doPlaceBomb) — must place `count` bombs at 6×ATK ──
+  { name: 'PLACE_BOMB places nothing (Ezio A2 Stone-Skin branch inert)', expectKill: true,
+    find: "for (let i = 0; i < (ef.count ?? 1); i++) t.debuffs.push({ type: 'Bomb', value: dmg, countdown, turnsLeft: 999, stacks: 1 });",
+    repl: "for (let i = 0; i < (ef.count ?? 1) * 0; i++) t.debuffs.push({ type: 'Bomb', value: dmg, countdown, turnsLeft: 999, stacks: 1 });" },
+  { name: 'PLACE_BOMB all-Stone-Skin countdown reduction dropped', expectKill: true,
+    find: 'const countdown = Math.max(1, (ef.countdown ?? 2) - (allStoneSkin ? 1 : 0));',
+    repl: 'const countdown = Math.max(1, (ef.countdown ?? 2) - (false ? 1 : 0));' },
+  // ── [Bomb] detonation (engine.tickBombs) — must deal the stored value at countdown 0 ──
+  { name: '[Bomb] detonation zeroed (tickBombs deals no damage)', expectKill: true, file: 'engine',
+    find: "dealDamage(c, dmg, 'direct', null);",
+    repl: "dealDamage(c, dmg * 0, 'direct', null);" },
+  // ── under_buff condition (interpreter.conditionMet) — Ezio A2 Bomb branch targets [Stone Skin] enemies ──
+  { name: 'under_buff condition broken (Ezio A2 [Bomb] never targets Stone-Skin enemies)', expectKill: true,
+    find: "if (cond.kind === 'under_buff')       return (t.buffs ?? []).some((b) => b.type === cond.buff);",
+    repl: "if (cond.kind === 'under_buff')       return false;" },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8'), [DRAGON]: fs.readFileSync(DRAGON, 'utf8') };

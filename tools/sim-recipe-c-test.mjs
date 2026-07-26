@@ -2,7 +2,7 @@
 //
 // Two things per mechanic: the recipe PLACES the right value, AND the engine CONSUMER fires (a shield
 // absorbs, a taunt pulls the hit, ally-protection redistributes). Deterministic. Run: node tools/sim-recipe-c-test.mjs
-import { makeCombatant, makeState, dealDamage, chooseAllyTarget, defMitigation } from '../lib/sim/engine.js';
+import { makeCombatant, makeState, dealDamage, chooseAllyTarget, defMitigation, tickBombs } from '../lib/sim/engine.js';
 import { applyRecipe } from '../lib/sim/interpreter.js';
 import { RECIPES } from '../lib/sim/recipes.js';
 
@@ -224,6 +224,35 @@ console.log('\n=== II-C state manipulation — code produces expected results? =
   };
   check('Pelops A2 [Stun]: RESISTED vs high-RES target (acc 0, res 300)', stunLands(false) === false);
   check('Pelops A2 [Stun]: UNRESISTABLE when the target is under [HP Burn]', stunLands(true) === true);
+}
+
+// N — Ezio A2 [Stone Skin]→[Bomb] branch: [Stone Skin] enemies get 2 [Bomb] (6×ATK, detonate after 2t) INSTEAD
+// of Poison; non-[Stone Skin] enemies get Poison. If ALL enemies are Stone-Skin, the countdown drops to 1.
+{
+  const ez = () => makeCombatant({ name: 'Ezio Auditore', side: 'ally', atk: 1000, acc: 500, affinity: 'Void', critRate: 0 });
+  const stone = (n) => { const c = makeCombatant({ name: n, side: 'enemy', maxHp: 1e7, def: 1000, res: 0, affinity: 'Void' }); c.buffs.push({ type: 'Stone Skin', turnsLeft: 3 }); return c; };
+  // mixed: one Stone-Skin, one plain
+  const s1 = stone('Stone'); const plain = makeCombatant({ name: 'Plain', side: 'enemy', maxHp: 1e7, def: 1000, res: 0, affinity: 'Void' });
+  const ezA = ez(); applyRecipe(makeState({ allies: [ezA], enemies: [s1, plain], seed: null }), ezA, RECIPES['EZIO-A2']);
+  const bombs = s1.debuffs.filter(d => d.type === 'Bomb');
+  check('Ezio A2 [Stone Skin] branch: 2 [Bomb] on the Stone-Skin enemy, no Poison', bombs.length === 2 && !s1.debuffs.some(d => d.type === 'Poison'), `stone=${s1.debuffs.map(d => d.type)}`);
+  check('Ezio A2: the non-Stone-Skin enemy gets Poison, no [Bomb]', plain.debuffs.some(d => d.type === 'Poison') && !plain.debuffs.some(d => d.type === 'Bomb'), `plain=${plain.debuffs.map(d => d.type)}`);
+  check('Ezio A2 [Bomb]: value 6×ATK (6000), countdown 2 (not all enemies Stone-Skin)', bombs[0]?.value === 6000 && bombs[0]?.countdown === 2, `value=${bombs[0]?.value} cd=${bombs[0]?.countdown}`);
+  // all enemies Stone-Skin → countdown reduced to 1
+  const a1 = stone('S1'), a2 = stone('S2'); const ezB = ez();
+  applyRecipe(makeState({ allies: [ezB], enemies: [a1, a2], seed: null }), ezB, RECIPES['EZIO-A2']);
+  check('Ezio A2: ALL enemies Stone-Skin → [Bomb] countdown reduced to 1', a1.debuffs.find(d => d.type === 'Bomb')?.countdown === 1, `cd=${a1.debuffs.find(d => d.type === 'Bomb')?.countdown}`);
+}
+// N — [Bomb] detonation (engine.tickBombs): countdown drops at the start of the bearer's turn; at 0 it detonates
+// for its stored value and is removed.
+{
+  const c = makeCombatant({ name: 'Victim', side: 'enemy', maxHp: 1e7, affinity: 'Void' });
+  c.debuffs.push({ type: 'Bomb', value: 6000, countdown: 2, turnsLeft: 999, stacks: 1 });
+  const st = makeState({ allies: [], enemies: [c], seed: null });
+  tickBombs(st, c);
+  check('[Bomb]: countdown 2→1, no detonation yet (HP unchanged)', c.debuffs.find(d => d.type === 'Bomb')?.countdown === 1 && c.hp === 1e7, `cd=${c.debuffs.find(d => d.type === 'Bomb')?.countdown} hp=${c.hp}`);
+  tickBombs(st, c);
+  check('[Bomb]: countdown 1→0 detonates for 6000 and is removed', !c.debuffs.some(d => d.type === 'Bomb') && c.hp === 1e7 - 6000, `hp=${c.hp}`);
 }
 
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
