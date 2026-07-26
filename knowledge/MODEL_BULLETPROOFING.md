@@ -102,14 +102,22 @@ NOT the same as: matches the real game, or is complete. A stage is **bulletproof
 - `7397f3a` **10/18** — Renegade A3 self-destroy. New `SELF_DAMAGE` op (30% own MaxHP, lethal). Snapshot re-blessed.
 - `df9f70e` **11/18** — Bambus A2 buff-duration decrease. `REDUCE_EFFECT_DURATION` op (mirror of EXTEND_EFFECT).
   Snapshot re-blessed; "no buffs to reduce/extend" added to the benign fired/consumed whitelist.
-- Catalog **15 → 8** this session (st17 17 → 14). Ladder 15/15, teeth 51/51 (100%) throughout. **9 unpushed commits.**
-- **Remaining 8** (2 are BLOCKED/hardest):
+- `fe8c122` **12-13/18** — crit-conditional riders (Lua A1 AoE-splash + Lua A2 lifesteal-on-crit). New
+  `engine.rollCrit` exposes the crit OUTCOME ({crit,mult,ev}) with the identical single crit-stream draw;
+  computeRawHit returns crit+critEv; dealOneHit applies `critHealPct`/`critSplashPct` riders (rolled crit →
+  fire; seed=null EV → cr%×effect). Snapshot re-blessed (LUA-A1). LUA-A2 covers:['crit-heal'] for the «heal» kw.
+- Catalog **15 → 6** this session (st17 17 → 14). Ladder 15/15, teeth 53/53 (100%) throughout. **11 unpushed commits.**
+- **Remaining 6** — TWO need Mike's input, one is the hardest:
   - ⛔ **BLOCKED on Mike** — Bambus A2 "+3% ally [Shield] value per enemy buff decreased": base (%shield-value vs
-    %Bambus-MaxHP) is UNVERIFIED in the skill text. IMPLEMENT-DON'T-FIT forbids guessing. Ask before building.
-  - **crit-conditional family** (Lua A1 AoE-on-crit, Lua A2 lifesteal-on-crit) — one core refactor: expose the crit
-    OUTCOME from computeRawHit (critM>1 is unreliable at critDmg=0) + an EV path for seed=null. WILL drift golden+snapshot.
-  - counterattack event (Ezio P2), debuff-activation (Ezio A2), sleep-break-on-hit (Bambus P), steal+Stun-on-low-dmg
-    (Pelops A2), and the Ezio A2 Stone-Skin→Bomb named exception (the hardest — a branch, last).
+    %Bambus-MaxHP) UNVERIFIED. IMPLEMENT-DON'T-FIT forbids guessing.
+  - ⛔ **NEEDS Mike** — Ezio A2 "instantly activates all [Poison] on enemies with 4+ debuffs": the DAMAGE SEMANTIC
+    is ambiguous — one tick now, or all remaining ticks at once; and is the Poison then REMOVED (slot relief)?
+    Direction is clear (Poison deals damage now); the amount is not. Confirm before building.
+  - **buildable now:** Ezio P2 35% counterattack-when-attacked (on-attacked reaction + chance + follow-up A1 —
+    watch cascade); Pelops A2 steal-all-buffs + [Stun] 2t if a hit dealt <50% target MaxHP (post-damage
+    conditional, unresistable if target [HP Burn]); Bambus P [Sleep]-break-on-enemy-attack (on-attacked removes
+    [Sleep] + fires the existing dump; interacts with the Sleeping-Sage sponge).
+  - **hardest, last:** Ezio A2 [Stone Skin]→[Bomb] branch (a named-exception alternate skill path).
 
 ## Discipline (unchanged, load-bearing)
 We NEVER tune a magnitude to fit reality. A sim≠reality gap is a MISSING/WRONG mechanic to implement, never a
