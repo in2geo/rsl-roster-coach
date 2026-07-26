@@ -195,6 +195,10 @@ const MUTANTS = [
   { name: 'extra-hit proc dropped (Faceless/Crossbowman A1 never fire the extra hit)', expectKill: true,
     find: 'if (F.extraHitChance && t.alive && rollChance(state?.rng?.proc, F.extraHitChance)) {',
     repl: 'if (false && F.extraHitChance && t.alive && rollChance(state?.rng?.proc, F.extraHitChance)) {' },
+  // ── random-target-per-hit (interpreter DEAL_DAMAGE) — Renegade A2 / Apothecary A1 scatter their hits ──
+  { name: 'random-target-per-hit dropped (hits revert to the fixed ACQUIRE target)', expectKill: true,
+    find: 'if (F.randomTargetPerHit) {                 // "attacks N times at random": each hit re-picks a random living target',
+    repl: 'if (false) {                 // "attacks N times at random": each hit re-picks a random living target' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8'), [DRAGON]: fs.readFileSync(DRAGON, 'utf8') };

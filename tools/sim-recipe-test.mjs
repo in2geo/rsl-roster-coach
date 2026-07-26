@@ -187,5 +187,18 @@ console.log('\n=== Recipe interpreter — isolated damage tests ===\n');
   check('Faceless A1 — no extra hit under CHANCE_MODE=none (1 hit)', none.length === 1, `${none.length} hit(s)`);
 }
 
+// 14 — RANDOM-TARGET-PER-HIT: Renegade A2 "attacks at random 3 times". Each hit re-picks a random living
+// opponent; seed=null uses the random_ally convention (index 0). Distinguished from fixed targeting by making
+// the ACQUIRE target (lowest-HP% ally) a DIFFERENT unit from index 0 — random-per-hit lands all 3 on index 0.
+{
+  const ren = makeCombatant({ name: 'Renegade', side: 'enemy', atk: 2000, affinity: 'Void', critRate: 0 });
+  const a0 = makeCombatant({ name: 'Ally0', side: 'ally', maxHp: 20000, def: 1000, affinity: 'Void' });          // index 0, full HP
+  const a1 = makeCombatant({ name: 'Ally1', side: 'ally', maxHp: 20000, def: 1000, affinity: 'Void' }); a1.hp = 4000;  // 20% → ACQUIRE (lowest-HP%) picks this
+  const res = applyRecipe(makeState({ allies: [a0, a1], enemies: [ren], seed: null }), ren, RECIPES['RENEGADE-A2']);
+  const targets = res.map(r => r.target);
+  check('Renegade A2 — random-per-hit lands all 3 on index 0 (seed=null), not the ACQUIRE lowest-HP% ally',
+    res.length === 3 && targets.every(t => t === 'Ally0'), `targets=${JSON.stringify(targets)}`);
+}
+
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
 process.exit(fail ? 1 : 0);
