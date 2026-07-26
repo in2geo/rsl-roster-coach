@@ -233,6 +233,10 @@ const MUTANTS = [
   { name: 'COUNTERATTACK forceTarget ignored (counter hits the AI pick, not the attacker)', expectKill: true,
     find: 'ctx.forceTarget ? (ctx.forceTarget.alive ? [ctx.forceTarget] : []) : acquireTargets(ctx.state, ctx.actor, act, ctx.opponents, ctx.avoid)',
     repl: 'acquireTargets(ctx.state, ctx.actor, act, ctx.opponents, ctx.avoid)' },
+  // ── Pelops A2 post-damage gate (interpreter.damageGate) — steal/[Stun] must be gated to <50%-MaxHP hits ──
+  { name: 'damageGate defeated (Pelops A2 steal+[Stun] fire on ANY hit, ignoring the <50% gate)', expectKill: true,
+    find: 'return set.filter((t) => dmgOn(t) < pct * (t.maxHp || Infinity));',
+    repl: 'return set.filter((t) => true);' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8'), [DRAGON]: fs.readFileSync(DRAGON, 'utf8') };

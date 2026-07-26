@@ -198,5 +198,33 @@ console.log('\n=== II-C state manipulation — code produces expected results? =
   check('BOOST_SHIELD: shield 6000 + 3%MaxHP × 2 buffs decreased = 7200', sh?.value === 7200, `shield ${sh?.value}`);
 }
 
+// N — Pelops A2 post-damage gate: steal all buffs + [Stun] 2t ONLY if the hit dealt <50% of target MAX HP;
+// both effects unresistable if the target is under [HP Burn].
+{
+  const mkPel = (acc = 200) => makeCombatant({ name: 'Pelops the Victor', side: 'ally', atk: 0, maxHp: 100000, acc, affinity: 'Void', critRate: 0, critDmg: 0 });
+  // A — big target (raw << 50% MaxHP) → steal + stun
+  const pelA = mkPel(); const tA = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e7, def: 1000, res: 0, affinity: 'Void' });
+  tA.buffs.push({ type: 'Increase ATK', value: 50, turnsLeft: 2 });
+  applyRecipe(makeState({ allies: [pelA], enemies: [tA], seed: null }), pelA, RECIPES['PELOPS-A2']);
+  check('Pelops A2 (<50% MaxHP hit): steals buffs + places [Stun]',
+    !tA.buffs.some(b => b.type === 'Increase ATK') && tA.debuffs.some(d => d.type === 'Stun') && pelA.buffs.some(b => b.type === 'Increase ATK'),
+    `tBuffs=${tA.buffs.map(b => b.type)} tDeb=${tA.debuffs.map(d => d.type)}`);
+  // B — small target (raw >= 50% MaxHP) → no steal, no stun
+  const pelB = mkPel(); const tB = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 40000, def: 0, res: 0, affinity: 'Void' });
+  tB.buffs.push({ type: 'Increase ATK', value: 50, turnsLeft: 2 });
+  applyRecipe(makeState({ allies: [pelB], enemies: [tB], seed: null }), pelB, RECIPES['PELOPS-A2']);
+  check('Pelops A2 (>=50% MaxHP hit): NO steal, NO [Stun]',
+    tB.buffs.some(b => b.type === 'Increase ATK') && !tB.debuffs.some(d => d.type === 'Stun'), `tBuffs=${tB.buffs.map(b => b.type)}`);
+  // C — [Stun] unresistable only under [HP Burn] (high-RES target, Pelops acc 0)
+  const stunLands = (hpBurn) => {
+    const pel = mkPel(0); const t = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e7, def: 1000, res: 300, affinity: 'Void' });
+    if (hpBurn) t.debuffs.push({ type: 'HP Burn', turnsLeft: 2 });
+    applyRecipe(makeState({ allies: [pel], enemies: [t], seed: null }), pel, RECIPES['PELOPS-A2']);
+    return t.debuffs.some(d => d.type === 'Stun');
+  };
+  check('Pelops A2 [Stun]: RESISTED vs high-RES target (acc 0, res 300)', stunLands(false) === false);
+  check('Pelops A2 [Stun]: UNRESISTABLE when the target is under [HP Burn]', stunLands(true) === true);
+}
+
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
 process.exit(fail ? 1 : 0);
