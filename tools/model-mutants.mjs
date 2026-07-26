@@ -215,6 +215,13 @@ const MUTANTS = [
   { name: 'crit-splash rider zeroed (Lua A1 does not splash on crit)', expectKill: true,
     find: 'const splash = critP * F.critSplashPct * raw;',
     repl: 'const splash = critP * F.critSplashPct * raw * 0;' },
+  // ── DEBUFF_ACTIVATION (interpreter) — Ezio A2 must activate+remove enemy [Poison] at ≥4 debuff slots ──
+  { name: 'DEBUFF_ACTIVATION no-op (Ezio A2 does not activate/remove Poison)', expectKill: true,
+    find: 'const dealt = activatePoisons(state, t);',
+    repl: 'const dealt = 0;' },
+  { name: 'DEBUFF_ACTIVATION threshold ignored (activates below the 4-debuff gate)', expectKill: true,
+    find: 'if (debuffSlots(t) < minDebuffs) {',
+    repl: 'if (false && debuffSlots(t) < minDebuffs) {' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8'), [DRAGON]: fs.readFileSync(DRAGON, 'utf8') };

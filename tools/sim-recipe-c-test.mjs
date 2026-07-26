@@ -168,5 +168,23 @@ console.log('\n=== II-C state manipulation — code produces expected results? =
   check('crit-splash control: 0% crit → OTHER enemy untouched (primary still hit)', cold.e2.hp === 1e9 && cold.e1.hp < 1e9, `other took ${1e9 - cold.e2.hp}`);
 }
 
+// N — DEBUFF_ACTIVATION (Ezio A2): "instantly activates all [Poison] on enemies under 4+ debuffs" — Poison
+// STACKS count individually toward the threshold; activated Poison deals damage and is REMOVED (Poison
+// Sensitivity is left in place). seed=null: Ezio's 75% placements land (threshold + high ACC vs res 0).
+{
+  const ezio = () => makeCombatant({ name: 'Ezio Auditore', side: 'ally', atk: 2000, acc: 500, affinity: 'Void', critRate: 0 });
+  // 4+ slots: 1 pre-existing + 2 Poison stacks + 1 Poison Sensitivity → activated & removed
+  const e1 = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e7, def: 1000, res: 0, affinity: 'Void' });
+  e1.debuffs.push({ type: 'Decrease Defense', value: 60, turnsLeft: 2 });
+  const a1 = ezio(); applyRecipe(makeState({ allies: [a1], enemies: [e1], seed: null }), a1, RECIPES['EZIO-A2']);
+  check('DEBUFF_ACTIVATION: ≥4 debuff slots → Poison activated & removed (Poison Sensitivity stays)',
+    !e1.debuffs.some(d => d.type === 'Poison') && e1.debuffs.some(d => d.type === 'Poison Sensitivity'), `debuffs=${e1.debuffs.map(d => d.type)}`);
+  // <4 slots: 2 Poison stacks + 1 Poison Sensitivity = 3 → NOT activated → Poison remains
+  const e2 = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e7, def: 1000, res: 0, affinity: 'Void' });
+  const a2 = ezio(); applyRecipe(makeState({ allies: [a2], enemies: [e2], seed: null }), a2, RECIPES['EZIO-A2']);
+  check('DEBUFF_ACTIVATION control: <4 debuff slots → Poison remains (not activated)',
+    e2.debuffs.some(d => d.type === 'Poison'), `debuffs=${e2.debuffs.map(d => d.type)}`);
+}
+
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
 process.exit(fail ? 1 : 0);
