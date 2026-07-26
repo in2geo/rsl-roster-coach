@@ -19,16 +19,20 @@ const HAS_DB = !!process.env.SUPABASE_URL;
 // rung: { file, name, layer, db } — teeth FIRST (it validates that the rest have teeth)
 const RUNGS = [
   { file: 'model-mutants.mjs',      name: 'teeth (mutation)',        layer: 'meta', db: false },
+  { file: 'model-ops-consistency.mjs', name: 'op registry↔interpreter', layer: '1', db: false },
   { file: 'sim-recipe-test.mjs',    name: 'II-A damage toy battles', layer: '2/3',  db: false },
   { file: 'sim-recipe-b-test.mjs',  name: 'II-B placement toy',      layer: '2/3',  db: false },
   { file: 'sim-recipe-c-test.mjs',  name: 'II-C state toy',          layer: '2/3',  db: false },
   { file: 'sim-recipe-d-test.mjs',  name: 'II-D passives toy',       layer: '2/3',  db: false },
+  { file: 'model-boss.mjs',         name: 'boss sequence (Hellrazor)', layer: '2/3', db: false },
   { file: 'model-invariants.mjs',   name: 'invariants (property)',   layer: '5',    db: false },
   { file: 'model-sensitivity.mjs',  name: 'sensitivity (metamorphic)', layer: '6',  db: false },
   { file: 'model-snapshot.mjs',     name: 'regression snapshot',     layer: 'meta', db: false },
+  { file: 'sim-rolls.mjs',          name: 'roll census (RNG)',       layer: 'meta', db: false },
   { file: 'sim-validate-recipes.mjs', name: 'card→recipe coverage',  layer: '1',    db: true },
   { file: 'model-fidelity.mjs',     name: 'DB→recipe fidelity',      layer: '1',    db: true },
   { file: 'model-golden.mjs',       name: 'hand-calc golden (turns 1–8)', layer: '4', db: true },
+  { file: 'mob-coverage.mjs',       name: `wave coverage L1/2/3 (stage ${process.env.MODEL_QA_STAGE ?? 17})`, layer: '1', db: true },
 ];
 
 function run(file) {
@@ -53,6 +57,8 @@ for (const rg of RUNGS) {
     else ledger.spec_violation.push(`${rg.name} (layer ${rg.layer}) reported ${failN} failure(s)` + (res.json?.failures?.length ? ` — e.g. ${res.json.failures[0]}` : ''));
   }
   if (res.json?.coverageGaps?.length) for (const g of res.json.coverageGaps) ledger.not_scored.push(`teeth coverage gap (no rung pins yet): ${g}`);
+  // wave coverage: hardFails already block via exit code (spec); the unimplemented catalog is the mob-mechanic to-do
+  if (res.json?.rung === 'mob-coverage' && res.json?.unimplemented) ledger.unimplemented.push(`${res.json.unimplemented} mob mechanic(s) unmodelled at Dragon stage ${res.json.stage} (see tools/mob-coverage.mjs)`);
   // card→recipe coverage: REVIEW = spec (a dropped/fabricated clause), Partial = deferred backlog
   if (res.json?.review) for (const r of res.json.review) ledger.spec_violation.push(`coverage REVIEW: ${r}`);
 }

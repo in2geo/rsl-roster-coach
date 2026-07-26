@@ -21,7 +21,7 @@
   },
   "sustained": {
     "won": true,
-    "turns": 166,
+    "turns": 170,
     "failedPhase": null,
     "deaths": 1,
     "revives": 0,
@@ -32,12 +32,12 @@
     "allies": [
       {
         "name": "Blade",
-        "hpPct": 89,
+        "hpPct": 94,
         "alive": true
       },
       {
         "name": "Cleric",
-        "hpPct": 90,
+        "hpPct": 97,
         "alive": true
       }
     ]
@@ -55,19 +55,19 @@
     "allies": [
       {
         "name": "Toxin",
-        "hpPct": 100,
+        "hpPct": 78,
         "alive": true
       },
       {
         "name": "Venom",
-        "hpPct": 79,
+        "hpPct": 100,
         "alive": true
       }
     ]
   },
   "shielded": {
     "won": false,
-    "turns": 76,
+    "turns": 81,
     "failedPhase": "boss",
     "deaths": 1,
     "revives": 0,
@@ -82,10 +82,10 @@
   },
   "revive": {
     "won": false,
-    "turns": 47,
+    "turns": 55,
     "failedPhase": "boss",
-    "deaths": 7,
-    "revives": 5,
+    "deaths": 8,
+    "revives": 6,
     "survivors": [],
     "allies": [
       {
@@ -102,7 +102,7 @@
   },
   "wavesThenBoss": {
     "won": false,
-    "turns": 142,
+    "turns": 156,
     "failedPhase": "boss",
     "deaths": 4,
     "revives": 0,

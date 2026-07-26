@@ -31,14 +31,23 @@ const FIX = path.join(REPO, 'test', 'golden', 'dragon16-donbambus-2026-07-22.jso
 // (at raw 183 Tagoar would be 0.1175 and LOSE — the old order). Then t8 Faceless#2 (2.4/101 = 0.0238) wins.
 // The enemy hit is UNCHANGED — Faceless#2 → Pelops is the same 5553, merely displaced one turn later; the
 // old t8 (Lua#1 → Pelops) slides to t9, outside the 8-turn window. A pure reorder, not a damage change.
+//
+// DAMAGE RE-DERIVED 2026-07-25 for the source-verified DEF-MITIGATION curve (M = 1 − 0.85·(1−e^(−2D/50L)),
+// replacing the old linear placeholder). The ally-attack turns (2/5/6/7) drop to the new mitigation; the
+// SEQUENCE is untouched (0 actor/slot/target divergences). This is a pure per-target mitigation-factor swap,
+// PROVEN by ratio-invariance in the golden's OWN numbers: for any fixed target the cross-turn ratios are
+// identical old↔new (e.g. Lua t2/t6 = 2373/3194 = 0.7430 vs 1947/2621 = 0.7429; t5/t2 = 6008/2373 = 2.532 vs
+// 4930/1947 = 2.532) — so coeff × effATK × crit × the ×1.5 [Increase ATK] all cancel, leaving only the
+// mitigation, and defMitigation() is independently pinned by sim-selftest §12. t8's Enfeeble weak-hit (3887,
+// enemy→ally) was already on the verified path and is UNCHANGED.
 const GOLDEN = [
   { turn: 1, actor: 'Bambus', slot: 'A3', dmg: {} },                                                   // buffs+debuffs (incl. team [Increase ATK] 50% + [Increase SPD] via Tagoar next turn), no damage
-  { turn: 2, actor: 'Tagoar', slot: 'A2', dmg: { 'Lua#1': 2373, 'Faceless#2': 2442, 'Arbalester#3': 2621, 'Arbalester#4': 2621, 'Renegade#5': 2466 } },  // ×1.5 under [Increase ATK]; also places team [Increase SPD] 30%
+  { turn: 2, actor: 'Tagoar', slot: 'A2', dmg: { 'Lua#1': 1947, 'Faceless#2': 2026, 'Arbalester#3': 2235, 'Arbalester#4': 2235, 'Renegade#5': 2053 } },  // ×1.5 under [Increase ATK]; also places team [Increase SPD] 30%
   { turn: 3, actor: 'Vergis', slot: 'A2', dmg: {} },                                                    // Aegis — no damage
   { turn: 4, actor: 'Pelops', slot: 'A3', dmg: {} },                                                    // Victor's Bounty — no damage
-  { turn: 5, actor: 'Ezio',   slot: 'A2', dmg: { 'Lua#1': 6008, 'Faceless#2': 6185, 'Arbalester#3': 6636, 'Arbalester#4': 6636, 'Renegade#5': 6244 } },  // ×1.5 under [Increase ATK]
-  { turn: 6, actor: 'Bambus', slot: 'A2', dmg: { 'Lua#1': 3194, 'Faceless#2': 3288, 'Arbalester#3': 3528, 'Arbalester#4': 3528, 'Renegade#5': 3319 } },  // ×1.5 under [Increase ATK]
-  { turn: 7, actor: 'Tagoar', slot: 'A1', dmg: { 'Arbalester#3': 2550 } },                              // ally cuts in (team [Increase SPD] 30%): 1.8×ATK ×2 → lowest-HP enemy
+  { turn: 5, actor: 'Ezio',   slot: 'A2', dmg: { 'Lua#1': 4930, 'Faceless#2': 5130, 'Arbalester#3': 5659, 'Arbalester#4': 5659, 'Renegade#5': 5199 } },  // ×1.5 under [Increase ATK]
+  { turn: 6, actor: 'Bambus', slot: 'A2', dmg: { 'Lua#1': 2621, 'Faceless#2': 2727, 'Arbalester#3': 3008, 'Arbalester#4': 3008, 'Renegade#5': 2764 } },  // ×1.5 under [Increase ATK]
+  { turn: 7, actor: 'Tagoar', slot: 'A1', dmg: { 'Arbalester#3': 2174 } },                              // ally cuts in (team [Increase SPD] 30%): 1.8×ATK ×2 → lowest-HP enemy
   { turn: 8, actor: 'Faceless#2', slot: 'A3', dmg: { 'Pelops': 3887 } },                                // Ice Bolt → taunted Pelops (taunt overrides the max-HP rule); ×0.70 WEAK because Faceless is under [Enfeeble] from Bambus A3 t1 (5553 → 3887, the Enfeeble consumer)
 ];
 

@@ -38,7 +38,9 @@ const ok = (name, cond, detail = '') => { if (cond) pass++; else { fail++; failu
 // A fired-but-not-consumed effect is benign ONLY with a documented reason. Everything else is a
 // represented-but-not-consumed bug. `MISSING coeff` / `UNKNOWN land chance` are DATA gaps (bucket 3),
 // benign for THIS rung (the mechanic works; the input is absent) and surfaced separately.
-const BENIGN = [/^immune$/, /^resisted /, /^overheal/, /^no debuffs to cleanse$/, /^turn lost$/];
+const BENIGN = [/immune/, /^resisted /, /^overheal/, /^no debuffs to cleanse$/, /^turn lost$/,
+  /^proc missed /, /^missed placement /, /^missed \(/,    // a chance-based effect that ROLLED and missed is a documented non-consumption, not a defect
+  /^already full$/, /^already empty$/, /^condition not met$/];                   // Turn Meter fill at 100 / decrease at 0 — the effect fired, there was nothing to change
 const DATA_GAP = [/^MISSING coeff$/, /^UNKNOWN land chance$/];
 const explained = (re) => (e) => re.some(r => r.test(e.note ?? ''));
 const isBenign = explained(BENIGN);

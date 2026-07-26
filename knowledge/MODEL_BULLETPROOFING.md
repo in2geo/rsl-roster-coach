@@ -1,0 +1,80 @@
+# MODEL BULLETPROOFING TRACKER
+
+Goal: make the Dragon **Stage 16** Model the trustworthy PROTOTYPE for the whole Model, so we can
+scale to more stages AND port to other dungeons without re-plumbing. Forensic audit 2026-07-26
+(memory: `model-bulletproofing-forensics-2026-07-26`).
+
+## What "bulletproof" must mean (the reframe)
+"13/13 SPEC-CONFORMANT" today = the Model agrees with its own design and is internally stable. That is
+NOT the same as: matches the real game, or is complete. A stage is **bulletproof** when:
+1. Every combatant **including the boss** runs the ONE engine (`recipeFor||kitToRecipe→applyRecipe`, math via `computeRawHit`).
+2. Every source clause is either executed or in the **single enforced** deferred catalog — no stale notes, no comment-only boss gaps.
+3. Leaf formulas are anchored to the **real game tables** by a BLOCKING rung (not the Model's own output).
+4. The **data layer** (recipes, operations, fixture builder) has teeth, not just the interpreter.
+5. The harness runs the **real captured fixture** and reports the residual vs reality.
+
+## The 5 root causes (verified from source)
+- **R1 — the boss is an unmerged THIRD engine.** `dragon.js bossHit` never calls `computeRawHit` → boss
+  hits bypass the incoming-mitigation stack (Pelops −20%, Tagoar −10%, Ezio nullify) + crit/affinity/variance;
+  the boss is outside `recipes.js`/`mob-coverage` entirely (gaps live in code comments).
+- **R2 — op status lives in 3–5 drifted sources.** registry (`operations.js`) vs the `applyRecipe` if/else vs
+  `do*` fns vs recipe `deferred[]` prose vs `PHASE_II_EFFECT_INVENTORY`. Confirmed drift: `EXTRA_TURN`/
+  `FILL_TURN_METER` marked not-built + no `CLEANSE`, yet all three run.
+- **R3 — the QA ladder proves consistency+stability, not reality-correctness, on ONE Dragon fixture.**
+  golden/snapshot are self-referential; the game-magnitude anchor (`sim-selftest`) is OUTSIDE the ladder;
+  teeth bite only `interpreter.js`/`engine.js`.
+- **R4 — champion specifics leak into the generic engine via name-string keys.** Bambus sponge hardcoded
+  (literal 0.75); first-name keys (`BAMBUS-A1`) in ~6 sites bypass the champion registry.
+- **R5 — stage-17 coverage was built in the deleted engine.** 28 open recipe clauses (10 st-17 mob, 10 st-16
+  mob, 8 team); ~half only need re-WIRING to already-built ops.
+
+## Plan (sequenced) — status
+- **P0 — one source of truth for ops. ✅ DONE 2026-07-26.** Both dispatch surfaces are now table-driven —
+  active recipes (`interpreter.OP_HANDLERS`) and passive triggers (`TRIGGER_OP_HANDLERS`) — with `IMPLEMENTED_OPS`
+  = their union as the single authoritative list. `operations.js` flags reconciled (FILL_TURN_METER/EXTRA_TURN
+  flipped, CLEANSE added). New BLOCKING rung `tools/model-ops-consistency.mjs` (wired into model-qa as an L1)
+  fails if registry ↔ interpreter ↔ recipe `deferred[]` ever disagree; it immediately caught a hidden 2nd
+  dispatch surface (WAKE_FROM_SLEEP). Stale "op not built" notes corrected to "op exists; not yet wired (P4)".
+  **Ladder 14/14 green; snapshot byte-identical (refactor behaviour-preserving); teeth 100%.**
+- **P1a — boss damage runs the shared mitigation stack. ✅ DONE 2026-07-26.** `dragon.js` `strike` now wraps
+  `bossHit` in `incomingDamage(state, target, …)` — the same Pelops −20% / Aid-the-Feeble −10% / Ezio
+  35%-nullify modifiers `computeRawHit` applies to wave/mob hits. (Deliberately NOT full `computeRawHit`: the
+  boss's flat-damage model — atk × Decrease-ATK × DEF-mit — doesn't fit the coeff×stat shape, and full routing
+  would wrongly add boss crit; only the verified-bypassed piece, the incoming modifiers, is applied.)
+  CONFIRMATION (Model-appropriate): the boss's hit now CALLS `incomingDamage` and the reduction is APPLIED to
+  world state before the next turn (fired-and-applied, deterministic) — that is the proof the mechanic is right,
+  NOT any win rate. SIMULATOR OBSERVATION (separate lens, downstream): stage-16 volume 41.3%→42.3% over 300
+  seeds; the change flips ONLY boss-phase runs (boss losses 60→57, wave-2 116→116 unchanged) — used to LOCATE
+  the residual, never to validate the fix. Conclusion: the mitigation bypass was real but MINOR; the boss deaths
+  and the dominant wave-2 wall are OTHER mechanics. Model ladder 14/14 green; sim-qa green (no re-bless).
+  ⚠ NOTE (do not conflate): win-rate % is a SIMULATOR/volume metric (vs reality), NOT a Model output. The Model
+  is not a predictor — it verifies per-turn that the right skill is called+fired and its effects land before the
+  next turn. Never validate a Model/mechanic fix by a win-rate movement.
+  Follow-up: one Simulator mutant went stale (`def-mitigation-noop`, source drifted) — repair to keep teeth sharp.
+- **P1b — bring the boss under the Model (assertions + teeth). ✅ DONE 2026-07-26.** New rung `tools/model-boss.mjs`
+  (in the ladder + in `model-mutants`' suite) asserts Hellrazor's turn-by-turn called→fired→applied sequence —
+  Inhale arms the bar + drains his TM · team damage drains the bar · Scorch fires (AoE+[Stun]) if the bar is up
+  and is interrupted if cleared · Wall of Fire → 2×[Poison]+[Weaken] · Swipe → [Decrease Attack] · P1a mitigation
+  lands (direct + via the strike path) · on-hit reactions fire on the boss's hits. `model-mutants` extended to
+  `dragon.js` with 7 boss mutants, all killed by model-boss → **kill rate 100% (39/39); ladder 15/15 green.**
+  The boss's unverified behaviour is CATALOGUED (model-boss `catalog[]`), not comment-only.
+  ✅ **RESOLVED (Mike verified in-game 2026-07-26):** on an INTERRUPTED-Scorch turn (team cleared the bar) the
+  turn is WASTED — Hellrazor does NOT fall back on a normal skill; his TM resets and the team gets a fresh
+  window. The old fall-through-to-Wall-of-Fire was a BUG (over-credited the boss a free hit) — now fixed in
+  `dragon.js`, ASSERTED in model-boss (18/18), and TEETHED (mutant "interrupted turn not wasted", 40/40 killed).
+  NOTE: this fix left the stage-16 SIMULATOR volume unchanged (42.3%) — because in these runs the team rarely
+  CLEARS the 20%-MaxHP bar, so Scorch fires rather than being interrupted, and the wasted-turn branch is seldom
+  hit. Whether the team should be clearing the bar (and whether bar-drain is fully credited) is a downstream
+  thread for the wave-2/boss investigation, NOT this fix.
+- **P2 — anchor correctness to the game.** Pull `sim-selftest` into the ladder as blocking; add teeth on the
+  data layer; assert the real captured outcome. → TODO.
+- **P3 — de-Dragon the harness.** `buildDragonBattle`→`buildBattle(dungeon)` adapter; registry-based recipe keys;
+  move the Bambus sponge into data. → TODO.
+- **P4 — finish the backlog through the reconciled system.** Re-wire the ~half that need existing ops (recovers
+  the lost stage-17 coverage); build the genuinely-missing primitives (damage-based self-heal, repeat-if extra
+  hit, heal-crit, random-target) golden-safety first. → TODO.
+
+## Discipline (unchanged, load-bearing)
+We NEVER tune a magnitude to fit reality. A sim≠reality gap is a MISSING/WRONG mechanic to implement, never a
+dial. Verify skill data from the live DB. Golden/snapshot must stay byte-identical across a behavior-preserving
+refactor (verify leaves first, then rebaseline; confirm each red is the intended change).

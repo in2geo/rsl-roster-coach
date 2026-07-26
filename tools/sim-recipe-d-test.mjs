@@ -2,7 +2,7 @@
 // EXTEND_EFFECT. These were verified once in throwaway inline runs; this commits them as a durable rung so
 // the teeth check (model-mutants) can see them and they cannot silently break. No DB. Deterministic.
 // Run: node tools/sim-recipe-d-test.mjs
-import { makeCombatant, makeState, setChanceMode, chooseAllyTarget, chooseSingleTarget, dealDamage, simulate, actEnemyMob } from '../lib/sim/engine.js';
+import { makeCombatant, makeState, setChanceMode, chooseAllyTarget, chooseSingleTarget, dealDamage, simulate, actEnemyMob, defMitigation } from '../lib/sim/engine.js';
 import { applyRecipe, fireTriggers, incomingDamage, passiveImmunities, installRecipeRun, tickPassiveCooldowns } from '../lib/sim/interpreter.js';
 import { RECIPES } from '../lib/sim/recipes.js';
 
@@ -148,9 +148,11 @@ function pelopsOnAttackedRate(debuffType, pelopsUnderDecrDef, n = 4000) {
     t.debuffs.push({ type: targetDebuff, turnsLeft: 2 });   // 2 debuff-turns either way → scaler ×1.2 for both
     return applyRecipe(makeState({ allies: [pel], enemies: [t], seed: null }), pel, RECIPES['PELOPS-A2'])[0].raw_damage;
   };
-  // base 0.4×100k=40,000 ×scaler1.2=48,000. Weaken: defMit 1500/4500 → 16,000. HP Burn: DEF halved → defMit 1500/3000=0.5 → 24,000.
+  // base 0.4×100k=40,000 ×scaler1.2=48,000. Weaken (neutral): effDef 3000. HP Burn: 50% DEF ignored → effDef 1500.
+  // Expected mitigation computed from the verified defMitigation() (Pelops = default L60), never a hardcoded constant.
   const ctrl = pelA2('Weaken'), burn = pelA2('HP Burn');
-  check('Pelops A2: ignore-50%-DEF only vs [HP Burn] (16,000 → 24,000, same debuff-turns)', ctrl === 16000 && burn === 24000, `ctrl=${ctrl} burn=${burn}`); }
+  const expCtrl = Math.round(48000 * defMitigation(3000, 60)), expBurn = Math.round(48000 * defMitigation(1500, 60));
+  check(`Pelops A2: ignore-50%-DEF only vs [HP Burn] (${expCtrl} → ${expBurn}, same debuff-turns)`, ctrl === expCtrl && burn === expBurn, `ctrl=${ctrl} burn=${burn}`); }
 
 // ── Bambus "Sleeping Sage": self-[Sleep], wake-without-skip, dump, sponge ──
 { // A1 places [Sleep] on self
@@ -209,7 +211,10 @@ function pelopsOnAttackedRate(debuffType, pelopsUnderDecrDef, n = 4000) {
     return applyRecipe(makeState({ allies: [t], enemies: [a], seed: null }), a, RECIPES['FACELESS-A1'])[0].raw_damage;   // 3×ATK
   };
   const normal = hit(false), enf = hit(true);
-  check('Enfeeble on attacker → weak hit ×0.70 (mobs hit 30% softer)', normal > 0 && enf === Math.round(normal * 0.70), `normal=${normal} enfeebled=${enf}`);
+  // ×0.70 is applied to the RAW product then rounded once; `normal` is already rounded, so round(normal×0.70)
+  // can differ from `enf` by one unit. Pin the 0.70 factor with a ±1 rounding tolerance (a real regression to
+  // 0.65/0.75 would miss by ~130, far outside ±1).
+  check('Enfeeble on attacker → weak hit ×0.70 (mobs hit 30% softer)', normal > 0 && Math.abs(enf - normal * 0.70) <= 1, `normal=${normal} enfeebled=${enf}`);
 }
 
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);

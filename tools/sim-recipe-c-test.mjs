@@ -2,7 +2,7 @@
 //
 // Two things per mechanic: the recipe PLACES the right value, AND the engine CONSUMER fires (a shield
 // absorbs, a taunt pulls the hit, ally-protection redistributes). Deterministic. Run: node tools/sim-recipe-c-test.mjs
-import { makeCombatant, makeState, dealDamage, chooseAllyTarget } from '../lib/sim/engine.js';
+import { makeCombatant, makeState, dealDamage, chooseAllyTarget, defMitigation } from '../lib/sim/engine.js';
 import { applyRecipe } from '../lib/sim/interpreter.js';
 import { RECIPES } from '../lib/sim/recipes.js';
 
@@ -96,9 +96,11 @@ console.log('\n=== II-C state manipulation — code produces expected results? =
   pel.hp = 50000;   // damaged, so the heal is visible (not capped at MAX)
   const t = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e9, def: 1000, affinity: 'Void' });
   const r = applyRecipe(makeState({ allies: [pel], enemies: [t], seed: null }), pel, RECIPES['PELOPS-A1'])[0];
-  // Pelops A1 = 0.25×100,000=25,000 ×defMit(1000)=0.6 → 15,000 dealt; lifesteal 30% → +4,500
+  // Pelops A1 = 0.25×100,000 × defMitigation(1000,60) → dealt; lifesteal heals 30% of the (unrounded) damage.
+  // Mitigation computed from the verified formula; heal pinned to 0.30×dealt within a rounding unit.
+  const expDealt = Math.round(0.25 * 100000 * defMitigation(1000, 60));
   const healed = pel.hp - 50000;
-  check('LIFESTEAL: recipe-path attacker heals 30% of damage dealt (0.30×15,000 = 4,500)', r.hp_damage === 15000 && healed === 4500, `dealt=${r.hp_damage} healed=${healed}`);
+  check(`LIFESTEAL: recipe-path attacker heals 30% of damage dealt (0.30×${expDealt})`, r.hp_damage === expDealt && Math.abs(healed - 0.30 * r.hp_damage) < 1, `dealt=${r.hp_damage} healed=${healed.toFixed(1)}`);
 }
 
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);

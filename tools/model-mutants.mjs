@@ -18,12 +18,15 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const INTERP = path.join(__dirname, '..', 'lib', 'sim', 'interpreter.js');
 const ENGINE = path.join(__dirname, '..', 'lib', 'sim', 'engine.js');
-// The Model's core spans BOTH the recipe interpreter AND the engine mechanics it calls (damage math, the
-// buff→stat consumer). A mutant names its file; default is the interpreter. Both are snapshot + restored.
-const FILE = (m) => (m.file === 'engine' ? ENGINE : INTERP);
+const DRAGON = path.join(__dirname, '..', 'lib', 'sim', 'dragon.js');
+// The Model's core spans the recipe interpreter, the engine mechanics it calls (damage math, the buff→stat
+// consumer), AND the scripted boss (dragon.js — now under the Model via model-boss.mjs). A mutant names its
+// file; default is the interpreter. All three are snapshot + restored.
+const FILE = (m) => (m.file === 'engine' ? ENGINE : m.file === 'dragon' ? DRAGON : INTERP);
 
-// The Model's no-DB toy-battle rungs = the suite under test. A mutant is KILLED if ANY goes red.
-const RUNGS = ['sim-recipe-test.mjs', 'sim-recipe-b-test.mjs', 'sim-recipe-c-test.mjs', 'sim-recipe-d-test.mjs', 'model-invariants.mjs', 'model-sensitivity.mjs'];
+// The Model's no-DB toy-battle rungs = the suite under test. A mutant is KILLED if ANY goes red. model-boss.mjs
+// is the boss-sequence rung — the killer for the dragon.js mutants below.
+const RUNGS = ['sim-recipe-test.mjs', 'sim-recipe-b-test.mjs', 'sim-recipe-c-test.mjs', 'sim-recipe-d-test.mjs', 'model-invariants.mjs', 'model-sensitivity.mjs', 'model-boss.mjs'];
 
 // expectKill:true — a Model rung MUST catch this; surviving = a SUITE HOLE (blocks).
 // expectKill:false — a PROBE; surviving is a reported COVERAGE GAP (a Model mechanic no rung pins yet).
@@ -54,13 +57,13 @@ const MUTANTS = [
     repl: '(a.hp / a.maxHp >= b.hp / b.maxHp ? a : b))] : [];' },
 
   // ── formerly coverage gaps — now pinned by sim-recipe-d-test / the exact-damage assertion ──
-  { name: 'incoming-damage modifiers neutralised (Aid the Feeble / Pelops -20% / nullify)', expectKill: true,
+  { name: 'incoming-damage modifiers neutralised (Aid the Feeble / Pelops -20% / nullify)', expectKill: true, file: 'engine',
     find: 'factor *= mod.factor;', repl: 'factor *= 1;' },
   { name: 'EXTEND_EFFECT no-op (buff durations not extended)', expectKill: true,
     find: 'for (const b of t.buffs) { b.turnsLeft += turns; n++; }',
     repl: 'for (const b of t.buffs) { b.turnsLeft += 0; n++; }' },
-  { name: 'crit removed from DEAL_DAMAGE (exact-damage math)', expectKill: true,
-    find: 'const critM = fl.crit ? critMult(state, actor.critRate, actor.critDmg) : 1;',
+  { name: 'crit removed from DEAL_DAMAGE (exact-damage math)', expectKill: true, file: 'engine',
+    find: 'const critM = fl.crit ? critMult(state, effectiveCritRate(actor), actor.critDmg) : 1;',
     repl: 'const critM = fl.crit ? 1 : 1;' },
   { name: 'heal uncapped — HP can exceed MAX (only the invariants rung sees this)', expectKill: true,
     find: 'const before = t.hp; t.hp = Math.min(t.maxHp, t.hp + amt);',
@@ -86,11 +89,11 @@ const MUTANTS = [
     find: 'const reflectBuffDmg = reflectPct > 0 ? Math.round(reflectPct * amount) : 0;',
     repl: 'const reflectBuffDmg = reflectPct > 0 ? Math.round(0 * reflectPct * amount) : 0;' },
   // ── Pelops A2 DYNAMIC SCALER (interpreter.js dynamicScaleFactor) — +10%/debuff-turn on self & target ──
-  { name: 'dynamic scaler neutralised (Pelops A2 +10%/debuff-turn ignored)', expectKill: true,
+  { name: 'dynamic scaler neutralised (Pelops A2 +10%/debuff-turn ignored)', expectKill: true, file: 'engine',
     find: 'return 1 + Math.min(ds.capBonus ?? Infinity, (ds.pctPer ?? 0) * count);',
     repl: 'return 1 + Math.min(ds.capBonus ?? Infinity, (ds.pctPer ?? 0) * count * 0);' },
-  // ── Arbalester A3 per-target-debuff ADDITIVE term (interpreter.js formulaBase) — +1×ATK per debuff count ──
-  { name: 'per-target-debuff term dropped (Arbalester A3 "(2+Total Debuff)" ignored)', expectKill: true,
+  // ── Arbalester A3 per-target-debuff ADDITIVE term (engine.js formulaBase) — +1×ATK per debuff count ──
+  { name: 'per-target-debuff term dropped (Arbalester A3 "(2+Total Debuff)" ignored)', expectKill: true, file: 'engine',
     find: 'if (F.perTargetDebuff) base += F.perTargetDebuff.coeff * (target?.debuffs?.length ?? 0)',
     repl: 'if (F.perTargetDebuff) base += 0 * F.perTargetDebuff.coeff * (target?.debuffs?.length ?? 0)' },
   // ── Pelops passive: caster-conditional chance (interpreter.js effectiveChance) — HP Burn/Petri halve under [Decrease DEF] ──
@@ -101,8 +104,8 @@ const MUTANTS = [
   { name: 'target-conditional unresistable ignored (Pelops A1 Decrease ATK still resisted under [HP Burn])', expectKill: true,
     find: '(ef.unresistableIfTargetUnder && (t.debuffs ?? []).some((d) => d.type === ef.unresistableIfTargetUnder))',
     repl: '(false && (t.debuffs ?? []).some((d) => d.type === ef.unresistableIfTargetUnder))' },
-  // ── Pelops A2: target-conditional ignore-DEF (interpreter.js dealOneHit) — ignore 50% DEF if target [HP Burn] ──
-  { name: 'target-conditional ignore-DEF ignored (Pelops A2 does not ignore DEF under [HP Burn])', expectKill: true,
+  // ── Pelops A2: target-conditional ignore-DEF (engine.js computeRawHit) — ignore 50% DEF if target [HP Burn] ──
+  { name: 'target-conditional ignore-DEF ignored (Pelops A2 does not ignore DEF under [HP Burn])', expectKill: true, file: 'engine',
     find: 'if (F.ignoreDefIfTargetUnder && (t.debuffs ?? []).some((d) => d.type === F.ignoreDefIfTargetUnder.debuff))',
     repl: 'if (false && (t.debuffs ?? []).some((d) => d.type === F.ignoreDefIfTargetUnder.debuff))' },
   // ── Lifesteal CONSUMER on the recipe path (interpreter.js dealOneHit) — heal % of damage dealt ──
@@ -125,10 +128,10 @@ const MUTANTS = [
   { name: 'AI targeting reverts to lowest current-HP% (ignores the max-HP glass-cannon rule)', expectKill: true, file: 'engine',
     find: 'if ((a.maxHp ?? 0) !== (b.maxHp ?? 0)) return (a.maxHp ?? 0) < (b.maxHp ?? 0) ? a : b;',
     repl: 'if (false && (a.maxHp ?? 0) !== (b.maxHp ?? 0)) return (a.maxHp ?? 0) < (b.maxHp ?? 0) ? a : b;' },
-  // ── Enfeeble CONSUMER (interpreter dealOneHit) — an Enfeebled attacker can only land weak hits (×0.70) ──
-  { name: 'Enfeeble not consumed (Enfeebled attacker still hits full, not weak)', expectKill: true,
-    find: "const affM  = (actor.debuffs ?? []).some((d) => d.type === 'Enfeeble') ? 0.70 :",
-    repl: "const affM  = false ? 0.70 :" },
+  // ── Enfeeble CONSUMER (engine.js computeRawHit) — an Enfeebled attacker can only land weak hits (×0.70) ──
+  { name: 'Enfeeble not consumed (Enfeebled attacker still hits full, not weak)', expectKill: true, file: 'engine',
+    find: "const affM = (actor.debuffs ?? []).some((d) => d.type === 'Enfeeble') ? WEAK_HIT_ENFEEBLE :",
+    repl: "const affM = (false) ? WEAK_HIT_ENFEEBLE :" },
   // ── Round-based Perfect Veil TIMING (engine.js round boundary) — round_start fires ONCE per round, not per
   // turn; firing every turn re-veils a fast Ezio forever (the old 100%-uptime bug), killing the down>0 check ──
   { name: 'round boundary fires every turn (Perfect Veil never lapses — the old 100%-uptime bug)', expectKill: true, file: 'engine',
@@ -139,11 +142,33 @@ const MUTANTS = [
   { name: 'passive-trigger cooldown ignored (Second Wind [Shield] re-procs every hit)', expectKill: true,
     find: 'if ((owner.passiveCd[key] ?? 0) > 0) {',
     repl: 'if (false) {' },
+
+  // ══ BOSS (dragon.js) — Hellrazor's turn-by-turn sequence, now under the Model via model-boss.mjs (P1b) ══
+  { name: 'Inhale does not arm the purple bar', expectKill: true, file: 'dragon',
+    find: 'state.purpleBarLeft = purpleBarHp ?? 0;', repl: 'state.purpleBarLeft = 0;' },
+  { name: 'Inhale does not drain the boss Turn Meter', expectKill: true, file: 'dragon',
+    find: 'boss.turnMeter = 0;   // Inhale drains the boss Turn Meter', repl: 'boss.turnMeter = 100;   // Inhale drains the boss Turn Meter' },
+  { name: 'team damage does not drain the purple bar (onDamageToBoss no-op)', expectKill: true, file: 'dragon',
+    find: 'if (state.purpleBarLeft > 0) state.purpleBarLeft = Math.max(0, state.purpleBarLeft - amount);',
+    repl: 'if (state.purpleBarLeft > 0) state.purpleBarLeft = state.purpleBarLeft;' },
+  { name: 'Scorch never fires when the bar is up (bar>0 gate broken)', expectKill: true, file: 'dragon',
+    find: '} else if (state.purpleBarLeft > 0) {', repl: '} else if (false) {' },
+  { name: 'Wall of Fire places no [Poison]', expectKill: true, file: 'dragon',
+    find: "for (let i = 0; i < 2; i++) applyDebuff(a, { type: 'Poison', pct: 0.05, turns: 3, stacking: true, maxStacks: 10 });",
+    repl: "for (let i = 0; i < 0; i++) applyDebuff(a, { type: 'Poison', pct: 0.05, turns: 3, stacking: true, maxStacks: 10 });" },
+  { name: 'Swipe places no [Decrease Attack]', expectKill: true, file: 'dragon',
+    find: "applyDebuff(a, { type: 'Decrease Attack', value: 50, turns: 2 });",
+    repl: "applyDebuff(a, { type: 'NoSuchDebuff', value: 50, turns: 2 });" },
+  { name: 'boss hit bypasses the incoming-mitigation stack (P1a reverted)', expectKill: true, file: 'dragon',
+    find: 'incomingDamage(state, a, bossHit(boss, a))', repl: 'bossHit(boss, a)' },
+  { name: 'interrupted-Scorch turn is NOT wasted (boss falls through to a normal hit — the old bug)', expectKill: true, file: 'dragon',
+    find: "boss.turnMeter = 0; state.log.push({ turn: state.turn, phase: 'boss', event: 'scorch interrupted — turn wasted' }); return;",
+    repl: "boss.turnMeter = 0; state.log.push({ turn: state.turn, phase: 'boss', event: 'scorch interrupted — turn wasted' });" },
 ];
 
-const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8') };
+const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8'), [DRAGON]: fs.readFileSync(DRAGON, 'utf8') };
 const ORIGINAL = SNAP[INTERP];   // back-compat alias (baseline stale-find checks below still read the interpreter)
-const restore = () => { for (const f of [INTERP, ENGINE]) { try { if (fs.readFileSync(f, 'utf8') !== SNAP[f]) fs.writeFileSync(f, SNAP[f]); } catch { fs.writeFileSync(f, SNAP[f]); } } };
+const restore = () => { for (const f of [INTERP, ENGINE, DRAGON]) { try { if (fs.readFileSync(f, 'utf8') !== SNAP[f]) fs.writeFileSync(f, SNAP[f]); } catch { fs.writeFileSync(f, SNAP[f]); } } };
 process.on('exit', restore);
 process.on('SIGINT', () => { restore(); process.exit(130); });
 process.on('SIGTERM', () => { restore(); process.exit(143); });

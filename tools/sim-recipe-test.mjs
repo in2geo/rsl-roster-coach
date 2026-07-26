@@ -4,12 +4,20 @@
 // recipe from DATA, asserting the tricky behaviours resolve. Deterministic (seed=null) so numbers are
 // stable and checkable. Attackers are affinity Void (neutral) to keep magnitudes clean — affinity itself
 // is exercised in the full fight (Step 4). Run: node tools/sim-recipe-test.mjs
-import { makeCombatant, makeState } from '../lib/sim/engine.js';
+import { makeCombatant, makeState, defMitigation } from '../lib/sim/engine.js';
 import { applyRecipe, recipeFor } from '../lib/sim/interpreter.js';
 import { RECIPES } from '../lib/sim/recipes.js';
 
 let pass = 0, fail = 0;
 const check = (name, cond, detail = '') => { (cond ? pass++ : fail++); console.log(`  ${cond ? 'PASS' : 'FAIL'}  ${name}${detail ? ' — ' + detail : ''}`); };
+
+// EXPECTED-DAMAGE helper. These toys pin the interpreter's COMPOSITION (coeff × effÂTK × crit × DEF-mit,
+// buffs/debuffs folding in, dynamic scalers, non-stacking) — NOT the DEF-mitigation MAGNITUDE, which the
+// selftest anchors independently against Raid's source formula. So expected mitigation is COMPUTED from the
+// same verified defMitigation() (attackers here are the makeCombatant default level 60), never hardcoded —
+// that stale linear 1500/(1500+def) constant is exactly what drifted when the real curve landed.
+const DM = (effDef) => defMitigation(effDef, 60);
+const EXP = (coeff, effAtk, crit, effDef) => Math.round(coeff * effAtk * crit * DM(effDef));
 
 // build a fresh {attacker, enemies, state}. `enemyDebuffs` seeds debuffs on every enemy.
 function scene({ atk = 0, hp = 0, def = 0, nEnemies = 3, enemyDef = 1000, enemyDebuffs = 0 } = {}) {
@@ -88,9 +96,9 @@ console.log('\n=== Recipe interpreter — isolated damage tests ===\n');
   const atk = makeCombatant({ name: 'Hero', side: 'ally', atk: 3000, affinity: 'Void', critRate: 50, critDmg: 100 });
   const t = makeCombatant({ name: 'Mob', side: 'enemy', maxHp: 1e9, def: 1000, affinity: 'Void' });
   const st = makeState({ allies: [atk], enemies: [t], seed: null });
-  const r = applyRecipe(st, atk, RECIPES['BAMBUS-A1']);   // 3.8×ATK; crit EV = 1 + 0.50×1.00 = 1.5; DEF-mit = 1500/2500 = 0.6
-  // 3.8 × 3000 × 1.5 × 0.6 = 10,260
-  check('exact damage incl crit — 3.8×3000 × crit1.5 × defMit0.6 = 10,260', r[0]?.raw_damage === 10260, `raw ${r[0]?.raw_damage}`);
+  const r = applyRecipe(st, atk, RECIPES['BAMBUS-A1']);   // 3.8×ATK; crit EV = 1 + 0.50×1.00 = 1.5; DEF-mit = defMitigation(1000,60)
+  const exp8 = EXP(3.8, 3000, 1.5, 1000);
+  check(`exact damage incl crit — 3.8×3000 × crit1.5 × defMit(1000) = ${exp8}`, r[0]?.raw_damage === exp8, `raw ${r[0]?.raw_damage}`);
 }
 
 // 9 — BUFF→STAT CONSUMER: [Increase/Decrease ATK/DEF] fold into the damage math (exact numbers).
@@ -105,18 +113,20 @@ console.log('\n=== Recipe interpreter — isolated damage tests ===\n');
     t.buffs.push(...tgtBuffs); t.debuffs.push(...tgtDebuffs);
     return applyRecipe(makeState({ allies: [a], enemies: [t], seed: null }), a, RECIPES['BAMBUS-A1'])[0];
   };
+  // Bambus A1 = 3.8×ATK, crit/affinity/variance off. effDef reads the target's [Increase DEF]; effATK reads
+  // the attacker's ATK buffs/debuffs. Non-stacking: Raid refreshes a buff, never stacks its magnitude.
   const base = statHit({});
-  check('stat consumer — baseline 3.8×3000 × defMit0.6 = 6,840', base.raw_damage === 6840, `raw ${base.raw_damage}`);
-  // [Increase DEF] 60 on TARGET → effDef 1600, defMit 1500/3100 → 3.8×3000×0.48387 = 5,516
-  check('[Increase DEF] on target lowers landed damage (6,840 → 5,516)', statHit({ tgtBuffs: [B('Increase DEF', 60)] }).raw_damage === 5516);
-  // [Decrease Attack] 50 on ATTACKER → effATK 1500 → 3.8×1500×0.6 = 3,420
-  check('[Decrease Attack] on attacker halves its damage (6,840 → 3,420)', statHit({ atkDebuffs: [B('Decrease Attack', 50)] }).raw_damage === 3420);
-  // [Increase ATK] 50 on ATTACKER → effATK 4500 → 3.8×4500×0.6 = 10,260
-  check('[Increase ATK] on attacker raises its damage (6,840 → 10,260)', statHit({ atkBuffs: [B('Increase ATK', 50)] }).raw_damage === 10260);
-  // non-stacking: two [Increase DEF] 60 == one (Raid refreshes, never stacks magnitude)
-  check('two [Increase DEF] do NOT stack — same as one (5,516)', statHit({ tgtBuffs: [B('Increase DEF', 60), B('Increase DEF', 60)] }).raw_damage === 5516);
-  // net of opposing mods on one unit: (1+0.5)(1−0.5)=0.75 → effATK 2250 → 3.8×2250×0.6 = 5,130
-  check('[Increase ATK]+[Decrease Attack] net to ×0.75 (5,130)', statHit({ atkBuffs: [B('Increase ATK', 50)], atkDebuffs: [B('Decrease Attack', 50)] }).raw_damage === 5130);
+  check(`stat consumer — baseline 3.8×3000 × defMit(1000) = ${EXP(3.8, 3000, 1, 1000)}`, base.raw_damage === EXP(3.8, 3000, 1, 1000), `raw ${base.raw_damage}`);
+  // [Increase DEF] 60 on TARGET → effDef 1600
+  check('[Increase DEF] on target lowers landed damage', statHit({ tgtBuffs: [B('Increase DEF', 60)] }).raw_damage === EXP(3.8, 3000, 1, 1600));
+  // [Decrease Attack] 50 on ATTACKER → effATK 1500
+  check('[Decrease Attack] on attacker halves its damage', statHit({ atkDebuffs: [B('Decrease Attack', 50)] }).raw_damage === EXP(3.8, 1500, 1, 1000));
+  // [Increase ATK] 50 on ATTACKER → effATK 4500
+  check('[Increase ATK] on attacker raises its damage', statHit({ atkBuffs: [B('Increase ATK', 50)] }).raw_damage === EXP(3.8, 4500, 1, 1000));
+  // non-stacking: two [Increase DEF] 60 == one
+  check('two [Increase DEF] do NOT stack — same as one', statHit({ tgtBuffs: [B('Increase DEF', 60), B('Increase DEF', 60)] }).raw_damage === EXP(3.8, 3000, 1, 1600));
+  // net of opposing mods on one unit: (1+0.5)(1−0.5)=0.75 → effATK 2250
+  check('[Increase ATK]+[Decrease Attack] net to ×0.75', statHit({ atkBuffs: [B('Increase ATK', 50)], atkDebuffs: [B('Decrease Attack', 50)] }).raw_damage === EXP(3.8, 2250, 1, 1000));
 }
 
 // 10 — THE CROSS-EFFECT: a DEF-scaling attacker (Vergis, offense uses effective DEF) under [Increase DEF]
@@ -144,13 +154,15 @@ console.log('\n=== Recipe interpreter — isolated damage tests ===\n');
     t.debuffs.push(...tgtDebuffs);
     return applyRecipe(makeState({ allies: [p], enemies: [t], seed: null }), p, RECIPES['PELOPS-A2'])[0];
   };
-  check('Pelops A2 — no debuffs → base 0.4×100k × defMit0.6 = 24,000', a2().raw_damage === 24000, `raw ${a2().raw_damage}`);
-  // target 2 debuffs × 2 turns = 4 debuff-turns → +40% → ×1.4 → 33,600
-  check('Pelops A2 — 4 debuff-turns on target → ×1.4 = 33,600', a2({ tgtDebuffs: [D(2), D(2)] }).raw_damage === 33600, `raw ${a2({ tgtDebuffs: [D(2), D(2)] }).raw_damage}`);
-  // self 3 turns + target 4 turns = 7 debuff-turns → +70% → ×1.7 → 40,800 (self AND target both count)
-  check('Pelops A2 — self+target both count (7 turns → ×1.7 = 40,800)', a2({ selfDebuffs: [D(3)], tgtDebuffs: [D(2), D(2)] }).raw_damage === 40800);
-  // 25 debuff-turns → bonus +250% CAPPED to +200% → ×3.0 → 72,000 (not ×3.5)
-  check('Pelops A2 — bonus caps at +200% (25 turns → ×3.0 = 72,000)', a2({ tgtDebuffs: [D(25)] }).raw_damage === 72000, `raw ${a2({ tgtDebuffs: [D(25)] }).raw_damage}`);
+  // base = 0.4×HP × defMit(1000); the dynamic scaler (+10% per debuff-turn on self & target, capped +200%)
+  // is just another multiplier folded into raw before rounding — pass it in the crit slot of EXP.
+  check(`Pelops A2 — no debuffs → base 0.4×100k × defMit(1000) = ${EXP(0.4, 100000, 1, 1000)}`, a2().raw_damage === EXP(0.4, 100000, 1, 1000), `raw ${a2().raw_damage}`);
+  // target 2 debuffs × 2 turns = 4 debuff-turns → +40% → ×1.4
+  check('Pelops A2 — 4 debuff-turns on target → ×1.4', a2({ tgtDebuffs: [D(2), D(2)] }).raw_damage === EXP(0.4, 100000, 1.4, 1000), `raw ${a2({ tgtDebuffs: [D(2), D(2)] }).raw_damage}`);
+  // self 3 turns + target 4 turns = 7 debuff-turns → +70% → ×1.7 (self AND target both count)
+  check('Pelops A2 — self+target both count (7 turns → ×1.7)', a2({ selfDebuffs: [D(3)], tgtDebuffs: [D(2), D(2)] }).raw_damage === EXP(0.4, 100000, 1.7, 1000));
+  // 25 debuff-turns → bonus +250% CAPPED to +200% → ×3.0 (not ×3.5)
+  check('Pelops A2 — bonus caps at +200% (25 turns → ×3.0)', a2({ tgtDebuffs: [D(25)] }).raw_damage === EXP(0.4, 100000, 3.0, 1000), `raw ${a2({ tgtDebuffs: [D(25)] }).raw_damage}`);
 }
 
 // 12 — ARBALESTER A3 per-target-debuff ADDITIVE term: "(2 + Total Debuff) × ATK" = +1×ATK per debuff COUNT
@@ -158,9 +170,9 @@ console.log('\n=== Recipe interpreter — isolated damage tests ===\n');
 //   0 debuffs → 2×2000×0.6 = 2,400 ; 3 debuffs → (2+3)×2000×0.6 = 6,000. (count, not turn-weighted.)
 {
   const hit = (nDebuffs) => { const a = scene({ atk: 2000, enemyDebuffs: nDebuffs }); return run(a.state, a.attacker, 'Arbalester', 'A3')[0]; };
-  check('Arbalester A3 — 0 debuffs → 2×ATK = 2,400', hit(0).raw_damage === 2400, `raw ${hit(0).raw_damage}`);
-  check('Arbalester A3 — 3 debuffs → (2+3)×ATK = 6,000', hit(3).raw_damage === 6000, `raw ${hit(3).raw_damage}`);
-  check('Arbalester A3 — +1×ATK per debuff (0→3 adds exactly 3×ATK×defMit = 3,600)', hit(3).raw_damage - hit(0).raw_damage === 3600);
+  check(`Arbalester A3 — 0 debuffs → 2×ATK = ${EXP(2, 2000, 1, 1000)}`, hit(0).raw_damage === EXP(2, 2000, 1, 1000), `raw ${hit(0).raw_damage}`);
+  check(`Arbalester A3 — 3 debuffs → (2+3)×ATK = ${EXP(5, 2000, 1, 1000)}`, hit(3).raw_damage === EXP(5, 2000, 1, 1000), `raw ${hit(3).raw_damage}`);
+  check('Arbalester A3 — +1×ATK per debuff (0→3 adds exactly 3×ATK×defMit)', hit(3).raw_damage - hit(0).raw_damage === EXP(5, 2000, 1, 1000) - EXP(2, 2000, 1, 1000));
 }
 
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);

@@ -5,7 +5,7 @@
 // RECIPIENT gets a buff, Poison stacks. Same spirit as Step 4 — prove the CODE first; reality later.
 // Run: node tools/sim-recipe-b-test.mjs
 
-import { makeCombatant, makeState } from '../lib/sim/engine.js';
+import { makeCombatant, makeState, landChance } from '../lib/sim/engine.js';
 import { applyRecipe } from '../lib/sim/interpreter.js';
 import { RECIPES } from '../lib/sim/recipes.js';
 
@@ -39,10 +39,12 @@ console.log('\n=== II-B placement — does the code produce the EXPECTED behavio
   const r = landRate('BAMBUS-A1', { acc: 200, enemyRes: 0 });
   check('placement chance — 75% skill, no resist → ~0.75 land rate', near(r, 0.75), `measured ${r.toFixed(3)}`);
 }
-// 2 — ACC vs RES stage: same skill, acc 100 vs res 150 → landChance 0.5, so 0.75×0.5 = ~0.375
+// 2 — ACC vs RES stage: same skill (75% chance), acc 100 vs res 150. Expected = 0.75 × landChance(100,150),
+// computed from Raid's real two-branch resist curve (≈0.398) rather than the old linear 0.5.
 {
+  const exp2 = 0.75 * landChance(100, 150);
   const r = landRate('BAMBUS-A1', { acc: 100, enemyRes: 150 });
-  check('ACC/RES two-stage — 0.75 × landChance(0.5) → ~0.375', near(r, 0.375), `measured ${r.toFixed(3)} (expected 0.375)`);
+  check(`ACC/RES two-stage — 0.75 × landChance(100,150) → ~${exp2.toFixed(3)}`, near(r, exp2), `measured ${r.toFixed(3)} (expected ${exp2.toFixed(3)})`);
 }
 // 3 — immunity is a hard block → 0 regardless of chance/acc
 {

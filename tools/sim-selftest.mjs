@@ -13,7 +13,8 @@
 // Deterministic, instant, no I/O. Run: node tools/sim-selftest.mjs
 
 import { makeCombatant, makeState, simulate, dealDamage, chooseEnemyTarget, chooseAllyTarget, isUntargetable,
-         affinityFactor, landChance, defMitigation, effectiveDef, actEnemyMob, scaleStat, applyDebuff, CC_SKIPS_TURN } from '../lib/sim/engine.js';
+         affinityFactor, landChance, defMitigation, effectiveDef, actEnemyMob, scaleStat, applyDebuff, CC_SKIPS_TURN,
+         decreaseTurnMeter, fillTurnMeter, EXTRA_TURN_CAP, effectiveCritRate, effectiveSpeed } from '../lib/sim/engine.js';
 import { readSkillKit, classifySkill, canUseSkill, parseCoeff, parseMaxHpPct, classifyPassiveTrigger } from '../lib/sim/ai.js';
 
 let pass = 0, fail = 0; const failures = [];
@@ -151,11 +152,14 @@ const passiveContent = (enemies) => ({ phases: [{ name: 'boss', enemies, actEnem
   near('Void is neutral defending', affinityFactor('Magic', 'Void'), 1.0);
 }
 
-// ── 8. ACC vs RES ────────────────────────────────────────────────────────────
+// ── 8. ACC vs RES — Raid's REAL two-branch resist curve (source-verified table) ──────────────
 {
-  near('equal ACC and RES -> always lands', landChance(150, 150), 1);
-  near('RES 50 above ACC -> 50% land', landChance(100, 150), 0.5);
-  near('land chance floors at 5%', landChance(0, 500), 0.05);
+  near('equal ACC and RES → ~92.5% land', landChance(150, 150), 0.9254, 0.004);
+  near('ACC 25 over RES → ~96% land', landChance(175, 150), 0.9600, 0.004);
+  near('ACC 100 over RES → ~97% land', landChance(250, 150), 0.9698, 0.004);
+  near('RES 30 over ACC (branch point) → 70% land', landChance(100, 130), 0.7000, 0.004);
+  near('RES 100 over ACC → ~11.2% land', landChance(100, 200), 0.1121, 0.004);
+  near('land floors at ~3% (enormous RES)', landChance(0, 500), 0.0300, 0.004);
   eq('unknown inputs return null (caller must FLAG, not assume)', landChance(null, 100), null);
 }
 
@@ -189,6 +193,141 @@ const passiveContent = (enemies) => ({ phases: [{ name: 'boss', enemies, actEnem
   eq('cooldown parses from "4 Turns" (mixed-type column)', shield[0].cooldown, 4);
 }
 
+// ── 10b. CC PLACEMENT — mobs now PLACE Stun/Sleep; conditional CC is DEFERRED (stage-17 gap) ──
+{
+  // unconditional, chance-based (Crossbowman A3): parsed WITH its stated chance + duration
+  const cb = readSkillKit([{ slot: 'A3', skill_name: 'Blunted Arrow', damage_multiplier: '5.5',
+    skill_summary: 'Attacks 1 enemy. Has a 50% chance of placing a [Stun] debuff for 1 turn.' }]);
+  const stun = cb[0].debuffs.find(d => d.type === 'Stun');
+  ok('unconditional [Stun] is parsed', !!stun);
+  near('…with its stated 50% placement chance', stun?.chance ?? 0, 0.5);
+  eq('…and its 1-turn duration', stun?.turns, 1);
+
+  // conditional (Tayrel A2): the CC is DEFERRED (the sim can't evaluate "if under [Decrease ATK]"), but
+  // the UNCONDITIONAL debuff in the same skill still parses — over-applying CC would be worse than deferring
+  const ta2 = readSkillKit([{ slot: 'A2', skill_name: 'Singing Steel', damage_multiplier: '3.5',
+    skill_summary: 'Attacks all enemies. Has a 75% chance of placing a 60% [Decrease DEF] debuff for 2 turns. If the target is under a [Decrease ATK] debuff, it will place a [Sleep] debuff for 1 turn.' }]);
+  eq('conditional [Sleep] is DEFERRED (not placed)', ta2[0].debuffs.some(d => d.type === 'Sleep'), false);
+  eq('…but the unconditional [Decrease DEF] in the same skill still parses', ta2[0].debuffs.some(d => d.type === 'Decrease Defense'), true);
+
+  // END-TO-END: a mob-placed Stun makes the hero skip its turn (placement -> CC_SKIPS_TURN consumption).
+  // Stunner is faster (spd 150 > 100), acc 200 vs res 0 so the Stun always lands -> the hero is perpetually
+  // stunned and never lands its coeff-5 hit, so the Stunner takes zero damage.
+  const hero = champ({ name: 'Hero', spd: 100, res: 0, skills: [{ slot: 'A1', cooldown: 0, cdLeft: 0, hitsEnemies: true, coeff: 5 }] });
+  const stunner = dummyEnemy({ name: 'Stunner', maxHp: 1e9, atk: 500, spd: 150, acc: 200 });
+  stunner.skills = readSkillKit([{ slot: 'A1', skill_name: 'Bonk', damage_multiplier: '1', multiplier_type: 'ATK',
+    skill_summary: 'Attacks 1 enemy. Places a [Stun] debuff for 2 turns.' }]);
+  const st = makeState({ allies: [hero], enemies: [] });
+  simulate(st, { phases: [{ name: 'boss', enemies: [stunner], actEnemy(s, a) { actEnemyMob(s, a); } }] }, { turnCap: 5 });
+  eq('a mob-placed [Stun] makes the hero skip — Stunner takes no damage', stunner.hp, 1e9);
+}
+
+// ── 10c. TURN METER manipulation — decrease (enemy, ACC/RES-gated) + fill (own side) ─────────
+{
+  const tay = readSkillKit([{ slot: 'A3', skill_name: 'Preemptive Strike', damage_multiplier: '5.3', multiplier_type: 'DEF',
+    skill_summary: "Attacks 1 enemy. Decreases the target's Turn Meter by 50%." }]);
+  eq('Decrease Turn Meter parses the enemy TM cut', tay[0].turnMeterEnemy, 50);
+  eq('…and is NOT read as an ally fill', tay[0].turnMeterAlly, null);
+  const apo = readSkillKit([{ slot: 'A3', skill_name: 'Boon of Speed', damage_multiplier: null,
+    skill_summary: 'Places a 30% [Increase SPD] buff on all allies for 2 turns. Fills the Turn Meter of all allies by 15%.' }]);
+  eq('Fill Turn Meter parses the ally TM fill', apo[0].turnMeterAlly, 15);
+  eq('…targets all allies (not self)', apo[0].turnMeterAllySelf, false);
+
+  // helper clamps: decrease removes POINTS floored at 0; fill adds points capped at 100
+  const a = champ({ name: 'A' }); a.turnMeter = 30; decreaseTurnMeter(a, 50);
+  eq('decreaseTurnMeter floors at 0', a.turnMeter, 0);
+  const b = champ({ name: 'B' }); b.turnMeter = 90; fillTurnMeter(b, 15);
+  eq('fillTurnMeter caps at 100', b.turnMeter, 100);
+
+  // END-TO-END: a mob's attack decreases our champ's Turn Meter (mob ACC 200 vs champ RES 0 → lands)
+  const victim = champ({ name: 'Victim', res: 0, spd: 100 }); victim.turnMeter = 80;
+  const mob = dummyEnemy({ name: 'TMcut', maxHp: 1e9, atk: 300, spd: 1, acc: 200 });
+  mob.skills = readSkillKit([{ slot: 'A1', skill_name: 'Sap', damage_multiplier: '1', multiplier_type: 'ATK',
+    skill_summary: "Attacks 1 enemy. Decreases the target's Turn Meter by 50%." }]);
+  actEnemyMob(makeState({ allies: [victim], enemies: [mob] }), mob);
+  eq('a mob attack cuts the target Turn Meter (80 − 50)', victim.turnMeter, 30);
+}
+
+// ── 10d. EXTRA TURN — unconditional / on-kill; the actor acts again; chain is capped ──────────
+{
+  // parse: "if killed" → on-kill (NOT unconditional); plain "Grants an Extra Turn" → unconditional
+  const h1 = readSkillKit([{ slot: 'A1', skill_name: 'Relentless Strike', damage_multiplier: '1.9',
+    skill_summary: 'Attacks 1 enemy 2 times. Grants an Extra Turn if the target is killed.' }])[0];
+  eq('on-kill extra turn parses as conditional', [h1.extraTurn, h1.extraTurnOnKill].join(','), 'false,true');
+  const h3 = readSkillKit([{ slot: 'A3', skill_name: 'Burning Hatred', damage_multiplier: null,
+    skill_summary: 'Places a 50% [Increase ATK] buff on this Champion for 2 turns. Grants an Extra Turn.' }])[0];
+  eq('unconditional extra turn parses as unconditional', [h3.extraTurn, h3.extraTurnOnKill].join(','), 'true,false');
+
+  // END-TO-END unconditional: A2 (cd 2, grants extra turn) → the actor immediately takes a 2nd turn (A1)
+  const acts = [];
+  const combo = champ({ name: 'Combo', spd: 100, skills: [
+    { slot: 'A2', cooldown: 2, cdLeft: 0, hitsEnemies: true, coeff: 3, extraTurn: true },
+    { slot: 'A1', cooldown: 0, cdLeft: 0, hitsEnemies: true, coeff: 1 }] });
+  const st = makeState({ allies: [combo], enemies: [] });
+  st.onAction = (s, a, sk) => acts.push(`${a.name}:${sk.slot}`);
+  simulate(st, { phases: [{ name: 'boss', enemies: [dummyEnemy({ maxHp: 1e9, spd: 1 })], actEnemy() {} }] }, { turnCap: 2 });
+  eq('an unconditional Extra Turn makes the actor act TWICE back-to-back', acts.slice(0, 2).join(','), 'Combo:A2,Combo:A1');
+
+  // END-TO-END on-kill: killing the squishy grants the extra turn (Killer acts t1 AND t2)
+  const at = [];
+  const killer = champ({ name: 'Killer', spd: 100, atk: 1000, skills: [{ slot: 'A1', cooldown: 0, cdLeft: 0, hitsEnemies: true, coeff: 100, extraTurnOnKill: true }] });
+  const st2 = makeState({ allies: [killer], enemies: [] });
+  st2.onAction = (s, a) => { if (a.name === 'Killer') at.push(s.turn); };
+  simulate(st2, { phases: [{ name: 'boss', enemies: [dummyEnemy({ name: 'Squishy', maxHp: 100, def: 0, spd: 1 }), dummyEnemy({ name: 'Tank', maxHp: 1e12, def: 0, spd: 1 })], actEnemy() {} }] }, { turnCap: 3 });
+  eq('extraTurnOnKill grants an extra turn on a kill (Killer acts t1 then t2)', at.slice(0, 2).join(','), '1,2');
+
+  // CHAIN CAP: a no-cooldown unconditional granter cannot loop forever — the cap flag fires
+  const loopy = champ({ name: 'Loopy', spd: 100, skills: [{ slot: 'A1', cooldown: 0, cdLeft: 0, hitsEnemies: true, coeff: 1, extraTurn: true }] });
+  const r = simulate(makeState({ allies: [loopy], enemies: [] }),
+    { phases: [{ name: 'boss', enemies: [dummyEnemy({ maxHp: 1e15, def: 1e12, spd: 1 })], actEnemy() {} }] }, { turnCap: EXTRA_TURN_CAP + 5 });
+  ok('the extra-turn chain cap fires (no unbounded consecutive extra turns)', r.flags.some(f => /extra-turn chain capped/.test(f)));
+}
+
+// ── 10e. CONDITIONAL PLACEMENT — "if <cond>, place [Y]" (Tayrel Sleep/Stun) ───────────────────
+{
+  const ta2 = readSkillKit([{ slot: 'A2', skill_name: 'Singing Steel', damage_multiplier: '3.5',
+    skill_summary: 'Attacks all enemies. Has a 75% chance of placing a 60% [Decrease DEF] debuff for 2 turns. If the target is under a [Decrease ATK] debuff, it will place a [Sleep] debuff for 1 turn.' }])[0];
+  eq('conditional Sleep parses with its under-[Decrease Attack] condition',
+     JSON.stringify(ta2.conditionalDebuffs), JSON.stringify([{ type: 'Sleep', turns: 1, condition: { kind: 'under_debuff', debuff: 'Decrease Attack' } }]));
+  const ta3 = readSkillKit([{ slot: 'A3', skill_name: 'Preemptive Strike', damage_multiplier: '5.3', multiplier_type: 'DEF',
+    skill_summary: "Attacks 1 enemy. Decreases the target's Turn Meter by 50%. If the attack fully depletes the Turn Meter, it will place a [Stun] debuff for 2 turns." }])[0];
+  eq('conditional Stun parses with its tm-depleted condition', ta3.conditionalDebuffs?.[0]?.condition?.kind, 'tm_depleted');
+
+  // apply — a mob (acc 200 vs res 0 → lands) attacks our champ; the conditional lands only when the condition holds
+  const runMob = (summary, target) => {
+    const mob = dummyEnemy({ name: 'Mob', maxHp: 1e9, atk: 300, spd: 150, acc: 200 });
+    mob.skills = readSkillKit([{ slot: 'A1', skill_name: 'S', damage_multiplier: '1', multiplier_type: 'ATK', skill_summary: summary }]);
+    actEnemyMob(makeState({ allies: [target], enemies: [mob] }), mob);
+  };
+  const SLEEP = 'Attacks 1 enemy. If the target is under a [Decrease ATK] debuff, it will place a [Sleep] debuff for 1 turn.';
+  const noDA = champ({ name: 'NoDA', res: 0, spd: 1 }); runMob(SLEEP, noDA);
+  eq('conditional Sleep does NOT land without [Decrease Attack]', noDA.debuffs.some(d => d.type === 'Sleep'), false);
+  const hasDA = champ({ name: 'HasDA', res: 0, spd: 1 }); hasDA.debuffs.push({ type: 'Decrease Attack', turnsLeft: 3 }); runMob(SLEEP, hasDA);
+  eq('conditional Sleep LANDS when the target has [Decrease Attack]', hasDA.debuffs.some(d => d.type === 'Sleep'), true);
+
+  const STUN = "Attacks 1 enemy. Decreases the target's Turn Meter by 50%. If the attack fully depletes the Turn Meter, it will place a [Stun] debuff for 2 turns.";
+  const lowTM = champ({ name: 'LowTM', res: 0, spd: 1 }); lowTM.turnMeter = 40; runMob(STUN, lowTM);   // 40 − 50 → 0 (depleted)
+  eq('conditional Stun LANDS when the TM decrease fully depletes the bar', lowTM.debuffs.some(d => d.type === 'Stun'), true);
+  const hiTM = champ({ name: 'HiTM', res: 0, spd: 1 }); hiTM.turnMeter = 90; runMob(STUN, hiTM);       // 90 − 50 → 40 (not depleted)
+  eq('conditional Stun does NOT land when TM is only partly reduced', hiTM.debuffs.some(d => d.type === 'Stun'), false);
+}
+
+// ── 10f. [Increase C.RATE] buff + [Decrease SPD] debuff — parse + consume ─────────────────────
+{
+  const cr = readSkillKit([{ slot: 'A2', skill_name: 'Sharp Eye', damage_multiplier: null,
+    skill_summary: 'Places a 30% [Increase C. RATE] buff on a target ally for 2 turns. Grants an Extra Turn.' }])[0];
+  eq('[Increase C. RATE] parses as a buff', cr.buffs.find(b => b.type === 'Increase C.RATE')?.value, 30);
+  const withBuff = champ({ critRate: 50 }); withBuff.buffs.push({ type: 'Increase C.RATE', value: 30, turnsLeft: 2 });
+  eq('effectiveCritRate adds the buff (50 + 30)', effectiveCritRate(withBuff), 80);
+  eq('effectiveCritRate caps at 100', effectiveCritRate({ critRate: 90, buffs: [{ type: 'Increase C.RATE', value: 30 }] }), 100);
+
+  const ds = readSkillKit([{ slot: 'A3', skill_name: 'Blunted Arrow', damage_multiplier: '5.5',
+    skill_summary: 'Attacks 1 enemy. Also has a 50% chance of placing a 30% [Decrease SPD] debuff for 2 turns.' }])[0];
+  eq('[Decrease SPD] parses as a Decrease Speed debuff', ds.debuffs.find(d => d.type === 'Decrease Speed')?.value, 30);
+  const slowed = champ({ spd: 100 }); slowed.debuffs.push({ type: 'Decrease Speed', value: 30, turnsLeft: 2 });
+  near('effectiveSpeed drops 30% under [Decrease SPD] (100 → 70)', effectiveSpeed(slowed), 70);
+}
+
 // ── 11. COEFFICIENT PARSING — value + scaling stat (multiplier_type) ─────────
 {
   eq('bare coefficient value', parseCoeff('4.65')?.value, 4.65);
@@ -210,10 +349,17 @@ const passiveContent = (enemies) => ({ phases: [{ name: 'boss', enemies, actEnem
   eq('a null multiplier_type falls back to ATK', noType[0].coeffStat, 'atk');
 }
 
-// ── 12. MITIGATION is monotonic ──────────────────────────────────────────────
+// ── 12. MITIGATION — Raid's REAL level-dependent DEF curve, pinned to computed points ─────────
+// M = 1 − 0.85·(1 − e^(−2·D/(50·L))), retained-damage fraction. Level-DEPENDENT: a higher-level
+// attacker penetrates the same DEF more (denominator 50·L grows). Anchors computed directly from the
+// source formula (not fitted) so a magnitude regression is caught, not just a monotonicity flip.
 {
   ok('more DEF always mitigates more', defMitigation(2000) < defMitigation(1000));
   near('zero DEF takes full damage', defMitigation(0), 1);
+  near('DEF 1000 vs L60 attacker → retain ~0.5864', defMitigation(1000, 60), 0.5864, 0.002);
+  near('DEF 2000 vs L60 attacker → retain ~0.3741', defMitigation(2000, 60), 0.3741, 0.002);
+  ok('same DEF, higher-level attacker penetrates more → MORE retained (L220 > L60)', defMitigation(3000, 220) > defMitigation(3000, 60));
+  near('DEF 3000 vs L220 attacker → retain ~0.6427', defMitigation(3000, 220), 0.6427, 0.002);
 }
 
 // ── 13. PURPLE-BAR DRAIN — the engine must feed team damage to content.onDamageToBoss ────────

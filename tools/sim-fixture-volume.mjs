@@ -54,4 +54,8 @@ console.log(`  SIM WIN RATE : ${(100 * wins / N).toFixed(1)}%  (${wins}/${N})`);
 console.log(`  survivors    : median ${med(survArr)}/${probe.allies.length}  (p10 ${pct(survArr, 0.1)} / p90 ${pct(survArr, 0.9)})`);
 console.log(`  turns        : p10 ${pct(turnsArr, 0.1)} / med ${med(turnsArr)} / p90 ${pct(turnsArr, 0.9)}`);
 console.log(`  LOSS phase   : ${JSON.stringify(wipePhase)}`);
-console.log(`\n  (Dragon-16 reality baseline: 88.5% = 23/26 captured — memory dragon16-reality-winrate-2026-07-25)`);
+// reality baselines from the RslBattleReader captures (DonBambus, AUTO): stage 16 = 88.5% (23/26),
+// stage 17 = 95% (21W/1L). Stage-aware so the headline compares to the RIGHT cell, not always Dragon-16.
+const REALITY = { 16: '88.5% (23W/3L)', 17: '95% (21W/1L)' };
+const stg = fixture.content?.stage;
+console.log(`\n  (Dragon-${stg} reality baseline: ${REALITY[stg] ?? 'no first-party capture yet'} — DonBambus, auto)`);

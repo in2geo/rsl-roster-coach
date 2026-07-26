@@ -1,0 +1,53 @@
+{
+  "_source": "Plarium official Artifact Sets reference (pasted by Mike 2026-07-25). VERBATIM chances/effects. This is the GEAR_PROC family of knowledge/RNG_REGISTRY.md — the chance-based (RNG) sets ONLY. Deterministic stat/flat-effect sets are listed under _deterministic_sets and are handled via effectiveStats / flat effects, NOT rolled.",
+  "_schema": "set -> { pieces, trigger, chance, rng_type, effect, value, turns, notes }. chance is 0-1. null = NOT stated in the source (do not guess — the doc warns granularity/timing can't be inferred from the % alone). rng_type maps to the registry's roll types.",
+  "_not_wired": "These definitions are CAPTURED, not yet consumed by the sim. Wiring needs per-champion set loadout (read live for captured accounts via the Gestal sync; the manual-entry flow collects gear TIER not SETS). Verify each champ's actual sets before crediting a proc.",
+
+  "Retaliation":    { "pieces": 2, "trigger": "on_attacked",            "chance": 0.15, "rng_type": "COUNTERATTACK_PROC", "effect": "counterattack", "notes": "counter uses the DEFAULT skill at 75% of standard damage" },
+  "Avenging":       { "pieces": 4, "trigger": "on_debuff_placed_on_self","chance": 0.45, "rng_type": "COUNTERATTACK_PROC", "effect": "counterattack", "notes": "rolled PER debuff placed by enemy, but at most ONE counter; default skill @ 75% dmg" },
+  "Frost":          { "pieces": 4, "trigger": "on_attacked",            "chance": 0.20, "rng_type": "GEAR_PROC", "effect": "Freeze",  "turns": 1, "notes": "applies to the ATTACKER" },
+  "Frostbite":      { "pieces": 2, "trigger": "on_attacked",            "chance": 0.10, "rng_type": "GEAR_PROC", "effect": "Freeze",  "turns": null, "notes": "10% place Freeze on attacker; SEPARATELY 15% chance to BLOCK an incoming Freeze (EFFECT_BLOCK)" },
+
+  "Toxic":          { "pieces": 4, "trigger": "on_attack", "chance": 0.75, "rng_type": "GEAR_PROC", "effect": "Poison",  "value": 0.025, "turns": 2, "notes": "2.5% Poison; DEF-independent DoT; INDEPENDENT of any skill debuff roll (doc §15)" },
+  "Cursed":         { "pieces": 4, "trigger": "on_attack", "chance": 0.50, "rng_type": "GEAR_PROC", "effect": "Hex",     "turns": 2 },
+  "Daze":           { "pieces": 4, "trigger": "on_attack", "chance": 0.25, "rng_type": "GEAR_PROC", "effect": "Sleep",   "turns": 1, "notes": "Sleep breaks on any damage — pair with non-damaging placers" },
+  "Stun":           { "pieces": 4, "trigger": "on_attack", "chance": 0.18, "rng_type": "GEAR_PROC", "effect": "Stun",    "turns": 1 },
+  "Provoke":        { "pieces": 4, "trigger": "on_attack", "chance": 0.30, "rng_type": "GEAR_PROC", "effect": "Provoke", "turns": 1 },
+
+  "Relentless":     { "pieces": 4, "trigger": "after_turn", "chance": 0.18, "rng_type": "EXTRA_TURN", "effect": "extra_turn", "notes": "DIMINISHING on consecutive extra turns ×0.55: 18% -> 9.9% -> 5.5% -> …" },
+  "Reflex":         { "pieces": 4, "trigger": null,        "chance": 0.40, "rng_type": "RANDOM_SKILL", "effect": "reduce_cooldown", "value": 1, "notes": "reduces a RANDOM skill's cooldown by 1; trigger timing not stated in source (needs verification)" },
+  "Impulse":        { "pieces": 2, "trigger": null,        "chance": 0.12, "rng_type": "RANDOM_SKILL", "effect": "reduce_cooldown", "value": 1, "notes": "random skill; trigger timing not stated" },
+
+  "Cursed City Merciless": { "pieces": 9, "trigger": "on_deal_damage", "chance": 0.30, "rng_type": "RANDOM_SKILL", "effect": "reduce_cooldown", "value": 1, "notes": "ALSO 15% chance of an Extra Turn (EXTRA_TURN) — variable set, two separate procs" },
+
+  "Slayer":         { "pieces": 9, "trigger": "on_aoe_attack", "chance": 0.30, "rng_type": "BONUS_DAMAGE_OR_ATTACK_PROC", "effect": "repeat_aoe_damage", "notes": "repeat = the initial damage multiplier, ALWAYS a NORMAL hit, PURE damage (no crit/affinity). Forge Pass" },
+  "Affinitybreaker": { "pieces": 4, "trigger": "on_weak_hit", "chance": 0.50, "rng_type": "HIT_TYPE_CONVERSION", "effect": "weak_to_crit", "notes": "converts a Weak Hit into a Critical Hit — a SEPARATE roll after the affinity Weak roll (registry #4). +30% C.DMG stat too" },
+
+  "Deflection":     { "pieces": 9, "trigger": "on_enemy_debuff_attempt", "chance": 0.35, "rng_type": "EFFECT_DEFLECT", "effect": "deflect_debuff_to_attacker", "notes": "variable set; also flat +60 ACC/+32% SPD and bonus ACC-scaled damage to debuff-blockers" },
+  "Stone Skin":     { "pieces": 9, "trigger": "round_start", "chance": 0.50, "rng_type": "BUFF_PROTECTION", "effect": "block_removal_or_steal", "notes": "Stone Skin buff: 50% block removals/steals; the buff's -85% dmg / debuff-immunity is DETERMINISTIC once up" },
+  "Protection":     { "pieces": 9, "trigger": "on_buff_cast_by_wearer", "chance": 0.75, "rng_type": "BUFF_PROTECTION", "effect": "protect_buff", "notes": "protected buffs can't be stolen/removed" },
+  "Feral":          { "pieces": 9, "trigger": "on_sheep_placement_attempt", "chance": 0.50, "rng_type": "EFFECT_BLOCK", "effect": "prevent_sheep", "notes": "Siege set; blocks the Polymorph Blessing's Sheep" },
+  "Swift Parry":    { "pieces": 4, "trigger": "on_lethal_damage", "chance": null, "rng_type": "GEAR_PROC", "effect": "Unkillable", "notes": "chance NOT stated in source ('a chance of getting an Unkillable buff'). Verify before wiring" },
+
+  "_deterministic_sets": {
+    "_note": "NOT rolled — flat stat bonuses (via effectiveStats from the sync) or deterministic effects (flat heal/shield/ignore-DEF/damage-reduction). Listed so the RNG/non-RNG split is explicit.",
+    "stat_only": ["Life","Offense","Defense","Critical Rate","Accuracy","Speed","Resistance","Crit Damage","Resilience","Perception","Fatal","Fortitude","Killstroke","Zeal","Righteous"],
+    "deterministic_effect": {
+      "Lifesteal": "heal 30% of damage dealt — DOES NOT heal off Poison damage (⚠ engine must exclude DoT from lifesteal; it does — lifesteal is on direct-hit dealt, tickDots has none)",
+      "Bloodthirst": "heal 30% of damage per hit (+12% C.Rate) — same Poison exclusion as Lifesteal",
+      "Destroy": "destroy target MAX HP by 40% of damage; cap 8%/skill (per-skill not per-hit); floor 40% of original; AoE hits only the Leader-position enemy",
+      "Fury": "damage +10/+25/+50% by current-HP band (100-76 / 75-51 / <=50) — deterministic on HP",
+      "Curing": "+20% bonus heal on wearer's own heals; restores destroyed HP by the bonus amount",
+      "Immunity": "Block Debuffs 2t at Round start", "Untouchable": "Block Debuffs 2t + 40 RES",
+      "Shield": "30% MAX-HP Shield to all allies 3t at Round start — STACKS across multiple Shield-set wearers",
+      "Divine (Life/Offense/CritRate/Speed)": "+15% MAX-HP self-Shield 3t at Round start",
+      "Bolster": "protected 30% HP ally Shield 3t + 10%/turn wearer heal", "Guardian": "absorb 10% ally damage + 10%/turn heal",
+      "Regeneration": "15% MAX HP heal at start of turn", "Immortal": "3%/turn heal (+15% HP)",
+      "Stalwart": "-30% incoming AoE damage", "Defiant": "-15% incoming AoE (+10% DEF)",
+      "Savage": "ignore 25% DEF", "Lethal": "ignore 25% DEF (+10% C.Rate)", "Instinct": "ignore 20% DEF (+12% SPD)", "Cruel": "ignore 5% DEF (+15% ATK)",
+      "Frenzy": "+5% Turn Meter per enemy-placed debuff (per debuff)",
+      "Swift Parry (non-proc part)": "+30% C.DMG/+28% SPD/+25% HP/+50% ignore-DEF + single-target dmg mitigation"
+    },
+    "variable_stat_sets_9pc": ["Stonecleaver","Rebirth","Mercurial","Supersonic","Pinpoint","Chronophage","Merciless(stat part)","Deflection(stat part)"]
+  }
+}

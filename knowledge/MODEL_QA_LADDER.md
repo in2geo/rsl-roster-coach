@@ -53,6 +53,8 @@ meta-disciplines.** Layers 7–10 stay with the Simulator.
 | **teeth (mutation)** | meta | `tools/model-mutants.mjs` | ✅ **12/12 killed, 100%, 0 holes, 0 gaps** (suite = a/b/c/d + invariants + sensitivity) |
 | **Model QA orchestrator (4-bucket ledger)** | — | `tools/model-qa.mjs` | ✅ **one scorecard, 10 rungs, SPEC-CONFORMANT** |
 | snapshot (regression) | meta | `tools/model-snapshot.mjs` | ✅ 29 fingerprints frozen (`test/snapshots/model-snapshot.json`); re-bless: `SNAPSHOT_BLESS=1` |
+| **roll census (FIRED/ROLLED/CONSUMED)** | meta | `tools/sim-rolls.mjs` | ✅ 15/15 — every LIVE RNG mechanic draws its stream at its stated `p`; reserved streams stay dead; decorrelation proven. Executes `knowledge/RNG_REGISTRY.md` |
+| **wave coverage (L1 composition / L2 kit / L3 firing)** | 1 | `tools/mob-coverage.mjs [stage]` | ✅ closes the reviewer's "blind to omissions" gap. Diffs the model vs EXTERNAL ground truth: L1 sim/DB wave == verified table (`data/dragon-wave-data.json`, in-game screenshots, all 25 stages); L2 every mob has its full kit (no missing row / dupe) + every mechanic parsed; L3 every active fires+consumes. Wrong-mob / missing-skill / dupe / missing-coeff = **spec_violation (blocks)**; unparsed mechanic → unimplemented catalog. Stage via `MODEL_QA_STAGE`. |
 | DB→recipe fidelity (every column read + round-trips) | 1 | — | ⬜ TODO |
 
 The exact-damage / connected-run comparison against reality (`sim-recipe-fight.mjs`, `sim-run.mjs`) is
