@@ -94,12 +94,20 @@ NOT the same as: matches the real game, or is complete. A stage is **bulletproof
   two wired placements (Decrease Speed 50% / Decrease ACC guaranteed-if-buffed). Consumers pre-existed.
 - `9bec488` **6-7/18** — [Block Damage] consumer built in `engine.dealDamage` (negates a direct hit; not a
   pool) + `ignore_block_damage` flag → cleared Faceless A3 + Lua A3 together. Registered in CONSUMED_EFFECTS.
-- Catalog **15 → 12**. Ladder 15/15, teeth 48/48 (100%) throughout. Branch NOT pushed since (7fe1d64, 9bec488).
-- **Remaining 12 all need a NEW PRIMITIVE** (the wire-existing-op clauses are done): extra-hit proc (needs an
-  RNG stream — roll type #12, clears Faceless A1 + st17 Crossbowman A1), random-target-per-hit, crit-conditional
-  AoE (Lua A1), lifesteal-on-crit (Lua A2), self-destroy (Renegade A3), REDUCE_EFFECT_DURATION (Bambus A2),
-  counterattack event (Ezio P2), debuff-activation (Ezio A2), Stone-Skin→Bomb named exception (Ezio A2, hardest),
-  sleep-break-on-hit (Bambus P), steal+stun (Pelops A2).
+- `b3841fa` **8/18** — extra-hit proc (RNG roll type #12). New append-only `proc` stream + `extraHitChance`
+  flag rolled in interpreter DEAL_DAMAGE → cleared Faceless A1 AND st17 Crossbowman A1. No golden drift (15% <
+  seed=null threshold). RNG_REGISTRY row 12 + stream table updated.
+- Catalog **15 → 11** this session (st17 also 17 → 16). Ladder 15/15, teeth 48/48 (100%) throughout. Branch has
+  5 unpushed commits (7fe1d64, 9bec488, 68497c2, b3841fa, + this).
+- **Remaining 11 all need a NEW PRIMITIVE** (the wire-existing-op clauses are done):
+  - **random-target-per-hit** (Renegade A2 last clause + st17 Apothecary A1) — ⚠ WILL DRIFT the golden/snapshot
+    (changes which ally each mob hit lands on); needs a deterministic seed=null fallback for the `target` stream.
+  - crit-conditional AoE (Lua A1), lifesteal-on-crit (Lua A2) — both need the crit OUTCOME exposed from
+    computeRawHit (critM>1 is unreliable when critDmg=0) + an EV path (like Warmaster) for seed=null.
+  - self-destroy (Renegade A3), REDUCE_EFFECT_DURATION (Bambus A2) — each a new OP (operations.js registry +
+    validate + interpreter handler + model-ops-consistency rung).
+  - counterattack event (Ezio P2), debuff-activation (Ezio A2), Stone-Skin→Bomb named exception (Ezio A2,
+    hardest), sleep-break-on-hit (Bambus P), steal+stun (Pelops A2).
 
 ## Discipline (unchanged, load-bearing)
 We NEVER tune a magnitude to fit reality. A sim≠reality gap is a MISSING/WRONG mechanic to implement, never a
