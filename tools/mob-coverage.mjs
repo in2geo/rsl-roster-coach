@@ -114,7 +114,7 @@ else {
   // WHOLE-BATTLE fired-vs-consumed (folds the former model-completeness rung): every fired effect — team
   // AND mob — must consume or carry a documented reason. An unexplained drop is a represented-but-not-
   // consumed DEFECT (a real bug, hard fail), distinct from a benign non-consumption or a data gap.
-  const BENIGN = [/immune/, /^resisted /, /^overheal/, /^no debuffs to cleanse$/, /^no buffs to steal$/, /^no buffs to reduce$/, /^no buffs to extend$/, /^nothing to /, /^turn lost$/, /^proc missed /, /^missed placement /, /^missed \(/, /^already full$/, /^already empty$/, /^condition not met$/, /^nullified /, /^fully absorbed/];
+  const BENIGN = [/immune/, /^resisted /, /^overheal/, /^no debuffs to cleanse$/, /^no buffs to steal$/, /^no buffs to reduce$/, /^no buffs to extend$/, /^no \[Shield\] to boost$/, /^no buffs decreased/, /^nothing to /, /^turn lost$/, /^proc missed /, /^missed placement /, /^missed \(/, /^already full$/, /^already empty$/, /^condition not met$/, /^nullified /, /^fully absorbed/];
   const DATA_GAP = [/^MISSING coeff$/, /^UNKNOWN land chance$/];
   const noteHit = pats => e => pats.some(r => r.test(e.note ?? ''));
   const defects = (res.effects || []).filter(e => e.fired && !e.consumed && !noteHit(BENIGN)(e) && !noteHit(DATA_GAP)(e));

@@ -186,5 +186,17 @@ console.log('\n=== II-C state manipulation — code produces expected results? =
     e2.debuffs.some(d => d.type === 'Poison'), `debuffs=${e2.debuffs.map(d => d.type)}`);
 }
 
+// N — BOOST_SHIELD (Bambus A2): after decreasing enemy buff durations, ally [Shield] value rises by 3% of
+// Bambus's MAX HP per enemy buff decreased. Base shield 30%×20000 = 6000; 2 enemy buffs decreased →
+// +3%×20000×2 = +1200 → 7200.
+{
+  const bam = makeCombatant({ name: 'Bambus', side: 'ally', atk: 1000, maxHp: 20000, affinity: 'Void', critRate: 0 });
+  const e1 = makeCombatant({ name: 'Mob1', side: 'enemy', maxHp: 1e9, def: 1000, affinity: 'Void' }); e1.buffs.push({ type: 'Increase DEF', value: 60, turnsLeft: 2 });
+  const e2 = makeCombatant({ name: 'Mob2', side: 'enemy', maxHp: 1e9, def: 1000, affinity: 'Void' }); e2.buffs.push({ type: 'Increase C.RATE', value: 30, turnsLeft: 2 });
+  applyRecipe(makeState({ allies: [bam], enemies: [e1, e2], seed: null }), bam, RECIPES['BAMBUS-A2']);
+  const sh = bam.buffs.find(b => b.type === 'Shield');
+  check('BOOST_SHIELD: shield 6000 + 3%MaxHP × 2 buffs decreased = 7200', sh?.value === 7200, `shield ${sh?.value}`);
+}
+
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
 process.exit(fail ? 1 : 0);

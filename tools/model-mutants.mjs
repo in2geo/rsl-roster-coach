@@ -222,6 +222,10 @@ const MUTANTS = [
   { name: 'DEBUFF_ACTIVATION threshold ignored (activates below the 4-debuff gate)', expectKill: true,
     find: 'if (debuffSlots(t) < minDebuffs) {',
     repl: 'if (false && debuffSlots(t) < minDebuffs) {' },
+  // ── BOOST_SHIELD (interpreter) — Bambus A2 must raise ally [Shield] value per enemy buff decreased ──
+  { name: 'BOOST_SHIELD zeroed (Bambus A2 shield boost does nothing)', expectKill: true,
+    find: 'if (b.type === \'Shield\') { b.value = (b.value ?? 0) + add; boosted++; }',
+    repl: 'if (b.type === \'Shield\') { b.value = (b.value ?? 0) + add * 0; boosted++; }' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8'), [DRAGON]: fs.readFileSync(DRAGON, 'utf8') };
