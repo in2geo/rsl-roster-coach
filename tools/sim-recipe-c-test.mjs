@@ -130,5 +130,16 @@ console.log('\n=== II-C state manipulation — code produces expected results? =
   check('SELF_DAMAGE: lethal below 30% HP (4000 → 0)', r2.hp === 0, `hp ${r2.hp}`);
 }
 
+// N — REDUCE_EFFECT_DURATION: Bambus A2 decreases all enemy buff durations by 1t (75% → fires at seed=null
+// threshold). A buff reduced to 0 drops off.
+{
+  const bam = makeCombatant({ name: 'Bambus', side: 'ally', atk: 1000, maxHp: 20000, affinity: 'Void', critRate: 0 });
+  const e1 = makeCombatant({ name: 'Mob1', side: 'enemy', maxHp: 1e9, def: 1000, affinity: 'Void' }); e1.buffs.push({ type: 'Increase C.RATE', value: 30, turnsLeft: 2 });
+  const e2 = makeCombatant({ name: 'Mob2', side: 'enemy', maxHp: 1e9, def: 1000, affinity: 'Void' }); e2.buffs.push({ type: 'Increase DEF', value: 60, turnsLeft: 1 });
+  applyRecipe(makeState({ allies: [bam], enemies: [e1, e2], seed: null }), bam, RECIPES['BAMBUS-A2']);
+  check('REDUCE_EFFECT_DURATION: enemy buff 2t → 1t', e1.buffs.find(b => b.type === 'Increase C.RATE')?.turnsLeft === 1, `t=${e1.buffs.find(b => b.type === 'Increase C.RATE')?.turnsLeft}`);
+  check('REDUCE_EFFECT_DURATION: enemy buff 1t → dropped off (reduced to 0)', !e2.buffs.some(b => b.type === 'Increase DEF'), `has=${e2.buffs.some(b => b.type === 'Increase DEF')}`);
+}
+
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
 process.exit(fail ? 1 : 0);

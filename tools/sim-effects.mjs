@@ -40,6 +40,7 @@ const ok = (name, cond, detail = '') => { if (cond) pass++; else { fail++; failu
 // benign for THIS rung (the mechanic works; the input is absent) and surfaced separately.
 const BENIGN = [/immune/, /^resisted /, /^overheal/, /^no debuffs to cleanse$/, /^turn lost$/,
   /^proc missed /, /^missed placement /, /^missed \(/,    // a chance-based effect that ROLLED and missed is a documented non-consumption, not a defect
+  /^no buffs to reduce$/, /^no buffs to extend$/,         // a duration op on a target with no buffs: the op ran, there was nothing to change
   /^already full$/, /^already empty$/, /^condition not met$/];                   // Turn Meter fill at 100 / decrease at 0 — the effect fired, there was nothing to change
 const DATA_GAP = [/^MISSING coeff$/, /^UNKNOWN land chance$/];
 const explained = (re) => (e) => re.some(r => r.test(e.note ?? ''));

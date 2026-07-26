@@ -203,6 +203,10 @@ const MUTANTS = [
   { name: 'SELF_DAMAGE neutralised (Renegade A3 self-cost zeroed)', expectKill: true,
     find: 'actor.hp = Math.max(0, actor.hp - dmg);',
     repl: 'actor.hp = Math.max(0, actor.hp - dmg * 0);' },
+  // ── REDUCE_EFFECT_DURATION (interpreter) — Bambus A2 must decrease enemy buff durations ──
+  { name: 'REDUCE_EFFECT_DURATION no-op (enemy buff durations not decreased)', expectKill: true,
+    find: 'for (const b of t.buffs) { b.turnsLeft -= turns; n++; }',
+    repl: 'for (const b of t.buffs) { b.turnsLeft -= turns * 0; n++; }' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8'), [DRAGON]: fs.readFileSync(DRAGON, 'utf8') };
