@@ -13,7 +13,7 @@
 // Deterministic (seed=null), no DB. The teeth for these live in model-mutants.mjs (dragon.js mutants).
 // Run: node tools/model-boss.mjs
 
-import { makeCombatant, makeState, incomingDamage } from '../lib/sim/engine.js';
+import { makeCombatant, makeState, incomingDamage, effectiveAcc } from '../lib/sim/engine.js';
 import { makeDragonContent, HELLRAZOR_IMMUNE, bossHit } from '../lib/sim/dragon.js';
 import { installRecipeRun, applyRecipe } from '../lib/sim/interpreter.js';
 import { RECIPES } from '../lib/sim/recipes.js';
@@ -148,6 +148,14 @@ console.log('\n=== Hellrazor boss sequence (Model-side fired-and-applied, determ
   applyRecipe(s, tag, RECIPES['TAGOAR-A2']);   // Tagoar A2 heals ALL allies 15% of caster MAX HP
   check('[Heal Reduction] 100% fully blocks the heal', hurt.hp === 5000, `hp ${hurt.hp}`);
   check('[Heal Reduction] control: an unafflicted ally IS healed', tag.hp > 10000, `hp ${tag.hp}`);
+}
+
+// ── ACC modifiers consumer (effectiveAcc): [Increase/Decrease ACC] scale effective ACC (the landChance input) ──
+{
+  const inc = makeCombatant({ name: 'Inc', side: 'ally', acc: 100, affinity: 'Void' }); inc.buffs.push({ type: 'Increase ACC', value: 50, turnsLeft: 2 });
+  const dec = makeCombatant({ name: 'Dec', side: 'ally', acc: 100, affinity: 'Void' }); dec.debuffs.push({ type: 'Decrease ACC', value: 50, turnsLeft: 2 });
+  check('[Increase ACC] 50% raises effective ACC (100 → 150)', effectiveAcc(inc) === 150, `${effectiveAcc(inc)}`);
+  check('[Decrease ACC] 50% lowers effective ACC (100 → 50)', effectiveAcc(dec) === 50, `${effectiveAcc(dec)}`);
 }
 
 console.log(`\n  ${fail ? '✗' : '✓'} boss sequence: ${pass} passed, ${fail} failed`);

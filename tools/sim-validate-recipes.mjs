@@ -14,6 +14,7 @@
 
 import { RECIPES, FORMULAS, CONDITIONS } from '../lib/sim/recipes.js';
 import { validateAction, isImplemented } from '../lib/sim/operations.js';
+import { CONSUMED_EFFECTS } from '../lib/sim/engine.js';   // GATE #2 — placed effects must have a consumer
 
 if (!process.env.SUPABASE_URL) { console.log('\n⏳ step 4 needs the DB. Run: node --env-file=.env.local tools/sim-validate-recipes.mjs\n'); process.exit(0); }
 const BASE = process.env.SUPABASE_URL.replace(/\/rest\/v1\/?$/, '');
@@ -75,20 +76,34 @@ function coverageText(rec) {
 
 // structural labels, not effects — never a placement to account for
 const IGNORE_BRACKETS = new Set(['active effect', 'passive effect']);
+// whitespace-insensitive match: the game spells some effects with spaces the engine name omits
+// (source "[Increase C. RATE]" vs engine "Increase C.RATE"). Collapse whitespace on both sides so a pure
+// spacing/punctuation variation isn't reported as unaccounted/fabricated (a naming variation, not a real gap).
+const squash = (s) => String(s).toLowerCase().replace(/\s+/g, '');
 function checkCoverage(rec, source) {
   const cov = coverageText(rec);
+  const covS = squash(cov), srcS = squash(source);
   const brackets = [...new Set([...source.matchAll(/\[([^\]]+)\]/g)].map((m) => m[1]))].filter((b) => !IGNORE_BRACKETS.has(b.toLowerCase()));
   const unaccounted = [];
-  for (const b of brackets) if (!forms(b).some((f) => cov.includes(f))) unaccounted.push(`[${b}]`);
+  for (const b of brackets) if (!forms(b).some((f) => covS.includes(squash(f)))) unaccounted.push(`[${b}]`);
   for (const [re, tok, covRe] of KEYWORDS) if (re.test(source) && !covRe.test(cov)) unaccounted.push(`«${tok}»`);
   // fabrication: every authored effect.type must appear in the source
   const fabricated = [];
-  for (const a of rec?.actions || []) if (a.effect?.type && !forms(a.effect.type).some((f) => source.toLowerCase().includes(f))) fabricated.push(a.effect.type);
-  return { unaccounted, fabricated };
+  for (const a of rec?.actions || []) if (a.effect?.type && !forms(a.effect.type).some((f) => srcS.includes(squash(f)))) fabricated.push(a.effect.type);
+  // GATE #2 — every PLACED lasting buff/debuff (in an action OR a passive trigger) must have a wired consumer
+  // (engine.CONSUMED_EFFECTS). A placed-but-unconsumed effect lands and does nothing — the Heal-Reduction trap.
+  const unconsumed = [];
+  const collectPlaced = (acts) => { for (const a of acts || []) if ((a.op === 'PLACE_BUFF' || a.op === 'PLACE_DEBUFF') && a.effect?.type && !CONSUMED_EFFECTS.has(a.effect.type)) unconsumed.push(a.effect.type); };
+  collectPlaced(rec?.actions);
+  for (const tr of rec?.triggers || []) collectPlaced(tr.actions);
+  return { unaccounted, fabricated, unconsumed };
 }
 
 async function main() {
-  const champs = ['Bambus', 'Ezio', 'Pelops', 'Tagoar', 'Vergis'];
+  // GATE #1 — every AUTHORED champion (team + ALL wave mobs), derived from the recipes themselves, NOT a
+  // hardcoded team list. This guarantees no MOB skill clause is silently dropped: every mob's source
+  // skill_summary clause must be accounted for (in an action or deferred[]), exactly like the team's.
+  const champs = [...new Set(Object.values(RECIPES).map((r) => r.champion.split(' ')[0]))];
   const rows = [];
   for (const q of champs) {
     const cs = await rest(`champions?game_id=eq.raid_shadow_legends&name=ilike.*${q}*&select=id,name`);
@@ -122,9 +137,10 @@ async function main() {
       if (!v.implemented) reasons.push(`op '${a.op}' not implemented`);
     }
     // step 4 — coverage vs source
-    const { unaccounted, fabricated } = checkCoverage(rec, src);
+    const { unaccounted, fabricated, unconsumed } = checkCoverage(rec, src);
     if (unaccounted.length) reasons.push(`unaccounted: ${unaccounted.join(' ')}`);
     if (fabricated.length) reasons.push(`NOT IN SOURCE: ${fabricated.join(', ')}`);
+    if (unconsumed.length) reasons.push(`NO CONSUMER: ${unconsumed.join(', ')}`);   // GATE #2
 
     // step 5/6 — status
     const deferredN = (rec.deferred || []).length;

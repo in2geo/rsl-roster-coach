@@ -175,6 +175,10 @@ const MUTANTS = [
   // ── [Heal Reduction] consumer (engine.healReduction) — a heal into a Heal-Reduced target must be cut ──
   { name: '[Heal Reduction] not consumed (heals land at full despite the debuff)', expectKill: true, file: 'engine',
     find: '/Heal Reduction/i.test(d.type)', repl: '/NoSuchReduction/i.test(d.type)' },
+  // ── ACC modifiers consumer (engine.effectiveAcc) — [Increase/Decrease ACC] must fold into land chance ──
+  { name: 'ACC modifiers not consumed (effectiveAcc ignores [Increase/Decrease ACC])', expectKill: true, file: 'engine',
+    find: "export const effectiveAcc = (c) => (c.acc ?? 0) * statFactor(c, 'acc');",
+    repl: 'export const effectiveAcc = (c) => (c.acc ?? 0);' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8'), [DRAGON]: fs.readFileSync(DRAGON, 'utf8') };
