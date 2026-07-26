@@ -89,6 +89,21 @@ NOT the same as: matches the real game, or is complete. A stage is **bulletproof
 - Remaining follow-up: the PRODUCT path needs a name→stats engine with LEVEL + ASCENSION scaling (the sync is a
   testing instrument, not the shipped stat source) — see memory `app-assigns-stats-sync-is-testing-only-2026-07-26`.
 
+## 🎯 STAGE 16 IS PERFECT — `complete:true` (2026-07-26 pm)
+`MODEL_QA_STAGE=16 mob-coverage 16` → **COVERAGE COMPLETE: unimplemented:0, hardFails:0, complete:true** — every
+Stage-16 combatant's full kit (team + all wave mobs) is modelled and firing. Ladder 15/15, teeth **63/63 (100%)**,
+Gates green, no snapshot/golden drift on the no-drift clauses. This is the bulletproof PROTOTYPE — the whole
+campaign's target. **NEXT: replicate to the rest of Dragon Normal** (author Families C/D/E from the trusted
+first-party wave data; boss is shared + already under the Model), then port the pattern to other dungeons.
+Stage-17 catalog is down to ~10 as a side effect (several ops cleared st17 clauses too) — a good next stage.
+
+New primitives built this campaign (all with teeth + verified DB data, never guessed): `SELF_DAMAGE`,
+`REDUCE_EFFECT_DURATION`, `DEBUFF_ACTIVATION`, `BOOST_SHIELD`, `COUNTERATTACK`, `PLACE_BOMB` ops · the `proc` RNG
+stream (extra-hit) · crit-OUTCOME exposure (`rollCrit`, crit-heal/crit-splash riders) · random-target-per-hit ·
+`[Block Damage]` + `[Bomb]` consumers · condition kinds `target_has_buffs`/`under_buff`/`not_under_buff` ·
+post-damage `damageGate` · `forceTarget`. Two magnitudes were Mike-confirmed (Bambus shield +3% MaxHP; Ezio
+Poison-activation removes on land); [Bomb] = 6×ATK from DB review_notes.
+
 ## Stage-16 catalog burn-down (session 2026-07-26 pm)
 - `7fe1d64` **5/18** — Renegade A2 conditional Decrease SPD/ACC. New `target_has_buffs` condition kind +
   two wired placements (Decrease Speed 50% / Decrease ACC guaranteed-if-buffed). Consumers pre-existed.
