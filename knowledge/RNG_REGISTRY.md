@@ -33,6 +33,8 @@ status as of this writing:
 | `damage` | `dmgVariance` (default OFF) + interpreter damage-mod chance | ⚠ mostly dormant |
 | `target` | interpreter `random_ally` only | ⚠ barely used |
 | `mastery` | Warmaster/Giant Slayer proc | ✅ (added with this doc) |
+| `gear` | complete on-attack proc sets (Toxic/Stun/…) via `fireGearProcs` | ✅ |
+| `proc` | skill extra-hit (`extraHitChance` — Faceless/Crossbowman A1) | ✅ (added 2026-07-26, roll type #12) |
 | `affinity` | — | ❌ **declared, never drawn** (see WEAK/STRONG_HIT) |
 | `ai` | — | ❌ **declared, never drawn** (reserved for AI-choice RNG) |
 
@@ -55,7 +57,7 @@ Void (ignores affinity); waves carry affinities, so affinity RNG affects **wave 
 | 9 | **RANDOM_BUFF** | remove/steal a random buff | ❌ NOT MODELLED | — | LOW |
 | 10 | **RANDOM_DEBUFF** | remove/transfer/spread a random debuff | ❌ NOT MODELLED (tag policy rejects random-pool) | — | LOW |
 | 11 | **RANDOM_EFFECT** | place one of several / activate one of several | ❌ NOT MODELLED | — | LOW |
-| 12 | **BONUS_DAMAGE_OR_ATTACK_PROC** | repeat/extra-hit/bonus/join attack (e.g. Slayer set repeats AoE) | ❌ NOT MODELLED | — | MED — added attack generates its own downstream rolls |
+| 12 | **BONUS_DAMAGE_OR_ATTACK_PROC** | repeat/extra-hit/bonus/join attack (e.g. Slayer set repeats AoE) | ⚠→✅ **skill extra-hit ROLLED** (Faceless/Crossbowman A1 `extraHitChance`, `proc` stream, engine DEAL_DAMAGE — one real added hit per activation). ⏳ still deferred: gear Slayer-set repeat, join/bonus-attack variants | `proc` | MED — added attack generates its own downstream rolls |
 | 13 | **EXTRA_TURN** | Relentless etc.: chance + **diminishing** on consecutive extra turns | ❌ NOT MODELLED | — | MED — large turn-economy effect if any unit has it (check roster) |
 | 14 | **COUNTERATTACK_PROC / REACTION_PROC** | chance-based counters/reactions (passive, Retaliation/Avenging gear, masteries) | ⚠ on-attacked fires at **100% deterministic** | `mastery`?/new | MED — chance-gate where real proc <100% |
 | 15 | **FEAR_ACTIVATION** | Fear/True Fear: **50%** the skill fails and the turn is lost (True Fear also puts it on CD) | ❌ NOT MODELLED (Fear is NOT in `CC_SKIPS_TURN`) | — | MED if Fear is in play; occurs after skill selection, before execution |

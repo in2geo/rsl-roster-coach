@@ -191,6 +191,10 @@ const MUTANTS = [
   { name: 'ignore_block_damage ignored (Faceless/Lua A3 still blocked by [Block Damage])', expectKill: true, file: 'engine',
     find: "!ignoreBlockDamage && target.buffs.some((b) => b.type === 'Block Damage')",
     repl: "true && target.buffs.some((b) => b.type === 'Block Damage')" },
+  // ── extra-hit proc (interpreter DEAL_DAMAGE) — Faceless/Crossbowman A1 must fire a 15% extra hit ──
+  { name: 'extra-hit proc dropped (Faceless/Crossbowman A1 never fire the extra hit)', expectKill: true,
+    find: 'if (F.extraHitChance && t.alive && rollChance(state?.rng?.proc, F.extraHitChance)) {',
+    repl: 'if (false && F.extraHitChance && t.alive && rollChance(state?.rng?.proc, F.extraHitChance)) {' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8'), [DRAGON]: fs.readFileSync(DRAGON, 'utf8') };

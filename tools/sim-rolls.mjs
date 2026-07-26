@@ -108,6 +108,14 @@ const cover = (b) => { for (const k of RNG_STREAMS) if (b.counts[k] > 0) drawnSo
   runQuiet(st, bossContent([dummyEnemy({ maxHp: 1e9, spd: 1 })]), { turnCap: 1 }); cover(b);
   ok('COVERAGE gear: the gear stream is drawn on an attack with a complete proc set', b.counts.gear > 0, `draws=${b.counts.gear}`);
 }
+// proc stream — drawn by an extra-hit skill (RNG_REGISTRY #12). A combatant named 'Faceless' runs the
+// authored FACELESS-A1 recipe, whose formula carries extraHitChance:0.15 → one roll per activation.
+{
+  const b = bundle();
+  const st = makeState({ allies: [champ({ name: 'Faceless', skills: [atk('A1', 3)] })], enemies: [], rng: b.rng });
+  runQuiet(st, bossContent([dummyEnemy({ maxHp: 1e9, spd: 1 })]), { turnCap: 1 }); cover(b);
+  ok('COVERAGE proc: the proc stream is drawn on an extra-hit skill (Faceless A1)', b.counts.proc > 0, `draws=${b.counts.proc}`);
+}
 // affinity stream — drawn on an ADVANTAGE/DISADVANTAGE matchup (Magic > Spirit), NOT on a neutral/Void one
 {
   const b = bundle();
@@ -190,6 +198,17 @@ function toxicPlaced(gearVal) {
 }
 ok('FIDELITY gear: Toxic PLACES below its 75% chance (0.74), ignoring the RES-300 target (gear ignores ACC/RES)', toxicPlaced(0.74));
 ok('FIDELITY gear: Toxic MISSES above its 75% chance (0.76)', !toxicPlaced(0.76));
+
+// proc (extra hit) at 15%: draw 0.14 fires the extra hit (2 hits recorded), 0.16 does not (1 hit). Faceless A1
+// (single-target, hitCount 1) so the hit count is an unambiguous 1 vs 2 damage effects on the enemy.
+function extraHits(procVal) {
+  const b = bundle({ proc: [procVal] });
+  const st = makeState({ allies: [champ({ name: 'Faceless', critRate: 0, skills: [atk('A1', 3)] })], enemies: [], rng: b.rng });
+  const r = runQuiet(st, bossContent([dummyEnemy({ maxHp: 1e9, def: 1000, spd: 1 })]), { turnCap: 1 });
+  return r.effects.filter(e => e.kind === 'damage' && e.consumed && e.target === 'E').length;
+}
+ok('FIDELITY proc: extra hit FIRES below its 15% chance (0.14 → 2 hits)', extraHits(0.14) === 2, `hits=${extraHits(0.14)}`);
+ok('FIDELITY proc: extra hit MISSES above its 15% chance (0.16 → 1 hit)', extraHits(0.16) === 1, `hits=${extraHits(0.16)}`);
 
 // ══ PART E — STREAM ISOLATION (the decorrelation the design claims but never tested) ══
 // Forcing the CRIT stream to a constant must NOT change the DEBUFF stream's draw sequence. Confounder

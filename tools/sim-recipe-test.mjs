@@ -4,7 +4,7 @@
 // recipe from DATA, asserting the tricky behaviours resolve. Deterministic (seed=null) so numbers are
 // stable and checkable. Attackers are affinity Void (neutral) to keep magnitudes clean — affinity itself
 // is exercised in the full fight (Step 4). Run: node tools/sim-recipe-test.mjs
-import { makeCombatant, makeState, defMitigation } from '../lib/sim/engine.js';
+import { makeCombatant, makeState, defMitigation, setChanceMode } from '../lib/sim/engine.js';
 import { applyRecipe, recipeFor } from '../lib/sim/interpreter.js';
 import { RECIPES } from '../lib/sim/recipes.js';
 
@@ -173,6 +173,18 @@ console.log('\n=== Recipe interpreter — isolated damage tests ===\n');
   check(`Arbalester A3 — 0 debuffs → 2×ATK = ${EXP(2, 2000, 1, 1000)}`, hit(0).raw_damage === EXP(2, 2000, 1, 1000), `raw ${hit(0).raw_damage}`);
   check(`Arbalester A3 — 3 debuffs → (2+3)×ATK = ${EXP(5, 2000, 1, 1000)}`, hit(3).raw_damage === EXP(5, 2000, 1, 1000), `raw ${hit(3).raw_damage}`);
   check('Arbalester A3 — +1×ATK per debuff (0→3 adds exactly 3×ATK×defMit)', hit(3).raw_damage - hit(0).raw_damage === EXP(5, 2000, 1, 1000) - EXP(2, 2000, 1, 1000));
+}
+
+// 13 — EXTRA-HIT PROC: Faceless A1 = one guaranteed hit + a 15% extra hit (F_FACELESS_A1.extraHitChance).
+// seed=null resolves the roll via the chance policy: forced 'all' → the extra hit lands (2 results), forced
+// 'none' → only the guaranteed hit (1 result). Restores the default policy afterward.
+{
+  const faceless = () => { const a = scene({ atk: 3000 }); return run(a.state, a.attacker, 'Faceless', 'A1'); };
+  setChanceMode('all');  const all = faceless();
+  setChanceMode('none'); const none = faceless();
+  setChanceMode('threshold');
+  check('Faceless A1 — extra-hit proc lands under CHANCE_MODE=all (2 hits)', all.length === 2, `${all.length} hit(s)`);
+  check('Faceless A1 — no extra hit under CHANCE_MODE=none (1 hit)', none.length === 1, `${none.length} hit(s)`);
 }
 
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
