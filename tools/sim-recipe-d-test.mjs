@@ -217,5 +217,24 @@ function pelopsOnAttackedRate(debuffType, pelopsUnderDecrDef, n = 4000) {
   check('Enfeeble on attacker → weak hit ×0.70 (mobs hit 30% softer)', normal > 0 && Math.abs(enf - normal * 0.70) <= 1, `normal=${normal} enfeebled=${enf}`);
 }
 
+// ── Ezio P2 counterattack (35% when attacked → re-runs A1 AT the attacker). Two enemies: the attacker has the
+// HIGHER max HP so it is NOT the AI's default single-target pick — proving the counter uses forceTarget (hits
+// the attacker), not normal targeting. 35% rolls off the proc stream; force it via all-land, control via none. ──
+{
+  const mk = () => ({
+    ez: makeCombatant({ name: 'Ezio Auditore', side: 'ally', atk: 3000, acc: 200, affinity: 'Void', critRate: 0, critDmg: 0 }),
+    attacker: makeCombatant({ name: 'Attacker', side: 'enemy', maxHp: 1e7, def: 1000, res: 0, affinity: 'Void' }),   // higher max HP
+    other: makeCombatant({ name: 'Other', side: 'enemy', maxHp: 1e6, def: 1000, res: 0, affinity: 'Void' }),          // lower max HP = AI's default pick
+  });
+  setChanceMode('all');
+  const a = mk(); fireTriggers(makeState({ allies: [a.ez], enemies: [a.attacker, a.other], seed: null }), a.ez, 'attacked', { attacker: a.attacker });
+  setChanceMode('none');
+  const b = mk(); fireTriggers(makeState({ allies: [b.ez], enemies: [b.attacker, b.other], seed: null }), b.ez, 'attacked', { attacker: b.attacker });
+  setChanceMode('threshold');
+  check('Ezio P2 counterattack: fires (all-proc) and hits the ATTACKER via forceTarget, not the AI-preferred target',
+    a.attacker.hp < 1e7 && a.other.hp === 1e6, `attacker took ${1e7 - a.attacker.hp}, other took ${1e6 - a.other.hp}`);
+  check('Ezio P2 counterattack: no counter under none-proc → attacker untouched', b.attacker.hp === 1e7, `attacker took ${1e7 - b.attacker.hp}`);
+}
+
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
 process.exit(fail ? 1 : 0);

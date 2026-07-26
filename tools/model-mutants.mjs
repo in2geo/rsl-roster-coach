@@ -226,6 +226,13 @@ const MUTANTS = [
   { name: 'BOOST_SHIELD zeroed (Bambus A2 shield boost does nothing)', expectKill: true,
     find: 'if (b.type === \'Shield\') { b.value = (b.value ?? 0) + add; boosted++; }',
     repl: 'if (b.type === \'Shield\') { b.value = (b.value ?? 0) + add * 0; boosted++; }' },
+  // ── COUNTERATTACK (interpreter) — Ezio P2 must re-run A1 at the attacker ──
+  { name: 'COUNTERATTACK no-op (Ezio P2 counter never lands)', expectKill: true,
+    find: 'applyRecipe(state, owner, rec, { forceTarget: attacker });',
+    repl: 'void rec;' },
+  { name: 'COUNTERATTACK forceTarget ignored (counter hits the AI pick, not the attacker)', expectKill: true,
+    find: 'ctx.forceTarget ? (ctx.forceTarget.alive ? [ctx.forceTarget] : []) : acquireTargets(ctx.state, ctx.actor, act, ctx.opponents, ctx.avoid)',
+    repl: 'acquireTargets(ctx.state, ctx.actor, act, ctx.opponents, ctx.avoid)' },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8'), [DRAGON]: fs.readFileSync(DRAGON, 'utf8') };
