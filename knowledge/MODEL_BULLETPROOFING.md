@@ -106,17 +106,20 @@ NOT the same as: matches the real game, or is complete. A stage is **bulletproof
   `engine.rollCrit` exposes the crit OUTCOME ({crit,mult,ev}) with the identical single crit-stream draw;
   computeRawHit returns crit+critEv; dealOneHit applies `critHealPct`/`critSplashPct` riders (rolled crit →
   fire; seed=null EV → cr%×effect). Snapshot re-blessed (LUA-A1). LUA-A2 covers:['crit-heal'] for the «heal» kw.
-- Catalog **15 → 6** this session (st17 17 → 14). Ladder 15/15, teeth 53/53 (100%) throughout. **11 unpushed commits.**
-- **Remaining 6** — TWO need Mike's input, one is the hardest:
-  - ⛔ **BLOCKED on Mike** — Bambus A2 "+3% ally [Shield] value per enemy buff decreased": base (%shield-value vs
-    %Bambus-MaxHP) UNVERIFIED. IMPLEMENT-DON'T-FIT forbids guessing.
-  - ⛔ **NEEDS Mike** — Ezio A2 "instantly activates all [Poison] on enemies with 4+ debuffs": the DAMAGE SEMANTIC
-    is ambiguous — one tick now, or all remaining ticks at once; and is the Poison then REMOVED (slot relief)?
-    Direction is clear (Poison deals damage now); the amount is not. Confirm before building.
-  - **buildable now:** Ezio P2 35% counterattack-when-attacked (on-attacked reaction + chance + follow-up A1 —
-    watch cascade); Pelops A2 steal-all-buffs + [Stun] 2t if a hit dealt <50% target MaxHP (post-damage
-    conditional, unresistable if target [HP Burn]); Bambus P [Sleep]-break-on-enemy-attack (on-attacked removes
-    [Sleep] + fires the existing dump; interacts with the Sleeping-Sage sponge).
+- `ef8abe9` **14/18** — Ezio A2 [Poison] activation. New `DEBUFF_ACTIVATION` op + `activatePoisons`/`debuffSlots`
+  helpers. Mike-confirmed: poisons deal damage now and are REMOVED; Poison STACKS count individually toward the
+  4+-debuff gate. Snapshot re-blessed.
+- `21c476f` **15/18** — Bambus A2 [Shield] boost. New `BOOST_SHIELD` op; REDUCE_EFFECT_DURATION now returns the
+  count (ctx.buffsDecreased). Mike-confirmed base: +3% of Bambus MAX HP per buff decreased. **BAMBUS-A2 now
+  fully EXECUTABLE.** Snapshot re-blessed. Both Mike-blocked clauses are now cleared.
+- Catalog **15 → 4** this session (st17 17 → 12). Ladder 15/15, teeth 56/56 (100%) throughout. **push when ready.**
+- **Remaining 4** (all buildable; the last is the hardest):
+  - Ezio P2 — 35% counterattack-when-attacked (on-attacked reaction + chance + a follow-up A1 hit; watch the
+    cascade — a counter must not re-trigger counters infinitely).
+  - Pelops A2 — steal all buffs + [Stun] 2t if a hit dealt <50% of the target's MAX HP (post-damage conditional;
+    needs the hit's inflicted damage available to a follow-up action; unresistable if target [HP Burn]).
+  - Bambus P — [Sleep]-break-on-enemy-attack (on-attacked removes [Sleep] + fires the existing dump; interacts
+    with the Sleeping-Sage sponge — the wake must stop the sponge).
   - **hardest, last:** Ezio A2 [Stone Skin]→[Bomb] branch (a named-exception alternate skill path).
 
 ## Discipline (unchanged, load-bearing)
