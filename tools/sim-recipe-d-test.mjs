@@ -172,6 +172,15 @@ function pelopsOnAttackedRate(debuffType, pelopsUnderDecrDef, n = 4000) {
   // failed to remove Sleep would splice it onto the enemy AND make Bambus skip his turn).
   check('Sleeping Sage: dumps real debuffs to the HIGHEST-RES enemy, never [Sleep]', hiRes.debuffs.some(d => d.type === 'Decrease Defense') && !hiRes.debuffs.some(d => d.type === 'Sleep') && !lowRes.debuffs.length && !bam.debuffs.length);
 }
+{ // wake-ON-ATTACK: being hit while asleep ALSO removes [Sleep] and fires the dump ("…or by an enemy attack")
+  const bam = makeCombatant({ name: 'Bambus', side: 'ally', affinity: 'Void' });
+  bam.debuffs.push({ type: 'Sleep', turnsLeft: 2 }, { type: 'Decrease Defense', value: 60, turnsLeft: 2 });
+  const lowRes = makeCombatant({ name: 'Low', side: 'enemy', res: 20, affinity: 'Void' });
+  const hiRes = makeCombatant({ name: 'Hi', side: 'enemy', res: 200, affinity: 'Void' });
+  fireTriggers(makeState({ allies: [bam], enemies: [lowRes, hiRes], seed: null }), bam, 'attacked', { attacker: lowRes });
+  check('Sleeping Sage: an enemy attack wakes Bambus (removes [Sleep]) and dumps to the highest-RES enemy',
+    !bam.debuffs.some(d => d.type === 'Sleep') && hiRes.debuffs.some(d => d.type === 'Decrease Defense') && !bam.debuffs.length);
+}
 { // sponge: a debuff placed on an ally transfers to an asleep Bambus (force the 75% via all-land)
   setChanceMode('all');
   const bam = makeCombatant({ name: 'Bambus', side: 'ally', maxHp: 26000, affinity: 'Void' }); bam.debuffs.push({ type: 'Sleep', turnsLeft: 1 });

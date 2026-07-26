@@ -43,6 +43,7 @@ const BENIGN = [/immune/, /^resisted /, /^overheal/, /^no debuffs to cleanse$/, 
   /^no buffs to reduce$/, /^no buffs to extend$/,         // a duration op on a target with no buffs: the op ran, there was nothing to change
   /^no \[Shield\] to boost$/, /^no buffs decreased/,      // BOOST_SHIELD on an ally with no shield, or with 0 enemy buffs decreased: ran, nothing to add
   /^no cooldowns to decrease$/,                           // DECREASE_COOLDOWN on an ally with nothing on cooldown
+  /^no \w+ to activate$/, /^<\d+ debuffs$/,               // DEBUFF_ACTIVATION on a target with no Poison / below the debuff-count gate
   /^already full$/, /^already empty$/, /^condition not met$/];                   // Turn Meter fill at 100 / decrease at 0 — the effect fired, there was nothing to change
 const DATA_GAP = [/^MISSING coeff$/, /^UNKNOWN land chance$/];
 const explained = (re) => (e) => re.some(r => r.test(e.note ?? ''));
