@@ -15,7 +15,8 @@
 
 import { makeCombatant, makeState, incomingDamage } from '../lib/sim/engine.js';
 import { makeDragonContent, HELLRAZOR_IMMUNE, bossHit } from '../lib/sim/dragon.js';
-import { installRecipeRun } from '../lib/sim/interpreter.js';
+import { installRecipeRun, applyRecipe } from '../lib/sim/interpreter.js';
+import { RECIPES } from '../lib/sim/recipes.js';
 
 let pass = 0, fail = 0;
 const catalog = [];   // boss behaviours that are NOT yet verified against the source — surfaced, never silently asserted
@@ -124,6 +125,18 @@ console.log('\n=== Hellrazor boss sequence (Model-side fired-and-applied, determ
   installRecipeRun(s);                    // wires state.onDamageTaken = fireDamageReactions
   act(s, boss); act(s, boss);             // Inhale → Scorch strikes Vergis
   check('on-hit reaction fires on the boss path (Vergis Second Wind [Shield])', vergis.buffs.some(b => b.type === 'Shield'));
+}
+
+// ── Bambus A3 vs the boss: [Enfeeble] is BLOCKED (Almighty Immunity) → 50% [Decrease ATK] on the boss instead ──
+{
+  const boss = mkBoss({ res: 0 });   // res 0 → the boss-branch Decrease ATK lands deterministically (accuracy_check)
+  const mob = makeCombatant({ name: 'Lua#1', side: 'enemy', role: 'wave', maxHp: 5000, def: 500, res: 0, affinity: 'Void' });
+  const bambus = makeCombatant({ name: 'Bambus', side: 'ally', maxHp: 26000, atk: 1000, acc: 300, affinity: 'Void' });
+  const s = makeState({ allies: [bambus], enemies: [boss, mob], seed: null }); s.enemies = [boss, mob];
+  applyRecipe(s, bambus, RECIPES['BAMBUS-A3']);
+  check('Bambus A3: [Enfeeble] BLOCKED on the boss (Almighty Immunity)', !boss.debuffs.some(d => d.type === 'Enfeeble'));
+  check('Bambus A3: boss gets 50% [Decrease Attack] instead', boss.debuffs.some(d => d.type === 'Decrease Attack'));
+  check('Bambus A3: a wave mob gets [Enfeeble], not the boss branch', mob.debuffs.some(d => d.type === 'Enfeeble') && !mob.debuffs.some(d => d.type === 'Decrease Attack'));
 }
 
 console.log(`\n  ${fail ? '✗' : '✓'} boss sequence: ${pass} passed, ${fail} failed`);

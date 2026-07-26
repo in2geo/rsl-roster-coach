@@ -164,6 +164,14 @@ const MUTANTS = [
   { name: 'interrupted-Scorch turn is NOT wasted (boss falls through to a normal hit — the old bug)', expectKill: true, file: 'dragon',
     find: "boss.turnMeter = 0; state.log.push({ turn: state.turn, phase: 'boss', event: 'scorch interrupted — turn wasted' }); return;",
     repl: "boss.turnMeter = 0; state.log.push({ turn: state.turn, phase: 'boss', event: 'scorch interrupted — turn wasted' });" },
+  // ── Almighty Immunity: [Enfeeble] must NOT be placeable on the boss (Bambus A3 boss-branch) ──
+  { name: 'boss no longer immune to [Enfeeble] (Almighty Immunity broken)', expectKill: true, file: 'dragon',
+    find: "'Stun', 'Freeze', 'Sleep', 'Petrification', 'Enfeeble', 'Provoke', 'Fear', 'True Fear',",
+    repl: "'Stun', 'Freeze', 'Sleep', 'Petrification', 'NoSuchImmunity', 'Provoke', 'Fear', 'True Fear'," },
+  // ── is_boss per-target branch (Bambus A3: Decrease ATK on the boss instead of Enfeeble) ──
+  { name: 'is_boss condition broken (Bambus A3 boss Decrease-ATK branch never fires)', expectKill: true,
+    find: "if (cond.kind === 'is_boss')      return t.role === 'boss';",
+    repl: "if (cond.kind === 'is_boss')      return false;" },
 ];
 
 const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8'), [DRAGON]: fs.readFileSync(DRAGON, 'utf8') };
