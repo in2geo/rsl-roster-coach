@@ -89,6 +89,18 @@ NOT the same as: matches the real game, or is complete. A stage is **bulletproof
 - Remaining follow-up: the PRODUCT path needs a name→stats engine with LEVEL + ASCENSION scaling (the sync is a
   testing instrument, not the shipped stat source) — see memory `app-assigns-stats-sync-is-testing-only-2026-07-26`.
 
+## Stage-16 catalog burn-down (session 2026-07-26 pm)
+- `7fe1d64` **5/18** — Renegade A2 conditional Decrease SPD/ACC. New `target_has_buffs` condition kind +
+  two wired placements (Decrease Speed 50% / Decrease ACC guaranteed-if-buffed). Consumers pre-existed.
+- `9bec488` **6-7/18** — [Block Damage] consumer built in `engine.dealDamage` (negates a direct hit; not a
+  pool) + `ignore_block_damage` flag → cleared Faceless A3 + Lua A3 together. Registered in CONSUMED_EFFECTS.
+- Catalog **15 → 12**. Ladder 15/15, teeth 48/48 (100%) throughout. Branch NOT pushed since (7fe1d64, 9bec488).
+- **Remaining 12 all need a NEW PRIMITIVE** (the wire-existing-op clauses are done): extra-hit proc (needs an
+  RNG stream — roll type #12, clears Faceless A1 + st17 Crossbowman A1), random-target-per-hit, crit-conditional
+  AoE (Lua A1), lifesteal-on-crit (Lua A2), self-destroy (Renegade A3), REDUCE_EFFECT_DURATION (Bambus A2),
+  counterattack event (Ezio P2), debuff-activation (Ezio A2), Stone-Skin→Bomb named exception (Ezio A2, hardest),
+  sleep-break-on-hit (Bambus P), steal+stun (Pelops A2).
+
 ## Discipline (unchanged, load-bearing)
 We NEVER tune a magnitude to fit reality. A sim≠reality gap is a MISSING/WRONG mechanic to implement, never a
 dial. Verify skill data from the live DB. Golden/snapshot must stay byte-identical across a behavior-preserving
