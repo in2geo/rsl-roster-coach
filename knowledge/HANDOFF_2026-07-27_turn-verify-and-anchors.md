@@ -1,7 +1,7 @@
-# HANDOFF 2026-07-27 — Turn-by-turn outcome verifier, the Petrification fix, and the bad-anchor trap
+# HANDOFF 2026-07-27 — Turn-by-turn outcome verifier, the Petrification fix, the bad-anchor trap, poison attribution
 
-Branch `session/qa-rungs-2026-07-23` — **pushed / in sync**, latest `2e76625`.
-Model QA ladder **16/16 green**. This session's commits: `97d9e13`, `285f47b`, `2e76625`.
+Branch `session/qa-rungs-2026-07-23` — **pushed / in sync**, latest `78be580`.
+Model QA ladder **16/16 green**. This session's commits: `97d9e13`, `285f47b`, `2e76625`, `d9ce06b`, `78be580`.
 
 ## One-line state
 The sim was losing wave-2 far too often (~40% WR vs reality's ~90%). Root cause found and fixed:
@@ -29,6 +29,16 @@ a key "reality" number we'd been chasing was a **bad single-run anchor**.
    field on debuff placements (for the **self-applied-CC exception**: Bambus's self-[Sleep] is owner-controlled,
    0 skips is CORRECT, documented in `verify-core.mjs`).
 4. **Bad-anchor fix** (`2e76625`): see the trap below.
+5. **Poison attribution — credited to the POISONER** (`78be580`, `engine.js`/`interpreter.js`/`sim-trace.mjs`):
+   Raid credits DoT to whoever PLACED the poison, not whoever triggers it (Ezio's A2 activation) and not
+   'Poison'. Poison debuffs now carry `sources:{champion:stacks}`; `tickDots` + `activatePoisons` credit the
+   owner(s) via `engine.creditDot`; Bambus's sponge/dump re-stamps ownership to Bambus (his redirect is HIS
+   damage); per-hero DEALT sums `dot` events sourced to a champ. **Effect: Bambus 102k→477k (real 506k), Ezio
+   110k→388k (real 333k), unattributed DoT 319k→86k.** PURE attribution — combat unchanged (hand-calc golden
+   green, outcomes WIN 5/5). Snapshot re-blessed (EZIO-A2 ledger source), stale sponge mutant repointed.
+   ⇒ **The sim's per-hero DEALT is now meaningful** (it WAS understating Bambus by ~5×), so it's no longer
+   evidence the sim is "wrong on Bambus." Remaining 86k unattributed = **HP Burn** (Pelops's passive) — the
+   identical `sources` fix is the obvious next step (would lift Pelops 123k→~259k).
 
 ## ‼️ THE TRAP (read this — it's the recurring trust failure)
 The golden fixtures' `expected.per_hero` `taken`/`dealt`/`healing` are **ONE 2026-07-22 recording copied across
@@ -60,11 +70,14 @@ a ledger event is closing an **observability** gap, not fixing behavior. Don't o
    single-target death seat) surfacing on top of the pessimistic deterministic mode. To take it: re-run each
    mutant/snapshot shift, confirm it's a correctness improvement, re-bless deliberately (never fit-and-bless).
    Decision was left to Mike.
-2. **Batch 3 — the 14 remaining placement-only mechanics** (Increase/Decrease ATK/DEF/SPD/ACC/C.RATE, Enfeeble,
+2. **HP Burn attribution** — the poison fix (#5) left ~86k of DoT still unattributed: it's HP Burn, placed by
+   Pelops's passive on attackers. Apply the identical `sources` treatment in `tickDots`'s HP-Burn branch
+   (credit Pelops incl. the splash) → lifts Pelops 123k→~259k. Small, mirrors the poison fix exactly.
+3. **Batch 3 — the 14 remaining placement-only mechanics** (Increase/Decrease ATK/DEF/SPD/ACC/C.RATE, Enfeeble,
    Poison Sensitivity). These are pure stat modifiers with no discrete consequence event — they need a
    **consumed-at-point-of-use** instrument (assert the modifier is READ in effectiveScaleStat / statFactor /
    effectiveSpeed / effectiveAcc / landChance when its calc runs). Different tool than batches 1–2.
-3. The turn-verify rung reports the `placement-only` count every run — that IS the honest coverage gap. "Green"
+4. The turn-verify rung reports the `placement-only` count every run — that IS the honest coverage gap. "Green"
    means turn-order holds + the 11 outcome-verified mechanics aren't inert; it does NOT mean everything is verified.
 
 ## How to drive the verifier
