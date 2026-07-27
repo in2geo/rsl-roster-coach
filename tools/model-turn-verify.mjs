@@ -42,7 +42,7 @@ for (let seed = 1; seed <= N; seed++) {
 // INERT (blocking): a skip/tick mechanic that had a live target across the run but never once did its job.
 const inert = Object.entries(agg)
   .filter(([, a]) => a.contract !== 'placed' && a.opps > 0 && a.consequence === 0)
-  .map(([m, a]) => `${m} INERT — ${a.opps} chance(s) across ${N} battles, 0 ${{ skip: 'skips', tick: 'damage events', heal: 'heal ticks', reactive: 'soak/reflect' }[a.contract] || 'consequences'}`);
+  .map(([m, a]) => `${m} INERT — ${a.opps} chance(s) across ${N} battles, 0 ${{ skip: 'skips', tick: 'damage events', heal: 'heal ticks', reactive: 'soak/reflect', targeting: 'steered picks' }[a.contract] || 'consequences'}`);
 
 const failures = [];
 if (orderViolations > 0) failures.push(`turn order broken: ${orderViolations} pick(s) were not the max-turn-meter unit (e.g. t${orderExamples[0]?.turn} picked ${orderExamples[0]?.picked} over ${orderExamples[0]?.maxUnit})`);

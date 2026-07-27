@@ -56,6 +56,7 @@ for (const r of rows) {
   else if (r.contract === 'tick') { obs = `${r.consequence} dmg-event(s)`; verdict = r.consequence > 0 ? '✅ WORKS (tick/activate)' : r.opps > 0 ? `❌ INERT (${r.opps} live, 0 damage)` : '· n/a (targets died first)'; }
   else if (r.contract === 'heal') { obs = `${r.consequence} heal tick(s)`; verdict = r.consequence > 0 ? '✅ WORKS' : r.opps > 0 ? `❌ INERT (${r.opps} turns, 0 heals)` : '· n/a (no turns while buffed)'; }
   else if (r.contract === 'reactive') { obs = `${r.consequence} soak/reflect`; verdict = r.consequence > 0 ? '✅ WORKS' : r.opps > 0 ? `❌ INERT (hit ${r.opps}×, 0 soak)` : '· n/a (buffed unit never hit)'; }
+  else if (r.contract === 'targeting') { obs = `${r.consequence}/${r.opps} picks steered`; verdict = r.opps === 0 ? '· n/a (no mob single-target picks)' : r.consequence > 0 ? '✅ WORKS' : `❌ INERT (${r.opps} picks, buff ignored)`; }
   else { obs = 'stat/damage pipe'; verdict = '· PLACEMENT-ONLY (outcome not yet verified)'; placementOnly.push(r.mechanic); }
   if (r.inert) inert++;
   console.log(`  ${r.mechanic.padEnd(20)}${String(r.placed).padStart(4)}  ${String(r.opps ?? '—').padStart(4)}   ${obs.padEnd(20)} ${verdict}`);
