@@ -225,7 +225,13 @@ async function main() {
     const ph = perHero(fixture, res);
     const fmt = (n) => n == null ? '—' : Math.round(n).toLocaleString();
     const mk = (b) => b == null ? ' ' : (b ? '✓' : '✗');
-    console.log('\n  PER-HERO (recording vs sim) — is each champion doing the RIGHT work, or is a plausible result coming from the wrong source?');
+    // The per_hero recorded values are a SINGLE 2026-07-22 capture copied across fixtures (identical Ezio
+    // taken/dealt in a stage-16 AND a stage-17 fixture — the tell). That run was atypical (Ezio's veil held
+    // all fight, 3,509 taken). Real runs vary widely — Ezio commonly DIES and is revived (Mike, first-party).
+    // So per_hero is DIRECTIONAL reference only, NEVER a reality target. `per_hero_representative:false` in the
+    // fixture suppresses reality-gap verdicts from it (e.g. the old false "Perfect Veil NOT protecting him").
+    const representative = fixture.expected?.per_hero_representative !== false;
+    console.log(`\n  PER-HERO — ${representative ? 'recording vs sim' : 'SINGLE-RUN 2026-07-22 reference (NOT a reality target — real runs vary; Ezio commonly dies+revives)'} :`);
     console.log('    hero       metric     recorded          sim');
     console.log('    ' + '─'.repeat(58));
     for (const r of ph.rows) {
@@ -241,9 +247,13 @@ async function main() {
     console.log(`        [Continuous Heal] ticks, UNATTRIBUTED to caster:  ${fmt(ph.contHeal)}`);
     console.log(`        boss-phase direct hits are not ledgered (dragon.js) → 'taken' reflects waves + DoT, not boss damage`);
 
-    // the single most diagnostic per-hero fact: Ezio's damage taken tests whether [Perfect Veil] protects him
+    // Ezio's damage-taken USED to headline "Perfect Veil NOT protecting him" — but that compared the sim to a
+    // single lucky recording (3,509). With per_hero flagged non-representative, emit NO reality verdict from it
+    // (a null headline adds nothing to sim-qa's reality_gap). Only a representative anchor may assert veil status.
     const ezio = ph.rows.find(r => /Ezio/i.test(r.name));
-    const perHeroHeadline = ezio && ezio.real ? `Ezio taken: real ${fmt(ezio.real.taken)} / sim ${fmt(ezio.sim.taken)} (${closeEnough(ezio.real.taken, ezio.sim.taken) ? 'Perfect Veil holds' : 'Perfect Veil NOT protecting him'})` : null;
+    const perHeroHeadline = (representative && ezio && ezio.real)
+      ? `Ezio taken: real ${fmt(ezio.real.taken)} / sim ${fmt(ezio.sim.taken)} (${closeEnough(ezio.real.taken, ezio.sim.taken) ? 'Perfect Veil holds' : 'Perfect Veil NOT protecting him'})`
+      : null;
 
     outcomes.push({ id, stage: built.stage,
       simOutcome: res.won ? 'WIN' : 'LOSS', realOutcome: fixture.result?.outcome,

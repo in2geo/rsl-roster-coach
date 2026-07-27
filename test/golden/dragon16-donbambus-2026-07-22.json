@@ -12,6 +12,8 @@
     "failure_location_note": "Risk is concentrated in Wave 2, NOT the boss. A temporary death occurred in wave 2 and was recovered by a revive; the team reached Round 3 (boss) intact. A boss-only score misses this.",
     "damage_rank": ["Bambus", "Ezio", "Pelops", "Tagoar", "Vergis"],
     "top_healer": "Tagoar",
+    "per_hero_representative": false,
+    "_per_hero_note": "SINGLE 2026-07-22 recording. NOT representative — that run Ezio's veil held (3,509 taken); real runs vary, Ezio commonly dies+revives (Mike, first-party 2026-07-26). Directional reference only, never a reality target.",
     "per_hero": {
       "Ezio":   { "damage": 332966, "taken": 3509,  "healing": 0 },
       "Vergis": { "damage": 41818,  "taken": 31833, "healing": 39397 },

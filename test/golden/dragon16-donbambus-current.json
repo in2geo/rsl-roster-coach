@@ -12,6 +12,8 @@
     "failure_location_note": "REALITY (2026-07-25 watcher, 23W/3L on Dragon-16): the genuine losses are BOSS-stage attrition (213t), not wave wipes. The 2026-07-22 reference run below was a wave-2 temporary death recovered by revive, WIN at 150t.",
     "damage_rank": ["Bambus", "Ezio", "Pelops", "Tagoar", "Vergis"],
     "top_healer": "Tagoar",
+    "per_hero_representative": false,
+    "_per_hero_note": "SINGLE 2026-07-22 recording, copied across fixtures (identical Ezio taken/dealt appear in a stage-17 fixture too) — NOT representative. That run was atypical: Ezio's veil held all fight (3,509 taken). Real runs vary widely; Ezio commonly DIES and is revived (Mike, first-party 2026-07-26). Directional reference only, NEVER a reality target. The outcome/survivors ARE the check.",
     "per_hero": {
       "Ezio":   { "damage": 332966, "taken": 3509,  "healing": 0 },
       "Vergis": { "damage": 41818,  "taken": 31833, "healing": 39397 },

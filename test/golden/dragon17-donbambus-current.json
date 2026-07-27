@@ -40,6 +40,8 @@
       "Vergis"
     ],
     "top_healer": "Tagoar",
+    "per_hero_representative": false,
+    "_per_hero_note": "Copied 2026-07-22 stage-16 recording (Ezio taken 3,509 identical to the stage-16 fixtures — the tell it is not per-battle real). NOT representative; real runs vary, Ezio commonly dies+revives (Mike, first-party 2026-07-26). Directional reference only, never a reality target.",
     "per_hero": {
       "Ezio": {
         "damage": 332966,
