@@ -32,6 +32,7 @@ const RUNGS = [
   { file: 'sim-validate-recipes.mjs', name: 'card→recipe coverage',  layer: '1',    db: true },
   { file: 'model-fidelity.mjs',     name: 'DB→recipe fidelity',      layer: '1',    db: true },
   { file: 'model-golden.mjs',       name: 'hand-calc golden (turns 1–8)', layer: '4', db: true },
+  { file: 'model-turn-verify.mjs',  name: 'turn order + no inert mechanic (outcome)', layer: '4', db: true },
   { file: 'mob-coverage.mjs',       name: `wave coverage L1/2/3 (stage ${process.env.MODEL_QA_STAGE ?? 17})`, layer: '1', db: true },
 ];
 
