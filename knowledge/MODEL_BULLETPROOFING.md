@@ -4,6 +4,34 @@ Goal: make the Dragon **Stage 16** Model the trustworthy PROTOTYPE for the whole
 scale to more stages AND port to other dungeons without re-plumbing. Forensic audit 2026-07-26
 (memory: `model-bulletproofing-forensics-2026-07-26`).
 
+## ⚠ 2026-07-26 pm — "complete:true" was NOT bulletproof (reality-aggregate audit). NEXT: fix Bambus's damage engine
+Against the WATCHER's real Dragon-16 aggregate (`gestal-sync/RslBattleReader/output/battle-log.json`, 76 battles,
+**90.8% WR**), the sim wins **~36%**. Root cause (100-seed aggregate + isolated tests — see memory
+`dragon16-bambus-poison-redirect-rootcause-2026-07-26`): **Bambus's primary damage engine (~368k real) is his
+POISON REDIRECT** — Hellrazor's Wall of Fire poisons the team → Bambus (Sleeping Sage) sponges the poisons off
+allies → dumps them onto Hellrazor unresistable → Poison is 5% of MAX HP → on the boss's 727k HP that's ~36k per
+stack per tick. In the sim this engine is DEAD (Bambus deals 94k not 368k). Three compounding causes, in fix order:
+
+1. **BOSS BARELY CASTS WALL OF FIRE — the poison FUEL (biggest).** `lib/sim/dragon.js act()`: with `SIM_SCORCH=never`
+   (optimistic default) every armed Scorch is a "turn wasted" early `return`, and Inhale re-arms it while draining
+   the boss TM — so the boss loops Inhale + wasted-Scorch and rarely reaches the Wall-of-Fire branch (the cds only
+   decrement after a Swipe, itself seldom reached). Measured: **~2 Wall of Fire casts across 120 boss phases.** No
+   Wall of Fire → no team poison → nothing to sponge. FIX: make the rotation cast Wall of Fire at a realistic
+   cadence regardless of the Scorch bound (decouple the Scorch-bound wasted turn from the WoF/Swipe cooldown clock).
+2. **SPONGE STACK COLLAPSE (~6-10× magnitude, verified).** `interpreter.maybeSponge` (~line 287) moves poison via
+   `upsert(bambus.debuffs, {type,value,pct,turns})` with NO stacks/stacking/maxStacks → Bambus's Poison caps at 1
+   stack and never accumulates across the 5 poisoned allies. Should hold ~10 stacks (dump ~360k/tick); holds 1
+   (36k/tick). FIX: carry + accumulate the source debuff's `stacks` through the sponge (and cap at maxStacks 10).
+3. **WAVE-2 WIPES (separate, earlier).** Many runs die in wave 2 before the boss — the shorter losses. Reality
+   almost always clears the waves; its losses are long boss-attrition. Distinct from 1–2; needs its own pass.
+
+Wiring is CORRECT (sponge→dump→%MaxHP-on-boss proven in isolation with the roll forced) — it's STARVED (no fuel)
+and under-scaled (stack collapse). Ruled out (aggregate-tested, inert): debuff entry-vs-slot count, Bambus AoE
+slot-trigger, landChance curve. Damage is realistic on the mob side; per-hero real anchors: Bambus 392k, Pelops
+374k, Ezio 332k (same in real wins AND losses). **QA GAP this exposes:** add a reality-CADENCE / per-hero-damage
+rung vs the watcher — presence+teeth (`complete:true`) never checks a mechanic FIRES or PRODUCES its damage in a
+full fight. Also: `tools/sim-trace.mjs` omits `applyBattleLayers` (runs aura-less) — fix so the oracle matches volume.
+
 ## What "bulletproof" must mean (the reframe)
 "13/13 SPEC-CONFORMANT" today = the Model agrees with its own design and is internally stable. That is
 NOT the same as: matches the real game, or is complete. A stage is **bulletproof** when:
