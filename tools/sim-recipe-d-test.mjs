@@ -3,7 +3,7 @@
 // the teeth check (model-mutants) can see them and they cannot silently break. No DB. Deterministic.
 // Run: node tools/sim-recipe-d-test.mjs
 import { makeCombatant, makeState, setChanceMode, chooseAllyTarget, chooseSingleTarget, dealDamage, simulate, actEnemyMob, defMitigation } from '../lib/sim/engine.js';
-import { applyRecipe, fireTriggers, incomingDamage, passiveImmunities, installRecipeRun, tickPassiveCooldowns } from '../lib/sim/interpreter.js';
+import { applyRecipe, fireTriggers, incomingDamage, passiveImmunities, installRecipeRun, tickPassiveCooldowns, maybeSponge } from '../lib/sim/interpreter.js';
 import { RECIPES } from '../lib/sim/recipes.js';
 
 let pass = 0, fail = 0;
@@ -190,6 +190,19 @@ function pelopsOnAttackedRate(debuffType, pelopsUnderDecrDef, n = 4000) {
   applyRecipe(makeState({ allies: [bam, ally], enemies: [foe], seed: null }), foe, decDef);
   setChanceMode('threshold');
   check('Sleeping Sage: a debuff on an ally sponges to the asleep Bambus', bam.debuffs.some(d => d.type === 'Decrease Defense') && !ally.debuffs.some(d => d.type === 'Decrease Defense'));
+}
+{ // sponge STACK ACCUMULATION: a 2-stack [Poison] from EACH of two allies accumulates to 4 on Bambus (was
+  // collapsed to 1 by upsert — the bug that gutted his boss poison-redirect: 5%×MaxHP×stacks on Hellrazor).
+  setChanceMode('all');
+  const bam = makeCombatant({ name: 'Bambus', side: 'ally', maxHp: 26000, affinity: 'Void' }); bam.debuffs.push({ type: 'Sleep', turnsLeft: 2 });
+  const a1 = makeCombatant({ name: 'Vergis', side: 'ally', maxHp: 16000, affinity: 'Void' });
+  const a2 = makeCombatant({ name: 'Ezio', side: 'ally', maxHp: 16000, affinity: 'Void' });
+  for (const a of [a1, a2]) a.debuffs.push({ type: 'Poison', pct: 0.05, turnsLeft: 3, stacks: 2 });
+  const st = makeState({ allies: [bam, a1, a2], enemies: [], seed: null });
+  maybeSponge(st, a1, 'Poison'); maybeSponge(st, a2, 'Poison');
+  setChanceMode('threshold');
+  const stacks = bam.debuffs.filter(d => d.type === 'Poison').reduce((n, d) => n + (d.stacks ?? 1), 0);
+  check('Sleeping Sage: sponge ACCUMULATES stacks — 2+2 from two allies → 4 on Bambus (not collapsed to 1)', stacks === 4, `stacks=${stacks}`);
 }
 
 // ── Enemy AI targeting: LOWEST MAX HP (glass-cannon rule #3), not lowest current HP%; [Perfect Veil] hides
