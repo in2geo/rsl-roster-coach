@@ -126,8 +126,8 @@ const MUTANTS = [
     repl: 'if (true) return;' },
   // ── sponge/dump STACK ACCUMULATION (transferDebuff) — pre-stacked [Poison] must carry its stacks (the boss redirect) ──
   { name: 'sponge stack accumulation broken (poison collapses to 1 stack, gutting the boss redirect)', expectKill: true,
-    find: 'cur.stacks = Math.min((cur.stacks ?? 1) + (d.stacks ?? 1), cap);',
-    repl: 'cur.stacks = Math.min((cur.stacks ?? 1) + (d.stacks ?? 1) * 0, cap);' },
+    find: 'cur.stacks = Math.min(before + (d.stacks ?? 1), cap);',
+    repl: 'cur.stacks = Math.min(before + (d.stacks ?? 1) * 0, cap);' },
   // ── Enemy AI targeting: LOWEST MAX HP rule (engine.chooseSingleTarget), not lowest current HP% ──
   { name: 'AI targeting reverts to lowest current-HP% (ignores the max-HP glass-cannon rule)', expectKill: true, file: 'engine',
     find: 'if ((a.maxHp ?? 0) !== (b.maxHp ?? 0)) return (a.maxHp ?? 0) < (b.maxHp ?? 0) ? a : b;',

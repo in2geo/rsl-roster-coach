@@ -102,10 +102,10 @@ function perHero(fixture, res) {
   let dotToEnemies = 0, contHeal = 0;
   for (const e of res.effects || []) {
     const amt = e.amount || 0;
-    if (e.kind === 'damage' && ally.has(e.source) && amt > 0) sim[e.source].dealt += amt;
+    if ((e.kind === 'damage' || e.kind === 'dot') && ally.has(e.source) && amt > 0) sim[e.source].dealt += amt;   // DoT credited to the poisoner
     if (e.kind === 'heal' && ally.has(e.source) && amt > 0) sim[e.source].healing += amt;
     if ((e.kind === 'damage' || e.kind === 'dot') && ally.has(e.target) && amt > 0) sim[e.target].taken += amt;
-    if (e.kind === 'dot' && !ally.has(e.target) && amt > 0) dotToEnemies += amt + (e.splash || 0);
+    if (e.kind === 'dot' && !ally.has(e.target) && !ally.has(e.source) && amt > 0) dotToEnemies += amt + (e.splash || 0);   // only STILL-unattributed DoT
     if (e.kind === 'heal' && !ally.has(e.source) && e.subtype === 'Continuous Heal' && amt > 0) contHeal += amt;
   }
   const rows = team.map(n => ({ name: n, real: fixture.expected?.per_hero?.[n] || null, sim: sim[n] }));
