@@ -132,8 +132,24 @@ NOT the same as: matches the real game, or is complete. A stage is **bulletproof
       Heal tick (`engine.js`), so the mutant silently stopped running and BLOCKED sim-qa. Find-string
       refreshed (intent unchanged, still an `expectKill:false` probe). sim-qa: **BLOCKED → SPEC-CONFORMANT**,
       mutation 11/12 (the 1 remaining is that heal-overheal coverage-gap probe, correctly non-blocking).
-- **P3 — de-Dragon the harness.** `buildDragonBattle`→`buildBattle(dungeon)` adapter; registry-based recipe keys;
-  move the Bambus sponge into data. → TODO.
+- **P3 — de-Dragon the harness. 🟡 IN PROGRESS 2026-07-27.** Three welds; slice 1 of 3 done:
+  - **(2a) champion-key chokepoint — ✅ DONE (behaviour-preserving).** The `<FIRSTNAME>-<SLOT>` recipe key
+    was derived by an inline `name.split(' ')[0]…toUpperCase()` re-implemented in ~8 sites across
+    `engine.js`/`interpreter.js` — and INCONSISTENTLY (some stripped the fixture `#`-suffix, some didn't).
+    That scatter is the name-string collision risk R4 named. Now ONE exported `champKey(name)` in
+    `recipes.js` (strips first token + `#`, uppercases); `recipeFor`, `spongeOwner`, passive
+    triggers/immunities, the `incomingDamage` modifiers scan, and `isRecipeDriven` all route through it.
+    Byte-identical: model-snapshot no-drift, model-golden 7/7, model-qa 17/17 (teeth 100%), sim-qa
+    SPEC-CONFORMANT. The `#`-unifying is safe because mobs (which carry `#`) only resolve via
+    `recipeFor`/`isRecipeDriven` (already stripped), while the passive/modifier sites match only team-champ
+    recipes (allies, no `#`). This is the ENABLING step: swapping `champKey`'s internals for a champions.id
+    registry lookup ([[naming-architecture]] / CLAUDE.md hard rule) is now a single-site change.
+  - **(2b) full registry (champions.id) recipe keys — TODO.** Bridge the static in-memory recipe registry
+    to `lib/champion-names.js` (DB-backed) so recipes key by a stable id, not a name prefix.
+  - **(3) move the Bambus sponge into DATA — TODO.** `SPONGE_EXCLUDE` + the literal `0.75` + `maybeSponge`
+    are hardcoded champion-specifics inside the generic interpreter; encode them on Bambus's passive recipe.
+  - **(1) `buildDragonBattle` → `buildBattle(dungeon)` adapter — TODO (likely premature).** Hard to validate
+    genericity without a second dungeon in `lib/sim`; do after (2b)/(3).
 - **P4 — finish the backlog through the reconciled system.** Re-wire the ~half that need existing ops (recovers
   the lost stage-17 coverage); build the genuinely-missing primitives (damage-based self-heal, repeat-if extra
   hit, heal-crit, random-target) golden-safety first. → TODO.
