@@ -161,8 +161,14 @@ NOT the same as: matches the real game, or is complete. A stage is **bulletproof
     resolve. [[naming-architecture]] / CLAUDE.md registry rule satisfied at the validation layer.
   - **(3) move the Bambus sponge into DATA — TODO.** `SPONGE_EXCLUDE` + the literal `0.75` + `maybeSponge`
     are hardcoded champion-specifics inside the generic interpreter; encode them on Bambus's passive recipe.
-  - **(1) `buildDragonBattle` → `buildBattle(dungeon)` adapter — TODO (likely premature).** Hard to validate
-    genericity without a second dungeon in `lib/sim`; do after (2b)/(3).
+  - **(1) `buildDragonBattle` → `buildBattle(dungeon)` adapter — ✅ DONE 2026-07-28 (behaviour-preserving),
+    motivated by building Spider (the 2nd dungeon).** `dragon-fixture.js`: the Dragon-specific pieces
+    (boss-immunity, enemy-level source, non-boss enemy assembly, content factory, extra result fields) moved
+    into a `DUNGEONS` config registry; the champion-load + boss-build + exact-ally-build skeleton is now shared
+    in `buildBattle`, which dispatches on `fixture.content.dungeon`. `buildDragonBattle` kept as an alias so
+    all 8 callers are untouched. Byte-identical: model-golden 7/7 (no divergence), model-qa 18/18 (teeth 100%,
+    incl. the dragon-fixture mutant), sim-qa SPEC-CONFORMANT. Spider content build (Slices B–D) is the driver —
+    see `knowledge/SPIDER_SIM_BUILD.md`; weld (3) sponge→data still pending.
 - **P4 — finish the backlog through the reconciled system.** Re-wire the ~half that need existing ops (recovers
   the lost stage-17 coverage); build the genuinely-missing primitives (damage-based self-heal, repeat-if extra
   hit, heal-crit, random-target) golden-safety first. → TODO.
