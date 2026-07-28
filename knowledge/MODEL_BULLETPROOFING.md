@@ -144,8 +144,21 @@ NOT the same as: matches the real game, or is complete. A stage is **bulletproof
     `recipeFor`/`isRecipeDriven` (already stripped), while the passive/modifier sites match only team-champ
     recipes (allies, no `#`). This is the ENABLING step: swapping `champKey`'s internals for a champions.id
     registry lookup ([[naming-architecture]] / CLAUDE.md hard rule) is now a single-site change.
-  - **(2b) full registry (champions.id) recipe keys — TODO.** Bridge the static in-memory recipe registry
-    to `lib/champion-names.js` (DB-backed) so recipes key by a stable id, not a name prefix.
+  - **(2b) registry-anchored recipe champions — ✅ DONE (guard rung, not hot-path id-keying).** FINDING:
+    keying the engine's recipe lookup literally by `champions.id` would DB-couple the engine and BREAK the
+    no-DB contract ~10 rungs depend on — combatants (`makeCombatant`) carry only a name, and the alias bridge
+    ("Bambus" → canonical "Bambus Fourleaf") needs the DB `champion_aliases` rows. So the hot path stays
+    `champKey`/no-DB, and the registry lives at VALIDATION: new DB rung `tools/model-recipe-registry.mjs`
+    (in model-qa, **17→18 green**) resolves every recipe `champion` through the sanctioned
+    `buildNameResolver` (never a raw compare, per the CLAUDE.md rule) and BLOCKS on (1) a champion that
+    doesn't resolve to a champions.id, (2) champKey non-injective over recipe champions, or (3) any other
+    champion/alias sharing a recipe's champKey but a different id. **R4 validated by data:** the first-token
+    champKey has **19 collisions among the 944 champions** (DARK→Athel/Kael/Elhain, SUPREME×4, LADY×8,
+    CRIMSON→Pegason/Slayer/Helm, …); today none overlap the 13 recipe champkeys (green), but authoring a
+    recipe for e.g. "Dark Athel" would now be caught. Teeth verified: Vergis→"Crimson Helm" blocks (check 3),
+    Vergis→"Vergisxyz" blocks (check 1); reverted → green. All 13 recipe champions (incl. the Dragon "mobs"
+    Lua/Faceless/Arbalester/Renegade/Tayrel/Hordin/Crossbowman/Apothecary — which ARE real champions)
+    resolve. [[naming-architecture]] / CLAUDE.md registry rule satisfied at the validation layer.
   - **(3) move the Bambus sponge into DATA — TODO.** `SPONGE_EXCLUDE` + the literal `0.75` + `maybeSponge`
     are hardcoded champion-specifics inside the generic interpreter; encode them on Bambus's passive recipe.
   - **(1) `buildDragonBattle` → `buildBattle(dungeon)` adapter — TODO (likely premature).** Hard to validate
