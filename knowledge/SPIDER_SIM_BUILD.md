@@ -1,9 +1,17 @@
-# Spider's Den — SIM build design (for review, 2026-07-28)
+# Spider's Den — SIM build design (2026-07-28)
+
+**STATUS: Slice A ✅ (buildBattle adapter, `a1d78db`) · Slice B ✅ (makeSpiderContent + event-driven
+spawn/consume/snowball + `model-spider` teeth rung).** Mechanics verified DETERMINISTICALLY via the
+turn-by-turn verifier (`turn-verify.mjs '' spider13-donbambus-current.json`): turn order verified, zero inert
+mechanics, Almighty Immunity blocks CC on Skavag / lands on Spiderlings, Petrification/Sleep skip, Poison/HP
+Burn tick. model-qa **19/19**, model-spider **38/38**, Dragon byte-identical (golden 7/7). NEXT (Model): Slice
+C = the 21-25 boss passives (Almighty Strength/Persistence — Stage 13 doesn't exercise them). The outcome/
+"does the Dragon team clear 13" question is SIMULATOR-side (seeded volume vs the clears-13/walls-14 aggregate),
+a separate later phase — NOT a Model question.
 
 **Goal:** make `lib/sim` able to run a Spider's Den (Skavag) battle — the SECOND dungeon. Supporting a
 second dungeon at all is what forces `buildDragonBattle` → `buildBattle(dungeon)` to become generic, so this
-build IS P3 weld (1). Source mechanics: `SPIDER_REVIEW.md §1` (authoritative boss kit). This is a design to
-approve BEFORE any engine code is written.
+build IS P3 weld (1). Source mechanics: `SPIDER_REVIEW.md §1` (authoritative boss kit).
 
 ## Findings that shape the design (verified this session)
 - **Data is already seeded AND app-validated** (Mike's Stage 1–4 encounter screenshots, 2026-07-28).

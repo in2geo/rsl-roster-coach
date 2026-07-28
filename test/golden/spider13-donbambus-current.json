@@ -1,0 +1,16 @@
+{
+  "id": "spider13-donbambus-current",
+  "_source": "Spider's Den Stage 13 with the DonBambus Dragon team (recipes already exist). Builds from the current Gestal sync (data/observed-builds/2026-07-25-donbambus-current.json). NO reality recording yet — this is a gate-1 MODEL run (turn-by-turn call→fire→land), not a Simulator volume/WR run. Aggregate ground truth: the account CLEARS Spider 13 and WALLS at 14 (spider-bambus-ground-truth memory).",
+  "content": { "dungeon": "Spider's Den", "difficulty": "Normal", "stage": 13, "mode": "Full Auto", "speed": "1x" },
+  "_names": "team/roster use VICTORY-SCREEN display names; resolve to champions.name via lib/champion-names.js before sim use.",
+  "team": ["Ezio", "Vergis", "Bambus", "Pelops", "Tagoar"],
+  "roster": { "Ezio": "Ezio Auditore", "Vergis": "Vergis", "Bambus": "Bambus Fourleaf", "Pelops": "Pelops the Victor", "Tagoar": "Tagoar" },
+  "inputs": {
+    "_status": "RUNTIME — stats from the live Gestal sync via tools/build-from-sync.mjs, same builds as the Dragon-16 current fixture.",
+    "Ezio":   { "build": "data/observed-builds/2026-07-25-donbambus-current.json", "status": "current sync" },
+    "Pelops": { "build": "data/observed-builds/2026-07-25-donbambus-current.json", "status": "current sync (Lifesteal 4-set)" },
+    "Bambus": { "build": "data/observed-builds/2026-07-25-donbambus-current.json", "status": "current sync" },
+    "Tagoar": { "build": "data/observed-builds/2026-07-25-donbambus-current.json", "status": "current sync (Shield 2-set — unmodelled)" },
+    "Vergis": { "build": "data/observed-builds/2026-07-25-donbambus-current.json", "status": "current sync" }
+  }
+}

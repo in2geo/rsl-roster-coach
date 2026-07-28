@@ -13,7 +13,9 @@ import fs from 'fs'; import path from 'path'; import { fileURLToPath } from 'url
 import { runOne, scoreOutcomes } from './verify-core.mjs';
 
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const seed = Number(process.argv[2] || 7);
+// DEFAULT: no seed → DETERMINISTIC verify mode (every chance lands, crit = EV) — verify the mechanics.
+// Pass a numeric seed as the first arg for a stochastic (representative) run.
+const seed = (process.argv[2] != null && process.argv[2] !== '') ? Number(process.argv[2]) : null;
 const FIXTURE = process.argv[3] || 'dragon16-donbambus-current.json';
 const fixture = JSON.parse(fs.readFileSync(path.join(REPO, 'test/golden', FIXTURE), 'utf8'));
 if (!process.env.SUPABASE_URL) { console.log('needs the DB — run with --env-file=.env.local'); process.exit(2); }
@@ -30,7 +32,7 @@ const nf = (n) => n == null ? '' : Math.round(n).toLocaleString();
 const [lo, hi] = process.env.TURNS ? String(process.env.TURNS).split('-').map(Number) : [1, 9999];
 if (!process.env.QUIET) {
   const byTurn = {}; for (const e of fx) (byTurn[e.turn] ??= []).push(e);
-  console.log(`\n══ TURN-BY-TURN — ${fixture.id} seed ${seed} — ${res.won ? 'WIN' : 'LOSS'} in ${res.turns} turns ══`);
+  console.log(`\n══ TURN-BY-TURN — ${fixture.id} · ${seed == null ? 'DETERMINISTIC (every chance lands, crit=EV)' : 'seed ' + seed} — ${res.won ? 'WIN' : 'LOSS'} in ${res.turns} turns ══`);
   for (const t of Object.keys(byTurn).map(Number).sort((a, b) => a - b).filter(t => t >= lo && t <= hi)) {
     const es = byTurn[t]; console.log(`\n── t${String(t).padStart(3)} [${es[0]?.phase ?? ''}] ${turnActor[t] ?? ''} ──`);
     for (const e of es) {

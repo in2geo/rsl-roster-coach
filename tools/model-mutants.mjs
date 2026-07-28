@@ -25,10 +25,11 @@ const DRAGON = path.join(__dirname, '..', 'lib', 'sim', 'dragon.js');
 const RECIPES_F = path.join(__dirname, '..', 'lib', 'sim', 'recipes.js');
 const OPS_F     = path.join(__dirname, '..', 'lib', 'sim', 'operations.js');
 const FIXTURE_F = path.join(__dirname, '..', 'lib', 'sim', 'dragon-fixture.js');
+const SPIDER_F  = path.join(__dirname, '..', 'lib', 'sim', 'spider.js');   // scripted Spider (Skavag) content — teethed by model-spider.mjs
 // The Model's core spans the recipe interpreter, the engine mechanics it calls (damage math, the buff→stat
 // consumer), the scripted boss (dragon.js), AND the data layer above. A mutant names its file; default is
 // the interpreter. All six are snapshot + restored.
-const FILE = (m) => ({ engine: ENGINE, dragon: DRAGON, recipes: RECIPES_F, ops: OPS_F, fixture: FIXTURE_F }[m.file] ?? INTERP);
+const FILE = (m) => ({ engine: ENGINE, dragon: DRAGON, recipes: RECIPES_F, ops: OPS_F, fixture: FIXTURE_F, spider: SPIDER_F }[m.file] ?? INTERP);
 
 // The Model's no-DB toy-battle rungs = the suite under test. A mutant is KILLED if ANY goes red. model-boss.mjs
 // is the boss-sequence rung — the killer for the dragon.js mutants below. sim-selftest.mjs is the
@@ -37,7 +38,7 @@ const FILE = (m) => ({ engine: ENGINE, dragon: DRAGON, recipes: RECIPES_F, ops: 
 // model-ops-consistency.mjs + model-snapshot.mjs are the DATA-layer killers (P2b): the ops-registry checker
 // catches a flipped `implemented` flag; the regression snapshot (which fingerprints every authored recipe AND
 // the fixture builder) catches a corrupted recipe coeff or a broken aura/arena scaler. Both are no-DB.
-const RUNGS = ['sim-recipe-test.mjs', 'sim-recipe-b-test.mjs', 'sim-recipe-c-test.mjs', 'sim-recipe-d-test.mjs', 'model-invariants.mjs', 'model-sensitivity.mjs', 'model-boss.mjs', 'sim-selftest.mjs', 'model-ops-consistency.mjs', 'model-snapshot.mjs'];
+const RUNGS = ['sim-recipe-test.mjs', 'sim-recipe-b-test.mjs', 'sim-recipe-c-test.mjs', 'sim-recipe-d-test.mjs', 'model-invariants.mjs', 'model-sensitivity.mjs', 'model-boss.mjs', 'model-spider.mjs', 'sim-selftest.mjs', 'model-ops-consistency.mjs', 'model-snapshot.mjs'];
 
 // expectKill:true — a Model rung MUST catch this; surviving = a SUITE HOLE (blocks).
 // expectKill:false — a PROBE; surviving is a reported COVERAGE GAP (a Model mechanic no rung pins yet).
@@ -129,8 +130,8 @@ const MUTANTS = [
     repl: 'if (false && (t.debuffs ?? []).some((d) => d.type === F.ignoreDefIfTargetUnder.debuff))' },
   // ── Lifesteal CONSUMER on the recipe path (interpreter.js dealOneHit) — heal % of damage dealt ──
   { name: 'lifesteal not consumed on the recipe path (heal zeroed)', expectKill: true,
-    find: 'const heal = Math.min((actor.maxHp ?? 0) - actor.hp, actor.lifesteal * dealt * (1 - healReduction(actor)));',
-    repl: 'const heal = Math.min((actor.maxHp ?? 0) - actor.hp, actor.lifesteal * dealt * (1 - healReduction(actor)) * 0);' },
+    find: 'const heal = Math.min((actor.maxHp ?? 0) - actor.hp, actor.lifesteal * dealt * (1 - healReduction(actor)) * (state.lifestealFactor ?? 1));',
+    repl: 'const heal = Math.min((actor.maxHp ?? 0) - actor.hp, actor.lifesteal * dealt * (1 - healReduction(actor)) * (state.lifestealFactor ?? 1) * 0);' },
   // ── ignore_shield must NOT bypass [Magma Shield] (engine.js dealDamage) — Pelops's tank identity ──
   { name: 'ignore_shield wrongly bypasses [Magma Shield] too (kills the tank)', expectKill: true, file: 'engine',
     find: "if (ignoreShield && b.type === 'Shield') continue;",
@@ -290,9 +291,20 @@ const MUTANTS = [
   { name: 'fixture aura scaler neutralised (applyBattleLayers SPD aura → no-op)', expectKill: true, file: 'fixture',
     find: 'a.spd = a.spd + Math.round((a.baseSpd ?? 0) * auraSpdPct);',
     repl: 'a.spd = a.spd + Math.round((a.baseSpd ?? 0) * auraSpdPct * 0);' },
+
+  // ══ SPIDER (spider.js) — Skavag's scripted kit, teethed by model-spider.mjs ══
+  { name: 'Skavag ATK snowball zeroed (consume gives no permanent ATK)', expectKill: true, file: 'spider',
+    find: 'boss.atk = Math.round(boss.atk * (1 + 0.10 * n));',
+    repl: 'boss.atk = Math.round(boss.atk * (1 + 0.10 * n * 0));' },
+  { name: 'Spiderling opening horde broken (onRoundStart spawns 0)', expectKill: true, file: 'spider',
+    find: 'onPhaseStart(state) { spawn(state, SPAWN.onRoundStart); }',
+    repl: 'onPhaseStart(state) { spawn(state, SPAWN.onRoundStart * 0); }' },
+  { name: 'consume alternation removed (Skavag consumes every turn)', expectKill: true, file: 'spider',
+    find: 'consumeEligible = false;',
+    repl: 'consumeEligible = true;' },
 ];
 
-const ALL_FILES = [INTERP, ENGINE, DRAGON, RECIPES_F, OPS_F, FIXTURE_F];
+const ALL_FILES = [INTERP, ENGINE, DRAGON, RECIPES_F, OPS_F, FIXTURE_F, SPIDER_F];
 const SNAP = Object.fromEntries(ALL_FILES.map((f) => [f, fs.readFileSync(f, 'utf8')]));
 const ORIGINAL = SNAP[INTERP];   // back-compat alias (baseline stale-find checks below still read the interpreter)
 const restore = () => { for (const f of ALL_FILES) { try { if (fs.readFileSync(f, 'utf8') !== SNAP[f]) fs.writeFileSync(f, SNAP[f]); } catch { fs.writeFileSync(f, SNAP[f]); } } };

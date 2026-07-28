@@ -1,7 +1,7 @@
 // tools/verify-core.mjs — shared core for the turn-by-turn OUTCOME VERIFIER.
 // Used by the CLI (tools/turn-verify.mjs, one battle + per-turn ledger) and the QA rung
 // (tools/model-turn-verify.mjs, many seeds, pass/fail). Keeps the contract logic in ONE place.
-import { makeState, simulate, CC_SKIPS_TURN } from '../lib/sim/engine.js';
+import { makeState, simulate, CC_SKIPS_TURN, setChanceMode } from '../lib/sim/engine.js';
 import { buildDragonBattle, applyBattleLayers } from '../lib/sim/dragon-fixture.js';
 import { installRecipeRun } from '../lib/sim/interpreter.js';
 
@@ -30,6 +30,10 @@ export async function runOne({ rest, fixture, repoRoot, seed }) {
   const built = await buildDragonBattle({ rest, fixture, repoRoot });
   if (built.skip) return { skip: built.skip };
   applyBattleLayers(built.allies);
+  // VERIFY MODE (seed == null): deterministic + EVERY chance lands (CHANCE_MODE 'all'), crit = expected value.
+  // So a mechanic that fails to fire/land/skip is a BUG, never an unlucky roll — the right lens for checking
+  // "did the skill fire? target correctly? land? cost a turn?". Pass a numeric seed for a STOCHASTIC run.
+  setChanceMode(seed == null ? 'all' : 'threshold');
   const st = makeState({ allies: built.allies, enemies: [], seed }); st.purpleBarLeft = 0; st.effects = [];
   const turnActor = {}, actedAt = {};
   installRecipeRun(st);
