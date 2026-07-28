@@ -13,6 +13,7 @@ import { fileURLToPath } from 'url';
 import { makeCombatant, makeState } from '../lib/sim/engine.js';
 import { applyRecipe, fireTriggers, incomingDamage } from '../lib/sim/interpreter.js';
 import { RECIPES } from '../lib/sim/recipes.js';
+import { applyBattleLayers } from '../lib/sim/dragon-fixture.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIR = path.join(__dirname, '..', 'test', 'snapshots');
@@ -53,6 +54,15 @@ for (const key of Object.keys(RECIPES).filter(k => (RECIPES[k].actions || []).le
   current['TAGOAR-A4:modifier'] = `incoming=${num(incomingDamage(makeState({ allies: [tag, a], enemies: [], seed: null }), a, 1000))}`; }
 { const pel = makeCombatant({ name: 'P', side: 'ally', maxHp: 28000 }); const a = makeCombatant({ name: 'A', side: 'ally', maxHp: 20000 });
   current['PELOPS-A3:modifier'] = `incoming=${num(incomingDamage(makeState({ allies: [pel, a], enemies: [], seed: null }), a, 1000))}`; }
+// FIXTURE BUILDER (P2b) — aura SPD + arena HP/ATK/DEF scaling of BASE stats. Pins lib/sim/dragon-fixture.js
+// so a drift in applyBattleLayers (aura/arena constant or formula) is caught NO-DB, giving the teeth harness
+// a killer for the fixture builder (model-golden covers it only with DB). Deterministic synthetic team.
+{ const team = [makeCombatant({ name: 'F1', side: 'ally', spd: 210, maxHp: 30000, atk: 3000, def: 2000 }),
+                makeCombatant({ name: 'F2', side: 'ally', spd: 165, maxHp: 25000, atk: 2500, def: 1800 })];
+  team[0].baseSpd = 105; team[0].baseHp = 20000; team[0].baseAtk = 2000; team[0].baseDef = 1500;
+  team[1].baseSpd = 96;  team[1].baseHp = 18000; team[1].baseAtk = 1800; team[1].baseDef = 1300;
+  applyBattleLayers(team);
+  current['FIXTURE-LAYERS:aura+arena'] = team.map(a => `${a.name}:spd${num(a.spd)}:hp${num(a.maxHp)}:atk${num(a.atk)}:def${num(a.def)}`).join(';'); }
 
 const bless = process.env.SNAPSHOT_BLESS === '1';
 const exists = fs.existsSync(FILE);

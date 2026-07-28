@@ -19,14 +19,25 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const INTERP = path.join(__dirname, '..', 'lib', 'sim', 'interpreter.js');
 const ENGINE = path.join(__dirname, '..', 'lib', 'sim', 'engine.js');
 const DRAGON = path.join(__dirname, '..', 'lib', 'sim', 'dragon.js');
+// P2(b) — the DATA layer: the authored recipe DATA, the op registry, and the fixture builder. Previously
+// UNTEETHED (R3: "teeth bite only interpreter.js/engine.js"). A corrupted recipe coeff, a flipped registry
+// flag, or a broken aura/arena scaler must now fail a rung — killed by model-snapshot / model-ops-consistency.
+const RECIPES_F = path.join(__dirname, '..', 'lib', 'sim', 'recipes.js');
+const OPS_F     = path.join(__dirname, '..', 'lib', 'sim', 'operations.js');
+const FIXTURE_F = path.join(__dirname, '..', 'lib', 'sim', 'dragon-fixture.js');
 // The Model's core spans the recipe interpreter, the engine mechanics it calls (damage math, the buff→stat
-// consumer), AND the scripted boss (dragon.js — now under the Model via model-boss.mjs). A mutant names its
-// file; default is the interpreter. All three are snapshot + restored.
-const FILE = (m) => (m.file === 'engine' ? ENGINE : m.file === 'dragon' ? DRAGON : INTERP);
+// consumer), the scripted boss (dragon.js), AND the data layer above. A mutant names its file; default is
+// the interpreter. All six are snapshot + restored.
+const FILE = (m) => ({ engine: ENGINE, dragon: DRAGON, recipes: RECIPES_F, ops: OPS_F, fixture: FIXTURE_F }[m.file] ?? INTERP);
 
 // The Model's no-DB toy-battle rungs = the suite under test. A mutant is KILLED if ANY goes red. model-boss.mjs
-// is the boss-sequence rung — the killer for the dragon.js mutants below.
-const RUNGS = ['sim-recipe-test.mjs', 'sim-recipe-b-test.mjs', 'sim-recipe-c-test.mjs', 'sim-recipe-d-test.mjs', 'model-invariants.mjs', 'model-sensitivity.mjs', 'model-boss.mjs'];
+// is the boss-sequence rung — the killer for the dragon.js mutants below. sim-selftest.mjs is the
+// GAME-MAGNITUDE ANCHOR (P2) — the killer for engine leaf-formula mutants (defMitigation / landChance /
+// affinity) that the toy battles, running mostly on def:0 dummies, do not pin to exact Raid magnitudes.
+// model-ops-consistency.mjs + model-snapshot.mjs are the DATA-layer killers (P2b): the ops-registry checker
+// catches a flipped `implemented` flag; the regression snapshot (which fingerprints every authored recipe AND
+// the fixture builder) catches a corrupted recipe coeff or a broken aura/arena scaler. Both are no-DB.
+const RUNGS = ['sim-recipe-test.mjs', 'sim-recipe-b-test.mjs', 'sim-recipe-c-test.mjs', 'sim-recipe-d-test.mjs', 'model-invariants.mjs', 'model-sensitivity.mjs', 'model-boss.mjs', 'sim-selftest.mjs', 'model-ops-consistency.mjs', 'model-snapshot.mjs'];
 
 // expectKill:true — a Model rung MUST catch this; surviving = a SUITE HOLE (blocks).
 // expectKill:false — a PROBE; surviving is a reported COVERAGE GAP (a Model mechanic no rung pins yet).
@@ -65,6 +76,14 @@ const MUTANTS = [
   { name: 'crit removed from DEAL_DAMAGE (exact-damage math)', expectKill: true, file: 'engine',
     find: 'const critM = cr.mult;',
     repl: 'const critM = 1;' },
+  // ── GAME-MAGNITUDE LEAF FORMULA (engine.landChance) — the Raid ACC-vs-RES resist curve constant. In
+  // the deterministic (seed=null) toy battles a debuff lands iff p>0.5, so a magnitude change that stays
+  // on the same side of 0.5 is INVISIBLE to them; ONLY the game-magnitude anchor (sim-selftest §8, which
+  // asserts the exact table to tol 0.004) catches it. This is the coverage gap R3 named — the anchor now
+  // closes it, proving it is TEETHED, not merely present in the ladder (P2). ──
+  { name: 'land-chance resist curve constant wrong (0.67 → 0.50 — game-magnitude regression)', expectKill: true, file: 'engine',
+    find: 'x >= 0.30 ? 0.30 + 0.67 * (1 - Math.exp(3 * (0.30 - x)))',
+    repl: 'x >= 0.30 ? 0.30 + 0.50 * (1 - Math.exp(3 * (0.30 - x)))' },
   { name: 'heal uncapped — HP can exceed MAX (only the invariants rung sees this)', expectKill: true,
     find: 'const before = t.hp; t.hp = Math.min(t.maxHp, t.hp + amt * (1 - healReduction(t)));',
     repl: 'const before = t.hp; t.hp = t.hp + amt * (1 - healReduction(t));' },
@@ -256,11 +275,27 @@ const MUTANTS = [
   { name: 'under_buff condition broken (Ezio A2 [Bomb] never targets Stone-Skin enemies)', expectKill: true,
     find: "if (cond.kind === 'under_buff')       return (t.buffs ?? []).some((b) => b.type === cond.buff);",
     repl: "if (cond.kind === 'under_buff')       return false;" },
+
+  // ══ DATA LAYER (P2b) — recipes.js / operations.js / dragon-fixture.js, formerly unteethed (R3) ══
+  // ── authored recipe DATA (recipes.js) — a corrupted coeff must drift the regression snapshot ──
+  { name: 'authored recipe coeff corrupted (Ezio A1 multiplier 4 → 8)', expectKill: true, file: 'recipes',
+    find: "F_EZIO_A1: { scalingStat: 'ATK', multiplier: 4,",
+    repl: "F_EZIO_A1: { scalingStat: 'ATK', multiplier: 8," },
+  // ── op registry (operations.js) — a flipped `implemented` flag must fail the ops-consistency rung
+  //    (the interpreter still runs HEAL, so the registry now under-reports its own capability) ──
+  { name: 'op registry flag flipped (HEAL implemented:true → false, registry ↔ interpreter drift)', expectKill: true, file: 'ops',
+    find: "HEAL: { implemented: true, cat: 'state',",
+    repl: "HEAL: { implemented: false, cat: 'state'," },
+  // ── fixture builder (dragon-fixture.js) — a broken aura scaler must drift the fixture snapshot ──
+  { name: 'fixture aura scaler neutralised (applyBattleLayers SPD aura → no-op)', expectKill: true, file: 'fixture',
+    find: 'a.spd = a.spd + Math.round((a.baseSpd ?? 0) * auraSpdPct);',
+    repl: 'a.spd = a.spd + Math.round((a.baseSpd ?? 0) * auraSpdPct * 0);' },
 ];
 
-const SNAP = { [INTERP]: fs.readFileSync(INTERP, 'utf8'), [ENGINE]: fs.readFileSync(ENGINE, 'utf8'), [DRAGON]: fs.readFileSync(DRAGON, 'utf8') };
+const ALL_FILES = [INTERP, ENGINE, DRAGON, RECIPES_F, OPS_F, FIXTURE_F];
+const SNAP = Object.fromEntries(ALL_FILES.map((f) => [f, fs.readFileSync(f, 'utf8')]));
 const ORIGINAL = SNAP[INTERP];   // back-compat alias (baseline stale-find checks below still read the interpreter)
-const restore = () => { for (const f of [INTERP, ENGINE, DRAGON]) { try { if (fs.readFileSync(f, 'utf8') !== SNAP[f]) fs.writeFileSync(f, SNAP[f]); } catch { fs.writeFileSync(f, SNAP[f]); } } };
+const restore = () => { for (const f of ALL_FILES) { try { if (fs.readFileSync(f, 'utf8') !== SNAP[f]) fs.writeFileSync(f, SNAP[f]); } catch { fs.writeFileSync(f, SNAP[f]); } } };
 process.on('exit', restore);
 process.on('SIGINT', () => { restore(); process.exit(130); });
 process.on('SIGTERM', () => { restore(); process.exit(143); });

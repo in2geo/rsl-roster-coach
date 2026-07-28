@@ -48,8 +48,8 @@ const MUTANTS = [
   // (model-invariants). TODO: add an "HP ≤ maxHp after a HoT tick" assertion to sim-invariants, then flip this
   // back to expectKill:true. Kept as a reported probe (not a silent stale) so the gap stays visible.
   { name: 'heal overheals past MAX HP ([Continuous Heal] uncapped — sim rung gap)', expectKill: false,
-    find: 'c.hp = Math.min(c.maxHp, c.hp + ((b.value ?? 15) / 100) * (c.maxHp ?? 0));',
-    repl: 'c.hp = c.hp + ((b.value ?? 15) / 100) * (c.maxHp ?? 0);' },
+    find: 'c.hp = Math.min(c.maxHp, c.hp + ((b.value ?? 15) / 100) * (c.maxHp ?? 0) * (1 - healReduction(c)));',
+    repl: 'c.hp = c.hp + ((b.value ?? 15) / 100) * (c.maxHp ?? 0) * (1 - healReduction(c));' },
   { name: 'nobody ever dies (death threshold unreachable)', expectKill: true,
     find: 'if (c.alive && c.hp <= 0) {',
     repl: 'if (c.alive && c.hp <= -1e30) {' },

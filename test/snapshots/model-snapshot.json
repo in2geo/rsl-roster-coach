@@ -39,5 +39,6 @@
  "APOTHECARY-A3": "FX{buff:Increase SPD→Actor=0|buff:Increase SPD→AllyB=0|buff:Increase SPD→AllyC=0} ALLIES{Actor:hp24000:b[Increase SPD]:d[];AllyB:hp12000:b[Increase SPD]:d[];AllyC:hp6000:b[Increase SPD]:d[]} ENEMIES{E1:hp50000:b[]:d[Poison,Weaken];E2:hp50000:b[]:d[Poison,Weaken];E3:hp50000:b[]:d[Poison,Weaken]}",
  "VERGIS-PASSIVE:hit_taken": "shield=0",
  "TAGOAR-A4:modifier": "incoming=1000",
- "PELOPS-A3:modifier": "incoming=1000"
+ "PELOPS-A3:modifier": "incoming=1000",
+ "FIXTURE-LAYERS:aura+arena": "F1:spd230:hp30600:atk3060:def2045;F2:spd183:hp25540:atk2554:def1839"
 }

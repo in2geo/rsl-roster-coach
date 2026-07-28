@@ -24,6 +24,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIR = path.join(__dirname, '..', 'test', 'golden');
 const REPO = path.join(__dirname, '..');
 const MODELLED = new Set(["Dragon's Lair"]);   // dungeons lib/sim can currently run
+// Replay turn cap. Overridable ONLY to exercise the P2c liveness teeth (SIM_GOLDEN_TURNCAP=5 forces the real
+// fixtures to time out → the liveness invariant must then BLOCK). Real runs use 400 (fights resolve well under it).
+const TURN_CAP = Number(process.env.SIM_GOLDEN_TURNCAP ?? 400);
 
 let pass = 0, fail = 0; const failures = [];
 const ok = (name, cond, detail = '') => { if (cond) pass++; else { fail++; failures.push(`${name}${detail ? ' — ' + detail : ''}`); } };
@@ -151,15 +154,23 @@ if (HAS_DB) {
     const state = makeState({ allies, enemies: [] });
     state.purpleBarLeft = 0;
     const l = console.log; console.log = () => {};
-    const res = simulate(state, content, { turnCap: 400 });
+    // LIVENESS INVARIANT (P2c): a real captured battle ALWAYS resolves decisively — replaying it must
+    // reach a WIPE (WIN or LOSS), never hit the turn cap (TIMED OUT) or throw. A timeout/throw on real
+    // input is an infinite-stalemate / crash bug, ORTHOGONAL to the sim's win-rate incompleteness — so it
+    // BLOCKS (sim-qa bucket 1). Getting the outcome RIGHT stays the non-blocking reality gap (bucket 4).
+    let res, threw = null;
+    try { res = simulate(state, content, { turnCap: TURN_CAP }); }
+    catch (e) { threw = e?.message ? `${e.message}` : String(e); }
     console.log = l;
+    if (threw) { runs.push({ id: r.id, mode: waves ? `with-waves (${waves.length})` : 'boss-only', threw }); continue; }
+    const timedOut = (res.phases || []).some(p => p.outcome === 'TIMED OUT');
 
     const predOutcome = res.won ? 'WIN' : 'LOSS';
     const zeroDmg = allies.filter(a => a.skills.some(s => s.hitsEnemies && s.coeff == null)).map(a => a.name);
     runs.push({ id: r.id, mode: waves ? `with-waves (${waves.length})` : 'boss-only',
       predOutcome, actualOutcome: g.result.outcome, outcomeMatch: predOutcome === g.result.outcome,
       predSurvivors: res.survivors.length, actualSurvivors: g.result.survivors,
-      predTurns: res.turns, actualTurns: g.result.turns,
+      predTurns: res.turns, actualTurns: g.result.turns, timedOut,
       failedPhase: res.failedPhase, expectedFailure: g.expected?.failure_location ?? null, zeroDmg });
   }
   // TEETH — a silent no-op is the exact failure mode this rung guards against: assert the run
@@ -185,9 +196,11 @@ if (!HAS_DB) {
   console.log('\n  EXACT-STAT RUN — the sim on each fixture\'s REAL builds, scored vs the golden record:');
   for (const r of runs) {
     if (r.skipped) { console.log(`    · ${r.id}: skipped — ${r.skipped}`); continue; }
+    if (r.threw) { console.log(`    ⛔ ${r.id}: THREW during replay — ${r.threw}  (LIVENESS violation — blocks; real battles always resolve)`); continue; }
     const tag = r.outcomeMatch ? '✅ REPRODUCED' : '✗ MISMATCH (bucket 4 — sim is known-incomplete, not a rung failure)';
     console.log(`    · ${r.id} [${r.mode}]: sim ${r.predOutcome} / real ${r.actualOutcome}  ${tag}`);
     console.log(`        survivors sim ${r.predSurvivors}/real ${r.actualSurvivors}  ·  turns sim ${r.predTurns}/real ${r.actualTurns}  ·  sim breaks at: ${r.failedPhase ?? 'nowhere (cleared)'} (golden: ${r.expectedFailure ?? 'n/a'})`);
+    if (r.timedOut) console.log(`        ⛔ TIMED OUT at the turn cap without a wipe — LIVENESS violation (blocks); real battles never time out (infinite-stalemate bug)`);
     if (r.zeroDmg.length) console.log(`        ⚠ 0-damage champs (coeff absent or non-ATK scaling the sim can't consume): ${r.zeroDmg.join(', ')}`);
     if (r.mode === 'boss-only') console.log('        NOTE: waves not modelled in this run → failure-LOCATION is not comparable to a wave-2 golden; OUTCOME is.');
   }
@@ -195,5 +208,5 @@ if (!HAS_DB) {
 
 console.log('QA_JSON ' + JSON.stringify({ rung: 'golden', fixtures: files.length, pass, fail, failures,
   pendingInputs: report.filter(r => r.modelled && !r.runnable).map(r => `${r.id}: missing builds ${r.pending.join('/')}`),
-  runs: runs.map(r => r.skipped ? { id: r.id, skipped: r.skipped } : { id: r.id, mode: r.mode, predOutcome: r.predOutcome, actualOutcome: r.actualOutcome, outcomeMatch: r.outcomeMatch, predSurvivors: r.predSurvivors, actualSurvivors: r.actualSurvivors, zeroDmg: r.zeroDmg }) }));
+  runs: runs.map(r => r.skipped ? { id: r.id, skipped: r.skipped } : r.threw ? { id: r.id, threw: r.threw } : { id: r.id, mode: r.mode, predOutcome: r.predOutcome, actualOutcome: r.actualOutcome, outcomeMatch: r.outcomeMatch, predSurvivors: r.predSurvivors, actualSurvivors: r.actualSurvivors, timedOut: r.timedOut, zeroDmg: r.zeroDmg }) }));
 if (fail) process.exit(1);

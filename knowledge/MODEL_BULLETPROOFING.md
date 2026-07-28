@@ -94,8 +94,44 @@ NOT the same as: matches the real game, or is complete. A stage is **bulletproof
   CLEARS the 20%-MaxHP bar, so Scorch fires rather than being interrupted, and the wasted-turn branch is seldom
   hit. Whether the team should be clearing the bar (and whether bar-drain is fully credited) is a downstream
   thread for the wave-2/boss investigation, NOT this fix.
-- **P2 — anchor correctness to the game.** Pull `sim-selftest` into the ladder as blocking; add teeth on the
-  data layer; assert the real captured outcome. → TODO.
+- **P2 — anchor correctness to the game. ✅ DONE 2026-07-27 (all three parts).** Three sub-parts:
+  - **(a) `sim-selftest` (the game-magnitude anchor) is now a BLOCKING ladder rung + teethed. ✅ DONE.**
+    `sim-selftest.mjs` — the ONLY rung that pins engine leaf formulas (`landChance` §8 / `defMitigation`
+    §12 / affinity §7) to Raid's PUBLISHED tables rather than to the Model's own output — was outside the
+    ladder (R3). Added to `model-qa.mjs` RUNGS as an L2 spec rung (**ladder 16 → 17, all green**; a
+    magnitude regression now BLOCKS as a spec_violation, not a reality gap) AND to `model-mutants.mjs` RUNGS
+    as a killer. Proof it is TEETHED, not merely present: a new mutant (`landChance` 0.67→0.50 resist-curve
+    constant) is killed by **`selftest` ALONE** — the deterministic (seed=null) toy battles land debuffs on
+    an `iff p>0.5` rule, so a same-side magnitude change is invisible to them; only the anchor's exact-table
+    assertions catch it. Teeth **65/65, 100%, no holes/stale**. This is VERIFICATION ADDED — no combat
+    behaviour changed (the anchor formulas were already correct; they just weren't in the blocking gate).
+  - **(b) teeth on the DATA layer — ✅ DONE.** `model-mutants.mjs` now snapshots/restores all SIX files
+    (added `recipes.js`, `operations.js`, `dragon-fixture.js`) and runs `model-ops-consistency.mjs` +
+    `model-snapshot.mjs` as no-DB killers. Three data-layer mutants added, each killed by its intended rung:
+    a corrupted authored recipe coeff (Ezio A1 mult 4→8) → `model-snapshot`; a flipped op-registry flag
+    (`HEAL` implemented:true→false) → `model-ops-consistency` ALONE; a broken fixture scaler (aura SPD no-op)
+    → `model-snapshot` ALONE. To teeth the fixture builder no-DB, `model-snapshot.mjs` gained a
+    `FIXTURE-LAYERS` fingerprint that runs `applyBattleLayers` on a synthetic team (baseline re-blessed:
+    41→42 fingerprints, a deliberate coverage add, no behaviour change). Teeth **68/68, 100%, no holes/stale**;
+    ladder still **17/17 green**.
+  - **(c) assert the real captured OUTCOME — ✅ DONE (narrow LIVENESS invariant, Mike's call 2026-07-27).**
+    The decision (not to block on win-rate — that stays the bucket-4 gap while the sim is incomplete) was to
+    block on ONE narrow, always-true-in-reality thing: **a real captured battle ALWAYS resolves decisively**,
+    so replaying a golden fixture must reach a WIPE (WIN or LOSS) — never hit the turn cap (TIMED OUT) or
+    throw. A timeout/throw on real input is an infinite-stalemate / crash bug, ORTHOGONAL to the win-rate
+    incompleteness (and exactly what an over-tuned survival mechanic — e.g. the uncommitted global duration
+    fix — could introduce). `sim-golden.mjs` now records `timedOut`/`threw` per fixture (replay wrapped so one
+    stuck fixture is a recorded liveness failure, not a rung crash); `sim-qa.mjs` classifies those as bucket-1
+    spec_violations (BLOCK) while `outcomeMatch===false` stays bucket-4 (non-blocking). Deliberately NOT a
+    per-hero survival assertion — the single-run-anchor trap ([[reality-anchors-single-run-trap-2026-07-27]])
+    means per-hero end-state (Ezio dies+revives) is not reliable ground truth. **Teeth:** `SIM_GOLDEN_TURNCAP=5`
+    forces the real fixtures to time out → sim-qa BLOCKS (verified); at the real cap all 3 fixtures resolve
+    decisively (turns 217/217/333 < 400) and sim-qa is green.
+    - **Side repair (pre-existing, surfaced by this work):** `sim-mutants.mjs` "heal overheals past MAX HP"
+      probe had gone STALE — its `find` drifted when `* (1 - healReduction(c))` was added to the Continuous
+      Heal tick (`engine.js`), so the mutant silently stopped running and BLOCKED sim-qa. Find-string
+      refreshed (intent unchanged, still an `expectKill:false` probe). sim-qa: **BLOCKED → SPEC-CONFORMANT**,
+      mutation 11/12 (the 1 remaining is that heal-overheal coverage-gap probe, correctly non-blocking).
 - **P3 — de-Dragon the harness.** `buildDragonBattle`→`buildBattle(dungeon)` adapter; registry-based recipe keys;
   move the Bambus sponge into data. → TODO.
 - **P4 — finish the backlog through the reconciled system.** Re-wire the ~half that need existing ops (recovers

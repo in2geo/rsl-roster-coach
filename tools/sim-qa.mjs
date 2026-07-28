@@ -102,7 +102,15 @@ if (golden.json) { for (const f of golden.json.failures) ledger.spec_violation.p
                    // A golden OUTCOME mismatch is a reality gap (bucket 4), NOT a spec failure: the sim is
                    // known-incomplete, so it labels "sim can't yet reproduce this real fight" — never blocks.
                    for (const r of golden.json.runs ?? []) if (r.outcomeMatch === false)
-                     ledger.reality_gap.push(`golden ${r.id}: sim ${r.predOutcome} vs real ${r.actualOutcome} (survivors ${r.predSurvivors}/${r.actualSurvivors}; 0-dmg: ${(r.zeroDmg||[]).join(', ') || 'none'})`); }
+                     ledger.reality_gap.push(`golden ${r.id}: sim ${r.predOutcome} vs real ${r.actualOutcome} (survivors ${r.predSurvivors}/${r.actualSurvivors}; 0-dmg: ${(r.zeroDmg||[]).join(', ') || 'none'})`);
+                   // LIVENESS INVARIANT (P2c) — the ONE reality assertion that BLOCKS: a real captured battle
+                   // ALWAYS resolves decisively, so a replay that hits the turn cap (TIMED OUT) or throws is an
+                   // infinite-stalemate / crash bug — orthogonal to the win-rate incompleteness. Getting the
+                   // outcome RIGHT stays bucket 4 above; RESOLVING AT ALL is bucket 1.
+                   for (const r of golden.json.runs ?? []) {
+                     if (r.threw) ledger.spec_violation.push(`liveness: golden ${r.id} THREW during replay — ${r.threw} (real battles always resolve)`);
+                     else if (r.timedOut) ledger.spec_violation.push(`liveness: golden ${r.id} hit the turn cap without a wipe — real battles never time out (infinite-stalemate / non-termination bug)`);
+                   } }
 
 for (const [m, st] of MANIFEST) if (st === 'unimplemented' || st === 'stub') ledger.unimplemented.push(`${m}  [${st}]`);
 

@@ -20,6 +20,10 @@ const HAS_DB = !!process.env.SUPABASE_URL;
 const RUNGS = [
   { file: 'model-mutants.mjs',      name: 'teeth (mutation)',        layer: 'meta', db: false },
   { file: 'model-ops-consistency.mjs', name: 'op registry↔interpreter', layer: '1', db: false },
+  // the GAME-MAGNITUDE ANCHOR (P2): engine leaf formulas — landChance / defMitigation / affinity —
+  // vs Raid's published tables. The only rung that pins the sim to the REAL GAME's numbers rather than
+  // to the Model's own output; it BLOCKS (a magnitude regression is a spec violation, not a reality gap).
+  { file: 'sim-selftest.mjs',       name: 'game-magnitude anchor (Raid tables)', layer: '2', db: false },
   { file: 'sim-recipe-test.mjs',    name: 'II-A damage toy battles', layer: '2/3',  db: false },
   { file: 'sim-recipe-b-test.mjs',  name: 'II-B placement toy',      layer: '2/3',  db: false },
   { file: 'sim-recipe-c-test.mjs',  name: 'II-C state toy',          layer: '2/3',  db: false },
