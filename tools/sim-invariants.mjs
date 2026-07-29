@@ -8,7 +8,7 @@
 //
 // Run: node tools/sim-invariants.mjs   (no DB)
 
-import { makeCombatant, makeState, simulate, actEnemyMob } from '../lib/sim/engine.js';
+import { makeCombatant, makeState, simulate, actEnemyMob, applyDebuff } from '../lib/sim/engine.js';
 
 const N = 400;                 // randomised battles
 const CAP = 200;               // turn cap per battle
@@ -116,6 +116,25 @@ function survivalHp(withHeal) {
   const withH = survivalHp(true), without = survivalHp(false);
   // without < full (40000) guards against a vacuous pass — the boss must have dealt real damage.
   ok('removing a heal cannot IMPROVE survival (and the boss dealt real damage)', withH >= without && without < 40000, `withHeal ${Math.round(withH)} vs without ${Math.round(without)}`);
+}
+
+// ── POISON DECAY: a stacking [Poison] with NO reapplication must age to ZERO within its duration ─────
+// Each stack is an INDEPENDENT instance with its own timer; expireDurations ages them one at a time. This
+// pins the per-stack-aging fix (2026-07-28) — the "immortal poison" bug (one shared timer refreshed on every
+// reapply → stacks pinned at max forever) that the Survival Oracle caught but NO no-DB rung was watching.
+// A victim tanky enough to survive, harmless never-reapplying enemy: after `turns` of the victim's own turns
+// the Poison must be gone. The "immortal poison" mutant (stacks never decrement) fails here.
+{
+  const victim = makeCombatant({ name: 'Victim', side: 'ally', maxHp: 1e7, atk: 500, def: 1000, spd: 200, acc: 100, res: 100, affinity: 'Void',
+    skills: [{ slot: 'A1', cooldown: 0, cdLeft: 0, hitsEnemies: true, coeff: 1 }] });
+  const dummy = makeCombatant({ name: 'Dummy', side: 'enemy', role: 'boss', maxHp: 1e12, atk: 0, def: 0, spd: 1, affinity: 'Void',
+    skills: [{ slot: 'A1', cooldown: 0, cdLeft: 0, hitsEnemies: true, coeff: 0 }] });   // 0 ATK / 0 coeff → never damages, never reapplies Poison
+  for (let i = 0; i < 3; i++) applyDebuff(victim, { type: 'Poison', pct: 0.001, turns: 2, stacking: true, maxStacks: 10 });   // 3 stacks, 2-turn each
+  const hp0 = victim.hp;
+  withSilentSim(() => simulate(makeState({ allies: [victim], enemies: [] }), { phases: [{ name: 'boss', enemies: [dummy], actEnemy: actEnemyMob }] }, { turnCap: 40 }));
+  const stacksLeft = (victim.debuffs ?? []).filter(d => d.type === 'Poison').reduce((s, d) => s + (d.stacks ?? 1), 0);
+  const ticked = victim.hp < hp0;   // guards a vacuous pass: the Poison must actually have applied + ticked
+  ok('a [Poison] with no reapplication decays to 0 within its duration (stacks are not immortal) — and it ticked', stacksLeft === 0 && ticked, `stacksLeft ${stacksLeft}, ticked ${ticked}`);
 }
 
 // ── report ───────────────────────────────────────────────────────────────────

@@ -69,6 +69,11 @@ const MUTANTS = [
   { name: 'poison ignores stack count', expectKill: false,
     find: 'const dmg = (d.pct ?? 0.05) * c.maxHp * (d.stacks ?? 1) * sens * bossPoisonFactor;',
     repl: 'const dmg = (d.pct ?? 0.05) * c.maxHp * 1 * sens * bossPoisonFactor;' },
+  // Re-introduce the IMMORTAL-POISON bug: per-stack timers never decrement, so stacks pin at max forever.
+  // MUST be caught by the poison-decay invariant added 2026-07-28 (the hole that let the real bug through).
+  { name: 'poison stacks are immortal (per-stack timers never age)', expectKill: true,
+    find: 'e.stackTurns = e.stackTurns.map(t => t - 1).filter(t => t > 0);',
+    repl: 'e.stackTurns = e.stackTurns.slice();' },
   { name: 'targeting inverts the lowest-max-HP glass-cannon rule', expectKill: false,
     find: 'if ((a.maxHp ?? 0) !== (b.maxHp ?? 0)) return (a.maxHp ?? 0) < (b.maxHp ?? 0) ? a : b;',
     repl: 'if ((a.maxHp ?? 0) !== (b.maxHp ?? 0)) return (a.maxHp ?? 0) > (b.maxHp ?? 0) ? a : b;' },
