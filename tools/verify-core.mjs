@@ -87,7 +87,12 @@ export function scoreOutcomes(fx, actedAt) {
     const selfOnly = (c === 'skip' || c === 'tick') && plist.every(selfApplied);
     const consequence = c === 'placed' ? null : (conseq[m] ?? 0);
     const inert = c !== 'placed' && opps > 0 && consequence === 0;   // had the chance, produced nothing
-    rows.push({ mechanic: m, contract: c, placed, opps, consequence, inert, selfOnly });
+    // COVERAGE GUARD (2026-07-28): a targeting buff PLACED but with ZERO observed single-target picks is NOT
+    // automatically "n/a" — it may mean the enemy's single-target attacks bypass recordTargeting (scripted
+    // content that never emits a 'target' event), so the verifier is BLIND to whether the buff steers fire.
+    // Surfaced (not silently dropped) so the un-instrumented case can't hide the way Spider's did.
+    const unverifiedTargeting = c === 'targeting' && placed > 0 && (opps ?? 0) === 0;
+    rows.push({ mechanic: m, contract: c, placed, opps, consequence, inert, selfOnly, unverifiedTargeting });
   }
   return { rows, firedNotConsumed };
 }

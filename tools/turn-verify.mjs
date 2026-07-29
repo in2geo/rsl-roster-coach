@@ -51,14 +51,14 @@ for (const v of orderViolations.slice(0, 8)) console.log(`     t${v.turn}: picke
 const { rows, firedNotConsumed } = scoreOutcomes(fx, actedAt);
 console.log(`\n══ OUTCOME SCORECARD (placed → did it do its job?) ══`);
 console.log(`  MECHANIC            placed  opps   consequence          verdict`);
-let inert = 0; const placementOnly = [];
+let inert = 0; const placementOnly = []; const unverifiedTgt = rows.filter(r => r.unverifiedTargeting).map(r => r.mechanic);
 for (const r of rows) {
   let obs, verdict;
   if (r.contract === 'skip') { obs = `${r.consequence} skip(s)`; verdict = r.consequence > 0 ? '✅ WORKS' : r.selfOnly ? '· n/a (self-applied CC — owner-controlled)' : r.opps > 0 ? `❌ INERT (${r.opps} live, 0 skips)` : '· n/a (targets died first)'; }
   else if (r.contract === 'tick') { obs = `${r.consequence} dmg-event(s)`; verdict = r.consequence > 0 ? '✅ WORKS (tick/activate)' : r.opps > 0 ? `❌ INERT (${r.opps} live, 0 damage)` : '· n/a (targets died first)'; }
   else if (r.contract === 'heal') { obs = `${r.consequence} heal tick(s)`; verdict = r.consequence > 0 ? '✅ WORKS' : r.opps > 0 ? `❌ INERT (${r.opps} turns, 0 heals)` : '· n/a (no turns while buffed)'; }
   else if (r.contract === 'reactive') { obs = `${r.consequence} soak/reflect`; verdict = r.consequence > 0 ? '✅ WORKS' : r.opps > 0 ? `❌ INERT (hit ${r.opps}×, 0 soak)` : '· n/a (buffed unit never hit)'; }
-  else if (r.contract === 'targeting') { obs = `${r.consequence}/${r.opps} picks steered`; verdict = r.opps === 0 ? '· n/a (no mob single-target picks)' : r.consequence > 0 ? '✅ WORKS' : `❌ INERT (${r.opps} picks, buff ignored)`; }
+  else if (r.contract === 'targeting') { obs = `${r.consequence}/${r.opps} picks steered`; verdict = r.unverifiedTargeting ? '⚠ UNVERIFIED — placed but 0 observed picks (single-target enemy attacks must route through recordTargeting, else steering is silently unchecked)' : r.consequence > 0 ? '✅ WORKS' : `❌ INERT (${r.opps} picks, buff ignored)`; }
   else { obs = 'stat/damage pipe'; verdict = '· PLACEMENT-ONLY (outcome not yet verified)'; placementOnly.push(r.mechanic); }
   if (r.inert) inert++;
   console.log(`  ${r.mechanic.padEnd(20)}${String(r.placed).padStart(4)}  ${String(r.opps ?? '—').padStart(4)}   ${obs.padEnd(20)} ${verdict}`);
@@ -68,4 +68,5 @@ for (const e of firedNotConsumed.slice(0, 8)) console.log(`     ✗ t${e.turn} $
 console.log(`\n══ VERDICT ══`);
 console.log(`  turn order:       ${orderViolations.length === 0 ? '✅ verified' : '❌ ' + orderViolations.length + ' violations'}`);
 console.log(`  inert mechanics:  ${inert === 0 ? '✅ none' : '❌ ' + inert}`);
+console.log(`  targeting unverified: ${unverifiedTgt.length === 0 ? '✅ none (every placed Taunt/Veil produced observable picks)' : '⚠ ' + unverifiedTgt.join(', ') + ' — placed but 0 observed picks; single-target attackers may bypass recordTargeting'}`);
 console.log(`  placement-only:   ${placementOnly.length} not yet outcome-verified (coverage gap): ${placementOnly.join(', ')}`);

@@ -127,6 +127,27 @@ const setup = (stage = 13, allies = [ally()]) => { const b = boss(); const c = m
   ok('Skavag ATK snowballed via consumption (permanent)', b.atk > 1000, `atk ${b.atk}`);
 }
 
+// ── 9. TARGETING is OBSERVABLE — the coverage-gap guard ──────────────────────
+// A Spiderling's single-target pick MUST emit a 'target' event so turn-verify can VERIFY Taunt/Veil steer it.
+// This is the durable guard against the exact blind spot that shipped: scripted content (spider.js) bypassing
+// the recipe path's automatic recordTargeting, leaving the verifier reporting "n/a" instead of checking. If a
+// future edit drops the recordTargeting call, this assertion fails instead of the gap going silent again.
+{
+  const { c, st } = setup(13, [ally({ name: 'Tank', maxHp: 60000 }), ally({ name: 'Squishy', maxHp: 60000 })]);
+  st.allies[0].buffs.push({ type: 'Taunt', turnsLeft: 3 });   // Tank taunts
+  st.allies[1].hp = st.allies[1].maxHp * 0.1;                 // Squishy is the lowest-HP% (the pick WITHOUT taunt)
+  c.onPhaseStart(st);
+  const sp = living(st)[0];
+  st.effects = [];
+  c.phases[0].actEnemy(st, sp);                               // one Spiderling attacks
+  const tgt = st.effects.filter((e) => e.kind === 'target');
+  ok('a Spiderling attack EMITS a target event (observable to turn-verify — not a silent scripted pick)', tgt.length > 0);
+  const taunt = tgt.find((e) => e.subtype === 'Taunt');
+  ok('...and it records the Taunt targeting outcome', !!taunt);
+  ok('Taunt steers the Spiderling onto the taunter (consumed=true)', taunt?.consumed === true);
+  eq('the Spiderling hit the taunting Tank, NOT the lowest-HP% Squishy', st.allies[1].debuffs.some((d) => d.type === 'Poison'), false);
+}
+
 console.log(`\n══ MODEL SPIDER (Skavag sequence) ══  ${pass} passed, ${fail} failed\n`);
 for (const f of failures) console.log(`  ✗ ${f}`);
 console.log('QA_JSON ' + JSON.stringify({ rung: 'model-spider', pass, fail, failures }));

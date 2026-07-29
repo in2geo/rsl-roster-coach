@@ -21,8 +21,8 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-function runRung(script) {
-  const r = spawnSync(process.execPath, [path.join(__dirname, script)], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+function runRung(script, args = []) {
+  const r = spawnSync(process.execPath, [path.join(__dirname, script), ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   const line = (r.stdout || '').split(/\r?\n/).find(l => l.startsWith('QA_JSON '));
   return { json: line ? JSON.parse(line.slice(8)) : null, code: r.status, stderr: r.stderr };
 }
@@ -79,6 +79,8 @@ const trace = runRung('sim-trace.mjs');          // rung 3b — DB, reality orac
 const actions = runRung('sim-actions.mjs');      // action verification — DB, mechanics-derived per-turn ACTION check
 const snapshot = runRung('sim-snapshot.mjs');    // rung 10 — no DB, regression snapshot (runs on pristine engine, before mutation)
 const data = runRung('sim-validate-data.mjs');   // rung 1 — needs DB (inherits env from --env-file)
+const survival = runRung('sim-survival-oracle.mjs');                          // SURVIVAL ORACLE — DB, reality gate on the RECEIVING side (per-hero damage-TAKEN vs reality band). Spider-13 GATES (14 captures).
+const survivalDragon = runRung('sim-survival-oracle.mjs', ['40', "Dragon's Lair", '16']);   // same rung, Dragon-16 — REPORT-ONLY (single reader anchor), informational
 const mut = runRung('sim-mutants.mjs');          // rung 9 — no DB, mutation testing: does the suite have teeth?
 
 // ── classify every finding into the four buckets ────────────────────────────────
@@ -129,6 +131,17 @@ if (data.json) {
 } else {
   ledger.missing_data.push('rung 1 (data validator) did not report — run with --env-file=.env.local for DB access');
 }
+
+// SURVIVAL ORACLE: the reality gate on the RECEIVING side. A GATING run (≥3 captures → a real band) that
+// FAILS means the sim takes/heals far outside reality on a mechanic — a broken-mechanic signature (over-hot
+// DoT, missing mitigation), NOT mere incompleteness → BLOCKS (bucket 1). This is the rung that would have
+// caught the immortal-poison bug the outcome-based rungs (win-rate/golden) were blind to. A REPORT-ONLY run
+// (single reader anchor) is informational (bucket 4) — it shows the number without blocking on one shaky anchor.
+if (survival.json) {
+  if (survival.json.gating) for (const f of survival.json.failures) ledger.spec_violation.push(`survival oracle: ${f.hero} takes ${f.simTakenPerTurn}/turn vs reality ${f.realTakenPerTurn}/turn (${f.ratio}× — outside ±${survival.json.band}× band)  [${survival.json.dungeon} ${survival.json.stage}]`);
+} else ledger.missing_data.push('survival oracle (gating) did not report — run with --env-file=.env.local for DB access');
+if (survivalDragon.json && !survivalDragon.json.gating) for (const f of survivalDragon.json.failures)
+  ledger.reality_gap.push(`survival oracle [report-only]: ${f.hero} takes ${f.simTakenPerTurn}/turn vs reality ${f.realTakenPerTurn}/turn (${f.ratio}×)  [${survivalDragon.json.dungeon} ${survivalDragon.json.stage} — single reader anchor, needs multi-capture to gate]`);
 
 for (const [lv, st] of LEVELS) if (st === 'unsupported') ledger.reality_gap.push(`level NOT scored: ${lv}`);
 

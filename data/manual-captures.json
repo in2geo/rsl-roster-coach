@@ -1,6 +1,30 @@
 {
-  "_readme": "MANUAL per-hero captures, transcribed by hand from in-game victory/defeat screens. This is the FALLBACK for battles the RslBattleReader cannot capture per-hero (the dungeon hero-context contiguity failure — see the reader forensics: per-hero DUNGEON damage is left NULL when the heap scan can't isolate the 5 fresh contexts). Mirrors the reader's heroes[] schema so it can be merged with gestal-sync/RslBattleReader/output/battle-log.json. Fields per hero: damage = red sword (total dealt), taken = blue shield (DAMAGE TAKEN; the reader's HeroBattleStatsContext calls this field 'defense'), healing = green (total done). Append new battles to captures[]. Every value is human-read — double-check against the screenshot before trusting.",
-  "_schema": { "source": "manual (victory-screen transcription)", "capturedAt": "YYYY-MM-DD", "displayName": "", "dungeon": "", "stageNumber": 0, "difficulty": "Normal", "result": "Victory|Defeat", "turns": 0, "timeSeconds": 0, "bestTimeSeconds": 0, "bestTurns": 0, "heroes": [{ "slot": 0, "name": "", "displayName": "", "level": 0, "damage": 0, "taken": 0, "healing": 0 }] },
+  "_readme": "MANUAL per-hero captures, transcribed by hand from in-game victory/defeat screens. This is the FALLBACK for battles the RslBattleReader cannot capture per-hero (the dungeon hero-context contiguity failure — see the reader forensics: per-hero DUNGEON damage is left NULL when the heap scan can't isolate the 5 fresh contexts). Mirrors the reader's heroes[] schema so it can be merged with gestal-sync/RslBattleReader/output/battle-log.json. Fields per hero: damage = red sword (total dealt), taken = blue shield (DAMAGE TAKEN; the reader's HeroBattleStatsContext calls this field 'defense'), healing = green (total done). Append new battles to captures[]. Every value is human-read — double-check against the screenshot before trusting. DEDUP KEY: `energy` is the current energy (max 109) read off the screen — combined with `timeSeconds`/`turns` it disambiguates captures. If two entries share an identical per-hero DAMAGE vector but differ in energy/time, they are the SAME battle re-viewed (dedupe); identical per-hero on a genuinely different battle = a stale-value bug (same fingerprint as the reader contiguity bug — see 9aab9e5).",
+  "_schema": {
+    "source": "manual (victory-screen transcription)",
+    "capturedAt": "YYYY-MM-DD",
+    "displayName": "",
+    "dungeon": "",
+    "stageNumber": 0,
+    "difficulty": "Normal",
+    "result": "Victory|Defeat",
+    "turns": 0,
+    "timeSeconds": 0,
+    "bestTimeSeconds": 0,
+    "bestTurns": 0,
+    "heroes": [
+      {
+        "slot": 0,
+        "name": "",
+        "displayName": "",
+        "level": 0,
+        "damage": 0,
+        "taken": 0,
+        "healing": 0
+      }
+    ],
+    "energy": 0
+  },
   "captures": [
     {
       "source": "manual (victory-screen transcription)",
@@ -12,15 +36,62 @@
       "result": "Victory",
       "turns": 210,
       "timeSeconds": 409,
+      "energy": 32,
       "bestTimeSeconds": 243,
       "bestTurns": 128,
-      "team": ["Ezio", "Tagoar", "Bambus", "Pelops", "Vergis"],
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
       "heroes": [
-        { "slot": 0, "name": "Ezio Auditore",     "displayName": "Ezio",   "level": 50, "damage": 564002,  "taken": 37538, "healing": 0 },
-        { "slot": 1, "name": "Tagoar",             "displayName": "Tagoar", "level": 50, "damage": 312876,  "taken": 21812, "healing": 97249 },
-        { "slot": 2, "name": "Bambus Fourleaf",    "displayName": "Bambus", "level": 50, "damage": 1143685, "taken": 2987,  "healing": 0 },
-        { "slot": 3, "name": "Pelops the Victor",  "displayName": "Pelops", "level": 60, "damage": 1950615, "taken": 34954, "healing": 118602 },
-        { "slot": 4, "name": "Vergis",             "displayName": "Vergis", "level": 40, "damage": 65282,   "taken": 29447, "healing": 41446 }
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 564002,
+          "taken": 37538,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 312876,
+          "taken": 21812,
+          "healing": 97249
+        },
+        {
+          "slot": 2,
+          "name": "Bambus Fourleaf",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 1143685,
+          "taken": 2987,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops the Victor",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1950615,
+          "taken": 34954,
+          "healing": 118602
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 65282,
+          "taken": 29447,
+          "healing": 41446
+        }
       ],
       "notes": "Team-total damage ~4.04M. Pelops top (1.95M), Bambus 2nd (1.14M) — note this INVERTS Dragon-16 where Bambus tops via the poison redirect. Bambus took almost nothing (2,987) — veil/sponge protected. Reader captured this same battle as outcome+turns but per-hero NULL (contiguity). Raw file dump: battle-dumps/file_104606.bin (local stamp 104606)."
     },
@@ -34,15 +105,62 @@
       "result": "Victory",
       "turns": 181,
       "timeSeconds": 368,
+      "energy": 21,
       "bestTimeSeconds": 243,
       "bestTurns": 128,
-      "team": ["Ezio", "Tagoar", "Bambus", "Pelops", "Vergis"],
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
       "heroes": [
-        { "slot": 0, "name": "Ezio Auditore",     "displayName": "Ezio",   "level": 50, "damage": 968902,  "taken": 29548, "healing": 0 },
-        { "slot": 1, "name": "Tagoar",             "displayName": "Tagoar", "level": 50, "damage": 222645,  "taken": 9658,  "healing": 87093 },
-        { "slot": 2, "name": "Bambus Fourleaf",    "displayName": "Bambus", "level": 50, "damage": 1115044, "taken": 7020,  "healing": 0 },
-        { "slot": 3, "name": "Pelops the Victor",  "displayName": "Pelops", "level": 60, "damage": 1407068, "taken": 36301, "healing": 124488 },
-        { "slot": 4, "name": "Vergis",             "displayName": "Vergis", "level": 40, "damage": 42548,   "taken": 35115, "healing": 29300 }
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 968902,
+          "taken": 29548,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 222645,
+          "taken": 9658,
+          "healing": 87093
+        },
+        {
+          "slot": 2,
+          "name": "Bambus Fourleaf",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 1115044,
+          "taken": 7020,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops the Victor",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1407068,
+          "taken": 36301,
+          "healing": 124488
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 42548,
+          "taken": 35115,
+          "healing": 29300
+        }
       ],
       "notes": "Team-total damage ~3.76M. Same shape as the 210t run: Pelops top (1.41M), Bambus 2nd (1.12M), Ezio 3rd. Consistent ordering across runs → the per-hero contribution profile is stable."
     },
@@ -56,15 +174,62 @@
       "result": "Defeat",
       "turns": null,
       "timeSeconds": 281,
+      "energy": 9,
       "bestTimeSeconds": 243,
       "bestTurns": 128,
-      "team": ["Ezio", "Tagoar", "Bambus", "Pelops", "Vergis"],
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
       "heroes": [
-        { "slot": 0, "name": "Ezio Auditore",     "displayName": "Ezio",   "level": 50, "damage": 272471,  "taken": 21725, "healing": 0 },
-        { "slot": 1, "name": "Tagoar",             "displayName": "Tagoar", "level": 50, "damage": 192603,  "taken": 34752, "healing": 54101 },
-        { "slot": 2, "name": "Bambus Fourleaf",    "displayName": "Bambus", "level": 50, "damage": 907592,  "taken": 26733, "healing": 0 },
-        { "slot": 3, "name": "Pelops the Victor",  "displayName": "Pelops", "level": 60, "damage": 1505398, "taken": 50762, "healing": 54578 },
-        { "slot": 4, "name": "Vergis",             "displayName": "Vergis", "level": 40, "damage": 47788,   "taken": 21764, "healing": 38183 }
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 272471,
+          "taken": 21725,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 192603,
+          "taken": 34752,
+          "healing": 54101
+        },
+        {
+          "slot": 2,
+          "name": "Bambus Fourleaf",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 907592,
+          "taken": 26733,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops the Victor",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1505398,
+          "taken": 50762,
+          "healing": 54578
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 47788,
+          "taken": 21764,
+          "healing": 38183
+        }
       ],
       "notes": "DEFEAT (no reward). Turns not shown on the defeat screen (the reader's outcome capture has the turn count if needed). Team-total ~2.93M — LOWER than the wins (~3.8-4.0M): they died before finishing Skavag. Same contribution shape holds even in a loss: Pelops top (1.51M), Bambus 2nd (908K). So a loss here is 'ran out of time/survival', not a collapse in damage output."
     },
@@ -78,15 +243,62 @@
       "result": "Victory",
       "turns": 162,
       "timeSeconds": 317,
+      "energy": 109,
       "bestTimeSeconds": 243,
       "bestTurns": 128,
-      "team": ["Ezio", "Tagoar", "Bambus", "Pelops", "Vergis"],
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
       "heroes": [
-        { "slot": 0, "name": "Ezio Auditore",     "displayName": "Ezio",   "level": 50, "damage": 903316,  "taken": 21726, "healing": 0 },
-        { "slot": 1, "name": "Tagoar",             "displayName": "Tagoar", "level": 50, "damage": 202542,  "taken": 22774, "healing": 78149 },
-        { "slot": 2, "name": "Bambus Fourleaf",    "displayName": "Bambus", "level": 50, "damage": 1011355, "taken": 12007, "healing": 0 },
-        { "slot": 3, "name": "Pelops the Victor",  "displayName": "Pelops", "level": 60, "damage": 1386108, "taken": 40106, "healing": 105758 },
-        { "slot": 4, "name": "Vergis",             "displayName": "Vergis", "level": 40, "damage": 52392,   "taken": 31509, "healing": 39559 }
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 903316,
+          "taken": 21726,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 202542,
+          "taken": 22774,
+          "healing": 78149
+        },
+        {
+          "slot": 2,
+          "name": "Bambus Fourleaf",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 1011355,
+          "taken": 12007,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops the Victor",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1386108,
+          "taken": 40106,
+          "healing": 105758
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 52392,
+          "taken": 31509,
+          "healing": 39559
+        }
       ],
       "notes": "Team-total ~3.56M. Pelops top (1.39M), Bambus 2nd (1.01M), Ezio 3rd (903K) — 4th consecutive run with this exact ordering. Pelops-carry via the HP-Burn-on-Spiderlings engine is the dominant damage source (user-confirmed mechanic)."
     },
@@ -100,15 +312,62 @@
       "result": "Victory",
       "turns": 159,
       "timeSeconds": 320,
+      "energy": 109,
       "bestTimeSeconds": 243,
       "bestTurns": 128,
-      "team": ["Ezio", "Tagoar", "Bambus", "Pelops", "Vergis"],
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
       "heroes": [
-        { "slot": 0, "name": "Ezio Auditore",     "displayName": "Ezio",   "level": 50, "damage": 819442,  "taken": 20488, "healing": 0 },
-        { "slot": 1, "name": "Tagoar",             "displayName": "Tagoar", "level": 50, "damage": 197688,  "taken": 16001, "healing": 83317 },
-        { "slot": 2, "name": "Bambus Fourleaf",    "displayName": "Bambus", "level": 50, "damage": 1078228, "taken": 5537,  "healing": 0 },
-        { "slot": 3, "name": "Pelops the Victor",  "displayName": "Pelops", "level": 60, "damage": 1442633, "taken": 57250, "healing": 104465 },
-        { "slot": 4, "name": "Vergis",             "displayName": "Vergis", "level": 40, "damage": 23974,   "taken": 22393, "healing": 19272 }
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 819442,
+          "taken": 20488,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 197688,
+          "taken": 16001,
+          "healing": 83317
+        },
+        {
+          "slot": 2,
+          "name": "Bambus Fourleaf",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 1078228,
+          "taken": 5537,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops the Victor",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1442633,
+          "taken": 57250,
+          "healing": 104465
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 23974,
+          "taken": 22393,
+          "healing": 19272
+        }
       ],
       "notes": "Team-total ~3.56M. Pelops top (1.44M), Bambus 2nd (1.08M), Ezio 3rd (819K) — 5th consecutive run, identical ordering. Across the 4 wins + 1 loss: Pelops 1.39-1.95M, Bambus 0.91-1.14M, Ezio 0.27-0.97M, Tagoar 0.19-0.31M, Vergis 0.02-0.07M. Very stable per-hero contribution profile — a good Simulator reality target."
     },
@@ -122,15 +381,62 @@
       "result": "Victory",
       "turns": 167,
       "timeSeconds": 339,
+      "energy": 97,
       "bestTimeSeconds": 243,
       "bestTurns": 128,
-      "team": ["Ezio", "Tagoar", "Bambus", "Pelops", "Vergis"],
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
       "heroes": [
-        { "slot": 0, "name": "Ezio Auditore",     "displayName": "Ezio",   "level": 50, "damage": 1192204, "taken": 26176, "healing": 0 },
-        { "slot": 1, "name": "Tagoar",             "displayName": "Tagoar", "level": 50, "damage": 244287,  "taken": 14181, "healing": 75520 },
-        { "slot": 2, "name": "Bambus Fourleaf",    "displayName": "Bambus", "level": 50, "damage": 956982,  "taken": 14773, "healing": 0 },
-        { "slot": 3, "name": "Pelops the Victor",  "displayName": "Pelops", "level": 60, "damage": 1167014, "taken": 17444, "healing": 107616 },
-        { "slot": 4, "name": "Vergis",             "displayName": "Vergis", "level": 40, "damage": 72758,   "taken": 34487, "healing": 52248 }
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 1192204,
+          "taken": 26176,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 244287,
+          "taken": 14181,
+          "healing": 75520
+        },
+        {
+          "slot": 2,
+          "name": "Bambus Fourleaf",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 956982,
+          "taken": 14773,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops the Victor",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1167014,
+          "taken": 17444,
+          "healing": 107616
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 72758,
+          "taken": 34487,
+          "healing": 52248
+        }
       ],
       "notes": "Team-total ~3.63M. NOTE: here EZIO tops (1.19M) narrowly over Pelops (1.17M) — so the carry is Pelops+Ezio, not always Pelops-first. Both are ~1.1-1.2M, Bambus 3rd (957K). Softens the 'Pelops always top' read: it's a Pelops/Ezio pair at the top, order can swap."
     },
@@ -144,15 +450,62 @@
       "result": "Defeat",
       "turns": null,
       "timeSeconds": 216,
+      "energy": 85,
       "bestTimeSeconds": 243,
       "bestTurns": 128,
-      "team": ["Ezio", "Tagoar", "Bambus", "Pelops", "Vergis"],
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
       "heroes": [
-        { "slot": 0, "name": "Ezio Auditore",     "displayName": "Ezio",   "level": 50, "damage": 463113,  "taken": 16711, "healing": 0 },
-        { "slot": 1, "name": "Tagoar",             "displayName": "Tagoar", "level": 50, "damage": 70322,   "taken": 25176, "healing": 18880 },
-        { "slot": 2, "name": "Bambus Fourleaf",    "displayName": "Bambus", "level": 50, "damage": 569285,  "taken": 26734, "healing": 0 },
-        { "slot": 3, "name": "Pelops the Victor",  "displayName": "Pelops", "level": 60, "damage": 1223744, "taken": 55358, "healing": 67569 },
-        { "slot": 4, "name": "Vergis",             "displayName": "Vergis", "level": 40, "damage": 10135,   "taken": 17224, "healing": 11751 }
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 463113,
+          "taken": 16711,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 70322,
+          "taken": 25176,
+          "healing": 18880
+        },
+        {
+          "slot": 2,
+          "name": "Bambus Fourleaf",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 569285,
+          "taken": 26734,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops the Victor",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1223744,
+          "taken": 55358,
+          "healing": 67569
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 10135,
+          "taken": 17224,
+          "healing": 11751
+        }
       ],
       "notes": "DEFEAT, FAST (03:36 — quicker than the best win 04:03), team-total ~2.34M. A fast loss = the team got overwhelmed early before the damage engine ramped. Pelops still top (1.22M) — his HP-Burn engine fires even in a quick loss; the others are cut short (Ezio 463K, Bambus 569K, well below their win totals). So the win/loss difference is mostly how long the NON-Pelops damage gets to accrue (survival)."
     },
@@ -166,17 +519,609 @@
       "result": "Defeat",
       "turns": null,
       "timeSeconds": 209,
+      "energy": 73,
       "bestTimeSeconds": 243,
       "bestTurns": 128,
-      "team": ["Ezio", "Tagoar", "Bambus", "Pelops", "Vergis"],
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
       "heroes": [
-        { "slot": 0, "name": "Ezio Auditore",     "displayName": "Ezio",   "level": 50, "damage": 726283,  "taken": 16713, "healing": 0 },
-        { "slot": 1, "name": "Tagoar",             "displayName": "Tagoar", "level": 50, "damage": 61994,   "taken": 25176, "healing": 18880 },
-        { "slot": 2, "name": "Bambus Fourleaf",    "displayName": "Bambus", "level": 50, "damage": 729296,  "taken": 26733, "healing": 0 },
-        { "slot": 3, "name": "Pelops the Victor",  "displayName": "Pelops", "level": 60, "damage": 996748,  "taken": 39383, "healing": 60215 },
-        { "slot": 4, "name": "Vergis",             "displayName": "Vergis", "level": 40, "damage": 2764,    "taken": 17225, "healing": 11751 }
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 726283,
+          "taken": 16713,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 61994,
+          "taken": 25176,
+          "healing": 18880
+        },
+        {
+          "slot": 2,
+          "name": "Bambus Fourleaf",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 729296,
+          "taken": 26733,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops the Victor",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 996748,
+          "taken": 39383,
+          "healing": 60215
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 2764,
+          "taken": 17225,
+          "healing": 11751
+        }
       ],
       "notes": "DEFEAT, FAST (03:29), team-total ~2.32M. Pelops top (997K). ⚠ DATA-QUALITY FLAG: Tagoar taken/healing (25,176 / 18,880) and Vergis (~17,224 / 11,751) are IDENTICAL to the prior defeat (03:36) despite different DAMAGE — the game's DEFEAT screen appears to carry over stale taken/healing for some champs (same class of stale-value bug as the reader's contiguity issue). DAMAGE looks fresh (differs run-to-run); treat DEFEAT-screen taken/healing as SUSPECT until confirmed. Damage-dealt (the number that matters for the DoT-engine anchor) is trustworthy."
+    },
+    {
+      "source": "manual (victory-screen transcription)",
+      "capturedAt": "2026-07-28",
+      "displayName": "Don$Bambus",
+      "dungeon": "Spider's Den",
+      "stageNumber": 13,
+      "difficulty": "Normal",
+      "result": "Victory",
+      "turns": 169,
+      "timeSeconds": 344,
+      "energy": 61,
+      "bestTimeSeconds": 243,
+      "bestTurns": 128,
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
+      "heroes": [
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 908505,
+          "taken": 32323,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 217808,
+          "taken": 14521,
+          "healing": 79541
+        },
+        {
+          "slot": 2,
+          "name": "Bambus Fourleaf",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 1090991,
+          "taken": 7809,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops the Victor",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1434154,
+          "taken": 38114,
+          "healing": 124488
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 16665,
+          "taken": 22392,
+          "healing": 19272
+        }
+      ],
+      "notes": "Team-total ~3.67M. Pelops top (1.43M), Bambus 2nd (1.09M), Ezio 3rd (908K). 6th win, consistent. Running tally (6W/2L): Pelops 0.99-1.95M (always top or co-top), Bambus 0.57-1.14M, Ezio 0.27-1.19M."
+    },
+    {
+      "source": "manual (victory-screen transcription)",
+      "capturedAt": "2026-07-28",
+      "displayName": "Don$Bambus",
+      "dungeon": "Spider's Den",
+      "stageNumber": 13,
+      "difficulty": "Normal",
+      "result": "Victory",
+      "turns": 208,
+      "timeSeconds": 410,
+      "energy": 45,
+      "bestTimeSeconds": 243,
+      "bestTurns": 128,
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
+      "heroes": [
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 827229,
+          "taken": 26359,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 309919,
+          "taken": 22022,
+          "healing": 100805
+        },
+        {
+          "slot": 2,
+          "name": "Bambus Fourleaf",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 1171720,
+          "taken": 8399,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops the Victor",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1810627,
+          "taken": 39185,
+          "healing": 108699
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 57624,
+          "taken": 32735,
+          "healing": 46911
+        }
+      ],
+      "notes": "Team-total ~4.18M (highest yet). Pelops top (1.81M), Bambus 2nd (1.17M), Ezio 3rd (827K). Long grind (208t). 7th win. Confirms the profile across 10 battles (7W/3L)."
+    },
+    {
+      "source": "manual (victory-screen transcription)",
+      "capturedAt": "2026-07-28",
+      "displayName": "Don$Bambus",
+      "dungeon": "Spider's Den",
+      "stageNumber": 13,
+      "difficulty": "Normal",
+      "result": "Victory",
+      "turns": 166,
+      "timeSeconds": 313,
+      "energy": 42,
+      "bestTimeSeconds": 243,
+      "bestTurns": 128,
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
+      "heroes": [
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 734033,
+          "taken": 28628,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 88643,
+          "taken": 25177,
+          "healing": 37760
+        },
+        {
+          "slot": 2,
+          "name": "Bambus Fourleaf",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 1015902,
+          "taken": 10563,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops the Victor",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1577244,
+          "taken": 36059,
+          "healing": 88346
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 51115,
+          "taken": 16329,
+          "healing": 50508
+        }
+      ],
+      "notes": "Team-total ~3.47M. Pelops top (1.58M), Bambus 2nd (1.02M), Ezio 3rd (734K). 8th win (8W/3L over 11 battles = 73% observed WR, ≈ the 79% reader aggregate)."
+    },
+    {
+      "source": "manual (victory-screen transcription)",
+      "capturedAt": "2026-07-28",
+      "displayName": "Don$Bambus",
+      "dungeon": "Spider's Den",
+      "stageNumber": 13,
+      "difficulty": "Normal",
+      "result": "Victory",
+      "turns": 189,
+      "timeSeconds": 353,
+      "energy": 40,
+      "bestTimeSeconds": 243,
+      "bestTurns": 128,
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
+      "heroes": [
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 1156352,
+          "taken": 28082,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 96953,
+          "taken": 28953,
+          "healing": 37760
+        },
+        {
+          "slot": 2,
+          "name": "Bambus",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 1029029,
+          "taken": 26733,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1678406,
+          "taken": 54562,
+          "healing": 100308
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 63591,
+          "taken": 29173,
+          "healing": 52094
+        }
+      ]
+    },
+    {
+      "source": "manual (victory-screen transcription)",
+      "capturedAt": "2026-07-28",
+      "displayName": "Don$Bambus",
+      "dungeon": "Spider's Den",
+      "stageNumber": 13,
+      "difficulty": "Normal",
+      "result": "Victory",
+      "turns": 200,
+      "timeSeconds": 392,
+      "energy": 29,
+      "bestTimeSeconds": 243,
+      "bestTurns": 128,
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
+      "heroes": [
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 623079,
+          "taken": 26244,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 270303,
+          "taken": 31578,
+          "healing": 102042
+        },
+        {
+          "slot": 2,
+          "name": "Bambus",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 1224529,
+          "taken": 23788,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1773358,
+          "taken": 61473,
+          "healing": 125970
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 73399,
+          "taken": 54001,
+          "healing": 75320
+        }
+      ]
+    },
+    {
+      "source": "manual (victory-screen transcription)",
+      "capturedAt": "2026-07-28",
+      "displayName": "Don$Bambus",
+      "dungeon": "Spider's Den",
+      "stageNumber": 13,
+      "difficulty": "Normal",
+      "result": "Defeat",
+      "turns": null,
+      "timeSeconds": 240,
+      "energy": 21,
+      "bestTimeSeconds": 243,
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
+      "heroes": [
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 445151,
+          "taken": 16711,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 70549,
+          "taken": 25177,
+          "healing": 18880
+        },
+        {
+          "slot": 2,
+          "name": "Bambus",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 791686,
+          "taken": 26733,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1288297,
+          "taken": 50972,
+          "healing": 64770
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 8681,
+          "taken": 17225,
+          "healing": 11751
+        }
+      ]
+    },
+    {
+      "source": "manual (victory-screen transcription)",
+      "capturedAt": "2026-07-28",
+      "displayName": "Don$Bambus",
+      "dungeon": "Spider's Den",
+      "stageNumber": 13,
+      "difficulty": "Normal",
+      "result": "Defeat",
+      "turns": null,
+      "timeSeconds": 351,
+      "energy": 11,
+      "bestTimeSeconds": 243,
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
+      "heroes": [
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 949304,
+          "taken": 20887,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 118813,
+          "taken": 25177,
+          "healing": 39152
+        },
+        {
+          "slot": 2,
+          "name": "Bambus",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 974036,
+          "taken": 26735,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1570096,
+          "taken": 93481,
+          "healing": 107723
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 21532,
+          "taken": 29676,
+          "healing": 34468
+        }
+      ]
+    },
+    {
+      "source": "manual (victory-screen transcription)",
+      "capturedAt": "2026-07-28",
+      "displayName": "Don$Bambus",
+      "dungeon": "Spider's Den",
+      "stageNumber": 13,
+      "difficulty": "Normal",
+      "result": "Victory",
+      "turns": 186,
+      "timeSeconds": 357,
+      "energy": 109,
+      "bestTimeSeconds": 243,
+      "bestTurns": 128,
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
+      "heroes": [
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 964584,
+          "taken": 21832,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 245561,
+          "taken": 19911,
+          "healing": 76912
+        },
+        {
+          "slot": 2,
+          "name": "Bambus",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 1093417,
+          "taken": 8000,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1432617,
+          "taken": 14503,
+          "healing": 137396
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 54006,
+          "taken": 30666,
+          "healing": 38244
+        }
+      ]
     }
   ]
 }

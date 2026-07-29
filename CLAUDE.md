@@ -816,8 +816,10 @@ already imports `damageSourceIgnoresDef` and enforces the §1 invariant at load.
    shipping.
 6. base_crit_rate / base_crit_dmg migration — confirm applied to live DB
    before running full stats scraper.
-7. **Do Classic Arena tier bonuses apply in PvE, or only in Arena?** Decides whether
-   `data/arena-bonus-stats.json` belongs in the dungeon model at all. Unverified.
+7. **Do Classic Arena tier bonuses apply in PvE, or only in Arena?** ✅ RESOLVED (Mike,
+   first-party 2026-07-28): they DO apply in PvE. Arena is CONFIRMED in the dungeon model
+   (`applyBattleLayers` +3% base HP/ATK/DEF), no longer a bracket. Great Hall is the
+   remaining unmodelled account-level bonus (per-affinity % of base stats).
 8. Great Hall: does the same level→percent curve apply to all six stats? Only one
    bonus's curve was visible in the source screenshot.
 
