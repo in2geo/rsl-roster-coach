@@ -82,10 +82,10 @@
   },
   "revive": {
     "won": false,
-    "turns": 55,
+    "turns": 59,
     "failedPhase": "boss",
-    "deaths": 8,
-    "revives": 6,
+    "deaths": 7,
+    "revives": 5,
     "survivors": [],
     "allies": [
       {
