@@ -1122,6 +1122,351 @@
           "healing": 38244
         }
       ]
+    },
+    {
+      "source": "manual (victory-screen transcription)",
+      "capturedAt": "2026-07-29",
+      "displayName": "Don$Bambus",
+      "dungeon": "Spider's Den",
+      "stageNumber": 13,
+      "difficulty": "Normal",
+      "bestTimeSeconds": 243,
+      "bestTurns": 128,
+      "result": "Victory",
+      "turns": 150,
+      "timeSeconds": 257,
+      "energy": 688,
+      "team": [
+        "Pelops",
+        "Tagoar",
+        "Bambus",
+        "Vallaryn",
+        "Vergis"
+      ],
+      "heroes": [
+        {
+          "slot": 0,
+          "name": "Pelops the Victor",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1712889,
+          "taken": 23936,
+          "healing": 76615
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 165293,
+          "taken": 25208,
+          "healing": 63185
+        },
+        {
+          "slot": 2,
+          "name": "Bambus Fourleaf",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 610485,
+          "taken": 8367,
+          "healing": 4440
+        },
+        {
+          "slot": 3,
+          "name": "Vallaryn the Equalizer",
+          "displayName": "Vallaryn",
+          "level": 49,
+          "damage": 307062,
+          "taken": 27140,
+          "healing": 4839
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 35868,
+          "taken": 24736,
+          "healing": 57379
+        }
+      ],
+      "notes": "VALLARYN-VARIANT team (Ezio swapped OUT for Vallaryn the Equalizer) — Mike's experiment to test whether Ezio's AoE hurts the team by exploding Spiderlings before Pelops's HP Burn ticks. Win, 150 turns (FASTER than the Ezio team's ~181 median), all 5 alive. Pelops top (1.71M) — the burn/reflect engine fires cleanly when the swarm lives. Team-total ~2.83M. energy = top-right per-run counter (drops 14/run = Spider-13 cost); used as dedup key."
+    },
+    {
+      "source": "manual (defeat-screen transcription)",
+      "capturedAt": "2026-07-29",
+      "displayName": "Don$Bambus",
+      "dungeon": "Spider's Den",
+      "stageNumber": 13,
+      "difficulty": "Normal",
+      "bestTimeSeconds": 243,
+      "bestTurns": 128,
+      "result": "Defeat",
+      "turns": null,
+      "timeSeconds": 237,
+      "energy": 674,
+      "team": [
+        "Pelops",
+        "Tagoar",
+        "Bambus",
+        "Vallaryn",
+        "Vergis"
+      ],
+      "heroes": [
+        {
+          "slot": 0,
+          "name": "Pelops the Victor",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1183393,
+          "taken": 41198,
+          "healing": 59861
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 56545,
+          "taken": 25984,
+          "healing": 24522
+        },
+        {
+          "slot": 2,
+          "name": "Bambus Fourleaf",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 669500,
+          "taken": 27867,
+          "healing": 6810
+        },
+        {
+          "slot": 3,
+          "name": "Vallaryn the Equalizer",
+          "displayName": "Vallaryn",
+          "level": 49,
+          "damage": 363646,
+          "taken": 22382,
+          "healing": 5332
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 24756,
+          "taken": 17898,
+          "healing": 34189
+        }
+      ],
+      "notes": "VALLARYN-VARIANT team (Ezio swapped OUT for Vallaryn the Equalizer). DEFEAT (no reward), time 3:57; turns not shown on the defeat screen. Team-total ~2.30M — lower than the win (~2.83M): ran out of survival before finishing Skavag. Same shape as the Ezio-team losses: Pelops top (1.18M), Bambus 2nd (669K) — a loss is time/survival, not a damage collapse. energy = top-right per-run counter; dedup key."
+    },
+    {
+      "source": "manual (victory-screen transcription)",
+      "capturedAt": "2026-07-29",
+      "displayName": "Don$Bambus",
+      "dungeon": "Spider's Den",
+      "stageNumber": 13,
+      "difficulty": "Normal",
+      "result": "Victory",
+      "turns": 205,
+      "timeSeconds": 358,
+      "energy": 660,
+      "bestTimeSeconds": 243,
+      "bestTurns": 128,
+      "team": [
+        "Pelops",
+        "Tagoar",
+        "Bambus",
+        "Vallaryn",
+        "Vergis"
+      ],
+      "heroes": [
+        {
+          "slot": 0,
+          "name": "Pelops the Victor",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 2170828,
+          "taken": 50453,
+          "healing": 87671
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 195641,
+          "taken": 38559,
+          "healing": 78903
+        },
+        {
+          "slot": 2,
+          "name": "Bambus Fourleaf",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 956162,
+          "taken": 29704,
+          "healing": 6744
+        },
+        {
+          "slot": 3,
+          "name": "Vallaryn the Equalizer",
+          "displayName": "Vallaryn",
+          "level": 49,
+          "damage": 346397,
+          "taken": 29878,
+          "healing": 10084
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 34603,
+          "taken": 32528,
+          "healing": 63396
+        }
+      ],
+      "notes": "VALLARYN-VARIANT team (Ezio swapped OUT for Vallaryn the Equalizer). Win, 205 turns (LONG — the Vallaryn wins now span 150t..205t, so Vallaryn is not uniformly faster than the Ezio team; variance is real — do not over-read the single 150t run). Pelops top (2.17M), Bambus 2nd (956K). Team-total ~3.70M. energy = top-right per-run counter (688→674→660, −14/run); dedup key."
+    },
+    {
+      "source": "manual (victory-screen transcription) — TURN-BY-TURN TRACKED fight",
+      "capturedAt": "2026-07-29",
+      "displayName": "Don$Bambus",
+      "dungeon": "Spider's Den",
+      "stageNumber": 13,
+      "difficulty": "Normal",
+      "result": "Victory",
+      "turns": 153,
+      "timeSeconds": 387,
+      "energy": 646,
+      "bestTimeSeconds": 243,
+      "bestTurns": 128,
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
+      "heroes": [
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 938445,
+          "taken": 1405,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 173535,
+          "taken": 4731,
+          "healing": 58470
+        },
+        {
+          "slot": 2,
+          "name": "Bambus Fourleaf",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 833848,
+          "taken": 0,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops the Victor",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1424865,
+          "taken": 24157,
+          "healing": 83054
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 54517,
+          "taken": 5855,
+          "healing": 42343
+        }
+      ],
+      "notes": "EZIO team. THE turn-by-turn TRACKED fight (2026-07-29): live frames captured at t42/63/79/94/114/124/145 → VICTORY t153. Confirms the reality dynamic: Skavag oscillates (non-consume turn = takes HP-Burn from 5-10 burning Spiderlings; consume turn = heals to full) but NETS DOWNWARD, dying ~153t. Pelops top (1.42M, the burn/reflect engine), Bambus 2nd (834K, poison redirect). The SIM cannot reproduce this — it stalemates at 79-100% Skavag HP and the team wipes ~139t — because it keeps only ~3 Spiderlings burning vs reality 5-10 (HP-Burn PLACEMENT gap, not carrier survival). See knowledge/SPIDER13_FIGHT_TRACK.md. energy=per-run counter (688/674/660/646, -14/run)."
+    },
+    {
+      "source": "manual (victory-screen transcription)",
+      "capturedAt": "2026-07-29",
+      "displayName": "Don$Bambus",
+      "dungeon": "Spider's Den",
+      "stageNumber": 13,
+      "difficulty": "Normal",
+      "result": "Victory",
+      "turns": 211,
+      "timeSeconds": 396,
+      "energy": null,
+      "bestTimeSeconds": 243,
+      "bestTurns": 128,
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
+      "heroes": [
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 364752,
+          "taken": 28884,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 277525,
+          "taken": 35393,
+          "healing": 92690
+        },
+        {
+          "slot": 2,
+          "name": "Bambus Fourleaf",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 1142191,
+          "taken": 14729,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops the Victor",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1928480,
+          "taken": 40598,
+          "healing": 107032
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 55386,
+          "taken": 26472,
+          "healing": 73565
+        }
+      ],
+      "notes": "EZIO team, 2nd victory-screen capture of 2026-07-29 (distinct run from the t153 tracked fight and the 164t video run). 211 turns / 6:36. Pelops top again (1.93M — burn/reflect engine), Bambus 2nd (1.14M — poison redirect); these two are the stable carries. Ezio SWINGS: 364K here vs ~1.00M in the 164t video run vs 938K in the t153 run → high run-to-run variance on Ezio; anchor damage judgments on the aggregate, not one run (single-run anchor trap). Nobody permanently dead (reviver = Tagoar A3). energy field N/A this capture (screen showed pool 97/109, not the per-run counter)."
     }
   ]
 }

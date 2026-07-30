@@ -12,6 +12,7 @@ import { spawnSync } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { RECIPES } from '../lib/sim/recipes.js';
+import { appendQaHistory, gitCommit, nowIso } from './qa-history.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const HAS_DB = !!process.env.SUPABASE_URL;
@@ -94,6 +95,17 @@ for (const [bucket, items] of Object.entries(ledger)) {
   for (const it of items.slice(0, 8)) console.log(`    - ${it}`);
   if (items.length > 8) console.log(`    … +${items.length - 8} more`);
 }
-console.log('\nQA_JSON ' + JSON.stringify({ rung: 'model-qa', pass: scorecard.filter(s => s.status === 'green').length, fail: blocks,
+const passCount = scorecard.filter(s => s.status === 'green').length;
+const failCount = scorecard.filter(s => String(s.status).startsWith('RED')).length;   // total rungs failing (spec_violation subset = `blocks`)
+console.log('\nQA_JSON ' + JSON.stringify({ rung: 'model-qa', pass: passCount, fail: blocks,
   scorecard: scorecard.map(s => ({ name: s.name, status: s.status })), ledger }));
+
+// MEASUREMENT BACKBONE: append this run to data/qa-history.json (timestamp, commit, total passed, total failed,
+// full scorecard array). `fail` = rungs RED; `blocks` = the spec-violation subset that gates.
+try {
+  appendQaHistory({ ts: nowIso(), commit: gitCommit(), rung: 'model-qa', pass: passCount, fail: failCount, blocks,
+    scorecard: scorecard.map(s => ({ name: s.name, layer: s.layer, status: s.status })),
+    buckets: Object.fromEntries(Object.entries(ledger).map(([k, v]) => [k, v.length])) });
+} catch (e) { console.error('  (qa-history append failed: ' + e.message + ')'); }
+
 process.exit(blocks ? 1 : 0);

@@ -39,6 +39,10 @@ meta-disciplines.** Layers 7–10 stay with the Simulator.
 
 ## The rungs (built + planned)
 
+**INVENTORY REFRESHED 2026-07-29 — this table now lists every rung that actually exists in `tools/`.** The
+previous version was stale (7 rungs existed on disk but were undocumented, which is exactly why "what QA do we
+have?" was unanswerable without reading code). If you add or delete a rung, update this table in the same change.
+
 | rung | layer | file | status |
 |---|---|---|---|
 | card→recipe coverage | 1 | `tools/sim-validate-recipes.mjs` | ✅ built (steps 3–6; reads passive triggers/modifiers) |
@@ -50,12 +54,32 @@ meta-disciplines.** Layers 7–10 stay with the Simulator.
 | scoped hand-calc golden (turn-by-turn) | 4 | `tools/model-golden.mjs` | ✅ turns 1–8 hand-derived, actor·skill·exact-damage; reports first divergence |
 | behavioural invariants (property-based) | 5 | `tools/model-invariants.mjs` | ✅ 800 scenarios + determinism; proven-teeth (heal-uncap mutant) |
 | sensitivity (metamorphic + carve-outs) | 6 | `tools/model-sensitivity.mjs` | ✅ 9/9 directions + HP-not-ATK carve-outs |
+| **turn-order + NO-INERT-MECHANIC (opps-aware)** | 5 | `tools/model-turn-verify.mjs` | ✅ **runs across ALL built contents (Spider-13 + Dragon-16), 20 seeds each.** BLOCKS on a broken turn order or an INERT mechanic (`opps>0 && consequence===0`). Shared core `tools/verify-core.mjs`; CLI sibling `tools/turn-verify.mjs`. **Was Dragon-only until 2026-07-29** — that is why Spider-side inertness went unseen. |
+| boss called→fired→applied | 5 | `tools/model-boss.mjs` | ✅ Hellrazor (Dragon) boss-kit outcome sequence |
+| Spider boss invariants | 5 | `tools/model-spider.mjs` | ⚠ 39/42 — 3 assertions stale after the 2026-07-29 spawn-TM=66 fix (need verify-then-rebless, NOT auto-pass) |
+| Petrification outcome | 5 | `tools/model-petrification-test.mjs` | ✅ the placed-but-inert regression guard (the original inert bug) |
+| op-dispatch consistency | 2 | `tools/model-ops-consistency.mjs` | ✅ single-source op dispatch (interpreter vs operations catalog) |
+| recipe registry guard | 1 | `tools/model-recipe-registry.mjs` | ✅ every RECIPES entry well-formed / no content-only carve-out leaks |
 | **teeth (mutation)** | meta | `tools/model-mutants.mjs` | ✅ **12/12 killed, 100%, 0 holes, 0 gaps** (suite = a/b/c/d + invariants + sensitivity) |
-| **Model QA orchestrator (4-bucket ledger)** | — | `tools/model-qa.mjs` | ✅ **one scorecard, 10 rungs, SPEC-CONFORMANT** |
-| snapshot (regression) | meta | `tools/model-snapshot.mjs` | ✅ 29 fingerprints frozen (`test/snapshots/model-snapshot.json`); re-bless: `SNAPSHOT_BLESS=1` |
-| **roll census (FIRED/ROLLED/CONSUMED)** | meta | `tools/sim-rolls.mjs` | ✅ 15/15 — every LIVE RNG mechanic draws its stream at its stated `p`; reserved streams stay dead; decorrelation proven. Executes `knowledge/RNG_REGISTRY.md` |
-| **wave coverage (L1 composition / L2 kit / L3 firing)** | 1 | `tools/mob-coverage.mjs [stage]` | ✅ closes the reviewer's "blind to omissions" gap. Diffs the model vs EXTERNAL ground truth: L1 sim/DB wave == verified table (`data/dragon-wave-data.json`, in-game screenshots, all 25 stages); L2 every mob has its full kit (no missing row / dupe) + every mechanic parsed; L3 every active fires+consumes. Wrong-mob / missing-skill / dupe / missing-coeff = **spec_violation (blocks)**; unparsed mechanic → unimplemented catalog. Stage via `MODEL_QA_STAGE`. |
+| **Model QA orchestrator (4-bucket ledger)** | — | `tools/model-qa.mjs` | ✅ **one scorecard, SPEC-CONFORMANT** |
+| snapshot (regression) | meta | `tools/model-snapshot.mjs` | ✅ fingerprints frozen (`test/snapshots/model-snapshot.json`); re-bless: `SNAPSHOT_BLESS=1` |
+| **roll census (FIRED/ROLLED/CONSUMED)** | meta | `tools/sim-rolls.mjs` | ✅ 15/15 — every LIVE RNG mechanic draws its stream at its stated `p`. Executes `knowledge/RNG_REGISTRY.md` |
+| **wave coverage (L1 composition / L2 kit / L3 firing)** | 1 | `tools/mob-coverage.mjs [stage]` | ✅ blocking firing gate for ENEMY mobs. L1 wave == verified table; L2 full kit; L3 every active fires+consumes. Wrong/missing/dupe/missing-coeff = **spec_violation (blocks)**. NB: covers mobs, NOT our team champions (see gap below). |
+| capability benchmark (team card→recipe→trace) | 1/report | `tools/sim-capability-matrix.mjs [N] [dungeon] [stage]` | ✅ report-only. Hand-dissected DB-card denominator for the TEAM; reports RECIPE coverage + TRACE firing + realized duration. NOT a gate (a `model-firing-census` wrapper was tried 2026-07-29 and REMOVED — it lacked the opps discriminator and produced false positives, e.g. flagging a revive that simply had 0 deaths to act on). |
 | DB→recipe fidelity (every column read + round-trips) | 1 | — | ⬜ TODO |
+
+### Known COVERAGE GAPS in the outcome verifier (verify-core contract taxonomy)
+`verify-core.mjs` outcome-verifies these contracts: **CC-skip · DoT-tick · heal · reactive (Shield/Magma
+Shield/Reflect/Ally Protection) · targeting (Taunt/Provoke/Veil)**. It does NOT yet model:
+- **`revive`** — a revive firing is not a tracked contract (opp = a dead ally existed when the reviver could
+  act; consequence = a `revive` event). Until added, "the reviver never fired" is only visible as a symptom.
+- **`sponge` (Bambus Sleeping Sage)** — the transfer/dump is not a tracked contract (opp = an ally was
+  debuffed while the owner was asleep; consequence = a `sponged`/`dumped` event). This is the exact class of
+  the 2026-07-29 miss (spiderling poison never routed to the sponge). **Adding revive + sponge contracts to
+  verify-core is the next build — it is the real regression-guard for that bug.**
+- **team card→recipe COVERAGE as a GATE** — `sim-capability-matrix` reports it but nothing blocks on it; the
+  team-side analog of `mob-coverage`. Open design question: gate it with an opps-aware discriminator so it
+  cannot false-positive the way the removed `model-firing-census` did.
 
 The exact-damage / connected-run comparison against reality (`sim-recipe-fight.mjs`, `sim-run.mjs`) is
 **Layer-B / Simulator-side** — kept out of the Model ladder on purpose.

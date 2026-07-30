@@ -79,8 +79,7 @@ const trace = runRung('sim-trace.mjs');          // rung 3b — DB, reality orac
 const actions = runRung('sim-actions.mjs');      // action verification — DB, mechanics-derived per-turn ACTION check
 const snapshot = runRung('sim-snapshot.mjs');    // rung 10 — no DB, regression snapshot (runs on pristine engine, before mutation)
 const data = runRung('sim-validate-data.mjs');   // rung 1 — needs DB (inherits env from --env-file)
-const survival = runRung('sim-survival-oracle.mjs');                          // SURVIVAL ORACLE — DB, reality gate on the RECEIVING side (per-hero damage-TAKEN vs reality band). Spider-13 GATES (14 captures).
-const survivalDragon = runRung('sim-survival-oracle.mjs', ['40', "Dragon's Lair", '16']);   // same rung, Dragon-16 — REPORT-ONLY (single reader anchor), informational
+const perHeroBands = runRung('sim-per-hero-bands.mjs', ['40']);   // PER-HERO REALITY BANDS — the SINGLE per-hero reality gate (folded in the old sim-survival-oracle 2026-07-29). Whole-fight DEALT/TAKEN/HEALING per hero vs the captured p10–p90 (Spider-13 hand-verified + Dragon-16 reader). TAKEN outside the band = broken-mechanic signature → spec_violation (blocks, the oracle's old teeth); DEALT = damage-incompleteness → reality gap; HEALING = report-only. Standalone tool keeps a hard ±20% exit gate.
 const mut = runRung('sim-mutants.mjs');          // rung 9 — no DB, mutation testing: does the suite have teeth?
 
 // ── classify every finding into the four buckets ────────────────────────────────
@@ -137,11 +136,22 @@ if (data.json) {
 // DoT, missing mitigation), NOT mere incompleteness → BLOCKS (bucket 1). This is the rung that would have
 // caught the immortal-poison bug the outcome-based rungs (win-rate/golden) were blind to. A REPORT-ONLY run
 // (single reader anchor) is informational (bucket 4) — it shows the number without blocking on one shaky anchor.
-if (survival.json) {
-  if (survival.json.gating) for (const f of survival.json.failures) ledger.spec_violation.push(`survival oracle: ${f.hero} takes ${f.simTakenPerTurn}/turn vs reality ${f.realTakenPerTurn}/turn (${f.ratio}× — outside ±${survival.json.band}× band)  [${survival.json.dungeon} ${survival.json.stage}]`);
-} else ledger.missing_data.push('survival oracle (gating) did not report — run with --env-file=.env.local for DB access');
-if (survivalDragon.json && !survivalDragon.json.gating) for (const f of survivalDragon.json.failures)
-  ledger.reality_gap.push(`survival oracle [report-only]: ${f.hero} takes ${f.simTakenPerTurn}/turn vs reality ${f.realTakenPerTurn}/turn (${f.ratio}×)  [${survivalDragon.json.dungeon} ${survivalDragon.json.stage} — single reader anchor, needs multi-capture to gate]`);
+// PER-HERO REALITY BANDS — the SINGLE per-hero reality gate (folded in the old sim-survival-oracle 2026-07-29).
+// Whole-fight per-hero DEALT / TAKEN / HEALING vs the captured p10–p90 band (Spider-13 hand-verified; Dragon-16
+// from the reader/watcher). Routing preserves the survival oracle's teeth while respecting the completeness rule:
+//   • TAKEN outside the band  → spec_violation (BLOCKS). Taking/surviving far outside reality is a broken-mechanic
+//     signature (over-survival / over-hot DoT / missing mitigation), not mere incompleteness — the immortal-poison
+//     class the oracle existed to catch.
+//   • DEALT outside the band  → reality gap (surfaced, does NOT block). Low per-hero damage is the sim being
+//     incomplete on the damage model (e.g. Pelops under-deals) — bucket 4, like golden-outcome/trace divergence.
+//   • HEALING — report-only in the tool (attribution seam), never reaches this list.
+// The standalone tool keeps a hard ±20% exit gate on DEALT+TAKEN for targeted/CI use.
+if (perHeroBands.json && !perHeroBands.json.skipped) {
+  for (const f of (perHeroBands.json.failures || [])) {
+    if (f.metric === 'taken') ledger.spec_violation.push(`per-hero survival: ${f.msg}  (taken outside the reality band = broken-mechanic signature)`);
+    else ledger.reality_gap.push(`per-hero magnitude: ${f.msg}`);
+  }
+} else if (perHeroBands.json?.skipped) ledger.reality_gap.push(`per-hero bands skipped — ${perHeroBands.json.skipped} (run with --env-file=.env.local)`);
 
 for (const [lv, st] of LEVELS) if (st === 'unsupported') ledger.reality_gap.push(`level NOT scored: ${lv}`);
 
@@ -217,6 +227,11 @@ else console.log('    ⚠ no report');
 console.log('\n▶ ACTION VERIFICATION (sim vs the encoded game-mechanic action rules — predictor, not reality)');
 if (actions.json && !actions.json.skipped) console.log(`    ${actions.json.diverged === 0 ? '✅' : '✗'} ${actions.json.matched}/${actions.json.actions} actions follow the rules${actions.json.diverged ? `  ·  first: t${actions.json.firstDivergence.turn} ${actions.json.firstDivergence.actor} — rule ${actions.json.firstDivergence.expected} vs sim ${actions.json.firstDivergence.actual} (confirm vs recording)` : ''}`);
 else if (actions.json?.skipped) console.log(`    ⏳ skipped — ${actions.json.skipped}`);
+else console.log('    ⚠ no report');
+
+console.log('\n▶ PER-HERO REALITY BANDS (whole-fight dealt/taken/healing per hero vs captured p10–p90)');
+if (perHeroBands.json && !perHeroBands.json.skipped) console.log(`    ${perHeroBands.json.fail === 0 ? '✅' : '✗'} ${perHeroBands.json.fail} gated metric(s) outside the captured band by >${Math.round((perHeroBands.json.gatePct || 0.2) * 100)}%  (Spider-13 hand-verified + Dragon-16 reader; dealt+taken gated, healing report-only)`);
+else if (perHeroBands.json?.skipped) console.log(`    ⏳ skipped — ${perHeroBands.json.skipped} (needs --env-file=.env.local)`);
 else console.log('    ⚠ no report');
 
 console.log('\n▶ REGRESSION SNAPSHOT (rung 10 — does the engine still do what it did at the last blessing?)');

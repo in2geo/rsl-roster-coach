@@ -1,0 +1,19 @@
+{
+  "_comment": "ACCEPTANCE THRESHOLDS — what 'good enough' means for each dungeon, for the QA reality gates. THESE ARE TARGETS, NOT PERMANENT TOLERANCES: tighten them as the simulator improves (e.g. perHero 0.20 -> 0.10 -> 0.05, winRate 10pp -> 5pp, turns 0.15 -> 0.08) so the gate keeps ratcheting the sim toward reality. Read by tools/sim-per-hero-bands.mjs for its pass/fail gate. Fields: perHeroDealtPct / perHeroTakenPct = max fractional deviation of a champion's sim median from the reality median (0.20 = within 20%); winRatePctPoints = max absolute gap between sim and captured win rate, in percentage POINTS; medianTurnsPct = max fractional deviation of the sim median turn count from the captured median. 'default' applies to any dungeon+stage without its own entry; a per-content key is '<Dungeon> <stage>' and overrides 'default' field-by-field. NOTE: perHeroTakenPct is intentionally LOOSER than perHeroDealtPct (0.40 vs 0.20) BY DESIGN — damage TAKEN has a large natural range from targeting variance (e.g. Spider Bambus real p10=3k / p90=27k, ~9x), so its median-% tolerance needs more slack than dealt. This will be revisited (tightened) once per-hero capture sample sizes are larger.",
+  "default": {
+    "perHeroDealtPct": 0.20,
+    "perHeroTakenPct": 0.40,
+    "winRatePctPoints": 10,
+    "medianTurnsPct": 0.15
+  },
+  "Spider's Den 13": {
+    "perHeroDealtPct": 0.20,
+    "winRatePctPoints": 10,
+    "medianTurnsPct": 0.15
+  },
+  "Dragon's Lair 16": {
+    "perHeroDealtPct": 0.20,
+    "winRatePctPoints": 10,
+    "medianTurnsPct": 0.15
+  }
+}

@@ -1,0 +1,70 @@
+name: QA
+
+# Runs the QA gates on every push to main and every pull request targeting main.
+# Model QA runs WITHOUT a DB (its DB-dependent rungs skip, same as a local no-DB run). The per-hero reality-band
+# gate runs WITH a DB, using the SUPABASE_URL / SUPABASE_SERVICE_KEY repo secrets (add them in
+# Settings → Secrets and variables → Actions), so it actually gates against reality in CI. If either tool exits
+# non-zero the job fails and the push/PR is blocked. The updated data/qa-history.json is committed back on EVERY
+# push to main — pass or fail — so the measurement backbone records red runs too (the red→green trail).
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write   # needed to commit data/qa-history.json back on push to main
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'   # >= 20.6 for --env-file support
+
+      - name: Install dependencies
+        run: npm ci
+
+      # `node --env-file=.env.local` errors if the file is missing. Create an EMPTY one so the literal command
+      # works; it defines nothing, so it does NOT override env vars set on a step (verified: step `env:` DB
+      # creds survive an empty --env-file). Model QA thus runs with no DB (its DB rungs skip); per-hero-bands
+      # gets the DB creds from its step `env:` below. (.env* is gitignored, so this file is never committed.)
+      - name: Create empty .env.local (satisfies --env-file; no creds in it)
+        run: touch .env.local
+
+      - name: Model QA scorecard
+        run: node --env-file=.env.local tools/model-qa.mjs
+
+      # DB creds come from repo secrets (add them in Settings → Secrets and variables → Actions), so this gate
+      # actually RUNS against reality in CI. `if: !cancelled()` makes it run even when Model QA above failed —
+      # otherwise a red Model QA would SKIP this step and its history record would be lost (the red-skipping
+      # problem the always() commit below exists to prevent, one step earlier).
+      - name: Per-hero reality bands
+        if: ${{ !cancelled() }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node --env-file=.env.local tools/sim-per-hero-bands.mjs
+
+      # ALWAYS commit the history on a push to main — pass OR fail — because the whole point of the backbone is
+      # measuring red→green, so a failing run's record must be preserved too. Guarded to push-to-main only
+      # (never PRs — fork PRs have no write token, and we don't push into a contributor's branch). [skip ci]
+      # stops this commit from re-triggering the workflow. The job's overall pass/fail is unaffected by this
+      # step: if either tool exited non-zero, the job still fails and the push is blocked.
+      - name: Commit updated qa-history.json
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/qa-history.json
+          if git diff --cached --quiet; then
+            echo "qa-history.json unchanged — nothing to commit"
+          else
+            git commit -m "chore(qa): update qa-history.json [skip ci]"
+            git push origin HEAD:main
+          fi
