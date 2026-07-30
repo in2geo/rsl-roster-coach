@@ -25,6 +25,11 @@ import { makeCombatant, makeState, simulate, actEnemyMob } from '../lib/sim/engi
 import { readSkillKit, gearLifesteal } from '../lib/sim/ai.js';
 import { makeDragonContent, HELLRAZOR_IMMUNE } from '../lib/sim/dragon.js';
 import { loadNameResolverRest } from '../lib/champion-names.js';
+// Non-Dragon content (Spider) is built through the shared dispatcher — the SAME build+run path as
+// sim-per-hero-bands (buildBattle → makeSpiderContent, recipe interpreter), so montecarlo's Spider
+// death-rates are consistent with the per-hero-bands gate. Dragon keeps its own path below, unchanged.
+import { buildBattle, applyBattleLayers } from '../lib/sim/dragon-fixture.js';
+import { installRecipeRun } from '../lib/sim/interpreter.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, '..');
@@ -41,7 +46,8 @@ if (!process.env.SUPABASE_URL) {
 
 const BASE = process.env.SUPABASE_URL.replace(/\/rest\/v1\/?$/, '');
 const H = { apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}` };
-const rest = async p => (await fetch(`${BASE}/rest/v1/${p}`, { headers: H })).json();
+const _restCache = new Map();   // buildBattle re-fetches per seed; cache so a Spider run doesn't make N× the REST calls
+const rest = async p => { if (!_restCache.has(p)) _restCache.set(p, await (await fetch(`${BASE}/rest/v1/${p}`, { headers: H })).json()); return _restCache.get(p); };
 
 // ── load the fixture ──────────────────────────────────────────────────────────
 const files = fs.existsSync(DIR) ? fs.readdirSync(DIR).filter(f => f.endsWith('.json')) : [];
@@ -51,6 +57,8 @@ let fixtureFile = argFixture
 if (!fixtureFile) { console.log(`no runnable Dragon fixture found${argFixture ? ` for '${argFixture}'` : ''}`); process.exit(2); }
 const g = JSON.parse(fs.readFileSync(path.join(DIR, fixtureFile), 'utf8'));
 const stage = g.content.stage;
+const dungeonName = g.content?.dungeon ?? "Dragon's Lair";
+const isDragon = dungeonName === "Dragon's Lair";   // Dragon uses the bespoke path below; every other dungeon goes through buildBattle
 
 // ── DB: champion kits, boss, waves (mirrors sim-golden's build path) ───────────
 const SEL = 'id,name,affinity,champion_skills(slot,skill_name,skill_summary,cooldown_base,cooldown_booked,damage_multiplier,multiplier_type)';
@@ -75,7 +83,18 @@ const isDamageDealer = (cat) => (cat?.champion_skills ?? []).some(s => {
 });
 
 // Build a FRESH set of combatants each run (combat mutates hp/buffs/cooldowns). rng is per-run.
-function buildFight(seed) {
+async function buildFight(seed) {
+  // NON-DRAGON (Spider …): build + run exactly like sim-per-hero-bands so the two agree. buildBattle
+  // dispatches to makeSpiderContent (spawn template, consume snowball) and installRecipeRun runs the
+  // authored champion recipes — NOT the Dragon-only Hellrazor path below.
+  if (!isDragon) {
+    const built = await buildBattle({ rest, fixture: g, repoRoot: REPO });
+    if (built.skip) throw new Error(`buildBattle skipped: ${built.skip}`);
+    applyBattleLayers(built.allies);
+    const state = makeState({ allies: built.allies, enemies: [], seed });
+    installRecipeRun(state);
+    return { state, content: built.content, allies: built.allies };
+  }
   const boss = makeCombatant({ name: bossRow.enemy_name, side: 'enemy', role: 'boss',
     maxHp: +bossRow.hp, atk: +bossRow.atk, def: +bossRow.def, spd: +bossRow.spd,
     acc: +bossRow.acc, res: +bossRow.res, critRate: +bossRow.crit_rate, critDmg: +bossRow.crit_dmg,
@@ -116,12 +135,14 @@ function buildFight(seed) {
 }
 
 // ── run N seeded battles ───────────────────────────────────────────────────────
-const teamNames = g.team.map(n => g.roster?.[n] ?? n);
-const deaths = Object.fromEntries(teamNames.map(n => [n, []]));   // death turns (only when died)
+// death turns keyed by the ACTUAL built ally names (Dragon and Spider name their allies differently —
+// buildBattle may use canonical DB names; the Dragon path uses roster names), seeded on the first build.
+const deaths = {};
 const turns = [], survivorsArr = []; let wins = 0;
 
 for (let seed = 1; seed <= N; seed++) {
-  const { state, content, allies } = buildFight(seed);
+  const { state, content, allies } = await buildFight(seed);
+  for (const a of allies) if (!(a.name in deaths)) deaths[a.name] = [];
   const l = console.log; console.log = () => {};
   const res = simulate(state, content, { turnCap: 400 });
   console.log = l;
@@ -130,6 +151,7 @@ for (let seed = 1; seed <= N; seed++) {
   survivorsArr.push(res.survivors.length);
   for (const a of allies) if (!a.alive) deaths[a.name].push(a.diedOnTurn ?? res.turns);
 }
+const teamNames = Object.keys(deaths);
 
 // ── stats ──────────────────────────────────────────────────────────────────────
 const pct = (arr, q) => { if (!arr.length) return null; const s = [...arr].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(q * s.length))]; };
