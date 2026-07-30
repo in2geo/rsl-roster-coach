@@ -1820,5 +1820,2882 @@
       "missing_data": 0,
       "not_scored": 1
     }
+  },
+  {
+    "ts": "2026-07-30T02:44:55.042Z",
+    "commit": "50811c4",
+    "rung": "per-hero-bands",
+    "seeds": 50,
+    "fail": 17,
+    "contents": {
+      "Spider's Den 13": {
+        "simWinRate": 98,
+        "capturedWins": 15,
+        "source": "manual hand-verified (15)",
+        "thresholds": {
+          "perHeroDealtPct": 0.2,
+          "perHeroTakenPct": 0.4,
+          "winRatePctPoints": 10,
+          "medianTurnsPct": 0.15
+        },
+        "champs": {
+          "Bambus": {
+            "dealt": {
+              "sim": 1024043,
+              "realMedian": 1078228,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 5,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 4249,
+              "realMedian": 8399,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 49,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Ezio": {
+            "dealt": {
+              "sim": 520168,
+              "realMedian": 903316,
+              "verdict": "42% below",
+              "inBand": false,
+              "devPct": 42,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 0,
+              "realMedian": 26359,
+              "verdict": "100% below",
+              "inBand": false,
+              "devPct": 100,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Pelops": {
+            "dealt": {
+              "sim": 701092,
+              "realMedian": 1577244,
+              "verdict": "56% below",
+              "inBand": false,
+              "devPct": 56,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 4432,
+              "realMedian": 38114,
+              "verdict": "88% below",
+              "inBand": false,
+              "devPct": 88,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 1142,
+              "realMedian": 107032,
+              "verdict": "99% below",
+              "inBand": false,
+              "devPct": 99,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Tagoar": {
+            "dealt": {
+              "sim": 67897,
+              "realMedian": 217808,
+              "verdict": "69% below",
+              "inBand": false,
+              "devPct": 69,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 3904,
+              "realMedian": 22022,
+              "verdict": "82% below",
+              "inBand": false,
+              "devPct": 82,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 3802,
+              "realMedian": 78903,
+              "verdict": "95% below",
+              "inBand": false,
+              "devPct": 95,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vallaryn": {
+            "dealt": {
+              "sim": null,
+              "realMedian": 346397,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "taken": {
+              "sim": null,
+              "realMedian": 29878,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "healing": {
+              "sim": null,
+              "realMedian": 10084,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vergis": {
+            "dealt": {
+              "sim": 22297,
+              "realMedian": 54006,
+              "verdict": "59% below",
+              "inBand": false,
+              "devPct": 59,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 22005,
+              "realMedian": 29447,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 25,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 46911,
+              "verdict": "100% below",
+              "inBand": false,
+              "devPct": 100,
+              "gated": false,
+              "failed": false
+            }
+          }
+        },
+        "winRate": {
+          "sim": 98,
+          "captured": 71,
+          "diffPP": 27,
+          "tolPP": 10,
+          "pass": false
+        },
+        "medianTurns": {
+          "sim": 73,
+          "captured": 181,
+          "devPct": 60,
+          "tolPct": 15,
+          "pass": false
+        }
+      },
+      "Dragon's Lair 16": {
+        "simWinRate": 68,
+        "capturedWins": 31,
+        "source": "reader/watcher (31)",
+        "thresholds": {
+          "perHeroDealtPct": 0.2,
+          "perHeroTakenPct": 0.4,
+          "winRatePctPoints": 10,
+          "medianTurnsPct": 0.15
+        },
+        "champs": {
+          "Bambus Fourleaf": {
+            "dealt": {
+              "sim": 383683,
+              "realMedian": 345541,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 11,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 29291,
+              "realMedian": 17798,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 65,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Ezio Auditore": {
+            "dealt": {
+              "sim": 362646,
+              "realMedian": 336311,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 8,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 28211,
+              "realMedian": 16711,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 69,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Pelops the Victor": {
+            "dealt": {
+              "sim": 203242,
+              "realMedian": 372711,
+              "verdict": "45% below",
+              "inBand": false,
+              "devPct": 45,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 40451,
+              "realMedian": 35911,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 13,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 18548,
+              "realMedian": 65533,
+              "verdict": "72% below",
+              "inBand": false,
+              "devPct": 72,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Tagoar": {
+            "dealt": {
+              "sim": 46685,
+              "realMedian": 66640,
+              "verdict": "30% below",
+              "inBand": false,
+              "devPct": 30,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 28602,
+              "realMedian": 27239,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 5,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 25732,
+              "realMedian": 109466,
+              "verdict": "76% below",
+              "inBand": false,
+              "devPct": 76,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vallaryn the Equalizer": {
+            "dealt": {
+              "sim": null,
+              "realMedian": 154884,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "taken": {
+              "sim": null,
+              "realMedian": 30897,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "healing": {
+              "sim": null,
+              "realMedian": 12627,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vergis": {
+            "dealt": {
+              "sim": 36302,
+              "realMedian": 55489,
+              "verdict": "35% below",
+              "inBand": false,
+              "devPct": 35,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 33103,
+              "realMedian": 35695,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 7,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 54842,
+              "verdict": "100% below",
+              "inBand": false,
+              "devPct": 100,
+              "gated": false,
+              "failed": false
+            }
+          }
+        },
+        "winRate": {
+          "sim": 68,
+          "captured": 93,
+          "diffPP": 25,
+          "tolPP": 10,
+          "pass": false
+        },
+        "medianTurns": {
+          "sim": 137,
+          "captured": 162,
+          "devPct": 15,
+          "tolPct": 15,
+          "pass": false
+        }
+      }
+    }
+  },
+  {
+    "ts": "2026-07-30T03:25:06.547Z",
+    "commit": "6b5d3cf",
+    "rung": "per-hero-bands",
+    "seeds": 40,
+    "fail": 16,
+    "contents": {
+      "Spider's Den 13": {
+        "simWinRate": 98,
+        "capturedWins": 15,
+        "source": "manual hand-verified (15)",
+        "thresholds": {
+          "perHeroDealtPct": 0.2,
+          "perHeroTakenPct": 0.4,
+          "winRatePctPoints": 10,
+          "medianTurnsPct": 0.15
+        },
+        "champs": {
+          "Bambus": {
+            "dealt": {
+              "sim": 1006574,
+              "realMedian": 1078228,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 7,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 4081,
+              "realMedian": 8399,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 51,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Ezio": {
+            "dealt": {
+              "sim": 525988,
+              "realMedian": 903316,
+              "verdict": "42% below",
+              "inBand": false,
+              "devPct": 42,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 0,
+              "realMedian": 26359,
+              "verdict": "100% below",
+              "inBand": false,
+              "devPct": 100,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Pelops": {
+            "dealt": {
+              "sim": 701569,
+              "realMedian": 1577244,
+              "verdict": "56% below",
+              "inBand": false,
+              "devPct": 56,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 4432,
+              "realMedian": 38114,
+              "verdict": "88% below",
+              "inBand": false,
+              "devPct": 88,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 1142,
+              "realMedian": 107032,
+              "verdict": "99% below",
+              "inBand": false,
+              "devPct": 99,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Tagoar": {
+            "dealt": {
+              "sim": 67667,
+              "realMedian": 217808,
+              "verdict": "69% below",
+              "inBand": false,
+              "devPct": 69,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 3904,
+              "realMedian": 22022,
+              "verdict": "82% below",
+              "inBand": false,
+              "devPct": 82,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 3802,
+              "realMedian": 78903,
+              "verdict": "95% below",
+              "inBand": false,
+              "devPct": 95,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vallaryn": {
+            "dealt": {
+              "sim": null,
+              "realMedian": 346397,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "taken": {
+              "sim": null,
+              "realMedian": 29878,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "healing": {
+              "sim": null,
+              "realMedian": 10084,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vergis": {
+            "dealt": {
+              "sim": 22123,
+              "realMedian": 54006,
+              "verdict": "59% below",
+              "inBand": false,
+              "devPct": 59,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 22722,
+              "realMedian": 29447,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 23,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 46911,
+              "verdict": "100% below",
+              "inBand": false,
+              "devPct": 100,
+              "gated": false,
+              "failed": false
+            }
+          }
+        },
+        "winRate": {
+          "sim": 98,
+          "captured": 71,
+          "diffPP": 27,
+          "tolPP": 10,
+          "pass": false
+        },
+        "medianTurns": {
+          "sim": 72,
+          "captured": 181,
+          "devPct": 60,
+          "tolPct": 15,
+          "pass": false
+        }
+      },
+      "Dragon's Lair 16": {
+        "simWinRate": 70,
+        "capturedWins": 33,
+        "source": "reader/watcher (33)",
+        "thresholds": {
+          "perHeroDealtPct": 0.2,
+          "perHeroTakenPct": 0.4,
+          "winRatePctPoints": 10,
+          "medianTurnsPct": 0.15
+        },
+        "champs": {
+          "Bambus Fourleaf": {
+            "dealt": {
+              "sim": 385774,
+              "realMedian": 345541,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 12,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 28404,
+              "realMedian": 17798,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 60,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Ezio Auditore": {
+            "dealt": {
+              "sim": 339364,
+              "realMedian": 336311,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 1,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 28067,
+              "realMedian": 16711,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 68,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Pelops the Victor": {
+            "dealt": {
+              "sim": 212089,
+              "realMedian": 372711,
+              "verdict": "43% below",
+              "inBand": false,
+              "devPct": 43,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 40194,
+              "realMedian": 35911,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 12,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 18548,
+              "realMedian": 66030,
+              "verdict": "72% below",
+              "inBand": false,
+              "devPct": 72,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Tagoar": {
+            "dealt": {
+              "sim": 46685,
+              "realMedian": 65564,
+              "verdict": "29% below",
+              "inBand": false,
+              "devPct": 29,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 30653,
+              "realMedian": 27239,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 13,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 25732,
+              "realMedian": 109610,
+              "verdict": "77% below",
+              "inBand": false,
+              "devPct": 77,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vallaryn the Equalizer": {
+            "dealt": {
+              "sim": null,
+              "realMedian": 151172,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "taken": {
+              "sim": null,
+              "realMedian": 30897,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "healing": {
+              "sim": null,
+              "realMedian": 12627,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vergis": {
+            "dealt": {
+              "sim": 37973,
+              "realMedian": 55489,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 32,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 35304,
+              "realMedian": 35695,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 1,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 54842,
+              "verdict": "100% below",
+              "inBand": false,
+              "devPct": 100,
+              "gated": false,
+              "failed": false
+            }
+          }
+        },
+        "winRate": {
+          "sim": 70,
+          "captured": 93,
+          "diffPP": 23,
+          "tolPP": 10,
+          "pass": false
+        },
+        "medianTurns": {
+          "sim": 140,
+          "captured": 161,
+          "devPct": 13,
+          "tolPct": 15,
+          "pass": true
+        }
+      }
+    }
+  },
+  {
+    "ts": "2026-07-30T03:37:54.919Z",
+    "commit": "e51eb59",
+    "rung": "per-hero-bands",
+    "seeds": 40,
+    "fail": 16,
+    "contents": {
+      "Spider's Den 13": {
+        "simWinRate": 98,
+        "capturedWins": 15,
+        "source": "manual hand-verified (15)",
+        "thresholds": {
+          "perHeroDealtPct": 0.2,
+          "perHeroTakenPct": 0.4,
+          "winRatePctPoints": 10,
+          "medianTurnsPct": 0.15
+        },
+        "champs": {
+          "Bambus": {
+            "dealt": {
+              "sim": 1515497,
+              "realMedian": 1078228,
+              "verdict": "41% above",
+              "inBand": false,
+              "devPct": 41,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 29240,
+              "realMedian": 8399,
+              "verdict": "248% above",
+              "inBand": false,
+              "devPct": 248,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Ezio": {
+            "dealt": {
+              "sim": 748983,
+              "realMedian": 903316,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 17,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 3890,
+              "realMedian": 26359,
+              "verdict": "85% below",
+              "inBand": false,
+              "devPct": 85,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Pelops": {
+            "dealt": {
+              "sim": 465896,
+              "realMedian": 1577244,
+              "verdict": "70% below",
+              "inBand": false,
+              "devPct": 70,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 11557,
+              "realMedian": 38114,
+              "verdict": "70% below",
+              "inBand": false,
+              "devPct": 70,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 3895,
+              "realMedian": 107032,
+              "verdict": "96% below",
+              "inBand": false,
+              "devPct": 96,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Tagoar": {
+            "dealt": {
+              "sim": 134632,
+              "realMedian": 217808,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 38,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 9369,
+              "realMedian": 22022,
+              "verdict": "57% below",
+              "inBand": false,
+              "devPct": 57,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 21074,
+              "realMedian": 78903,
+              "verdict": "73% below",
+              "inBand": false,
+              "devPct": 73,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vallaryn": {
+            "dealt": {
+              "sim": null,
+              "realMedian": 346397,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "taken": {
+              "sim": null,
+              "realMedian": 29878,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "healing": {
+              "sim": null,
+              "realMedian": 10084,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vergis": {
+            "dealt": {
+              "sim": 39309,
+              "realMedian": 54006,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 27,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 23991,
+              "realMedian": 29447,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 19,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 46911,
+              "verdict": "100% below",
+              "inBand": false,
+              "devPct": 100,
+              "gated": false,
+              "failed": false
+            }
+          }
+        },
+        "winRate": {
+          "sim": 98,
+          "captured": 71,
+          "diffPP": 27,
+          "tolPP": 10,
+          "pass": false
+        },
+        "medianTurns": {
+          "sim": 110,
+          "captured": 181,
+          "devPct": 39,
+          "tolPct": 15,
+          "pass": false
+        }
+      },
+      "Dragon's Lair 16": {
+        "simWinRate": 70,
+        "capturedWins": 33,
+        "source": "reader/watcher (33)",
+        "thresholds": {
+          "perHeroDealtPct": 0.2,
+          "perHeroTakenPct": 0.4,
+          "winRatePctPoints": 10,
+          "medianTurnsPct": 0.15
+        },
+        "champs": {
+          "Bambus Fourleaf": {
+            "dealt": {
+              "sim": 385774,
+              "realMedian": 345541,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 12,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 28404,
+              "realMedian": 17798,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 60,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Ezio Auditore": {
+            "dealt": {
+              "sim": 339364,
+              "realMedian": 336311,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 1,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 28067,
+              "realMedian": 16711,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 68,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Pelops the Victor": {
+            "dealt": {
+              "sim": 212089,
+              "realMedian": 372711,
+              "verdict": "43% below",
+              "inBand": false,
+              "devPct": 43,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 40194,
+              "realMedian": 35911,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 12,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 18548,
+              "realMedian": 66030,
+              "verdict": "72% below",
+              "inBand": false,
+              "devPct": 72,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Tagoar": {
+            "dealt": {
+              "sim": 46685,
+              "realMedian": 65564,
+              "verdict": "29% below",
+              "inBand": false,
+              "devPct": 29,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 30653,
+              "realMedian": 27239,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 13,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 25732,
+              "realMedian": 109610,
+              "verdict": "77% below",
+              "inBand": false,
+              "devPct": 77,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vallaryn the Equalizer": {
+            "dealt": {
+              "sim": null,
+              "realMedian": 151172,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "taken": {
+              "sim": null,
+              "realMedian": 30897,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "healing": {
+              "sim": null,
+              "realMedian": 12627,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vergis": {
+            "dealt": {
+              "sim": 37973,
+              "realMedian": 55489,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 32,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 35304,
+              "realMedian": 35695,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 1,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 54842,
+              "verdict": "100% below",
+              "inBand": false,
+              "devPct": 100,
+              "gated": false,
+              "failed": false
+            }
+          }
+        },
+        "winRate": {
+          "sim": 70,
+          "captured": 93,
+          "diffPP": 23,
+          "tolPP": 10,
+          "pass": false
+        },
+        "medianTurns": {
+          "sim": 140,
+          "captured": 161,
+          "devPct": 13,
+          "tolPct": 15,
+          "pass": true
+        }
+      }
+    }
+  },
+  {
+    "ts": "2026-07-30T03:45:15.600Z",
+    "commit": "e51eb59",
+    "rung": "per-hero-bands",
+    "seeds": 40,
+    "fail": 17,
+    "contents": {
+      "Spider's Den 13": {
+        "simWinRate": 85,
+        "capturedWins": 15,
+        "source": "manual hand-verified (15)",
+        "thresholds": {
+          "perHeroDealtPct": 0.2,
+          "perHeroTakenPct": 0.4,
+          "winRatePctPoints": 10,
+          "medianTurnsPct": 0.15
+        },
+        "champs": {
+          "Bambus": {
+            "dealt": {
+              "sim": 1673109,
+              "realMedian": 1078228,
+              "verdict": "55% above",
+              "inBand": false,
+              "devPct": 55,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 16237,
+              "realMedian": 8399,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 93,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Ezio": {
+            "dealt": {
+              "sim": 721652,
+              "realMedian": 903316,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 20,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 4423,
+              "realMedian": 26359,
+              "verdict": "83% below",
+              "inBand": false,
+              "devPct": 83,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Pelops": {
+            "dealt": {
+              "sim": 463904,
+              "realMedian": 1577244,
+              "verdict": "71% below",
+              "inBand": false,
+              "devPct": 71,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 15580,
+              "realMedian": 38114,
+              "verdict": "59% below",
+              "inBand": false,
+              "devPct": 59,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 4435,
+              "realMedian": 107032,
+              "verdict": "96% below",
+              "inBand": false,
+              "devPct": 96,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Tagoar": {
+            "dealt": {
+              "sim": 125078,
+              "realMedian": 217808,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 43,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 10490,
+              "realMedian": 22022,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 52,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 18362,
+              "realMedian": 78903,
+              "verdict": "77% below",
+              "inBand": false,
+              "devPct": 77,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vallaryn": {
+            "dealt": {
+              "sim": null,
+              "realMedian": 346397,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "taken": {
+              "sim": null,
+              "realMedian": 29878,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "healing": {
+              "sim": null,
+              "realMedian": 10084,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vergis": {
+            "dealt": {
+              "sim": 34542,
+              "realMedian": 54006,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 36,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 45703,
+              "realMedian": 29447,
+              "verdict": "55% above",
+              "inBand": false,
+              "devPct": 55,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 46911,
+              "verdict": "100% below",
+              "inBand": false,
+              "devPct": 100,
+              "gated": false,
+              "failed": false
+            }
+          }
+        },
+        "winRate": {
+          "sim": 85,
+          "captured": 71,
+          "diffPP": 14,
+          "tolPP": 10,
+          "pass": false
+        },
+        "medianTurns": {
+          "sim": 108,
+          "captured": 181,
+          "devPct": 40,
+          "tolPct": 15,
+          "pass": false
+        }
+      },
+      "Dragon's Lair 16": {
+        "simWinRate": 70,
+        "capturedWins": 33,
+        "source": "reader/watcher (33)",
+        "thresholds": {
+          "perHeroDealtPct": 0.2,
+          "perHeroTakenPct": 0.4,
+          "winRatePctPoints": 10,
+          "medianTurnsPct": 0.15
+        },
+        "champs": {
+          "Bambus Fourleaf": {
+            "dealt": {
+              "sim": 385774,
+              "realMedian": 345541,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 12,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 28404,
+              "realMedian": 17798,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 60,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Ezio Auditore": {
+            "dealt": {
+              "sim": 339364,
+              "realMedian": 336311,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 1,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 28067,
+              "realMedian": 16711,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 68,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Pelops the Victor": {
+            "dealt": {
+              "sim": 212089,
+              "realMedian": 372711,
+              "verdict": "43% below",
+              "inBand": false,
+              "devPct": 43,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 40194,
+              "realMedian": 35911,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 12,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 18548,
+              "realMedian": 66030,
+              "verdict": "72% below",
+              "inBand": false,
+              "devPct": 72,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Tagoar": {
+            "dealt": {
+              "sim": 46685,
+              "realMedian": 65564,
+              "verdict": "29% below",
+              "inBand": false,
+              "devPct": 29,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 30653,
+              "realMedian": 27239,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 13,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 25732,
+              "realMedian": 109610,
+              "verdict": "77% below",
+              "inBand": false,
+              "devPct": 77,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vallaryn the Equalizer": {
+            "dealt": {
+              "sim": null,
+              "realMedian": 151172,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "taken": {
+              "sim": null,
+              "realMedian": 30897,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "healing": {
+              "sim": null,
+              "realMedian": 12627,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vergis": {
+            "dealt": {
+              "sim": 37973,
+              "realMedian": 55489,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 32,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 35304,
+              "realMedian": 35695,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 1,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 54842,
+              "verdict": "100% below",
+              "inBand": false,
+              "devPct": 100,
+              "gated": false,
+              "failed": false
+            }
+          }
+        },
+        "winRate": {
+          "sim": 70,
+          "captured": 93,
+          "diffPP": 23,
+          "tolPP": 10,
+          "pass": false
+        },
+        "medianTurns": {
+          "sim": 140,
+          "captured": 161,
+          "devPct": 13,
+          "tolPct": 15,
+          "pass": true
+        }
+      }
+    }
+  },
+  {
+    "ts": "2026-07-30T04:22:12.216Z",
+    "commit": "3816552",
+    "rung": "per-hero-bands",
+    "seeds": 40,
+    "fail": 17,
+    "contents": {
+      "Spider's Den 13": {
+        "simWinRate": 85,
+        "capturedWins": 15,
+        "source": "manual hand-verified (15)",
+        "thresholds": {
+          "perHeroDealtPct": 0.2,
+          "perHeroTakenPct": 0.4,
+          "winRatePctPoints": 10,
+          "medianTurnsPct": 0.15
+        },
+        "champs": {
+          "Bambus": {
+            "dealt": {
+              "sim": 1673109,
+              "realMedian": 1078228,
+              "verdict": "55% above",
+              "inBand": false,
+              "devPct": 55,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 40401,
+              "realMedian": 8399,
+              "verdict": "381% above",
+              "inBand": false,
+              "devPct": 381,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Ezio": {
+            "dealt": {
+              "sim": 721652,
+              "realMedian": 903316,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 20,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 26596,
+              "realMedian": 26359,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 1,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Pelops": {
+            "dealt": {
+              "sim": 463904,
+              "realMedian": 1577244,
+              "verdict": "71% below",
+              "inBand": false,
+              "devPct": 71,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 48642,
+              "realMedian": 38114,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 28,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 4435,
+              "realMedian": 107032,
+              "verdict": "96% below",
+              "inBand": false,
+              "devPct": 96,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Tagoar": {
+            "dealt": {
+              "sim": 125078,
+              "realMedian": 217808,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 43,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 33210,
+              "realMedian": 22022,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 51,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 18362,
+              "realMedian": 78903,
+              "verdict": "77% below",
+              "inBand": false,
+              "devPct": 77,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vallaryn": {
+            "dealt": {
+              "sim": null,
+              "realMedian": 346397,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "taken": {
+              "sim": null,
+              "realMedian": 29878,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "healing": {
+              "sim": null,
+              "realMedian": 10084,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vergis": {
+            "dealt": {
+              "sim": 34542,
+              "realMedian": 54006,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 36,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 74245,
+              "realMedian": 29447,
+              "verdict": "152% above",
+              "inBand": false,
+              "devPct": 152,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 46911,
+              "verdict": "100% below",
+              "inBand": false,
+              "devPct": 100,
+              "gated": false,
+              "failed": false
+            }
+          }
+        },
+        "winRate": {
+          "sim": 85,
+          "captured": 71,
+          "diffPP": 14,
+          "tolPP": 10,
+          "pass": false
+        },
+        "medianTurns": {
+          "sim": 108,
+          "captured": 181,
+          "devPct": 40,
+          "tolPct": 15,
+          "pass": false
+        }
+      },
+      "Dragon's Lair 16": {
+        "simWinRate": 70,
+        "capturedWins": 33,
+        "source": "reader/watcher (33)",
+        "thresholds": {
+          "perHeroDealtPct": 0.2,
+          "perHeroTakenPct": 0.4,
+          "winRatePctPoints": 10,
+          "medianTurnsPct": 0.15
+        },
+        "champs": {
+          "Bambus Fourleaf": {
+            "dealt": {
+              "sim": 385774,
+              "realMedian": 345541,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 12,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 45505,
+              "realMedian": 17798,
+              "verdict": "156% above",
+              "inBand": false,
+              "devPct": 156,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Ezio Auditore": {
+            "dealt": {
+              "sim": 339364,
+              "realMedian": 336311,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 1,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 51224,
+              "realMedian": 16711,
+              "verdict": "207% above",
+              "inBand": false,
+              "devPct": 207,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Pelops the Victor": {
+            "dealt": {
+              "sim": 212089,
+              "realMedian": 372711,
+              "verdict": "43% below",
+              "inBand": false,
+              "devPct": 43,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 73413,
+              "realMedian": 35911,
+              "verdict": "104% above",
+              "inBand": false,
+              "devPct": 104,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 18548,
+              "realMedian": 66030,
+              "verdict": "72% below",
+              "inBand": false,
+              "devPct": 72,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Tagoar": {
+            "dealt": {
+              "sim": 46685,
+              "realMedian": 65564,
+              "verdict": "29% below",
+              "inBand": false,
+              "devPct": 29,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 51280,
+              "realMedian": 27239,
+              "verdict": "88% above",
+              "inBand": false,
+              "devPct": 88,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 25732,
+              "realMedian": 109610,
+              "verdict": "77% below",
+              "inBand": false,
+              "devPct": 77,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vallaryn the Equalizer": {
+            "dealt": {
+              "sim": null,
+              "realMedian": 151172,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "taken": {
+              "sim": null,
+              "realMedian": 30897,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "healing": {
+              "sim": null,
+              "realMedian": 12627,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vergis": {
+            "dealt": {
+              "sim": 37973,
+              "realMedian": 55489,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 32,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 47231,
+              "realMedian": 35695,
+              "verdict": "32% above",
+              "inBand": false,
+              "devPct": 32,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 54842,
+              "verdict": "100% below",
+              "inBand": false,
+              "devPct": 100,
+              "gated": false,
+              "failed": false
+            }
+          }
+        },
+        "winRate": {
+          "sim": 70,
+          "captured": 93,
+          "diffPP": 23,
+          "tolPP": 10,
+          "pass": false
+        },
+        "medianTurns": {
+          "sim": 140,
+          "captured": 161,
+          "devPct": 13,
+          "tolPct": 15,
+          "pass": true
+        }
+      }
+    }
+  },
+  {
+    "ts": "2026-07-30T13:17:57.736Z",
+    "commit": "9d79770",
+    "rung": "per-hero-bands",
+    "seeds": 30,
+    "fail": 19,
+    "contents": {
+      "Spider's Den 13": {
+        "simWinRate": 87,
+        "capturedWins": 15,
+        "source": "manual hand-verified (15)",
+        "thresholds": {
+          "perHeroDealtPct": 0.2,
+          "perHeroTakenPct": 0.4,
+          "winRatePctPoints": 10,
+          "medianTurnsPct": 0.15
+        },
+        "champs": {
+          "Bambus": {
+            "dealt": {
+              "sim": 1737220,
+              "realMedian": 1078228,
+              "verdict": "61% above",
+              "inBand": false,
+              "devPct": 61,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 37834,
+              "realMedian": 8399,
+              "verdict": "350% above",
+              "inBand": false,
+              "devPct": 350,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Ezio": {
+            "dealt": {
+              "sim": 713459,
+              "realMedian": 903316,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 21,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 38304,
+              "realMedian": 26359,
+              "verdict": "45% above",
+              "inBand": false,
+              "devPct": 45,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Pelops": {
+            "dealt": {
+              "sim": 438847,
+              "realMedian": 1577244,
+              "verdict": "72% below",
+              "inBand": false,
+              "devPct": 72,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 48199,
+              "realMedian": 38114,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 26,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 4857,
+              "realMedian": 107032,
+              "verdict": "95% below",
+              "inBand": false,
+              "devPct": 95,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Tagoar": {
+            "dealt": {
+              "sim": 132140,
+              "realMedian": 217808,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 39,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 38161,
+              "realMedian": 22022,
+              "verdict": "73% above",
+              "inBand": false,
+              "devPct": 73,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 19011,
+              "realMedian": 78903,
+              "verdict": "76% below",
+              "inBand": false,
+              "devPct": 76,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vallaryn": {
+            "dealt": {
+              "sim": null,
+              "realMedian": 346397,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "taken": {
+              "sim": null,
+              "realMedian": 29878,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "healing": {
+              "sim": null,
+              "realMedian": 10084,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vergis": {
+            "dealt": {
+              "sim": 44682,
+              "realMedian": 54006,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 17,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 83469,
+              "realMedian": 29447,
+              "verdict": "183% above",
+              "inBand": false,
+              "devPct": 183,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 46911,
+              "verdict": "100% below",
+              "inBand": false,
+              "devPct": 100,
+              "gated": false,
+              "failed": false
+            }
+          }
+        },
+        "winRate": {
+          "sim": 87,
+          "captured": 71,
+          "diffPP": 16,
+          "tolPP": 10,
+          "pass": false
+        },
+        "medianTurns": {
+          "sim": 111,
+          "captured": 181,
+          "devPct": 39,
+          "tolPct": 15,
+          "pass": false
+        }
+      },
+      "Dragon's Lair 16": {
+        "simWinRate": 63,
+        "capturedWins": 33,
+        "source": "reader/watcher (33)",
+        "thresholds": {
+          "perHeroDealtPct": 0.2,
+          "perHeroTakenPct": 0.4,
+          "winRatePctPoints": 10,
+          "medianTurnsPct": 0.15
+        },
+        "champs": {
+          "Bambus Fourleaf": {
+            "dealt": {
+              "sim": 275486,
+              "realMedian": 345541,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 20,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 47916,
+              "realMedian": 17798,
+              "verdict": "169% above",
+              "inBand": false,
+              "devPct": 169,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Ezio Auditore": {
+            "dealt": {
+              "sim": 368541,
+              "realMedian": 336311,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 10,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 50510,
+              "realMedian": 16711,
+              "verdict": "202% above",
+              "inBand": false,
+              "devPct": 202,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Pelops the Victor": {
+            "dealt": {
+              "sim": 229070,
+              "realMedian": 372711,
+              "verdict": "39% below",
+              "inBand": false,
+              "devPct": 39,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 73284,
+              "realMedian": 35911,
+              "verdict": "104% above",
+              "inBand": false,
+              "devPct": 104,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 17651,
+              "realMedian": 66030,
+              "verdict": "73% below",
+              "inBand": false,
+              "devPct": 73,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Tagoar": {
+            "dealt": {
+              "sim": 42649,
+              "realMedian": 65564,
+              "verdict": "35% below",
+              "inBand": false,
+              "devPct": 35,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 45426,
+              "realMedian": 27239,
+              "verdict": "67% above",
+              "inBand": false,
+              "devPct": 67,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 19544,
+              "realMedian": 109610,
+              "verdict": "82% below",
+              "inBand": false,
+              "devPct": 82,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vallaryn the Equalizer": {
+            "dealt": {
+              "sim": null,
+              "realMedian": 151172,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "taken": {
+              "sim": null,
+              "realMedian": 30897,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "healing": {
+              "sim": null,
+              "realMedian": 12627,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vergis": {
+            "dealt": {
+              "sim": 21787,
+              "realMedian": 55489,
+              "verdict": "61% below",
+              "inBand": false,
+              "devPct": 61,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 49431,
+              "realMedian": 35695,
+              "verdict": "38% above",
+              "inBand": false,
+              "devPct": 38,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 54842,
+              "verdict": "100% below",
+              "inBand": false,
+              "devPct": 100,
+              "gated": false,
+              "failed": false
+            }
+          }
+        },
+        "winRate": {
+          "sim": 63,
+          "captured": 93,
+          "diffPP": 30,
+          "tolPP": 10,
+          "pass": false
+        },
+        "medianTurns": {
+          "sim": 134,
+          "captured": 161,
+          "devPct": 17,
+          "tolPct": 15,
+          "pass": false
+        }
+      }
+    }
+  },
+  {
+    "ts": "2026-07-30T14:18:07.181Z",
+    "commit": "9d79770",
+    "rung": "per-hero-bands",
+    "seeds": 30,
+    "fail": 15,
+    "contents": {
+      "Spider's Den 13": {
+        "simWinRate": 63,
+        "capturedWins": 15,
+        "source": "manual hand-verified (15)",
+        "thresholds": {
+          "perHeroDealtPct": 0.2,
+          "perHeroTakenPct": 0.4,
+          "winRatePctPoints": 10,
+          "medianTurnsPct": 0.15
+        },
+        "champs": {
+          "Bambus": {
+            "dealt": {
+              "sim": 1602756,
+              "realMedian": 1078228,
+              "verdict": "49% above",
+              "inBand": false,
+              "devPct": 49,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 53140,
+              "realMedian": 8399,
+              "verdict": "533% above",
+              "inBand": false,
+              "devPct": 533,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Ezio": {
+            "dealt": {
+              "sim": 734451,
+              "realMedian": 903316,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 19,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 40921,
+              "realMedian": 26359,
+              "verdict": "55% above",
+              "inBand": false,
+              "devPct": 55,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Pelops": {
+            "dealt": {
+              "sim": 506431,
+              "realMedian": 1577244,
+              "verdict": "68% below",
+              "inBand": false,
+              "devPct": 68,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 50443,
+              "realMedian": 38114,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 32,
+              "gated": true,
+              "failed": false
+            },
+            "healing": {
+              "sim": 4860,
+              "realMedian": 107032,
+              "verdict": "95% below",
+              "inBand": false,
+              "devPct": 95,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Tagoar": {
+            "dealt": {
+              "sim": 137368,
+              "realMedian": 217808,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 37,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 38505,
+              "realMedian": 22022,
+              "verdict": "75% above",
+              "inBand": false,
+              "devPct": 75,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 15775,
+              "realMedian": 78903,
+              "verdict": "80% below",
+              "inBand": false,
+              "devPct": 80,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vallaryn": {
+            "dealt": {
+              "sim": null,
+              "realMedian": 346397,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "taken": {
+              "sim": null,
+              "realMedian": 29878,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "healing": {
+              "sim": null,
+              "realMedian": 10084,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vergis": {
+            "dealt": {
+              "sim": 44452,
+              "realMedian": 54006,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 18,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 86633,
+              "realMedian": 29447,
+              "verdict": "194% above",
+              "inBand": false,
+              "devPct": 194,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 46911,
+              "verdict": "100% below",
+              "inBand": false,
+              "devPct": 100,
+              "gated": false,
+              "failed": false
+            }
+          }
+        },
+        "winRate": {
+          "sim": 63,
+          "captured": 71,
+          "diffPP": 8,
+          "tolPP": 10,
+          "pass": true
+        },
+        "medianTurns": {
+          "sim": 114,
+          "captured": 181,
+          "devPct": 37,
+          "tolPct": 15,
+          "pass": false
+        }
+      },
+      "Dragon's Lair 16": {
+        "simWinRate": 93,
+        "capturedWins": 33,
+        "source": "reader/watcher (33)",
+        "thresholds": {
+          "perHeroDealtPct": 0.2,
+          "perHeroTakenPct": 0.4,
+          "winRatePctPoints": 10,
+          "medianTurnsPct": 0.15
+        },
+        "champs": {
+          "Bambus Fourleaf": {
+            "dealt": {
+              "sim": 398609,
+              "realMedian": 345541,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 15,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 55618,
+              "realMedian": 17798,
+              "verdict": "212% above",
+              "inBand": false,
+              "devPct": 212,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Ezio Auditore": {
+            "dealt": {
+              "sim": 494221,
+              "realMedian": 336311,
+              "verdict": "47% above",
+              "inBand": false,
+              "devPct": 47,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 70272,
+              "realMedian": 16711,
+              "verdict": "321% above",
+              "inBand": false,
+              "devPct": 321,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 0,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Pelops the Victor": {
+            "dealt": {
+              "sim": 241417,
+              "realMedian": 372711,
+              "verdict": "35% below",
+              "inBand": false,
+              "devPct": 35,
+              "gated": true,
+              "failed": true
+            },
+            "taken": {
+              "sim": 78195,
+              "realMedian": 35911,
+              "verdict": "118% above",
+              "inBand": false,
+              "devPct": 118,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 10904,
+              "realMedian": 66030,
+              "verdict": "83% below",
+              "inBand": false,
+              "devPct": 83,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Tagoar": {
+            "dealt": {
+              "sim": 65405,
+              "realMedian": 65564,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 0,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 58936,
+              "realMedian": 27239,
+              "verdict": "116% above",
+              "inBand": false,
+              "devPct": 116,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 32811,
+              "realMedian": 109610,
+              "verdict": "70% below",
+              "inBand": false,
+              "devPct": 70,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vallaryn the Equalizer": {
+            "dealt": {
+              "sim": null,
+              "realMedian": 151172,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "taken": {
+              "sim": null,
+              "realMedian": 30897,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            },
+            "healing": {
+              "sim": null,
+              "realMedian": 12627,
+              "verdict": "no sim",
+              "inBand": null,
+              "devPct": null,
+              "gated": false,
+              "failed": false
+            }
+          },
+          "Vergis": {
+            "dealt": {
+              "sim": 44271,
+              "realMedian": 55489,
+              "verdict": "in-band",
+              "inBand": true,
+              "devPct": 20,
+              "gated": true,
+              "failed": false
+            },
+            "taken": {
+              "sim": 59194,
+              "realMedian": 35695,
+              "verdict": "66% above",
+              "inBand": false,
+              "devPct": 66,
+              "gated": true,
+              "failed": true
+            },
+            "healing": {
+              "sim": 0,
+              "realMedian": 54842,
+              "verdict": "100% below",
+              "inBand": false,
+              "devPct": 100,
+              "gated": false,
+              "failed": false
+            }
+          }
+        },
+        "winRate": {
+          "sim": 93,
+          "captured": 93,
+          "diffPP": 0,
+          "tolPP": 10,
+          "pass": true
+        },
+        "medianTurns": {
+          "sim": 153,
+          "captured": 161,
+          "devPct": 5,
+          "tolPct": 15,
+          "pass": true
+        }
+      }
+    }
   }
 ]
