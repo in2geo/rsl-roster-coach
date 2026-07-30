@@ -205,24 +205,25 @@ function pelopsOnAttackedRate(debuffType, pelopsUnderDecrDef, n = 4000) {
   check('Sleeping Sage: sponge ACCUMULATES stacks — 2+2 from two allies → 4 on Bambus (not collapsed to 1)', stacks === 4, `stacks=${stacks}`);
 }
 
-// ── Enemy AI targeting: LOWEST MAX HP (glass-cannon rule #3), not lowest current HP%; [Perfect Veil] hides
-// the true-lowest (Ezio) so the NEXT lowest (Vergis) is tunneled — even at full HP behind a shield. ──
+// ── Enemy AI targeting: LOWEST CURRENT HP% (auto-battle rule #3, Mike 2026-07-29), NOT lowest max HP.
+// [Perfect Veil] is a HARD skip, so even the most-killable (lowest-HP%) champ is hidden while veiled and the
+// NEXT most-killable TARGETABLE champ is tunneled. Dynamic — heals/shields/revive rotate the seat. ──
 { const mk = (n, maxHp, { veil = false, shield = false, hpPct = 1 } = {}) => {
     const c = makeCombatant({ name: n, side: 'ally', maxHp }); c.hp = maxHp * hpPct;
     if (veil) c.buffs.push({ type: 'Perfect Veil', turnsLeft: 2 });
     if (shield) c.buffs.push({ type: 'Shield', value: 5000, turnsLeft: 2 });
     return c; };
   const team = [
-    mk('Ezio', 15929, { veil: true }),                 // TRUE lowest max HP, but Perfect-Veil hidden
-    mk('Vergis', 16681, { shield: true, hpPct: 1.0 }),  // 2nd-lowest max HP, FULL HP + shield
-    mk('Bambus', 25686, { hpPct: 0.25 }),               // scratched to 25% — the OLD (current-HP%) code picks this
-    mk('Pelops', 28543), mk('Tagoar', 24283),
+    mk('Ezio', 15929, { veil: true, hpPct: 0.10 }),     // LOWEST current HP% (10%) but Perfect-Veil hidden → skipped
+    mk('Vergis', 16681, { shield: true, hpPct: 1.0 }),  // full HP behind a shield
+    mk('Bambus', 25686, { hpPct: 0.25 }),               // scratched to 25% — the targetable most-killable → picked
+    mk('Pelops', 28543), mk('Tagoar', 24283),           // full HP
   ];
   const pick = chooseSingleTarget(team);
-  check('AI tunnels lowest-max-HP TARGETABLE (Vergis), not the veiled Ezio nor the scratched Bambus', pick?.name === 'Vergis', 'picked ' + pick?.name);
-  // and if that lowest-max-HP champ TAUNTS, taunt overrides (Pelops pulls it)
+  check('AI tunnels lowest-current-HP% TARGETABLE (scratched Bambus), not the veiled Ezio despite his lower HP%', pick?.name === 'Bambus', 'picked ' + pick?.name);
+  // and if a full-HP champ TAUNTS, taunt overrides the HP% rule (Pelops pulls it despite full HP)
   const withTaunt = team.map(c => c.name === 'Pelops' ? (c.buffs.push({ type: 'Taunt', turnsLeft: 2 }), c) : c);
-  check('AI: [Taunt] overrides the max-HP rule (Pelops pulls it)', chooseSingleTarget(withTaunt)?.name === 'Pelops');
+  check('AI: [Taunt] overrides the current-HP% rule (Pelops pulls it)', chooseSingleTarget(withTaunt)?.name === 'Pelops');
 }
 
 // ── Enfeeble on the ATTACKER forces weak hits (×0.70), overriding affinity (Bambus A3 debuffs the mobs) ──

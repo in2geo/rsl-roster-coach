@@ -148,10 +148,11 @@ const MUTANTS = [
   { name: 'sponge stack accumulation broken (poison collapses to 1 stack, gutting the boss redirect)', expectKill: true,
     find: 'cur.stacks = Math.min(before + (d.stacks ?? 1), cap);',
     repl: 'cur.stacks = Math.min(before + (d.stacks ?? 1) * 0, cap);' },
-  // ── Enemy AI targeting: LOWEST MAX HP rule (engine.chooseSingleTarget), not lowest current HP% ──
-  { name: 'AI targeting reverts to lowest current-HP% (ignores the max-HP glass-cannon rule)', expectKill: true, file: 'engine',
-    find: 'if ((a.maxHp ?? 0) !== (b.maxHp ?? 0)) return (a.maxHp ?? 0) < (b.maxHp ?? 0) ? a : b;',
-    repl: 'if (false && (a.maxHp ?? 0) !== (b.maxHp ?? 0)) return (a.maxHp ?? 0) < (b.maxHp ?? 0) ? a : b;' },
+  // ── Enemy AI targeting: LOWEST CURRENT HP% rule (engine.chooseSingleTarget). Break the primary comparison
+  //    so it tunnels the HIGHEST-HP% (least killable) champ instead — the wrong seat dies. ──
+  { name: 'AI targeting ignores current-HP% (tunnels HIGHEST-HP%, not lowest)', expectKill: true, file: 'engine',
+    find: 'if (fa !== fb) return fa < fb ? a : b;',
+    repl: 'if (fa !== fb) return fa > fb ? a : b;' },
   // ── Enfeeble CONSUMER (engine.js computeRawHit) — an Enfeebled attacker can only land weak hits (×0.70) ──
   { name: 'Enfeeble not consumed (Enfeebled attacker still hits full, not weak)', expectKill: true, file: 'engine',
     find: "const affM = (actor.debuffs ?? []).some((d) => d.type === 'Enfeeble') ? WEAK_HIT_ENFEEBLE :",
@@ -178,8 +179,8 @@ const MUTANTS = [
   { name: 'Scorch never fires when the bar is up (bar>0 gate broken)', expectKill: true, file: 'dragon',
     find: '} else if (state.purpleBarLeft > 0) {', repl: '} else if (false) {' },
   { name: 'Wall of Fire places no [Poison]', expectKill: true, file: 'dragon',
-    find: "for (let i = 0; i < 2; i++) applyDebuff(a, { type: 'Poison', pct: 0.05, turns: 3, stacking: true, maxStacks: 10 });",
-    repl: "for (let i = 0; i < 0; i++) applyDebuff(a, { type: 'Poison', pct: 0.05, turns: 3, stacking: true, maxStacks: 10 });" },
+    find: "for (let i = 0; i < 2; i++) landDebuff(state, boss, a, { type: 'Poison', pct: 0.05, turns: 3, stacking: true, maxStacks: 10 });",
+    repl: "for (let i = 0; i < 0; i++) landDebuff(state, boss, a, { type: 'Poison', pct: 0.05, turns: 3, stacking: true, maxStacks: 10 });" },
   { name: 'Swipe places no [Decrease Attack]', expectKill: true, file: 'dragon',
     find: "applyDebuff(a, { type: 'Decrease Attack', value: 50, turns: 2 });",
     repl: "applyDebuff(a, { type: 'NoSuchDebuff', value: 50, turns: 2 });" },
@@ -294,8 +295,8 @@ const MUTANTS = [
 
   // ══ SPIDER (spider.js) — Skavag's scripted kit, teethed by model-spider.mjs ══
   { name: 'Skavag ATK snowball zeroed (consume gives no permanent ATK)', expectKill: true, file: 'spider',
-    find: 'boss.atk = Math.round(boss.atk * (1 + 0.10 * n));',
-    repl: 'boss.atk = Math.round(boss.atk * (1 + 0.10 * n * 0));' },
+    find: 'boss.atk = Math.round(atk0 * (1 + 0.10 * spidersEaten));',
+    repl: 'boss.atk = Math.round(atk0);' },
   { name: 'Spiderling opening horde broken (onRoundStart spawns 0)', expectKill: true, file: 'spider',
     find: 'onPhaseStart(state) { spawn(state, SPAWN.onRoundStart); }',
     repl: 'onPhaseStart(state) { spawn(state, SPAWN.onRoundStart * 0); }' },

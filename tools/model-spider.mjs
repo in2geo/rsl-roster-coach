@@ -5,7 +5,7 @@
 // Almighty Immunity list, the 90% Poison reduction vs Skavag, lifesteal 35%, and clear-on-boss-death.
 // Stage-independent (Skavag's kit is identical every stage). Run: node tools/model-spider.mjs
 
-import { makeCombatant, makeState, simulate, applyDebuff, tickDots } from '../lib/sim/engine.js';
+import { makeCombatant, makeState, simulate, applyDebuff, tickDots, setChanceMode } from '../lib/sim/engine.js';
 import { makeSpiderContent, SKAVAG_IMMUNE } from '../lib/sim/spider.js';
 
 let pass = 0, fail = 0; const failures = [];
@@ -43,8 +43,10 @@ const setup = (stage = 13, allies = [ally()]) => { const b = boss(); const c = m
   c.phases[0].actEnemy(st, b);            // turn 2: consumeEligible=false → NO consume; ATK unchanged; end-spawn 4 (→8)
   eq('turn 2 does NOT consume (alternating) — ATK unchanged', b.atk, atkAfter1);
   eq('turn 2 still spawns 4 at end (→8)', living(st).length, 8);
-  c.phases[0].actEnemy(st, b);            // turn 3: consume 8 → ATK ×1.8 on top
-  near('turn 3 consumes again (alternating restored) — ATK 1600→2880', b.atk, Math.round(1600 * (1 + 0.10 * 8)), 0);
+  c.phases[0].actEnemy(st, b);            // turn 3: consume 8 more (14 total)
+  // ADDITIVE on BASE, CUMULATIVE (spider.js:78): atk0×(1+0.10×spidersEaten), eaten 6+8=14 → 1000×2.4 = 2400.
+  // (Was the compounding 1600×(1+0.10×8)=2880 — replaced when the ramp was fixed from exponential to additive.)
+  near('turn 3 consumes 8 more (14 total) — additive-on-base 1000×(1+0.10×14)=2400', b.atk, Math.round(1000 * (1 + 0.10 * 14)), 0);
 }
 // consume does NOT burn the alternation on an EMPTY field
 {
@@ -59,14 +61,21 @@ const setup = (stage = 13, allies = [ally()]) => { const b = boss(); const c = m
 }
 
 // ── 3. Spiderling attack — SINGLE-target, TWO 5% MaxHP Poison stacks ─────────
+// Force placement to land — setChanceMode('all') on a SEEDLESS state — so this proves the MECHANIC (one
+// target, two stacks) independent of the 0.37 SPIDERLING_POISON_CHANCE roll (that rate is exercised by the
+// reality bands, not here). Was setup()'s seed:7, where both 0.37 rolls happened to miss → 0 poisoned (a
+// false red once the placement chance was added to the poison model).
 {
-  const { c, st } = setup();
+  setChanceMode('all');
+  const b = boss(); const c = makeSpiderContent({ stageNumber: 13, boss: b, spawnTemplate: TMPL });
+  const st = makeState({ allies: [ally()], enemies: [b], seed: null }); st.enemies = [b];
   c.onPhaseStart(st);
   const sp = living(st)[0];
   c.phases[0].actEnemy(st, sp);
   const poisoned = st.allies.filter((a) => a.debuffs.some((d) => d.type === 'Poison'));
   eq('a Spiderling hits exactly ONE ally (single-target)', poisoned.length, 1);
   eq('…and stacks TWO 5% Poison on that ally', poisoned[0]?.debuffs.filter((d) => d.type === 'Poison').reduce((n, d) => n + (d.stacks ?? 1), 0), 2);
+  setChanceMode('threshold');
 }
 
 // ── 4. Venom Spray — AoE, +15% vs a Poisoned target ─────────────────────────
