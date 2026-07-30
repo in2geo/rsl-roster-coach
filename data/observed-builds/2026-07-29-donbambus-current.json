@@ -1,0 +1,154 @@
+{
+ "_source": "regenerated from Gestal sync DonBambus_9d30ab7d99fdf3c3.json (syncedAt 2026-07-29T16:40:16.250Z)",
+ "_note": "total_stats = effectiveStats(base+gear), ROSTER screen (no aura/arena — the fixture harness layers those). lifesteal = 0.30 iff the Lifesteal 4-set is COMPLETE. gear_sets = piece counts (factual); only the Lifesteal set effect is consumed by the sim.",
+ "_generator": "tools/build-from-sync.mjs",
+ "champions": [
+  {
+   "name": "Ezio Auditore",
+   "level": 50,
+   "stars": 5,
+   "rarity": "Legendary",
+   "affinity": "Spirit",
+   "gear_sets": [
+    "Perception×2",
+    "Savage×1",
+    "Critical Rate×1",
+    "Speed×1",
+    "Lifesteal×1",
+    "null×1"
+   ],
+   "lifesteal": 0,
+   "base_spd": 94,
+   "base_hp": 11175,
+   "base_atk": 1012,
+   "base_def": 721,
+   "total_stats": {
+    "hp": 17159,
+    "atk": 2000,
+    "def": 1214,
+    "spd": 130,
+    "crit_rate": 78,
+    "crit_dmg": 60,
+    "res": 49,
+    "acc": 124
+   }
+  },
+  {
+   "name": "Pelops the Victor",
+   "level": 60,
+   "stars": 6,
+   "rarity": "Legendary",
+   "affinity": "Spirit",
+   "gear_sets": [
+    "Lifesteal×4",
+    "null×2",
+    "Life×1",
+    "Frost×1"
+   ],
+   "lifesteal": 0.3,
+   "base_spd": 97,
+   "base_hp": 22140,
+   "base_atk": 738,
+   "base_def": 1299,
+   "total_stats": {
+    "hp": 29151,
+    "atk": 1752,
+    "def": 1712,
+    "spd": 141,
+    "crit_rate": 66,
+    "crit_dmg": 87,
+    "res": 57,
+    "acc": 74
+   }
+  },
+  {
+   "name": "Bambus Fourleaf",
+   "level": 50,
+   "stars": 5,
+   "rarity": "Legendary",
+   "affinity": "Magic",
+   "gear_sets": [
+    "Divine Life×1",
+    "Destroy×1",
+    "Life×1",
+    "Toxic×1",
+    "Lifesteal×1",
+    "Fury×1"
+   ],
+   "lifesteal": 0,
+   "base_spd": 105,
+   "base_hp": 14940,
+   "base_atk": 615,
+   "base_def": 899,
+   "total_stats": {
+    "hp": 25537,
+    "atk": 801,
+    "def": 1111,
+    "spd": 172,
+    "crit_rate": 38,
+    "crit_dmg": 80,
+    "res": 77,
+    "acc": 49
+   }
+  },
+  {
+   "name": "Tagoar",
+   "level": 50,
+   "stars": 5,
+   "rarity": "Epic",
+   "affinity": "Magic",
+   "gear_sets": [
+    "Shield×2",
+    "Speed×2",
+    "null×1",
+    "Daze×1",
+    "Accuracy×1"
+   ],
+   "lifesteal": 0,
+   "base_spd": 98,
+   "base_hp": 12750,
+   "base_atk": 810,
+   "base_def": 648,
+   "total_stats": {
+    "hp": 24965,
+    "atk": 978,
+    "def": 1111,
+    "spd": 154,
+    "crit_rate": 20,
+    "crit_dmg": 66,
+    "res": 46,
+    "acc": 41
+   }
+  },
+  {
+   "name": "Vergis",
+   "level": 40,
+   "stars": 4,
+   "rarity": "Epic",
+   "affinity": "Spirit",
+   "gear_sets": [
+    "Life×2",
+    "null×1",
+    "Critical Rate×1",
+    "Stalwart×1",
+    "Avenging×1",
+    "Speed×1"
+   ],
+   "lifesteal": 0,
+   "base_spd": 98,
+   "base_hp": 7770,
+   "base_atk": 470,
+   "base_def": 649,
+   "total_stats": {
+    "hp": 16603,
+    "atk": 647,
+    "def": 1243,
+    "spd": 147,
+    "crit_rate": 33,
+    "crit_dmg": 60,
+    "res": 77,
+    "acc": 28
+   }
+  }
+ ]
+}
