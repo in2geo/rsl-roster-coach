@@ -65,8 +65,11 @@ for (let seed = 1; seed <= N; seed++) {
     if (!['damage', 'dot', 'reflect', 'hp_burn', 'maxHP', 'absorb'].includes(e.kind)) continue;
     const src = e.source ? champKey(e.source) : 'unattributed';
     const sKey = allyKeys.includes(src) ? src : (e.kind === 'reflect' ? 'reflect(unattr)' : 'other/unattr');
+    // dot covers BOTH Poison and HP Burn — split by subtype so HP-Burn-splash reaching the boss is not
+    // hidden inside 'poison/DoT'. Every other kind uses its KIND_LABEL.
+    const mech = e.kind === 'dot' ? (e.subtype === 'HP Burn' ? 'HP-Burn' : 'poison') : (KIND_LABEL[e.kind] || e.kind);
     bump(bySource, sKey, amt);
-    bump(byKind, KIND_LABEL[e.kind] || e.kind, amt);
+    bump(byKind, mech, amt);
   }
 }
 

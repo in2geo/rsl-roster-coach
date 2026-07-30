@@ -1535,6 +1535,82 @@
         }
       ],
       "_note": "DETAILED VIDEO REVIEW. Bambus takes the LEAST damage (4,364) — reality strongly PROTECTS Bambus + Ezio (4.3% each of team taken); Pelops is the main pressure target (44.5%, via Taunt); Tagoar/Vergis ~23% each. Long CONTROLLED grind (164t), 5/5 survive. Boss-damage split ~Pelops 40% / Ezio 28% / Bambus 25% (HP-Burn-splash + Magma reflect + poison-dump). Levels not specified in capture (not used by per-hero-bands)."
+    },
+    {
+      "source": "manual (victory-screen transcription + death-timeline observed)",
+      "capturedAt": "2026-07-30",
+      "displayName": "Don$Bambus",
+      "dungeon": "Spider's Den",
+      "stageNumber": 13,
+      "difficulty": "Normal",
+      "result": "Victory",
+      "turns": 159,
+      "timeSeconds": 308,
+      "energy": 110,
+      "bestTimeSeconds": 243,
+      "bestTurns": 128,
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
+      "heroes": [
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 1141133,
+          "taken": 9468,
+          "healing": 0,
+          "died": false
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 64149,
+          "taken": 25986,
+          "healing": 19490,
+          "died": true,
+          "deathTurnApprox": 80
+        },
+        {
+          "slot": 2,
+          "name": "Bambus Fourleaf",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 1067331,
+          "taken": 8202,
+          "healing": 0,
+          "died": false
+        },
+        {
+          "slot": 3,
+          "name": "Pelops the Victor",
+          "displayName": "Pelops",
+          "level": 60,
+          "damage": 1432863,
+          "taken": 14655,
+          "healing": 97606,
+          "died": false
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 40,
+          "damage": 46667,
+          "taken": 32730,
+          "healing": 52431,
+          "died": true,
+          "deathTurnApprox": 120
+        }
+      ],
+      "notes": "EZIO team, VICTORY 159t / 5:08. Team-total ~3.75M: Pelops top (1.43M), Ezio 2nd (1.14M), Bambus 3rd (1.07M). ⭐ SURVIVAL TIMELINE (first-party observed, NOT full 5/5 survive): TAGOAR died FIRST ~halfway (~t80); VERGIS died ~3/4 (~t120). The two SUPPORT seats — and the two HIGHEST-taken (Vergis 32,730 MOST, Tagoar 25,986 2nd) — die, while the three CARRIES (Ezio/Bambus/Pelops) are PROTECTED (taken 9,468 / 8,202 / 14,655) and survive to finish. So reality wins Spider-13 by keeping the CARRIES alive, not the whole team; the supports are effectively expendable and the win still lands with 3/5 alive. Tagoar's unusually LOW damage (64k vs her typical 88-312k) is EXPLAINED by the ~t80 death (she stops dealing/healing early). Refines the survival model: the WR-critical requirement is carry protection (low-taken on Ezio/Bambus/Pelops), not 5/5 survival. ⭐ MECHANISM (first-party): support survival is a RACE against PELOPS'S TAUNT COOLDOWN. Tagoar died on the LAST attack BEFORE Pelops's Taunt came back up — i.e. she was killed during the Taunt-DOWN window when the swarm was free to target a support. On OTHER runs Tagoar LIVES with a SLIVER of HP because Pelops re-pulls aggro with Taunt just in time. So who-dies (and thus the win) hinges on the knife-edge timing of Taunt re-cast vs support HP depletion during the gap — the sim must model Taunt cadence (A3 cd4/dur2, ~43% uptime) AND heal throughput accurately, because a small error flips 'survives with a sliver' ↔ 'dies'."
     }
   ]
 }

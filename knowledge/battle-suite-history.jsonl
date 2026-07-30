@@ -1,1 +1,3 @@
 {"at":"2026-07-22T00:00:49.024Z","n":324,"pass":204,"balanced":0.529,"acc":0.63,"majority":0.778,"false_clears":47,"false_walls":73,"note":"baseline recorded at wiring time (handoff 2026-07-21)"}
+{"at":"2026-07-30T12:26:38.708Z","n":527,"pass":241,"balanced":0.451,"acc":0.457,"majority":0.82,"false_clears":53,"false_walls":233,"note":null}
+{"at":"2026-07-30T18:37:08.308Z","n":528,"pass":241,"balanced":0.451,"acc":0.456,"majority":0.82,"false_clears":53,"false_walls":234,"note":null}
