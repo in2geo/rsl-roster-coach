@@ -1467,6 +1467,74 @@
         }
       ],
       "notes": "EZIO team, 2nd victory-screen capture of 2026-07-29 (distinct run from the t153 tracked fight and the 164t video run). 211 turns / 6:36. Pelops top again (1.93M — burn/reflect engine), Bambus 2nd (1.14M — poison redirect); these two are the stable carries. Ezio SWINGS: 364K here vs ~1.00M in the 164t video run vs 938K in the t153 run → high run-to-run variance on Ezio; anchor damage judgments on the aggregate, not one run (single-run anchor trap). Nobody permanently dead (reviver = Tagoar A3). energy field N/A this capture (screen showed pool 97/109, not the per-run counter)."
+    },
+    {
+      "source": "manual (detailed video review — victory-screen transcription + full timeline)",
+      "capturedAt": "2026-07-30",
+      "displayName": "Don$Bambus",
+      "dungeon": "Spider's Den",
+      "stageNumber": 13,
+      "difficulty": "Normal",
+      "result": "Victory",
+      "turns": 164,
+      "timeSeconds": 465,
+      "bestTimeSeconds": 243,
+      "bestTurns": 128,
+      "team": [
+        "Ezio",
+        "Tagoar",
+        "Bambus",
+        "Pelops",
+        "Vergis"
+      ],
+      "heroes": [
+        {
+          "slot": 0,
+          "name": "Ezio Auditore",
+          "displayName": "Ezio",
+          "level": 50,
+          "damage": 1003622,
+          "taken": 4439,
+          "healing": 0
+        },
+        {
+          "slot": 1,
+          "name": "Tagoar",
+          "displayName": "Tagoar",
+          "level": 50,
+          "damage": 206888,
+          "taken": 24031,
+          "healing": 83128
+        },
+        {
+          "slot": 2,
+          "name": "Bambus Fourleaf",
+          "displayName": "Bambus",
+          "level": 50,
+          "damage": 878601,
+          "taken": 4364,
+          "healing": 0
+        },
+        {
+          "slot": 3,
+          "name": "Pelops the Victor",
+          "displayName": "Pelops",
+          "level": 50,
+          "damage": 1429167,
+          "taken": 45659,
+          "healing": 104873
+        },
+        {
+          "slot": 4,
+          "name": "Vergis",
+          "displayName": "Vergis",
+          "level": 50,
+          "damage": 59424,
+          "taken": 24016,
+          "healing": 45051
+        }
+      ],
+      "_note": "DETAILED VIDEO REVIEW. Bambus takes the LEAST damage (4,364) — reality strongly PROTECTS Bambus + Ezio (4.3% each of team taken); Pelops is the main pressure target (44.5%, via Taunt); Tagoar/Vergis ~23% each. Long CONTROLLED grind (164t), 5/5 survive. Boss-damage split ~Pelops 40% / Ezio 28% / Bambus 25% (HP-Burn-splash + Magma reflect + poison-dump). Levels not specified in capture (not used by per-hero-bands)."
     }
   ]
 }
