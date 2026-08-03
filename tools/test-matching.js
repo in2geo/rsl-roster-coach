@@ -14,12 +14,21 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { matchRoster }  from '../lib/match-engine.js';
+import { loadNameResolverRest } from '../lib/champion-names.js';
 
 const supabase = createClient(
   (process.env.SUPABASE_URL ?? '').replace(/\/rest\/v1\/?$/, ''),
   process.env.SUPABASE_SERVICE_KEY,
   { global: { fetch } }
 );
+
+// THE alias-aware name registry (champions.name + champion_aliases): resolve a champion name → its
+// champions.id, then act BY ID — never a raw .eq('name', …) lookup (which silently drops any name
+// that differs from champions.name). See lib/champion-names.js.
+const REST_BASE = (process.env.SUPABASE_URL ?? '').replace(/\/rest\/v1\/?$/, '');
+const REST_H = { apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}` };
+const restGet = async (p) => { const r = await fetch(`${REST_BASE}/rest/v1/${p}`, { headers: REST_H }); return r.ok ? r.json() : []; };
+const nameResolver = await loadNameResolverRest(restGet);
 
 const CONTENT_KEY = 'spider'; // → Spider's Den Stages 7-10, stageNumber=9
 
@@ -97,6 +106,7 @@ const ROSTERS = [
 let testUserId  = null;
 let insertedChampionIds  = [];  // rows we created — deleted in teardown
 let savedChampionStats   = [];  // rows we modified — base stats restored in teardown
+const champIdByName = new Map(); // TEST_CHAMPIONS name → champions.id (registry-resolved in setup)
 
 async function setup() {
   // Create a temporary auth user
@@ -137,11 +147,16 @@ async function setup() {
       base_res:       champ.base_res,
     };
 
-    const { data: existing } = await supabase
-      .from('champions')
-      .select(`id, ${BASE_STAT_COLS}`)
-      .eq('name', champ.name)
-      .maybeSingle();
+    const hit = nameResolver.resolve(champ.name);   // name/alias → champions.id (loud on a real miss)
+    let existing = null;
+    if (hit) {
+      const { data } = await supabase
+        .from('champions')
+        .select(`id, ${BASE_STAT_COLS}`)
+        .eq('id', hit.id)
+        .maybeSingle();
+      existing = data;
+    }
 
     let champId;
     if (existing) {
@@ -180,6 +195,7 @@ async function setup() {
       champId = inserted.id;
       insertedChampionIds.push(champId);
     }
+    champIdByName.set(champ.name, champId);   // roster mapping reads this, not a raw name lookup
 
     // Insert approved tags for this champion (ignore conflicts)
     for (const tagName of champ.tags) {
@@ -220,10 +236,9 @@ async function insertTestRoster(rosterChampions) {
   await supabase.from('user_champions').delete().eq('user_id', testUserId);
 
   const names = rosterChampions.map(c => c.champion_name);
-  const { data: champRows, error } = await supabase
-    .from('champions').select('id, name').in('name', names);
-  if (error) throw new Error(`Champion lookup: ${error.message}`);
-  const idMap = new Map(champRows.map(c => [c.name, c.id]));
+  // Champion identity comes from setup()'s registry-resolved ids (name → champions.id), not a raw
+  // .in('name', …) lookup — so an alias/short-name roster entry still maps to the right champion.
+  const idMap = champIdByName;
 
   const missing = names.filter(n => !idMap.has(n));
   if (missing.length) console.log(`  ⚠ Not in DB (skipped): ${missing.join(', ')}`);

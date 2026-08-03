@@ -29,7 +29,7 @@ import { fileURLToPath } from 'url';
 import { makeState, simulate } from '../lib/sim/engine.js';
 import { buildBattle, applyBattleLayers } from '../lib/sim/dragon-fixture.js';
 import { installRecipeRun } from '../lib/sim/interpreter.js';
-import { champKey } from '../lib/sim/recipes.js';
+import { champKey, deferredMechanicsFor } from '../lib/sim/recipes.js';
 import { appendQaHistory, gitCommit, nowIso } from './qa-history.mjs';
 
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -45,9 +45,17 @@ let THRESH_CONFIG = {};
 try { if (fs.existsSync(CONFIG_PATH)) THRESH_CONFIG = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')); } catch { /* fall back to DEFAULT_THRESH */ }
 const thresholdsFor = (dungeon, stage) => ({ ...DEFAULT_THRESH, ...(THRESH_CONFIG.default || {}), ...(THRESH_CONFIG[`${dungeon} ${stage}`] || {}) });
 
+// ACCOUNT-SCOPED (2026-08-01). Each content pins the ACCOUNT (displayName) whose captures it is graded
+// against — a Spider-13 team on Don$Bambus (Pelops) vs DonaHilvi (Michelangelo/Hilvi/…) are DIFFERENT
+// teams, so their per-hero bands must NOT blend (the handoff TODO). `teamVariant` further pins the exact
+// roster where one account runs several at the same dungeon+stage (DonaHilvi's Artor-for-Alice swap).
+// Both manual captures and the reader battle-log carry `displayName`, so the filter works on both sources.
 const CONTENTS = [
-  { fixture: 'spider13-donbambus-current.json', dungeon: "Spider's Den", stage: 13 },
-  { fixture: 'dragon16-donbambus-current.json', dungeon: "Dragon's Lair", stage: 16 },
+  { fixture: 'spider13-donbambus-current.json', dungeon: "Spider's Den", stage: 13, account: 'Don$Bambus' },
+  { fixture: 'dragon16-donbambus-current.json', dungeon: "Dragon's Lair", stage: 16, account: 'Don$Bambus' },
+  { fixture: 'spider-donahilvi-artor-current.json', dungeon: "Spider's Den", stage: 13, account: 'DonaHilvi', teamVariant: 'Artor-for-Alice' },
+  { fixture: 'spider-donahilvi-artak-current.json', dungeon: "Spider's Den", stage: 13, account: 'DonaHilvi', teamVariant: 'Artak+Ninja (Artor out)' },
+  { fixture: 'dragon-donahilvi-pool-current.json', dungeon: "Dragon's Lair", stage: 16, account: 'DonaHilvi', teamVariant: 'Artor (Dragon pool team)' },
 ];
 
 // kinds that count as DAMAGE the source dealt to a victim. NB: 'activate' is EXCLUDED — activatePoisons already
@@ -73,8 +81,14 @@ const heroFromManual = (h) => ({ key: champKey(h.name || h.displayName), name: h
 const heroFromReader = (h) => ({ key: champKey(h.name), name: h.name, dealt: h.damage, taken: h.defense, healing: h.healing });
 const fullyPopulated = (heroes) => heroes.length > 0 && heroes.every((h) => Number.isFinite(h.dealt));
 
-function capturedBands(manualCaps, readerCaps, dungeon, stage) {
-  const isWin = (c) => c.dungeon === dungeon && c.stageNumber === stage && c.result === 'Victory';
+function capturedBands(manualCaps, readerCaps, dungeon, stage, account = null, teamVariant = null) {
+  // ACCOUNT + VARIANT scoping (2026-08-01): grade only against captures from the SAME account (and, when
+  // pinned, the SAME team variant) — else Don$Bambus's Pelops team blends into DonaHilvi's bands and a
+  // DonaHilvi Artor fixture is compared to its own Alice/Ninja/Artak variants. Both sources carry displayName.
+  const matchesContent = (c) => c.dungeon === dungeon && c.stageNumber === stage
+    && (account == null || c.displayName === account)
+    && (teamVariant == null || c.teamVariant === teamVariant);
+  const isWin = (c) => matchesContent(c) && c.result === 'Victory';
   const manualRows = manualCaps.filter(isWin).map((c) => (c.heroes || []).map(heroFromManual)).filter(fullyPopulated);
   const readerRows = readerCaps.filter(isWin).map((c) => (c.heroes || []).map(heroFromReader)).filter(fullyPopulated);
   // PREFER the hand-verified manual set for a content (the reader mis-attributes Spider per-hero via a
@@ -93,7 +107,7 @@ function capturedBands(manualCaps, readerCaps, dungeon, stage) {
   for (const [k, v] of Object.entries(by)) out[k] = { name: v.name, dealt: band(v.dealt), taken: band(v.taken), healing: band(v.healing) };
   // WIN RATE + MEDIAN TURNS from the SAME source family (ALL results, not just the populated wins used for bands)
   const src = manualRows.length ? manualCaps : readerCaps;
-  const allForContent = src.filter((c) => c.dungeon === dungeon && c.stageNumber === stage);
+  const allForContent = src.filter(matchesContent);
   const winCaps = allForContent.filter((c) => c.result === 'Victory');
   const lossCaps = allForContent.filter((c) => c.result === 'Defeat' || c.result === 'Loss');
   const total = winCaps.length + lossCaps.length;
@@ -109,6 +123,15 @@ async function simBands(rest, fixtureFile) {
   const probe = await buildBattle({ rest, fixture, repoRoot: REPO });
   if (probe.skip) return { skip: probe.skip };
 
+  // ⚠ CALL OUT UNMODELLED (deferred) mechanics for this exact team — surfaced up front so a reality mismatch
+  // is not hand-diagnosed for hours before realising the sim never simulated the mechanic (Mike 2026-08-03).
+  const deferred = deferredMechanicsFor(probe.allies.map((a) => a.name));
+  if (deferred.length) {
+    const total = deferred.reduce((s, d) => s + d.count, 0);
+    console.log(`  ⚠ ${total} DEFERRED (unmodelled) mechanics on this team — the sim is NOT simulating these:`);
+    for (const d of deferred) for (const it of d.items) console.log(`      ${d.champion} [${it.slot}] ${String(it.note).split(' — ')[0].slice(0, 92)}`);
+  }
+
   const per = {};                 // champKey → { name, dealt:[], taken:[], healing:[] }
   let wins = 0, reflectPerFight = 0, chHealPerFight = 0;
   const turnsArr = [];            // sim turn count per run → median (vs the captured median-turns threshold)
@@ -116,7 +139,7 @@ async function simBands(rest, fixtureFile) {
 
   for (let seed = 1; seed <= N; seed++) {
     const built = await buildBattle({ rest, fixture, repoRoot: REPO });
-    applyBattleLayers(built.allies);
+    applyBattleLayers(built.allies, fixture.battle_layers);   // fixture-declared aura/arena (e.g. DonaHilvi ACC lead); defaults (Ezio SPD +19%, arena +3%) when absent
     const allyKey = new Map(built.allies.map((a) => [champKey(a.name), a]));
     const st = makeState({ allies: built.allies, enemies: [], seed });
     installRecipeRun(st);
@@ -154,7 +177,7 @@ async function simBands(rest, fixtureFile) {
   }
   const out = {};
   for (const [k, v] of Object.entries(per)) out[k] = { name: v.name, dealt: band(v.dealt), taken: band(v.taken), healing: band(v.healing) };
-  return { bands: out, winRate: Math.round((100 * wins) / N), simTurnsMedian: pctile(turnsArr, 0.5), reflectPerFight: Math.round(reflectPerFight / N), chHealPerFight: Math.round(chHealPerFight / N), takenLedgerVsField };
+  return { bands: out, deferred, winRate: Math.round((100 * wins) / N), simTurnsMedian: pctile(turnsArr, 0.5), reflectPerFight: Math.round(reflectPerFight / N), chHealPerFight: Math.round(chHealPerFight / N), takenLedgerVsField };
 }
 
 // ── comparison + gate ──────────────────────────────────────────────────────────────────────────────────
@@ -174,13 +197,14 @@ async function main() {
   const perContentJson = [];
   const historyContents = {};   // measurement backbone: per-content → per-champ → per-metric {sim, realMedian, inBand, devPct}
 
-  for (const { fixture, dungeon, stage } of CONTENTS) {
-    console.log(`\n═══ PER-HERO BANDS — ${dungeon} ${stage}  (sim ${N} seeds vs captured reality) ═══`);
+  for (const { fixture, dungeon, stage, account, teamVariant } of CONTENTS) {
+    const acctLabel = account ? ` · ${account}${teamVariant ? '/' + teamVariant : ''}` : '';
+    console.log(`\n═══ PER-HERO BANDS — ${dungeon} ${stage}${acctLabel}  (sim ${N} seeds vs captured reality) ═══`);
     const sim = await simBands(rest, fixture);
     if (sim.skip) { console.log(`  skipped: ${sim.skip}`); continue; }
-    const real = capturedBands(manualCaps, readerCaps, dungeon, stage);
+    const real = capturedBands(manualCaps, readerCaps, dungeon, stage, account, teamVariant);
     const gatedHere = real.n > 0;
-    const cKey = `${dungeon} ${stage}`;
+    const cKey = `${dungeon} ${stage}${account ? ` [${account}]` : ''}`;
     const th = thresholdsFor(dungeon, stage);
     historyContents[cKey] = { simWinRate: sim.winRate, capturedWins: real.n, source: real.source, thresholds: th, champs: {} };
     console.log(`  sim win rate ${sim.winRate}%  ·  captured wins: ${real.n} [${real.source}]  ·  thresholds: dealt/taken ${Math.round(th.perHeroDealtPct * 100)}%/${Math.round(th.perHeroTakenPct * 100)}%, WR ${th.winRatePctPoints}pp, turns ${Math.round(th.medianTurnsPct * 100)}%${gatedHere ? '' : '  → NO CAPTURES: report-only, not gated'}`);
@@ -223,6 +247,15 @@ async function main() {
       console.log(`  ${'MEDIAN TURNS'.padEnd(19)}sim ${sim.simTurnsMedian}  captured ${real.medianTurns}  → ${Math.round(tdev * 100)}% off (tol ${Math.round(th.medianTurnsPct * 100)}%)  ${tFail ? '❌ GATE' : '✅'}`);
       if (tFail) failures.push({ content: cKey, champ: '—', metric: 'medianTurns', msg: `[${cKey}] median turns: sim ${sim.simTurnsMedian} vs captured ${real.medianTurns} — ${Math.round(tdev * 100)}% off (tol ${Math.round(th.medianTurnsPct * 100)}%)` });
       historyContents[cKey].medianTurns = { sim: sim.simTurnsMedian, captured: real.medianTurns, devPct: Math.round(tdev * 100), tolPct: Math.round(th.medianTurnsPct * 100), pass: !tFail };
+    }
+    // DEFERRED-MECHANIC GATE (Mike 2026-08-03): the QA must NOT report green while the sim is not simulating
+    // part of the team's kit — a pass on an incomplete model is a FALSE green. Any deferred mechanic on a
+    // GATED team is a blocking failure; the per-champion list printed above names exactly what to wire.
+    if (gatedHere && sim.deferred?.length) {
+      const total = sim.deferred.reduce((s, d) => s + d.count, 0);
+      console.log(`  ${'DEFERRED MECHANICS'.padEnd(19)}${total} unmodelled on this team  → ❌ GATE (QA cannot pass while the sim is incomplete)`);
+      failures.push({ content: cKey, champ: '—', metric: 'deferredMechanics', count: total, msg: `[${cKey}] ${total} DEFERRED (unmodelled) mechanics — QA cannot pass while the sim is incomplete (see the per-champion list at the block header)` });
+      historyContents[cKey].deferredMechanics = { count: total, byChampion: sim.deferred.map((d) => ({ champion: d.champion, count: d.count })) };
     }
     // integrity + attribution notes
     const badTaken = (sim.takenLedgerVsField || []).filter((x) => x.field > 0 && Math.abs(x.ledger - x.field) / x.field > 0.10).length;

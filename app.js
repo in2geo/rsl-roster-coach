@@ -404,13 +404,14 @@ function renderResults(data) {
   const teamList = document.getElementById('team-list');
   teamList.innerHTML = '';
   const leaderName = data.leader?.name ?? null;
+  const leaderId = data.leader?.champion_id ?? null;   // match the leader by champions.id, not display name
   (data.team || []).forEach(champ => {
     const li = document.createElement('li');
     const dot = document.createElement('span');
     dot.className = `rarity-dot ${champ.rarity || ''}`;
     li.appendChild(dot);
     li.append(`${champ.name} — Lv ${champ.level} ★${champ.stars}`);
-    if (champ.name === leaderName) {
+    if (leaderId != null ? champ.id === leaderId : champ.name === leaderName) {
       const badge = document.createElement('span');
       badge.className = 'leader-badge';
       badge.textContent = 'Leader';

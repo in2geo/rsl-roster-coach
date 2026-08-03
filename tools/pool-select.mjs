@@ -114,8 +114,18 @@ export function poolSelect(pool, tagMeta, skillsByName, { size = 5, maxSwaps = 1
    *
    * DELIBERATELY NOT a fix for the underlying defect — implementing build scale is (INS-0031's
    * magnitude problem). This is a floor that stops the worst case while that stays blocked.
-   * The floor applies to REPAIR candidates only; the seed is already development-ranked. */
-  const BUILD_FLOOR_LEVEL = 50;
+   * The floor applies to REPAIR candidates only; the seed is already development-ranked.
+   *
+   * STAR-RELATIVE + GEAR-INDEPENDENT (Mike, 2026-08-01). Gear is PORTABLE — it belongs to the CEILING
+   * layer, not selection — so the floor no longer reads `gear_tier` (which was BROKEN anyway: the sync
+   * captures equipped artifacts for only ~10-15% of champions, so `gear_tier` reads Starter for most of
+   * the roster — it benched Artak while passing weaker gear-captured champs). "Built" = near the
+   * STAR-LEVEL CAP (stars×10): a 5★ maxes at L50, so **L49 5★ is MAXED** (the old flat-50 floor wrongly
+   * benched Artak L49 5★ — the HP-Burn detonator that clears Spider 17). Anti-fodder now rests on
+   * BUILD-SCALE in the objective (delivery ∝ level/stars); an under-leveled champ (Kael L27 5★) is
+   * genuinely NOT level-ready and stays out — leveling, unlike gear, is not portable. */
+  const BUILD_FLOOR_MARGIN = 5;
+  const isBuilt = c => (c.level ?? 0) >= (c.stars ?? 0) * 10 - BUILD_FLOOR_MARGIN;
   const unfillable = [];
 
   for (let n = 0; n < maxSwaps; n++) {
@@ -145,16 +155,9 @@ export function poolSelect(pool, tagMeta, skillsByName, { size = 5, maxSwaps = 1
           // The swap must actually FIX THE SHORT BUCKET, not merely raise the total.
           const fixed = (s.rows.find(r => r.bucket === short.bucket)?.pct ?? 0) > short.pct;
           if (!fixed || s.grade <= grade + 1e-9) continue;
-          // BUILD FLOOR — GEAR-AWARE (2026-07-20): a candidate can fill a bucket if it is actually
-          // built, which is LEVEL >= 50 OR meaningful GEAR (good/endgame). Pure-level blocked geared
-          // low-level champs whose contribution is real: Kael Lv27 5★ GOOD gear (a poisoner) was
-          // recorded as "closest, level 27" and benched, while his poison actually cleared. Ungeared
-          // low champs (Dark Elhain Lv40 / zero artifacts) still fail both and are correctly blocked.
-          // Bar is FAIR gear (>=2), not good: Vergis (Lv40, FAIR gear) is demonstrably effective — he
-          // is the 5th seat of Bambus's fastest Spider-13 clear (289s) — and a `good`-only bar blocked
-          // him from being repaired back in, stranding the model on a worse team. What must stay out
-          // is the ZERO-artifact case (Dark Elhain Lv40, starter/no gear), which fails gear>=2.
-          const built = (cand.level ?? 0) >= BUILD_FLOOR_LEVEL || (GEARW[cand.gear_tier] ?? 1) >= 2;
+          // BUILD FLOOR — star-relative & gear-independent (see `isBuilt` above). A candidate can fill a
+          // bucket if they are near their STAR-LEVEL CAP; gear is NOT read (portable → ceiling layer).
+          const built = isBuilt(cand);
           if (!built) {
             if (!blockedBy || (cand.level ?? 0) > (blockedBy.level ?? 0)) blockedBy = cand;
             continue;
@@ -186,6 +189,25 @@ export function poolSelect(pool, tagMeta, skillsByName, { size = 5, maxSwaps = 1
     team = best.team; grade = best.grade; rows = best.rows;
   }
 
+  /* ── BIAS-NOT-VETO IS DELIVERED BY BUILD-SCALE + THE EXISTING REPAIR LOOP, NOT A SEPARATE PASS ──
+   * (2026-08-01, Mike: "the most developed is the STARTING POINT, not the end point... it should not
+   * be a lockout.")
+   *
+   * The lockout was: development seeded the five, and the repair loop only ever swapped to fix a SHORT
+   * bucket — so once nothing was short the seed froze, even over an underbuilt champion. The fix lives
+   * UPSTREAM in the objective: `buildScale` (lib/bucket-magnitude.js) now makes an UNDER-BUILT champion
+   * deliver less, so a bucket they "cover" reads BELOW 100% — a genuine short bucket the existing repair
+   * loop then fixes by swapping in a better-built champion (choosing by development, respecting the
+   * BUILD_FLOOR). Development thus BIASES the fill (magnitude) without VETOing a better role-fit.
+   *
+   * A separate grade-maximising "upgrade pass" was tried here and REVERTED: it benched Ezio (the
+   * measured amplification carry) for Seeker (L40, one tempo tag) for +1 grade by stuffing an already
+   * over-filled `tempo` bucket — the exact fodder failure this file's header documents. The repair loop
+   * deliberately STOPS once nothing is short; climbing past that trades real carriers for surplus. Do
+   * not re-add an unconditional upgrade pass — if bias-not-veto needs to reach further, express the
+   * missing DEMAND as a bucket that reads short (e.g. survival as a stage-scaling need), not as raw
+   * grade-maximising. */
+
   /* ── LEADER AURA (ported from gen 1, 2026-07-19) ──────────────────────────────────────────────
    * In RSL only the LEADER's aura is live, so choosing a leader = choosing which aura to run. The
    * whole mechanism was solved 2026-07-12 in `match-engine.js` (`pickLeaderFrom` + `applyLeaderAura`,
@@ -207,16 +229,18 @@ export function poolSelect(pool, tagMeta, skillsByName, { size = 5, maxSwaps = 1
    * Both grades are returned so the aura's effect stays ATTRIBUTABLE rather than baked into one number. */
   const finalize = t => {
     const g0 = scoreTeam(t, tagMeta, skillsByName, cfg);
-    if (!leaderCtx) return { team: t, auraTeam: t, leader: null, grade: g0.grade, gradeBeforeAura: g0.grade, rows: g0.rows };
+    if (!leaderCtx) return { team: t, auraTeam: t, leader: null, grade: g0.grade, gradeBeforeAura: g0.grade, rows: g0.rows, gates: g0.gates };
     const auraRows = t.flatMap(c => (leaderCtx.aurasByChampId?.[c.id] ?? [])
       .map(a => ({ ...a, champion_id: c.id })));
     const ldr = pickLeaderFrom(t, auraRows, {
       contentArea: leaderCtx.contentArea, thresholdStats: leaderCtx.thresholdStats,
       accFloor: leaderCtx.accFloor });
-    if (!ldr) return { team: t, auraTeam: t, leader: null, grade: g0.grade, gradeBeforeAura: g0.grade, rows: g0.rows };
+    if (!ldr) return { team: t, auraTeam: t, leader: null, grade: g0.grade, gradeBeforeAura: g0.grade, rows: g0.rows, gates: g0.gates };
     const at = applyLeaderAura(t, ldr);
     const g1 = scoreTeam(at, tagMeta, skillsByName, cfg);
-    return { team: t, auraTeam: at, leader: ldr, grade: g1.grade, gradeBeforeAura: g0.grade, rows: g1.rows };
+    // `gates` reflects the AURA team — an ACC leader aura can close a seat's ACC deficit, so the
+    // "gear this seat" note must be read AFTER the aura is applied, not before.
+    return { team: t, auraTeam: at, leader: ldr, grade: g1.grade, gradeBeforeAura: g0.grade, rows: g1.rows, gates: g1.gates };
   };
 
   const chosen = finalize(team);
@@ -371,7 +395,7 @@ for (const f of fs.readdirSync(path.join(REPO, 'gestal-sync/output')).filter(x =
   } else {
     best = poolSelect(pool, tagMeta, skillsByName, { cfg: withAffinity(RUN_CFG.cfg), leaderCtx: leaderCtxFor(RUN_CFG.cfg) });
   }
-  const { team, grade, gradeBeforeAura, leader, rows, trace, alts, unfillable } = best;
+  const { team, grade, gradeBeforeAura, leader, rows, trace, alts, unfillable, gates } = best;
 
   console.log(`\n══ ${snap.displayName ?? f} — ${RUN_CFG.label} (pool ${pool.length}) ══`);
   if (chosen) console.log(`   PATH: ${chosen.name}`);
@@ -386,8 +410,24 @@ for (const f of fs.readdirSync(path.join(REPO, 'gestal-sync/output')).filter(x =
   console.log(`   buckets: ${rows.map(r => `${r.bucket} ${(r.pct * 100).toFixed(0)}%`).join(' · ')}`);
   // A NAMED GAP beats a pretend fill — say the roster can't cover this, and who could if developed.
   for (const u of unfillable ?? [])
-    console.log(`   GAP: ${u.bucket} stuck at ${(u.pct * 100).toFixed(0)}% — no BUILT champion (level 50+ or fair gear) can fill it`
+    console.log(`   GAP: ${u.bucket} stuck at ${(u.pct * 100).toFixed(0)}% — no BUILT champion (near star-level cap) can fill it`
               + (u.blocked_by ? `  (closest: ${u.blocked_by.name}, level ${u.blocked_by.level})` : ''));
+  // GEAR THIS SEAT — GEAR IS PORTABLE (Mike 2026-08-01), so a champion FIELDED on level/potential whose
+  // current gear is short is an ACTION, not a benching: "move gear onto this seat", not "drop this champ".
+  // Two kinds: an ACC-gated debuffer below the floor (from `gates`), or a fielded champ on starter/no gear.
+  const gearNotes = new Map();
+  for (const g of gates ?? []) {
+    const prev = gearNotes.get(g.champion);
+    if (!prev || g.shortfall > prev.shortfall)
+      gearNotes.set(g.champion, { kind: 'acc', acc: g.acc, floor: g.accFloor, shortfall: g.shortfall });
+  }
+  for (const c of team)
+    if ((GEARW[c.gear_tier] ?? 1) <= 1 && !gearNotes.has(c.name))
+      gearNotes.set(c.name, { kind: 'gear', gear: c.gear_tier ?? 'none', level: c.level ?? 0 });
+  for (const [name, n] of gearNotes)
+    console.log(n.kind === 'acc'
+      ? `   GEAR THIS SEAT: ${name} — ACC ${n.acc} vs floor ${n.floor} (short ${n.shortfall}); move ACC gear here`
+      : `   GEAR THIS SEAT: ${name} — ${n.gear} gear at level ${n.level}; fielded on potential, needs gear`);
   // Next-best teams one swap from the chosen five — each with its OWN leader, so the grades compare.
   for (const [i, a] of (alts ?? []).entries())
     console.log(`   #${i + 2}: ${a.grade.toFixed(1).padStart(5)}  ${a.team.map(c => c.name).join(', ')}`

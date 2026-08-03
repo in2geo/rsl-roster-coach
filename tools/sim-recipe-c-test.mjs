@@ -51,7 +51,9 @@ console.log('\n=== II-C state manipulation — code produces expected results? =
   const target = chooseAllyTarget([pel, low]);
   check('TAUNT forces the hit onto Pelops (over the lower-HP ally)', pel.buffs.some((b) => b.type === 'Taunt') && target === pel, `target ${target?.name}`);
 }
-// 6 — ALLY PROTECTION: Vergis A2 protects all allies except self; a hit on one redistributes to the others
+// 6 — ALLY PROTECTION: Vergis A2 protects all allies except self; a hit on a protected ally redirects to
+// VERGIS (the placer), NOT to the other protected allies. Card: "on all allies except this Champion" — the
+// protector absorbs the redirected share (verified 2026-07-30; see engine.dealDamage + sim-selftest #23).
 {
   const v = makeCombatant({ name: 'Vergis', side: 'ally', def: 1200, maxHp: 16000, affinity: 'Void', critRate: 0 });
   const a1 = makeCombatant({ name: 'A1', side: 'ally', maxHp: 20000, affinity: 'Void' });
@@ -59,10 +61,10 @@ console.log('\n=== II-C state manipulation — code produces expected results? =
   const team = [v, a1, a2];
   applyRecipe(makeState({ allies: team, enemies: [enemy()], seed: null }), v, RECIPES['VERGIS-A2']);
   const placedRight = !v.buffs.some((b) => b.type === 'Ally Protection') && a1.buffs.some((b) => b.type === 'Ally Protection') && a2.buffs.some((b) => b.type === 'Ally Protection');
-  const b1 = a1.hp, b2 = a2.hp;
-  dealDamage(a1, 10000, 'direct', makeCombatant({ name: 'Mob', side: 'enemy' }), team);   // 50% of 10000 redirects off a1
-  const redistributed = (b2 - a2.hp) > 0 && (b1 - a1.hp) < 10000;
-  check('ALLY PROTECTION on all-except-self, and it redistributes a hit', placedRight && redistributed, `a1 took ${b1 - a1.hp}, a2 took ${b2 - a2.hp}`);
+  const bv = v.hp, b1 = a1.hp, b2 = a2.hp;
+  dealDamage(a1, 10000, 'direct', makeCombatant({ name: 'Mob', side: 'enemy' }), team);   // 50% of 10000 redirects onto Vergis (placer)
+  const redirectedToPlacer = (bv - v.hp) > 0 && (b1 - a1.hp) < 10000 && (b2 - a2.hp) === 0;
+  check('ALLY PROTECTION on all-except-self, redirect lands on the placer (Vergis)', placedRight && redirectedToPlacer, `vergis took ${bv - v.hp}, a1 took ${b1 - a1.hp}, a2 took ${b2 - a2.hp}`);
 }
 // 7 — STEAL_BUFF: Ezio A3 steals the target's buffs onto himself
 {

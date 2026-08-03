@@ -116,6 +116,8 @@ export default async function handler(req, res) {
   const aliasChampIds = [...new Set((aliasRows ?? [])
     .filter(a => ownedNorm.has(normalizeName(a.alias))).map(a => a.champion_id))];
   const dbById = new Map();
+  // registry-exempt: candidate-widening PREFETCH (not an identity decision) — name→champions.id resolution is
+  // delegated to buildUserChampions below; the name leg only widens the candidate pool. Deduped by id.
   for (const [col, vals] of [['type_id', ownedTypeIds], ['name', ownedNames], ['id', aliasChampIds]]) {
     if (!vals.length) continue;
     const { data, error: cErr } = await service

@@ -1,0 +1,23 @@
+{
+  "id": "spider-donahilvi-artak",
+  "_source": "DonaHilvi's Artak+Ninja Spider team (Iudex Artor -> Artak, keeping Ninja): Michelangelo, Coldheart, Hilve the Rime-called, Ninja, Artak. Stats from Gestal sync a6261acc35588c94 via build-from-sync -> data/observed-builds/donahilvi-spider-artak.json (re-synced 2026-08-02: Artak's real gear now captured — Perception×3/Offense/Speed/Divine-CritRate, HP 19610, ACC 170, SPD 158). NOT golden — runs the recipes to calibrate vs the captured Artak climb. Burning Blood is now FULLY modelled (self MAX-HP destruction -> +DMG/C.DMG/DEF/SPD/RES scaling + A3 self-heal). Remaining gap: the other four champs' sustain gear (Coldheart/Mikey heal 0 vs reality 50k/21k) + swarm over-turn.",
+  "content": { "dungeon": "Spider's Den", "difficulty": "Normal", "stage": 13, "mode": "Full Auto", "speed": "1x" },
+  "result": { "outcome": "UNKNOWN", "_note": "Calibration fixture, not a golden assertion." },
+  "_names": "team = short names -> champKey -> recipe. roster maps to the Gestal export name. Hilvi -> Hilve the Rime-called; Artak -> Artak.",
+  "team": ["Michelangelo", "Coldheart", "Hilvi", "Ninja", "Artak"],
+  "roster": {
+    "Michelangelo": "Michelangelo",
+    "Coldheart": "Coldheart",
+    "Hilvi": "Hilve the Rime-called",
+    "Ninja": "Ninja",
+    "Artak": "Artak"
+  },
+  "inputs": {
+    "_status": "RUNTIME — Gestal sync (DonaHilvi) via build-from-sync.",
+    "Michelangelo": { "build": "data/observed-builds/donahilvi-spider-artak.json" },
+    "Coldheart": { "build": "data/observed-builds/donahilvi-spider-artak.json" },
+    "Hilvi": { "build": "data/observed-builds/donahilvi-spider-artak.json" },
+    "Ninja": { "build": "data/observed-builds/donahilvi-spider-artak.json" },
+    "Artak": { "build": "data/observed-builds/donahilvi-spider-artak.json" }
+  }
+}

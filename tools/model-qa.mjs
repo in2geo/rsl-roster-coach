@@ -21,6 +21,7 @@ const HAS_DB = !!process.env.SUPABASE_URL;
 const RUNGS = [
   { file: 'model-mutants.mjs',      name: 'teeth (mutation)',        layer: 'meta', db: false },
   { file: 'model-ops-consistency.mjs', name: 'op registry↔interpreter', layer: '1', db: false },
+  { file: 'check-champion-identity.mjs', name: 'champion-identity (one protocol, no raw-name lookups)', layer: '1', db: false },
   // the GAME-MAGNITUDE ANCHOR (P2): engine leaf formulas — landChance / defMitigation / affinity —
   // vs Raid's published tables. The only rung that pins the sim to the REAL GAME's numbers rather than
   // to the Model's own output; it BLOCKS (a magnitude regression is a spec violation, not a reality gap).
@@ -53,7 +54,7 @@ function run(file) {
   return { code: r.status, json, red: !!(r.error || r.status !== 0), stdout: r.stdout };
 }
 
-const ledger = { spec_violation: [], unimplemented: [], missing_data: [], not_scored: [] };
+const ledger = { spec_violation: [], high_impact_deferrals: [], unimplemented: [], missing_data: [], not_scored: [] };
 const scorecard = [];
 
 for (const rg of RUNGS) {
@@ -73,10 +74,26 @@ for (const rg of RUNGS) {
   if (res.json?.review) for (const r of res.json.review) ledger.spec_violation.push(`coverage REVIEW: ${r}`);
 }
 
-// unimplemented catalog = every deferred card clause across the authored recipes (the known-missing list)
-let deferredCount = 0;
-for (const r of Object.values(RECIPES)) for (const d of (r.deferred || [])) { deferredCount++; }
+// unimplemented catalog = every deferred card clause across the authored recipes (the known-missing list).
+// HIGH-IMPACT split (2026-07-31): a deferred DAMAGE or SURVIVAL clause silently UNDER-MODELS a champion — it
+// changes battle OUTCOMES, unlike a cosmetic deferral. A green fidelity/ops/no-inert rung does NOT mean a
+// champion is COMPLETE; these are the deferrals that will make the sim wrong (too pessimistic) until built,
+// and reality-calibration is the only cross-check. Surface them per-champion so they can't hide in a lump count.
+const DMG_RE  = /\b(damage|HP ?Burn|Poison|max ?HP|ignore.{0,8}DEF|Decrease ?DEF|Debuff Spread|Leech|crit|C\.?DMG|escalat|explosion|activat|extra hit|bonus)/i;
+const SURV_RE = /(Shield|Revive|Evade|Block Damage|heal|Ally Protection|Taunt|Continuous Heal|Counterattack|Reflect|Unkillable|fills?\b.*Turn Meter|Turn Meter.*fill)/i;
+let deferredCount = 0; const highImpact = {};
+for (const r of Object.values(RECIPES)) for (const d of (r.deferred || [])) {
+  deferredCount++;
+  if (/ACCEPTED/i.test(d)) continue;                          // a declared-accepted no-op, not an outcome gap
+  const dmg = DMG_RE.test(d), surv = SURV_RE.test(d);
+  if (!dmg && !surv) continue;                                // cosmetic / bookkeeping deferral — stays in the lump count
+  const tag = dmg && surv ? 'DMG+SURV' : dmg ? 'DMG' : 'SURV';
+  (highImpact[r.champion] ??= []).push(`[${tag}] ${d}`);
+}
 ledger.unimplemented.push(`${deferredCount} deferred card clauses across ${Object.keys(RECIPES).length} recipes (see PHASE_II_EFFECT_INVENTORY.md / each recipe's deferred[])`);
+const hiCount = Object.values(highImpact).reduce((s, a) => s + a.length, 0);
+for (const [champ, clauses] of Object.entries(highImpact)) for (const c of clauses) ledger.high_impact_deferrals.push(`${champ}: ${c}`);
+if (hiCount) ledger.high_impact_deferrals.unshift(`⚠ ${hiCount} DAMAGE/SURVIVAL clause(s) deferred across ${Object.keys(highImpact).length} champion(s) — these UNDER-MODEL those champions (sim runs too pessimistic) until built:`);
 ledger.not_scored.push('protocol layers 7–10 (reality / outcome / adversarial / calibration) — Simulator-side, not the Model');
 
 // ── report ───────────────────────────────────────────────────────────────────
@@ -91,9 +108,10 @@ const blocks = ledger.spec_violation.length;
 console.log(`\n  VERDICT: ${blocks ? '⛔ BLOCKED — ' + blocks + ' spec violation(s)' : '✅ SPEC-CONFORMANT (only spec_violations block; Model is incomplete-by-design)'}`);
 for (const [bucket, items] of Object.entries(ledger)) {
   if (!items.length) continue;
-  console.log(`\n  ${bucket}${bucket === 'spec_violation' ? ' — BLOCKS' : ''}:`);
-  for (const it of items.slice(0, 8)) console.log(`    - ${it}`);
-  if (items.length > 8) console.log(`    … +${items.length - 8} more`);
+  console.log(`\n  ${bucket}${bucket === 'spec_violation' ? ' — BLOCKS' : bucket === 'high_impact_deferrals' ? ' — under-model (does not block, but the sim runs pessimistic here)' : ''}:`);
+  const cap = bucket === 'high_impact_deferrals' ? 40 : 8;   // show ALL outcome-moving deferrals, not a lump
+  for (const it of items.slice(0, cap)) console.log(`    - ${it}`);
+  if (items.length > cap) console.log(`    … +${items.length - cap} more`);
 }
 const passCount = scorecard.filter(s => s.status === 'green').length;
 const failCount = scorecard.filter(s => String(s.status).startsWith('RED')).length;   // total rungs failing (spec_violation subset = `blocks`)

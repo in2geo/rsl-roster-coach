@@ -22,6 +22,7 @@
 // mistaken for a measurement.
 import fs from 'fs';
 import { effectiveStats } from '../lib/effective-stats.js';
+import { loadNameResolverRest, normalizeName } from '../lib/champion-names.js';
 
 const PCTL = Number(process.env.PCTL ?? 0.25);   // 0.25 = "what was sufficient", not "what was typical"
 
@@ -31,14 +32,13 @@ for (const l of fs.readFileSync('.env.local', 'utf8').split(/\r?\n/)) {
 }
 const H = { apikey: env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}` };
 const rest = async p => { const r = await fetch(`${env.SUPABASE_URL}/rest/v1/${p}`, { headers: H }); return r.ok ? r.json() : []; };
-const norm = s => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const norm = normalizeName;   // THE canonical champion-name normalizer (lib/champion-names.js)
 
 const champs = await rest('champions?select=id,name,role,base_hp,base_atk,base_def,base_spd,base_acc,base_res,base_crit_rate,base_crit_dmg,champion_tags(status,tags(name,is_debuff,bypasses_accuracy_check))&game_id=eq.raid_shadow_legends&limit=2000');
-const aliases = await rest('champion_aliases?select=alias,champion_id&limit=2000');
-const idToName = Object.fromEntries(champs.map(c => [c.id, c.name]));
-const nameKey = {}; for (const c of champs) nameKey[norm(c.name)] = c.name;
-for (const a of aliases) if (idToName[a.champion_id]) nameKey[norm(a.alias)] = idToName[a.champion_id];
-const byName = Object.fromEntries(champs.map(c => [norm(c.name), c]));
+// THE alias-aware name registry (champions.name + champion_aliases): resolve any name/alias → id,
+// then key champion metadata by that id — no hand-rolled norm→champion map. See lib/champion-names.js.
+const resolver = await loadNameResolverRest(rest);
+const byId = new Map(champs.map(c => [c.id, c]));
 
 const DOT = new Set(['Poison', 'HP Burn', 'Necrosis', 'Enemy Max HP Damage']);
 const typeOf = (c, st) => {
@@ -76,9 +76,10 @@ for (const b of battles) {
   const band = BANDS.find(x => st >= x.lo && st <= x.hi); if (!band) continue;
   const acctStats = statsByAcct[b.displayName]; if (!acctStats) continue;
   for (const h of b.heroes) {
-    const canon = nameKey[norm(h.name)] ?? h.name;
+    const hit = resolver.resolve(h.name);
+    const canon = hit?.name ?? h.name;
     const rec = acctStats[norm(h.name)] ?? acctStats[norm(canon)];
-    const meta = byName[norm(canon)];
+    const meta = hit ? byId.get(hit.id) : null;
     if (!rec || !meta) continue;
     const e = rec.eff, type = typeOf(meta, e);
     const bucket = ((acc[band.tier] ??= {})[type] ??= { _who: new Set() });

@@ -124,9 +124,18 @@ async function buildFight(seed) {
       maxHp: s.hp, atk: s.atk, def: s.def, spd: s.spd, acc: s.acc, res: s.res,
       critRate: s.crit_rate, critDmg: s.crit_dmg, affinity: b.affinity ?? cat?.affinity,
       lifesteal: gearLifesteal(b.gear_sets),
-      bossMastery: MASTERY === 'offense' && isDamageDealer(cat),
+      // 'off' = nobody; 'offense' = GENERALIZATION (assume every damage-dealer carries a boss mastery);
+      // 'real' = the per-account TRUTH from Gestal masteryIds (build.has_boss_mastery, via build-from-sync).
+      bossMastery: MASTERY === 'offense' ? isDamageDealer(cat)
+        : MASTERY === 'real' ? !!b.has_boss_mastery
+        : false,
       skills: readSkillKit(cat?.champion_skills ?? []) });
   });
+
+  // Account-level battle layers (leader aura + Arena), applied only when the fixture declares them so
+  // existing Dragon fixtures (e.g. DonBambus, no battle_layers) are unchanged. The Spider path above
+  // already calls applyBattleLayers with defaults; the Dragon path historically did not.
+  if (g.battle_layers) applyBattleLayers(allies, g.battle_layers);
 
   const content = makeDragonContent({ stageNumber: stage, purpleBarHp: 0.20 * boss.maxHp, waves, boss });
   const state = makeState({ allies, enemies: [], seed });
@@ -139,6 +148,7 @@ async function buildFight(seed) {
 // buildBattle may use canonical DB names; the Dragon path uses roster names), seeded on the first build.
 const deaths = {};
 const turns = [], survivorsArr = []; let wins = 0;
+const reviveTotals = [], reviveWin = [], reviveLoss = []; const reviveBy = {};   // revive census
 
 for (let seed = 1; seed <= N; seed++) {
   const { state, content, allies } = await buildFight(seed);
@@ -150,8 +160,13 @@ for (let seed = 1; seed <= N; seed++) {
   turns.push(res.turns);
   survivorsArr.push(res.survivors.length);
   for (const a of allies) if (!a.alive) deaths[a.name].push(a.diedOnTurn ?? res.turns);
+  const revs = res.revives ?? [];
+  reviveTotals.push(revs.length);
+  (res.won ? reviveWin : reviveLoss).push(revs.length);
+  for (const r of revs) reviveBy[r.by] = (reviveBy[r.by] || 0) + 1;
 }
 const teamNames = Object.keys(deaths);
+const mean = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
 
 // ── stats ──────────────────────────────────────────────────────────────────────
 const pct = (arr, q) => { if (!arr.length) return null; const s = [...arr].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(q * s.length))]; };
@@ -167,6 +182,11 @@ for (const n of teamNames) {
   const d = deaths[n]; const rate = d.length / N;
   console.log(`    ${n.padEnd(20)} dies ${(rate * 100).toFixed(0).padStart(3)}% of runs` + (d.length ? `  ·  median death turn ${median(d)}` : ''));
 }
+
+console.log(`\n  REVIVE census (how many revives fire per fight):`);
+console.log(`    avg ${mean(reviveTotals).toFixed(2)}/fight  ·  median ${median(reviveTotals)}  ·  max ${Math.max(0, ...reviveTotals)}  ·  in WINS ${mean(reviveWin).toFixed(2)} / in LOSSES ${mean(reviveLoss).toFixed(2)}`);
+for (const [who, n] of Object.entries(reviveBy).sort((a, b) => b[1] - a[1])) console.log(`    ${who.padEnd(20)} cast ${(n / N).toFixed(2)} revives/fight (${n} over ${N})`);
+if (!Object.keys(reviveBy).length) console.log(`    (no revives fired)`);
 
 // ── reality anchors from the golden record ──────────────────────────────────────
 console.log(`\n  REALITY (golden ${g.id}): ${g.result.outcome} in ${g.result.turns}t, ${g.result.survivors}/${g.team.length} survived.`);

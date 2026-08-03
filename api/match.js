@@ -1,6 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { matchRoster }         from '../lib/match-engine.js';
 import { generateExplanation } from '../lib/explain.js';
+import { buildNameResolver }   from '../lib/champion-names.js';   // resolve manual champion names → champions.id (the one registry)
+
+// Fields the match engine's mapRoster() reads off each champion row (mirrors the new-flow user_champion shape).
+const MANUAL_CHAMPION_SELECT =
+  'id, name, rarity, role, faction, affinity, base_hp, base_atk, base_def, base_spd, ' +
+  'champion_tags(status, ascension_required, tags(name)), champion_skills(slot, skill_name, skill_summary)';
 
 const supabase = createClient(
   (process.env.SUPABASE_URL ?? '').replace(/\/rest\/v1\/?$/, ''),
@@ -140,9 +146,30 @@ export default async function handler(req, res) {
     return json(res, 400, { error: 'champions array is required' });
   }
 
-  const roster = champions
+  const named = champions
     .map(c => ({ name: String(c.name || '').trim(), level: Number(c.level) || 1, stars: Number(c.stars) || 1 }))
     .filter(c => c.name);
+
+  if (!named.length) return json(res, 400, { error: 'No valid champion names provided' });
+
+  // Resolve the manual NAMES → champions.id via the ONE registry, then fetch the full rows and attach them as
+  // `.champion` — so this legacy path feeds the engine the same id-keyed shape the new roster flow does
+  // (mapRoster reads uc.champion). An unresolved name surfaces (never silently dropped into a broken match).
+  const [{ data: idRows }, { data: aliasRows }] = await Promise.all([
+    supabase.from('champions').select('id, name').eq('game_id', 'raid_shadow_legends'),
+    supabase.from('champion_aliases').select('alias, champion_id').eq('game_id', 'raid_shadow_legends'),
+  ]);
+  const resolver = buildNameResolver(idRows ?? [], aliasRows ?? []);
+  const resolved = named.map(c => ({ ...c, id: resolver.resolve(c.name)?.id }));
+  const unresolved = resolved.filter(c => !c.id).map(c => c.name);
+  if (unresolved.length) console.warn('match (manual): unresolved champion names', unresolved);
+  const wantedIds = resolved.filter(c => c.id).map(c => c.id);
+  if (!wantedIds.length) return json(res, 400, { error: `No champions recognized: ${named.map(c => c.name).join(', ')}` });
+  const { data: champRows } = await supabase.from('champions').select(MANUAL_CHAMPION_SELECT).in('id', wantedIds);
+  const byId = new Map((champRows ?? []).map(r => [r.id, r]));
+  const roster = resolved
+    .filter(c => c.id && byId.get(c.id))
+    .map(c => ({ champion: byId.get(c.id), level: c.level, stars: c.stars }));
 
   if (!roster.length) return json(res, 400, { error: 'No valid champion names provided' });
 

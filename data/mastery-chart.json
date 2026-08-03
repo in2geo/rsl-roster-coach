@@ -1,0 +1,83 @@
+{
+ "_readme": "Sim masteries ON/OFF vs reality per fixture — calibration signal for the app's mastery generalization. Appended by tools/sim-mastery-chart.mjs. Each snapshot: {date, N, rows:[{fixture, reality:{wr,medTurns,n}, brackets:{off,offense}:{winRate,turnsMedian}}]}.",
+ "snapshots": [
+  {
+   "date": "2026-08-02",
+   "N": 100,
+   "rows": [
+    {
+     "fixture": "dragon-donahilvi-pool-current",
+     "stage": 16,
+     "account": "DonaHilvi",
+     "reality": {
+      "n": 10,
+      "wr": 0.9,
+      "medTurns": 104
+     },
+     "brackets": {
+      "off": {
+       "winRate": 0.95,
+       "turnsMedian": 184
+      },
+      "offense": {
+       "winRate": 0.94,
+       "turnsMedian": 118
+      },
+      "real": {
+       "winRate": 0.94,
+       "turnsMedian": 155
+      }
+     }
+    },
+    {
+     "fixture": "dragon16-donbambus-current",
+     "stage": 16,
+     "account": "Don$Bambus",
+     "reality": {
+      "n": 0,
+      "wr": null,
+      "medTurns": null
+     },
+     "brackets": {
+      "off": {
+       "winRate": 1,
+       "turnsMedian": 285
+      },
+      "offense": {
+       "winRate": 1,
+       "turnsMedian": 170
+      },
+      "real": {
+       "winRate": 1,
+       "turnsMedian": 285
+      }
+     }
+    },
+    {
+     "fixture": "dragon17-donbambus-current",
+     "stage": 17,
+     "account": "Don$Bambus",
+     "reality": {
+      "n": 0,
+      "wr": null,
+      "medTurns": null
+     },
+     "brackets": {
+      "off": {
+       "winRate": 0.55,
+       "turnsMedian": 397
+      },
+      "offense": {
+       "winRate": 1,
+       "turnsMedian": 250
+      },
+      "real": {
+       "winRate": 0.55,
+       "turnsMedian": 397
+      }
+     }
+    }
+   ]
+  }
+ ]
+}

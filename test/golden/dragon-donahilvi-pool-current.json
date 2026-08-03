@@ -1,0 +1,46 @@
+{
+  "id": "dragon-donahilvi-pool-current",
+  "_source": "RUNTIME calibration fixture (NOT golden). DonaHilvi Dragon's Lair pool team: Michelangelo (lead, ACC aura) / Coldheart / Hilve the Rime-called / Ninja / Iudex Artor. Stats from the fresh Gestal sync a6261acc35588c94 (syncedAt 2026-08-02T15:44) via build-from-sync -> data/observed-builds/donahilvi-dragon-pool.json. Built 2026-08-02 to answer 'what does the sim say for Dragon-16' vs the captured reality (6W/1L).",
+  "content": { "dungeon": "Dragon's Lair", "difficulty": "Normal", "stage": 16, "mode": "Full Auto", "speed": "1x" },
+  "result": {
+    "outcome": "WIN",
+    "turns": 104,
+    "survivors": 2,
+    "winRate": 0.92,
+    "_note": "Reality for THIS pool team (Mikey/Ninja/Hilvi/Artor/Coldheart) = HIGH but NOT 100%: captured 11W/1L at St16 (~92%, median 104t as of 2026-08-02). Wins 96/101/104/108/109/113t; the 1 loss (2026-08-02) dealt 1,179,351 = ~96% of the ~1,226,226 kill threshold — wiped ~47K short. (Separately, a DIFFERENT Ezio+Xenomorph team also has a St16 loss — don't fold that in.) Wins are CLOSE (Mike first-party): typically ~2/5 alive at victory (carries Ninja+Mikey survive; supports Hilvi/Artor/Coldheart end very low or DEAD via the revive chain). Team-total dealt converges on ~1,226,226 (boss effective EHP). A faithful sim should land ~high-80s WR, fragile: frequent support deaths, ~2/5 survivors — NOT a 5/5 clear, NOT 100%."
+  },
+  "reality_notes": "POOL TEAM 5W/1L ≈ 83% at St16 (the loss dealt ~1.179M = 96% of the ~1.226M kill threshold — died just short). Wins 96-113t (median ~104); ~2/5 survive (carries live, supports low/dead). NOTE the in-game stat screen bakes in Arena (+6% base HP/ATK/DEF, measured); build-from-sync omits it, so battle_layers re-adds it below.",
+  "timeline": [
+    { "turn": 25,  "phase": "wave 1 → wave 2", "obs": "wave 1 dies at turn 25 (Mike first-party 2026-08-02)", "confidence": "high" },
+    { "turn": 50,  "phase": "wave 2 → boss",   "obs": "wave 2 dies at turn 50 (25t per wave)", "confidence": "high" },
+    { "turn": 101, "phase": "boss",            "obs": "boss dies at turn 101 → boss phase = 51 turns; total fight 101t", "confidence": "high" }
+  ],
+  "_phase_reality_vs_sim": "REALITY 25/25/51 (wave1/wave2/boss durations, total 101t) vs SIM masteries-off 36/42/106 (total 184t). Sim is slow in EVERY phase but worst on the BOSS: 106t vs 51t = 2.08× (waves 1.44×/1.68×). Boss deals the SAME 727k either way with ZERO self-heal — pure throughput deficit. Dominant cause = boss-damage MASTERIES off (Warmaster on waves + Giant Slayer on boss; masteries-on montecarlo = 118t total, near reality) + Ninja carry under-modeled. The extra boss turns are what give Coldheart 3-4 %maxHP A3 shots (reality 1-2).",
+  "battle_layers": {
+    "_note": "Applied by sim-montecarlo's Dragon path (and any layer-aware run). auraSpdPct 0 = Michelangelo is an ACC leader, no SPD aura. accAura 70 = Michelangelo 'Increase ally ACC in All Battles' +70 (champion_auras, verified). arenaPct 0.06 = measured account HP/ATK/DEF account-bonus (screen vs base+gear = +6.0% of base on HP/ATK/DEF, nothing on RES/ACC/C.DMG → Arena; Great Hall ~0 on these affinities).",
+    "auraSpdPct": 0,
+    "accAura": 70,
+    "arenaPct": 0.06
+  },
+  "_names": "team = short names -> roster maps to the Gestal/canonical name (keys the build file + resolves via lib/champion-names.js). Iudex -> Iudex Artor.",
+  "team": ["Michelangelo", "Ninja", "Hilvi", "Artor", "Coldheart"],
+  "roster": {
+    "Michelangelo": "Michelangelo",
+    "Ninja": "Ninja",
+    "Hilvi": "Hilve the Rime-called",
+    "Artor": "Iudex Artor",
+    "Coldheart": "Coldheart"
+  },
+  "inputs": {
+    "_status": "RUNTIME — Gestal sync (DonaHilvi) via build-from-sync, fresh 15:44 snapshot.",
+    "Michelangelo": { "build": "data/observed-builds/donahilvi-dragon-pool.json" },
+    "Ninja": { "build": "data/observed-builds/donahilvi-dragon-pool.json" },
+    "Hilvi": { "build": "data/observed-builds/donahilvi-dragon-pool.json" },
+    "Artor": { "build": "data/observed-builds/donahilvi-dragon-pool.json" },
+    "Coldheart": { "build": "data/observed-builds/donahilvi-dragon-pool.json" }
+  },
+  "qa_notes": [
+    "Calibration fixture for the DonaHilvi Dragon-16 pool team — NOT a golden assertion.",
+    "Dragon montecarlo path uses raw geared stats (no leader aura / arena layer) and the DB skill-kits + AI order (not the Spider recipes). Michelangelo's ACC aura and the account Arena/Great-Hall bonuses are NOT modeled here — a known gap when comparing to reality."
+  ]
+}

@@ -1,0 +1,1111 @@
+{
+ "_source": "RAID_All_Masteries_and_Effects.xlsx (Verified 2026-08-02) via tools/build-masteries-data.mjs",
+ "_decode": "masteryId = 500<branch><tier><node>; tiers 2-6 node=spreadsheet position, tier 1 node=position+1. Confirmed via Ninja in-game screenshots 2026-08-02.",
+ "_mech_note": "mech.sim: stat=already in bonusesV2 (do not re-add) · damage_mult/ignore_def_proc/boss_bonus_damage=modelled in lib/sim/engine.js · deferred=visible, not yet modelled.",
+ "_count": 66,
+ "masteries": [
+  {
+   "id": 500112,
+   "branch": "Offense",
+   "tier": 1,
+   "node": 2,
+   "position": 1,
+   "name": "Blade Disciple",
+   "scroll_cost": "5 Basic",
+   "effect": "ATK +75.",
+   "effect_type": "Passive stat",
+   "trigger": "Always active",
+   "mech": {
+    "sim": "stat",
+    "stat": "atk",
+    "value": 75,
+    "note": "already applied via Gestal bonusesV2.mastery — sim must not re-add"
+   }
+  },
+  {
+   "id": 500113,
+   "branch": "Offense",
+   "tier": 1,
+   "node": 3,
+   "position": 2,
+   "name": "Deadly Precision",
+   "scroll_cost": "5 Basic",
+   "effect": "C. RATE +5%.",
+   "effect_type": "Passive stat",
+   "trigger": "Always active",
+   "mech": {
+    "sim": "stat",
+    "stat": "crit_rate",
+    "value": 5,
+    "note": "already applied via Gestal bonusesV2.mastery — sim must not re-add"
+   }
+  },
+  {
+   "id": 500121,
+   "branch": "Offense",
+   "tier": 2,
+   "node": 1,
+   "position": 1,
+   "name": "Heart of Glory",
+   "scroll_cost": "30 Basic",
+   "effect": "Damage inflicted +5% while the attacker is at full HP.",
+   "effect_type": "Damage modifier",
+   "trigger": "Requires 100% current HP",
+   "mech": {
+    "sim": "damage_mult",
+    "value": 0.05,
+    "when": "self_full_hp"
+   }
+  },
+  {
+   "id": 500122,
+   "branch": "Offense",
+   "tier": 2,
+   "node": 2,
+   "position": 2,
+   "name": "Keen Strike",
+   "scroll_cost": "30 Basic",
+   "effect": "C. DMG +10%.",
+   "effect_type": "Passive stat",
+   "trigger": "Always active",
+   "mech": {
+    "sim": "stat",
+    "stat": "crit_dmg",
+    "value": 10,
+    "note": "already applied via Gestal bonusesV2.mastery — sim must not re-add"
+   }
+  },
+  {
+   "id": 500123,
+   "branch": "Offense",
+   "tier": 2,
+   "node": 3,
+   "position": 3,
+   "name": "Shield Breaker",
+   "scroll_cost": "30 Basic",
+   "effect": "Damage inflicted to targets under Shield buffs +25%.",
+   "effect_type": "Damage modifier",
+   "trigger": "Target must have Shield",
+   "mech": {
+    "sim": "damage_mult",
+    "value": 0.25,
+    "when": "target_under_shield"
+   }
+  },
+  {
+   "id": 500124,
+   "branch": "Offense",
+   "tier": 2,
+   "node": 4,
+   "position": 4,
+   "name": "Grim Resolve",
+   "scroll_cost": "30 Basic",
+   "effect": "Damage inflicted +5% while the attacker is at 50% HP or below.",
+   "effect_type": "Damage modifier",
+   "trigger": "Requires current HP <=50%",
+   "mech": {
+    "sim": "damage_mult",
+    "value": 0.05,
+    "when": "self_hp_le_50"
+   }
+  },
+  {
+   "id": 500131,
+   "branch": "Offense",
+   "tier": 3,
+   "node": 1,
+   "position": 1,
+   "name": "Single Out",
+   "scroll_cost": "80 Advanced",
+   "effect": "Damage inflicted to targets below 40% HP +8%.",
+   "effect_type": "Damage modifier",
+   "trigger": "Target current HP <40%",
+   "mech": {
+    "sim": "damage_mult",
+    "value": 0.08,
+    "when": "target_hp_lt_40"
+   }
+  },
+  {
+   "id": 500132,
+   "branch": "Offense",
+   "tier": 3,
+   "node": 2,
+   "position": 2,
+   "name": "Life Drinker",
+   "scroll_cost": "80 Advanced",
+   "effect": "Heals the attacker for 5% of damage inflicted while the attacker is at 50% HP or below.",
+   "effect_type": "Self-heal",
+   "trigger": "Requires current HP <=50%",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500133,
+   "branch": "Offense",
+   "tier": 3,
+   "node": 3,
+   "position": 3,
+   "name": "Whirlwind of Death",
+   "scroll_cost": "80 Advanced",
+   "effect": "SPD +6 per enemy killed by this Champion; carries across rounds and stacks to +18 SPD.",
+   "effect_type": "Stacking stat",
+   "trigger": "Maximum 3 stacks per battle",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500134,
+   "branch": "Offense",
+   "tier": 3,
+   "node": 4,
+   "position": 4,
+   "name": "Ruthless Ambush",
+   "scroll_cost": "80 Advanced",
+   "effect": "Damage inflicted by the first hit against each enemy +8%.",
+   "effect_type": "Damage modifier",
+   "trigger": "Once per enemy",
+   "mech": {
+    "sim": "damage_mult",
+    "value": 0.08,
+    "when": "first_hit_vs_enemy"
+   }
+  },
+  {
+   "id": 500141,
+   "branch": "Offense",
+   "tier": 4,
+   "node": 1,
+   "position": 1,
+   "name": "Bring It Down",
+   "scroll_cost": "120 Advanced",
+   "effect": "Damage inflicted +6% when the target has higher MAX HP than the attacker.",
+   "effect_type": "Damage modifier",
+   "trigger": "Compare attacker and target MAX HP",
+   "mech": {
+    "sim": "damage_mult",
+    "value": 0.06,
+    "when": "target_higher_maxhp"
+   }
+  },
+  {
+   "id": 500142,
+   "branch": "Offense",
+   "tier": 4,
+   "node": 2,
+   "position": 2,
+   "name": "Wrath of the Slain",
+   "scroll_cost": "120 Advanced",
+   "effect": "Damage inflicted +5% per dead ally; stacks to +10%.",
+   "effect_type": "Damage modifier",
+   "trigger": "Maximum 2 dead-allied stacks",
+   "mech": {
+    "sim": "damage_mult",
+    "value": 0.05,
+    "when": "per_dead_ally",
+    "cap": 0.1
+   }
+  },
+  {
+   "id": 500143,
+   "branch": "Offense",
+   "tier": 4,
+   "node": 3,
+   "position": 3,
+   "name": "Cycle of Violence",
+   "scroll_cost": "120 Advanced",
+   "effect": "30% chance to reduce a random skill cooldown by 1 turn when one skill deals more than 30% of a target's MAX HP.",
+   "effect_type": "Cooldown reduction",
+   "trigger": "Once per turn",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500144,
+   "branch": "Offense",
+   "tier": 4,
+   "node": 4,
+   "position": 4,
+   "name": "Opportunist",
+   "scroll_cost": "120 Advanced",
+   "effect": "Damage inflicted to targets under Stun, Sleep, Fear, True Fear, or Freeze +12%.",
+   "effect_type": "Damage modifier",
+   "trigger": "Listed control debuff required",
+   "mech": {
+    "sim": "damage_mult",
+    "value": 0.12,
+    "when": "target_under_control"
+   }
+  },
+  {
+   "id": 500151,
+   "branch": "Offense",
+   "tier": 5,
+   "node": 1,
+   "position": 1,
+   "name": "Methodical",
+   "scroll_cost": "200 Divine",
+   "effect": "Default-skill damage +2% each time it is used; carries across rounds and stacks to +10%.",
+   "effect_type": "Stacking damage",
+   "trigger": "Maximum 5 stacks per battle",
+   "mech": {
+    "sim": "damage_mult",
+    "value": 0.02,
+    "when": "per_default_use",
+    "cap": 0.1,
+    "defaultSkillOnly": true
+   }
+  },
+  {
+   "id": 500152,
+   "branch": "Offense",
+   "tier": 5,
+   "node": 2,
+   "position": 2,
+   "name": "Kill Streak",
+   "scroll_cost": "200 Divine",
+   "effect": "Per enemy killed by this Champion: damage +6% in Arena or +3% elsewhere; carries across rounds and caps at +12%.",
+   "effect_type": "Stacking damage",
+   "trigger": "Arena: max 2 stacks; elsewhere: max 4",
+   "mech": {
+    "sim": "damage_mult",
+    "value": 0.03,
+    "when": "per_kill",
+    "cap": 0.12
+   }
+  },
+  {
+   "id": 500153,
+   "branch": "Offense",
+   "tier": 5,
+   "node": 3,
+   "position": 3,
+   "name": "Blood Shield",
+   "scroll_cost": "200 Divine",
+   "effect": "After this Champion kills an enemy, places a 1-turn Shield on self equal to 15% of own MAX HP.",
+   "effect_type": "Self-buff",
+   "trigger": "Once per turn",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500154,
+   "branch": "Offense",
+   "tier": 5,
+   "node": 4,
+   "position": 4,
+   "name": "Stoked to Fury",
+   "scroll_cost": "200 Divine",
+   "effect": "Damage inflicted +4% per debuff on this Champion; stacks to +12%.",
+   "effect_type": "Damage modifier",
+   "trigger": "Maximum 3 debuffs counted",
+   "mech": {
+    "sim": "damage_mult",
+    "value": 0.04,
+    "when": "per_self_debuff",
+    "cap": 0.12
+   }
+  },
+  {
+   "id": 500161,
+   "branch": "Offense",
+   "tier": 6,
+   "node": 1,
+   "position": 1,
+   "name": "Warmaster",
+   "scroll_cost": "350 Divine",
+   "effect": "Each attack has a 60% chance to inflict bonus damage: 10% of a Champion target's MAX HP or 4% of a Boss target's MAX HP.",
+   "effect_type": "Bonus damage",
+   "trigger": "Once per skill; not an extra hit; boss damage may be capped by encounter rules",
+   "mech": {
+    "sim": "boss_bonus_damage",
+    "chance": 0.6,
+    "championMaxHp": 0.1,
+    "bossMaxHp": 0.04,
+    "per": "skill"
+   }
+  },
+  {
+   "id": 500162,
+   "branch": "Offense",
+   "tier": 6,
+   "node": 2,
+   "position": 2,
+   "name": "Helmsmasher",
+   "scroll_cost": "350 Divine",
+   "effect": "50% chance for attacks to ignore 25% of the target's DEF; additive with skill-based Ignore DEF.",
+   "effect_type": "Ignore DEF",
+   "trigger": "Roll applies when attacking",
+   "mech": {
+    "sim": "ignore_def_proc",
+    "chance": 0.5,
+    "ignore": 0.25
+   }
+  },
+  {
+   "id": 500163,
+   "branch": "Offense",
+   "tier": 6,
+   "node": 3,
+   "position": 3,
+   "name": "Giant Slayer",
+   "scroll_cost": "350 Divine",
+   "effect": "Each hit has a 30% chance to inflict bonus damage: 7.5% of a Champion target's MAX HP or 3% of a Boss target's MAX HP.",
+   "effect_type": "Bonus damage",
+   "trigger": "Can proc per hit; not an extra hit; boss damage may be capped",
+   "mech": {
+    "sim": "boss_bonus_damage",
+    "chance": 0.3,
+    "championMaxHp": 0.075,
+    "bossMaxHp": 0.03,
+    "per": "hit"
+   }
+  },
+  {
+   "id": 500164,
+   "branch": "Offense",
+   "tier": 6,
+   "node": 4,
+   "position": 4,
+   "name": "Flawless Execution",
+   "scroll_cost": "350 Divine",
+   "effect": "C. DMG +20%.",
+   "effect_type": "Passive stat",
+   "trigger": "Always active",
+   "mech": {
+    "sim": "stat",
+    "stat": "crit_dmg",
+    "value": 20,
+    "note": "already applied via Gestal bonusesV2.mastery — sim must not re-add"
+   }
+  },
+  {
+   "id": 500212,
+   "branch": "Defense",
+   "tier": 1,
+   "node": 2,
+   "position": 1,
+   "name": "Tough Skin",
+   "scroll_cost": "5 Basic",
+   "effect": "DEF +75.",
+   "effect_type": "Passive stat",
+   "trigger": "Always active",
+   "mech": {
+    "sim": "stat",
+    "stat": "def",
+    "value": 75,
+    "note": "already applied via Gestal bonusesV2.mastery — sim must not re-add"
+   }
+  },
+  {
+   "id": 500213,
+   "branch": "Defense",
+   "tier": 1,
+   "node": 3,
+   "position": 2,
+   "name": "Defiant",
+   "scroll_cost": "5 Basic",
+   "effect": "RES +10.",
+   "effect_type": "Passive stat",
+   "trigger": "Always active",
+   "mech": {
+    "sim": "stat",
+    "stat": "res",
+    "value": 10,
+    "note": "already applied via Gestal bonusesV2.mastery — sim must not re-add"
+   }
+  },
+  {
+   "id": 500221,
+   "branch": "Defense",
+   "tier": 2,
+   "node": 1,
+   "position": 1,
+   "name": "Blastproof",
+   "scroll_cost": "30 Basic",
+   "effect": "Damage received from AoE attacks -5%.",
+   "effect_type": "Damage reduction",
+   "trigger": "AoE attacks only",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500222,
+   "branch": "Defense",
+   "tier": 2,
+   "node": 2,
+   "position": 2,
+   "name": "Rejuvenation",
+   "scroll_cost": "30 Basic",
+   "effect": "Healing and Shield value received by this Champion +5%.",
+   "effect_type": "Incoming sustain",
+   "trigger": "Applies to received heals and Shields",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500223,
+   "branch": "Defense",
+   "tier": 2,
+   "node": 3,
+   "position": 3,
+   "name": "Mighty Endurance",
+   "scroll_cost": "30 Basic",
+   "effect": "Damage received -10% while under Stun, Sleep, Fear, True Fear, or Freeze.",
+   "effect_type": "Damage reduction",
+   "trigger": "Listed control debuff required",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500224,
+   "branch": "Defense",
+   "tier": 2,
+   "node": 4,
+   "position": 4,
+   "name": "Improved Parry",
+   "scroll_cost": "30 Basic",
+   "effect": "Damage received from critical hits -8%.",
+   "effect_type": "Damage reduction",
+   "trigger": "Critical hits only",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500231,
+   "branch": "Defense",
+   "tier": 3,
+   "node": 1,
+   "position": 1,
+   "name": "Shadow Heal",
+   "scroll_cost": "80 Advanced",
+   "effect": "Heals this Champion by 6% of own MAX HP whenever an enemy is healed.",
+   "effect_type": "Reactive heal",
+   "trigger": "Once per turn",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500232,
+   "branch": "Defense",
+   "tier": 3,
+   "node": 2,
+   "position": 2,
+   "name": "Resurgent",
+   "scroll_cost": "80 Advanced",
+   "effect": "50% chance to remove 1 random debuff from this Champion after losing at least 25% of own MAX HP from one enemy skill.",
+   "effect_type": "Debuff removal",
+   "trigger": "Single enemy skill must meet threshold",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500233,
+   "branch": "Defense",
+   "tier": 3,
+   "node": 3,
+   "position": 3,
+   "name": "Bloodthirst",
+   "scroll_cost": "80 Advanced",
+   "effect": "Heals this Champion by 10% of own MAX HP after killing an enemy.",
+   "effect_type": "Self-heal",
+   "trigger": "1-turn cooldown",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500234,
+   "branch": "Defense",
+   "tier": 3,
+   "node": 4,
+   "position": 4,
+   "name": "Wisdom of Battle",
+   "scroll_cost": "80 Advanced",
+   "effect": "30% chance to place Block Debuffs on self for 1 turn when Stun, Sleep, Fear, True Fear, or Freeze expires.",
+   "effect_type": "Self-buff",
+   "trigger": "Triggers when listed control debuff expires",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500241,
+   "branch": "Defense",
+   "tier": 4,
+   "node": 1,
+   "position": 1,
+   "name": "Solidarity",
+   "scroll_cost": "120 Advanced",
+   "effect": "Allies gain +5 RES for each buff placed on them by this Champion.",
+   "effect_type": "Ally stat modifier",
+   "trigger": "Calculated per buff placed by this Champion",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500242,
+   "branch": "Defense",
+   "tier": 4,
+   "node": 2,
+   "position": 2,
+   "name": "Delay Death",
+   "scroll_cost": "120 Advanced",
+   "effect": "Each hit received from a specific enemy reduces later damage from that enemy by 0.75%; stacks to 6% per enemy.",
+   "effect_type": "Stacking damage reduction",
+   "trigger": "Separate stack per enemy; maximum 8 hits",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500243,
+   "branch": "Defense",
+   "tier": 4,
+   "node": 3,
+   "position": 3,
+   "name": "Harvest Despair",
+   "scroll_cost": "120 Advanced",
+   "effect": "60% chance to place Leech for 1 turn when this Champion places Stun, Sleep, Fear, True Fear, or Freeze.",
+   "effect_type": "Debuff placement",
+   "trigger": "Triggered by placing listed control debuff",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500244,
+   "branch": "Defense",
+   "tier": 4,
+   "node": 4,
+   "position": 4,
+   "name": "Stubbornness",
+   "scroll_cost": "120 Advanced",
+   "effect": "RES +10 per debuff on this Champion; stacks to +30.",
+   "effect_type": "Conditional stat",
+   "trigger": "Maximum 3 debuffs counted",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500251,
+   "branch": "Defense",
+   "tier": 5,
+   "node": 1,
+   "position": 1,
+   "name": "Selfless Defender",
+   "scroll_cost": "200 Divine",
+   "effect": "Reduces damage an ally receives from the first enemy hit of each round by 20%; this Champion receives the redirected damage.",
+   "effect_type": "Damage redirection",
+   "trigger": "First enemy hit per round",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500252,
+   "branch": "Defense",
+   "tier": 5,
+   "node": 2,
+   "position": 2,
+   "name": "Cycle of Revenge",
+   "scroll_cost": "200 Divine",
+   "effect": "50% chance to increase this Champion's Turn Meter by 15% when an ally is critically hit.",
+   "effect_type": "Turn Meter boost",
+   "trigger": "Only once when one skill delivers multiple critical hits",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500253,
+   "branch": "Defense",
+   "tier": 5,
+   "node": 3,
+   "position": 3,
+   "name": "Retribution",
+   "scroll_cost": "200 Divine",
+   "effect": "50% chance to counterattack after this Champion loses at least 25% of own MAX HP from one enemy skill.",
+   "effect_type": "Counterattack",
+   "trigger": "Single enemy skill must meet threshold",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500254,
+   "branch": "Defense",
+   "tier": 5,
+   "node": 4,
+   "position": 4,
+   "name": "Deterrence",
+   "scroll_cost": "200 Divine",
+   "effect": "20% chance to counterattack an enemy when that enemy applies Stun, Sleep, Fear, True Fear, or Freeze to an ally.",
+   "effect_type": "Counterattack",
+   "trigger": "Triggered by listed control debuff on ally",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500261,
+   "branch": "Defense",
+   "tier": 6,
+   "node": 1,
+   "position": 1,
+   "name": "Iron Skin",
+   "scroll_cost": "350 Divine",
+   "effect": "DEF +200.",
+   "effect_type": "Passive stat",
+   "trigger": "Always active",
+   "mech": {
+    "sim": "stat",
+    "stat": "def",
+    "value": 200,
+    "note": "already applied via Gestal bonusesV2.mastery — sim must not re-add"
+   }
+  },
+  {
+   "id": 500262,
+   "branch": "Defense",
+   "tier": 6,
+   "node": 2,
+   "position": 2,
+   "name": "Bulwark",
+   "scroll_cost": "350 Divine",
+   "effect": "All allies receive 5% less damage; this Champion receives the redirected amount.",
+   "effect_type": "Damage redirection",
+   "trigger": "Applies to allies, not the mastery holder's own incoming damage",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500263,
+   "branch": "Defense",
+   "tier": 6,
+   "node": 3,
+   "position": 3,
+   "name": "Fearsome Presence",
+   "scroll_cost": "350 Divine",
+   "effect": "Chance to place Stun, Sleep, Freeze, Fear, True Fear, or Provoke from skills or Artifacts +5%.",
+   "effect_type": "Debuff chance",
+   "trigger": "Listed control debuffs only",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500264,
+   "branch": "Defense",
+   "tier": 6,
+   "node": 4,
+   "position": 4,
+   "name": "Unshakeable",
+   "scroll_cost": "350 Divine",
+   "effect": "RES +50.",
+   "effect_type": "Passive stat",
+   "trigger": "Always active",
+   "mech": {
+    "sim": "stat",
+    "stat": "res",
+    "value": 50,
+    "note": "already applied via Gestal bonusesV2.mastery — sim must not re-add"
+   }
+  },
+  {
+   "id": 500312,
+   "branch": "Support",
+   "tier": 1,
+   "node": 2,
+   "position": 1,
+   "name": "Steadfast",
+   "scroll_cost": "5 Basic",
+   "effect": "MAX HP +810.",
+   "effect_type": "Passive stat",
+   "trigger": "Always active",
+   "mech": {
+    "sim": "stat",
+    "stat": "hp",
+    "value": 810,
+    "note": "already applied via Gestal bonusesV2.mastery — sim must not re-add"
+   }
+  },
+  {
+   "id": 500313,
+   "branch": "Support",
+   "tier": 1,
+   "node": 3,
+   "position": 2,
+   "name": "Pinpoint Accuracy",
+   "scroll_cost": "5 Basic",
+   "effect": "ACC +10.",
+   "effect_type": "Passive stat",
+   "trigger": "Always active",
+   "mech": {
+    "sim": "stat",
+    "stat": "acc",
+    "value": 10,
+    "note": "already applied via Gestal bonusesV2.mastery — sim must not re-add"
+   }
+  },
+  {
+   "id": 500321,
+   "branch": "Support",
+   "tier": 2,
+   "node": 1,
+   "position": 1,
+   "name": "Lay on Hands",
+   "scroll_cost": "30 Basic",
+   "effect": "Healing cast by this Champion +5%.",
+   "effect_type": "Outgoing heal",
+   "trigger": "Heals cast by mastery holder",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500322,
+   "branch": "Support",
+   "tier": 2,
+   "node": 2,
+   "position": 2,
+   "name": "Shieldbearer",
+   "scroll_cost": "30 Basic",
+   "effect": "Shield buffs cast by this Champion +5%.",
+   "effect_type": "Outgoing Shield",
+   "trigger": "Shields cast by mastery holder",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500323,
+   "branch": "Support",
+   "tier": 2,
+   "node": 3,
+   "position": 3,
+   "name": "Exalt in Death",
+   "scroll_cost": "30 Basic",
+   "effect": "Heals this Champion by 10% of own MAX HP the first time an enemy dies in each round.",
+   "effect_type": "Self-heal",
+   "trigger": "Once per round",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500324,
+   "branch": "Support",
+   "tier": 2,
+   "node": 4,
+   "position": 4,
+   "name": "Charged Focus",
+   "scroll_cost": "30 Basic",
+   "effect": "ACC +20 while this Champion has no skills on cooldown.",
+   "effect_type": "Conditional stat",
+   "trigger": "All skills must be off cooldown",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500331,
+   "branch": "Support",
+   "tier": 3,
+   "node": 1,
+   "position": 1,
+   "name": "Healing Savior",
+   "scroll_cost": "80 Advanced",
+   "effect": "Healing and Shield value placed by this Champion +10% when the target ally is at 40% HP or below.",
+   "effect_type": "Outgoing sustain",
+   "trigger": "Target current HP <=40%",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500332,
+   "branch": "Support",
+   "tier": 3,
+   "node": 2,
+   "position": 2,
+   "name": "Rapid Response",
+   "scroll_cost": "80 Advanced",
+   "effect": "30% chance to increase this Champion's Turn Meter by 10% when a buff cast by this Champion is removed or expires.",
+   "effect_type": "Turn Meter boost",
+   "trigger": "Rolls when own cast buff ends",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500333,
+   "branch": "Support",
+   "tier": 3,
+   "node": 3,
+   "position": 3,
+   "name": "Swarm Smiter",
+   "scroll_cost": "80 Advanced",
+   "effect": "ACC +4 per living enemy; stacks to +16.",
+   "effect_type": "Conditional stat",
+   "trigger": "Maximum 4 enemies counted",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500334,
+   "branch": "Support",
+   "tier": 3,
+   "node": 4,
+   "position": 4,
+   "name": "Arcane Celerity",
+   "scroll_cost": "80 Advanced",
+   "effect": "30% chance to increase this Champion's Turn Meter by 10% when a debuff cast by this Champion is removed or expires.",
+   "effect_type": "Turn Meter boost",
+   "trigger": "Rolls when own cast debuff ends",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500341,
+   "branch": "Support",
+   "tier": 4,
+   "node": 1,
+   "position": 1,
+   "name": "Merciful Aid",
+   "scroll_cost": "120 Advanced",
+   "effect": "Healing and Shield value placed by this Champion +15% when the target ally is under Stun, Sleep, Fear, True Fear, or Freeze.",
+   "effect_type": "Outgoing sustain",
+   "trigger": "Listed control debuff required on target",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500342,
+   "branch": "Support",
+   "tier": 4,
+   "node": 2,
+   "position": 2,
+   "name": "Cycle of Magic",
+   "scroll_cost": "120 Advanced",
+   "effect": "5% chance at the start of each turn to reduce a random skill cooldown by 1 turn.",
+   "effect_type": "Cooldown reduction",
+   "trigger": "Once at start of turn",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500343,
+   "branch": "Support",
+   "tier": 4,
+   "node": 3,
+   "position": 3,
+   "name": "Lore of Steel",
+   "scroll_cost": "120 Advanced",
+   "effect": "Basic Artifact Set bonuses +15%, applied multiplicatively. Covers Life, Offense, Defense, Speed, C. RATE, C. DMG, Accuracy, and Resistance sets.",
+   "effect_type": "Set bonus modifier",
+   "trigger": "Only listed basic sets",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500344,
+   "branch": "Support",
+   "tier": 4,
+   "node": 4,
+   "position": 4,
+   "name": "Evil Eye",
+   "scroll_cost": "120 Advanced",
+   "effect": "The first default-skill hit on each target reduces that target's Turn Meter by 20% for single-target skills or 5% for AoE skills.",
+   "effect_type": "Turn Meter reduction",
+   "trigger": "Once per target",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500351,
+   "branch": "Support",
+   "tier": 5,
+   "node": 1,
+   "position": 1,
+   "name": "Lasting Gifts",
+   "scroll_cost": "200 Divine",
+   "effect": "30% chance to extend a buff cast by this Champion by 1 turn.",
+   "effect_type": "Buff extension",
+   "trigger": "Cannot extend Block Damage, Unkillable, or Revive on Death",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500352,
+   "branch": "Support",
+   "tier": 5,
+   "node": 2,
+   "position": 2,
+   "name": "Spirit Haste",
+   "scroll_cost": "200 Divine",
+   "effect": "SPD +8 per dead ally; stacks to +24.",
+   "effect_type": "Conditional stat",
+   "trigger": "Maximum 3 dead allies counted",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500353,
+   "branch": "Support",
+   "tier": 5,
+   "node": 3,
+   "position": 3,
+   "name": "Sniper",
+   "scroll_cost": "200 Divine",
+   "effect": "Chance to place debuffs from skills or Artifacts +5%.",
+   "effect_type": "Debuff chance",
+   "trigger": "Does not affect Stun, Sleep, Freeze, Provoke, Fear, or True Fear",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500354,
+   "branch": "Support",
+   "tier": 5,
+   "node": 4,
+   "position": 4,
+   "name": "Master Hexer",
+   "scroll_cost": "200 Divine",
+   "effect": "30% chance to extend a debuff cast by this Champion by 1 turn.",
+   "effect_type": "Debuff extension",
+   "trigger": "Cannot extend Stun, Sleep, Freeze, Provoke, Bomb, Fear, or True Fear",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500361,
+   "branch": "Support",
+   "tier": 6,
+   "node": 1,
+   "position": 1,
+   "name": "Elixir of Life",
+   "scroll_cost": "350 Divine",
+   "effect": "MAX HP +3,000.",
+   "effect_type": "Passive stat",
+   "trigger": "Always active",
+   "mech": {
+    "sim": "stat",
+    "stat": "hp",
+    "value": 3000,
+    "note": "already applied via Gestal bonusesV2.mastery — sim must not re-add"
+   }
+  },
+  {
+   "id": 500362,
+   "branch": "Support",
+   "tier": 6,
+   "node": 2,
+   "position": 2,
+   "name": "Timely Intervention",
+   "scroll_cost": "350 Divine",
+   "effect": "Increases this Champion's Turn Meter by 20% whenever an ally drops below 25% HP.",
+   "effect_type": "Turn Meter boost",
+   "trigger": "Triggers on threshold crossing",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500363,
+   "branch": "Support",
+   "tier": 6,
+   "node": 3,
+   "position": 3,
+   "name": "Oppressor",
+   "scroll_cost": "350 Divine",
+   "effect": "Turn Meter fill rate +2.5% per active debuff placed by this Champion; stacks to +10%.",
+   "effect_type": "Turn Meter fill rate",
+   "trigger": "Maximum 4 active debuffs counted",
+   "mech": {
+    "sim": "deferred",
+    "note": "real mechanic, not yet modelled — emitted so it is visible"
+   }
+  },
+  {
+   "id": 500364,
+   "branch": "Support",
+   "tier": 6,
+   "node": 4,
+   "position": 4,
+   "name": "Eagle-Eye",
+   "scroll_cost": "350 Divine",
+   "effect": "ACC +50.",
+   "effect_type": "Passive stat",
+   "trigger": "Always active",
+   "mech": {
+    "sim": "stat",
+    "stat": "acc",
+    "value": 50,
+    "note": "already applied via Gestal bonusesV2.mastery — sim must not re-add"
+   }
+  }
+ ]
+}

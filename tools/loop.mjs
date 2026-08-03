@@ -65,7 +65,14 @@ for (let from = 0; ; from += 1000) {
 // name differs from champions.name (e.g. "Thor Faehammer" -> "Thor"). See gestal-context.js.
 // Paged via the shared helper: a plain select is capped at 1000 rows.
 const aliasRows = await gc.fetchAliasRows(rest);
-const aliasToId = new Map((Array.isArray(aliasRows) ? aliasRows : []).map(a => [norm(a.alias), a.champion_id]));
+// THE alias-aware name registry (champions.name + champion_aliases). Every champion-identity key in
+// this file goes through it: champKey(raw) = the resolved champions.id (so "Thor Faehammer", "Thor"
+// and "thor" collapse to one champion), with a namespaced sentinel for names the registry genuinely
+// does not know — so an unknown name can never collide with a real champion's id. A bare norm()
+// silently dropped 8 of 64 captured hero names; see buildRosterIndex in lib/champion-names.js.
+const { loadNameResolverRest } = await import('../lib/champion-names.js');
+const nameResolver = await loadNameResolverRest(rest);
+const champKey = (raw) => nameResolver.resolve(raw)?.id ?? `unresolved:${norm(raw)}`;
 // tag metadata (ACC-gating) for the phase-aware constructor's reliability weighting.
 const tagRows = await rest('tags?select=name,is_debuff,bypasses_accuracy_check');
 const tagMeta = Object.fromEntries((Array.isArray(tagRows) ? tagRows : []).map(t => [t.name, { is_debuff: t.is_debuff, bypasses_accuracy_check: t.bypasses_accuracy_check }]));
@@ -113,7 +120,7 @@ async function recFor(accountId, userChampions, contentKey) {
   try {
     const r = await me.matchRoster(userChampions, contentKey, { account_development: 'fair' });
     rec = { floor: r.stage_number_attempted ?? null, confidence: r.confidence_pct ?? null,
-      verdict: r.verdict ?? null, recNames: new Set((r.team ?? []).map(c => norm(c.name))),
+      verdict: r.verdict ?? null, recNames: new Set((r.team ?? []).map(c => champKey(c.name))),
       recTeam: (r.team ?? []).map(c => c.name) };
   } catch {}
   return (recCache[k] = rec);
@@ -129,14 +136,12 @@ async function mappedRosterFor(accountId) {
   return (mappedCache[accountId] = { userChampions, mapped, snap: j });
 }
 
-// Resolve a captured hero name → the mapped roster champ (direct name, then alias).
+// Resolve a captured hero name → the mapped roster champ, via the registry (name/alias → id).
 function resolveFielded(mapped, heroes) {
-  const byName = new Map(mapped.map(c => [norm(c.name), c]));
-  const byId = new Map(mapped.map(c => [c.id, c]));
+  const byKey = new Map(mapped.map(c => [champKey(c.name), c]));
   const team = [], unresolved = [];
   for (const h of heroes ?? []) {
-    let c = byName.get(norm(h.name));
-    if (!c) { const id = aliasToId.get(norm(h.name)); if (id) c = byId.get(id); }
+    const c = byKey.get(champKey(h.name));
     if (c) team.push(c); else unresolved.push(h.name);
   }
   return { team, unresolved };
@@ -181,7 +186,7 @@ for (const b of (Array.isArray(log) ? log : [])) {
   // EVALUATE — engine's own recommendation (cached per account+content; best-effort).
   const recBase = await recFor(b.accountId, acc.userChampions, contentKey);
   const rec = recBase ? { floor: recBase.floor, confidence: recBase.confidence, verdict: recBase.verdict,
-    team_match: (b.heroes ?? []).filter(h => recBase.recNames.has(norm(h.name))).length } : null;
+    team_match: (b.heroes ?? []).filter(h => recBase.recNames.has(champKey(h.name))).length } : null;
 
   // EVALUATE — phase-aware constructor's "build next" answer (dungeons only, needs a stage number).
   let topBuild = null, constructorTeam = null;
@@ -208,12 +213,12 @@ for (const b of (Array.isArray(log) ? log : [])) {
 
   // Diff each model's recommendation vs the WINNING fielded team (winning non-CB runs only).
   if (won && !isCB) {
-    const fieldedNames = new Set(fielded.map(c => norm(c.name)));
+    const fieldedNames = new Set(fielded.map(c => champKey(c.name)));
     for (const [model, teamNames] of [['coverage', recBase?.recTeam], ['constructor', constructorTeam?.map(c => c.name)]]) {
       if (!teamNames || !teamNames.length) continue;
-      const teamSet = new Set(teamNames.map(norm));
-      for (const c of fielded) if (!teamSet.has(norm(c.name))) diffAdd(model, 'bench', c.name);      // winner fielded, model benched
-      for (const nm of teamNames) if (!fieldedNames.has(norm(nm))) diffAdd(model, 'field', nm);       // model fielded, winner benched
+      const teamSet = new Set(teamNames.map(champKey));
+      for (const c of fielded) if (!teamSet.has(champKey(c.name))) diffAdd(model, 'bench', c.name);      // winner fielded, model benched
+      for (const nm of teamNames) if (!fieldedNames.has(champKey(nm))) diffAdd(model, 'field', nm);       // model fielded, winner benched
     }
   }
 

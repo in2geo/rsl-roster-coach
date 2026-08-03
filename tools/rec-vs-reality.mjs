@@ -15,6 +15,7 @@
 import fs from 'fs';
 import { createClient } from '@supabase/supabase-js';
 import { matchRoster } from '../lib/match-engine.js';
+import { buildNameResolver } from '../lib/champion-names.js';
 
 const supabase = createClient((process.env.SUPABASE_URL ?? '').replace(/\/rest\/v1\/?$/, ''),
   process.env.SUPABASE_SERVICE_KEY, { global: { fetch } });
@@ -30,8 +31,10 @@ const CONTENTS = [
 const { data: champs } = await supabase.from('champions')
   .select('id,name,type_id,rarity,faction,affinity,base_hp,base_atk,base_def,base_spd,base_acc,base_res,champion_tags(tag_id,status,tags(name,bypasses_accuracy_check))')
   .eq('game_id', 'raid_shadow_legends');
-const byType = {}, byName = {};
-for (const c of champs) { if (c.type_id != null) byType[c.type_id] = c; byName[c.name.toLowerCase()] = c; }
+const { data: aliasRows } = await supabase.from('champion_aliases').select('alias,champion_id');
+const resolver = buildNameResolver(champs, aliasRows ?? []); // alias-aware name → champions.id resolver
+const byType = {}, byId = {};
+for (const c of champs) { if (c.type_id != null) byType[c.type_id] = c; byId[c.id] = c; } // id-based key so alias resolution can hit it
 const RANK = { Mythical: 6, Legendary: 5, Epic: 4, Rare: 3 };
 const gearTierFor = c => c.level >= 60 && (c.stars || 0) >= 6 ? 'Strong' : c.level >= 50 ? 'Dungeon' : 'Starter';
 
@@ -52,7 +55,7 @@ for (const f of fs.readdirSync('gestal-sync/output').filter(x => x.endsWith('.js
   const roster = [];
   for (const c of snap.champions ?? []) {
     if (!RANK[c.rarity]) continue;
-    const champ = byType[c.baseTypeId] ?? byName[(c.name || '').toLowerCase()];
+    const champ = byType[c.baseTypeId] ?? byId[resolver.resolve(c.name)?.id]; // id-based resolution (alias-aware)
     if (!champ) continue;
     roster.push({ id: `${c.heroId}`, level: c.level, stars: c.stars,
       ascension_level: c.ascensionLevel ?? (c.stars ? c.stars - 1 : 0), gear_tier: gearTierFor(c),

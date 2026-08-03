@@ -1,0 +1,23 @@
+{
+  "id": "spider-donahilvi-artor",
+  "_source": "DonaHilvi's live Spider team after swapping Alice -> Iudex Artor (sustain): Michelangelo, Coldheart, Hilvi, Ninja, Iudex Artor. Stats from Gestal sync a6261acc35588c94 via build-from-sync -> data/observed-builds/donahilvi-spider-artor.json. Reality (captured): Artor team clears 11-14 (broke the 14 wall the Alice team failed). NOT golden — runs the recipes to calibrate vs the captured climb.",
+  "content": { "dungeon": "Spider's Den", "difficulty": "Normal", "stage": 13, "mode": "Full Auto", "speed": "1x" },
+  "result": { "outcome": "UNKNOWN", "_note": "Calibration fixture, not a golden assertion." },
+  "_names": "team = short names -> champKey -> recipe. roster maps to the Gestal export name (keys the build file + resolves to champions.name). Iudex -> Iudex Artor.",
+  "team": ["Michelangelo", "Coldheart", "Hilvi", "Ninja", "Iudex"],
+  "roster": {
+    "Michelangelo": "Michelangelo",
+    "Coldheart": "Coldheart",
+    "Hilvi": "Hilve the Rime-called",
+    "Ninja": "Ninja",
+    "Iudex": "Iudex Artor"
+  },
+  "inputs": {
+    "_status": "RUNTIME — Gestal sync (DonaHilvi) via build-from-sync.",
+    "Michelangelo": { "build": "data/observed-builds/donahilvi-spider-artor.json" },
+    "Coldheart": { "build": "data/observed-builds/donahilvi-spider-artor.json" },
+    "Hilvi": { "build": "data/observed-builds/donahilvi-spider-artor.json" },
+    "Ninja": { "build": "data/observed-builds/donahilvi-spider-artor.json" },
+    "Iudex": { "build": "data/observed-builds/donahilvi-spider-artor.json" }
+  }
+}

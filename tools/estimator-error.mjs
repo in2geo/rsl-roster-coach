@@ -20,6 +20,7 @@
 import fs from 'fs';
 import { effectiveStats } from '../lib/effective-stats.js';
 import { estimateStats } from '../lib/estimate-stats.js';
+import { loadNameResolverRest, normalizeName } from '../lib/champion-names.js';
 
 const ACCT = process.argv[2] || 'DonThor';
 const DUNGEON = process.argv[3] || 'Dragon';
@@ -31,15 +32,13 @@ for (const l of fs.readFileSync('.env.local', 'utf8').split(/\r?\n/)) {
 }
 const H = { apikey: env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}` };
 const rest = async p => { const r = await fetch(`${env.SUPABASE_URL}/rest/v1/${p}`, { headers: H }); return r.ok ? r.json() : []; };
-const norm = s => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const norm = normalizeName;   // THE canonical champion-name normalizer (lib/champion-names.js)
 
 const champs = await rest('champions?select=id,name,role,base_hp,base_atk,base_def,base_spd,base_acc,base_res,base_crit_rate,base_crit_dmg,champion_tags(status,tags(name,is_debuff,bypasses_accuracy_check))&game_id=eq.raid_shadow_legends&limit=2000');
-const aliases = await rest('champion_aliases?select=alias,champion_id&limit=2000');
-const idToName = Object.fromEntries(champs.map(c => [c.id, c.name]));
-const nameKey = {};
-for (const c of champs) nameKey[norm(c.name)] = c.name;
-for (const a of aliases) if (idToName[a.champion_id]) nameKey[norm(a.alias)] = idToName[a.champion_id];
-const byName = Object.fromEntries(champs.map(c => [norm(c.name), c]));
+// THE alias-aware name registry (champions.name + champion_aliases). Resolve any name/alias → id,
+// then key champion metadata by that id — no hand-rolled norm→champion map. See lib/champion-names.js.
+const resolver = await loadNameResolverRest(rest);
+const byId = new Map(champs.map(c => [c.id, c]));
 
 const DOT = new Set(['Poison', 'HP Burn', 'Necrosis', 'Enemy Max HP Damage']);
 const typeOf = (c, st) => {
@@ -67,9 +66,10 @@ console.log(`team: ${team.join(', ')}\n`);
 const STATS = [['spd', 'SPD'], ['acc', 'ACC'], ['res', 'RES'], ['crate', 'C.RATE'], ['cdmg', 'C.DMG'], ['hp', 'HP'], ['atk', 'ATK'], ['def', 'DEF']];
 const errByType = {};
 for (const hName of team) {
-  const canon = nameKey[norm(hName)] ?? hName;
-  const meta = byName[norm(canon)];
-  const uc = (snap.champions ?? []).find(c => norm(c.name) === norm(hName) || norm(c.name) === norm(canon));
+  const hit = resolver.resolve(hName);
+  const canon = hit?.name ?? hName;
+  const meta = hit ? byId.get(hit.id) : null;
+  const uc = (snap.champions ?? []).find(c => (hit && resolver.resolve(c.name)?.id === hit.id) || norm(c.name) === norm(hName) || norm(c.name) === norm(canon));
   if (!meta || !uc) { console.log(`  ${hName}: unresolved`); continue; }
   const actual = effectiveStats(uc)?.effective; if (!actual) continue;
   const est = estimateStats(meta, { level: uc.level, stars: uc.stars, gear_tier: TIER }, { gearTier: TIER });

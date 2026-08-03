@@ -1,0 +1,596 @@
+[
+{
+"branch": "Offense",
+"tier": 1,
+"cost": "5 Basic",
+"name": "Blade Disciple",
+"effect": "ATK +75.",
+"effectType": "Passive stat",
+"trigger": "Always active"
+},
+{
+"branch": "Offense",
+"tier": 1,
+"cost": "5 Basic",
+"name": "Deadly Precision",
+"effect": "C. RATE +5%.",
+"effectType": "Passive stat",
+"trigger": "Always active"
+},
+{
+"branch": "Offense",
+"tier": 2,
+"cost": "30 Basic",
+"name": "Heart of Glory",
+"effect": "Damage inflicted +5% while the attacker is at full HP.",
+"effectType": "Damage modifier",
+"trigger": "Requires 100% current HP"
+},
+{
+"branch": "Offense",
+"tier": 2,
+"cost": "30 Basic",
+"name": "Keen Strike",
+"effect": "C. DMG +10%.",
+"effectType": "Passive stat",
+"trigger": "Always active"
+},
+{
+"branch": "Offense",
+"tier": 2,
+"cost": "30 Basic",
+"name": "Shield Breaker",
+"effect": "Damage inflicted to targets under Shield buffs +25%.",
+"effectType": "Damage modifier",
+"trigger": "Target must have Shield"
+},
+{
+"branch": "Offense",
+"tier": 2,
+"cost": "30 Basic",
+"name": "Grim Resolve",
+"effect": "Damage inflicted +5% while the attacker is at 50% HP or below.",
+"effectType": "Damage modifier",
+"trigger": "Requires current HP <=50%"
+},
+{
+"branch": "Offense",
+"tier": 3,
+"cost": "80 Advanced",
+"name": "Single Out",
+"effect": "Damage inflicted to targets below 40% HP +8%.",
+"effectType": "Damage modifier",
+"trigger": "Target current HP <40%"
+},
+{
+"branch": "Offense",
+"tier": 3,
+"cost": "80 Advanced",
+"name": "Life Drinker",
+"effect": "Heals the attacker for 5% of damage inflicted while the attacker is at 50% HP or below.",
+"effectType": "Self-heal",
+"trigger": "Requires current HP <=50%"
+},
+{
+"branch": "Offense",
+"tier": 3,
+"cost": "80 Advanced",
+"name": "Whirlwind of Death",
+"effect": "SPD +6 per enemy killed by this Champion; carries across rounds and stacks to +18 SPD.",
+"effectType": "Stacking stat",
+"trigger": "Maximum 3 stacks per battle"
+},
+{
+"branch": "Offense",
+"tier": 3,
+"cost": "80 Advanced",
+"name": "Ruthless Ambush",
+"effect": "Damage inflicted by the first hit against each enemy +8%.",
+"effectType": "Damage modifier",
+"trigger": "Once per enemy"
+},
+{
+"branch": "Offense",
+"tier": 4,
+"cost": "120 Advanced",
+"name": "Bring It Down",
+"effect": "Damage inflicted +6% when the target has higher MAX HP than the attacker.",
+"effectType": "Damage modifier",
+"trigger": "Compare attacker and target MAX HP"
+},
+{
+"branch": "Offense",
+"tier": 4,
+"cost": "120 Advanced",
+"name": "Wrath of the Slain",
+"effect": "Damage inflicted +5% per dead ally; stacks to +10%.",
+"effectType": "Damage modifier",
+"trigger": "Maximum 2 dead-allied stacks"
+},
+{
+"branch": "Offense",
+"tier": 4,
+"cost": "120 Advanced",
+"name": "Cycle of Violence",
+"effect": "30% chance to reduce a random skill cooldown by 1 turn when one skill deals more than 30% of a target's MAX HP.",
+"effectType": "Cooldown reduction",
+"trigger": "Once per turn"
+},
+{
+"branch": "Offense",
+"tier": 4,
+"cost": "120 Advanced",
+"name": "Opportunist",
+"effect": "Damage inflicted to targets under Stun, Sleep, Fear, True Fear, or Freeze +12%.",
+"effectType": "Damage modifier",
+"trigger": "Listed control debuff required"
+},
+{
+"branch": "Offense",
+"tier": 5,
+"cost": "200 Divine",
+"name": "Methodical",
+"effect": "Default-skill damage +2% each time it is used; carries across rounds and stacks to +10%.",
+"effectType": "Stacking damage",
+"trigger": "Maximum 5 stacks per battle"
+},
+{
+"branch": "Offense",
+"tier": 5,
+"cost": "200 Divine",
+"name": "Kill Streak",
+"effect": "Per enemy killed by this Champion: damage +6% in Arena or +3% elsewhere; carries across rounds and caps at +12%.",
+"effectType": "Stacking damage",
+"trigger": "Arena: max 2 stacks; elsewhere: max 4"
+},
+{
+"branch": "Offense",
+"tier": 5,
+"cost": "200 Divine",
+"name": "Blood Shield",
+"effect": "After this Champion kills an enemy, places a 1-turn Shield on self equal to 15% of own MAX HP.",
+"effectType": "Self-buff",
+"trigger": "Once per turn"
+},
+{
+"branch": "Offense",
+"tier": 5,
+"cost": "200 Divine",
+"name": "Stoked to Fury",
+"effect": "Damage inflicted +4% per debuff on this Champion; stacks to +12%.",
+"effectType": "Damage modifier",
+"trigger": "Maximum 3 debuffs counted"
+},
+{
+"branch": "Offense",
+"tier": 6,
+"cost": "350 Divine",
+"name": "Warmaster",
+"effect": "Each attack has a 60% chance to inflict bonus damage: 10% of a Champion target's MAX HP or 4% of a Boss target's MAX HP.",
+"effectType": "Bonus damage",
+"trigger": "Once per skill; not an extra hit; boss damage may be capped by encounter rules"
+},
+{
+"branch": "Offense",
+"tier": 6,
+"cost": "350 Divine",
+"name": "Helmsmasher",
+"effect": "50% chance for attacks to ignore 25% of the target's DEF; additive with skill-based Ignore DEF.",
+"effectType": "Ignore DEF",
+"trigger": "Roll applies when attacking"
+},
+{
+"branch": "Offense",
+"tier": 6,
+"cost": "350 Divine",
+"name": "Giant Slayer",
+"effect": "Each hit has a 30% chance to inflict bonus damage: 7.5% of a Champion target's MAX HP or 3% of a Boss target's MAX HP.",
+"effectType": "Bonus damage",
+"trigger": "Can proc per hit; not an extra hit; boss damage may be capped"
+},
+{
+"branch": "Offense",
+"tier": 6,
+"cost": "350 Divine",
+"name": "Flawless Execution",
+"effect": "C. DMG +20%.",
+"effectType": "Passive stat",
+"trigger": "Always active"
+},
+{
+"branch": "Defense",
+"tier": 1,
+"cost": "5 Basic",
+"name": "Tough Skin",
+"effect": "DEF +75.",
+"effectType": "Passive stat",
+"trigger": "Always active"
+},
+{
+"branch": "Defense",
+"tier": 1,
+"cost": "5 Basic",
+"name": "Defiant",
+"effect": "RES +10.",
+"effectType": "Passive stat",
+"trigger": "Always active"
+},
+{
+"branch": "Defense",
+"tier": 2,
+"cost": "30 Basic",
+"name": "Blastproof",
+"effect": "Damage received from AoE attacks -5%.",
+"effectType": "Damage reduction",
+"trigger": "AoE attacks only"
+},
+{
+"branch": "Defense",
+"tier": 2,
+"cost": "30 Basic",
+"name": "Rejuvenation",
+"effect": "Healing and Shield value received by this Champion +5%.",
+"effectType": "Incoming sustain",
+"trigger": "Applies to received heals and Shields"
+},
+{
+"branch": "Defense",
+"tier": 2,
+"cost": "30 Basic",
+"name": "Mighty Endurance",
+"effect": "Damage received -10% while under Stun, Sleep, Fear, True Fear, or Freeze.",
+"effectType": "Damage reduction",
+"trigger": "Listed control debuff required"
+},
+{
+"branch": "Defense",
+"tier": 2,
+"cost": "30 Basic",
+"name": "Improved Parry",
+"effect": "Damage received from critical hits -8%.",
+"effectType": "Damage reduction",
+"trigger": "Critical hits only"
+},
+{
+"branch": "Defense",
+"tier": 3,
+"cost": "80 Advanced",
+"name": "Shadow Heal",
+"effect": "Heals this Champion by 6% of own MAX HP whenever an enemy is healed.",
+"effectType": "Reactive heal",
+"trigger": "Once per turn"
+},
+{
+"branch": "Defense",
+"tier": 3,
+"cost": "80 Advanced",
+"name": "Resurgent",
+"effect": "50% chance to remove 1 random debuff from this Champion after losing at least 25% of own MAX HP from one enemy skill.",
+"effectType": "Debuff removal",
+"trigger": "Single enemy skill must meet threshold"
+},
+{
+"branch": "Defense",
+"tier": 3,
+"cost": "80 Advanced",
+"name": "Bloodthirst",
+"effect": "Heals this Champion by 10% of own MAX HP after killing an enemy.",
+"effectType": "Self-heal",
+"trigger": "1-turn cooldown"
+},
+{
+"branch": "Defense",
+"tier": 3,
+"cost": "80 Advanced",
+"name": "Wisdom of Battle",
+"effect": "30% chance to place Block Debuffs on self for 1 turn when Stun, Sleep, Fear, True Fear, or Freeze expires.",
+"effectType": "Self-buff",
+"trigger": "Triggers when listed control debuff expires"
+},
+{
+"branch": "Defense",
+"tier": 4,
+"cost": "120 Advanced",
+"name": "Solidarity",
+"effect": "Allies gain +5 RES for each buff placed on them by this Champion.",
+"effectType": "Ally stat modifier",
+"trigger": "Calculated per buff placed by this Champion"
+},
+{
+"branch": "Defense",
+"tier": 4,
+"cost": "120 Advanced",
+"name": "Delay Death",
+"effect": "Each hit received from a specific enemy reduces later damage from that enemy by 0.75%; stacks to 6% per enemy.",
+"effectType": "Stacking damage reduction",
+"trigger": "Separate stack per enemy; maximum 8 hits"
+},
+{
+"branch": "Defense",
+"tier": 4,
+"cost": "120 Advanced",
+"name": "Harvest Despair",
+"effect": "60% chance to place Leech for 1 turn when this Champion places Stun, Sleep, Fear, True Fear, or Freeze.",
+"effectType": "Debuff placement",
+"trigger": "Triggered by placing listed control debuff"
+},
+{
+"branch": "Defense",
+"tier": 4,
+"cost": "120 Advanced",
+"name": "Stubbornness",
+"effect": "RES +10 per debuff on this Champion; stacks to +30.",
+"effectType": "Conditional stat",
+"trigger": "Maximum 3 debuffs counted"
+},
+{
+"branch": "Defense",
+"tier": 5,
+"cost": "200 Divine",
+"name": "Selfless Defender",
+"effect": "Reduces damage an ally receives from the first enemy hit of each round by 20%; this Champion receives the redirected damage.",
+"effectType": "Damage redirection",
+"trigger": "First enemy hit per round"
+},
+{
+"branch": "Defense",
+"tier": 5,
+"cost": "200 Divine",
+"name": "Cycle of Revenge",
+"effect": "50% chance to increase this Champion's Turn Meter by 15% when an ally is critically hit.",
+"effectType": "Turn Meter boost",
+"trigger": "Only once when one skill delivers multiple critical hits"
+},
+{
+"branch": "Defense",
+"tier": 5,
+"cost": "200 Divine",
+"name": "Retribution",
+"effect": "50% chance to counterattack after this Champion loses at least 25% of own MAX HP from one enemy skill.",
+"effectType": "Counterattack",
+"trigger": "Single enemy skill must meet threshold"
+},
+{
+"branch": "Defense",
+"tier": 5,
+"cost": "200 Divine",
+"name": "Deterrence",
+"effect": "20% chance to counterattack an enemy when that enemy applies Stun, Sleep, Fear, True Fear, or Freeze to an ally.",
+"effectType": "Counterattack",
+"trigger": "Triggered by listed control debuff on ally"
+},
+{
+"branch": "Defense",
+"tier": 6,
+"cost": "350 Divine",
+"name": "Iron Skin",
+"effect": "DEF +200.",
+"effectType": "Passive stat",
+"trigger": "Always active"
+},
+{
+"branch": "Defense",
+"tier": 6,
+"cost": "350 Divine",
+"name": "Bulwark",
+"effect": "All allies receive 5% less damage; this Champion receives the redirected amount.",
+"effectType": "Damage redirection",
+"trigger": "Applies to allies, not the mastery holder's own incoming damage"
+},
+{
+"branch": "Defense",
+"tier": 6,
+"cost": "350 Divine",
+"name": "Fearsome Presence",
+"effect": "Chance to place Stun, Sleep, Freeze, Fear, True Fear, or Provoke from skills or Artifacts +5%.",
+"effectType": "Debuff chance",
+"trigger": "Listed control debuffs only"
+},
+{
+"branch": "Defense",
+"tier": 6,
+"cost": "350 Divine",
+"name": "Unshakeable",
+"effect": "RES +50.",
+"effectType": "Passive stat",
+"trigger": "Always active"
+},
+{
+"branch": "Support",
+"tier": 1,
+"cost": "5 Basic",
+"name": "Steadfast",
+"effect": "MAX HP +810.",
+"effectType": "Passive stat",
+"trigger": "Always active"
+},
+{
+"branch": "Support",
+"tier": 1,
+"cost": "5 Basic",
+"name": "Pinpoint Accuracy",
+"effect": "ACC +10.",
+"effectType": "Passive stat",
+"trigger": "Always active"
+},
+{
+"branch": "Support",
+"tier": 2,
+"cost": "30 Basic",
+"name": "Lay on Hands",
+"effect": "Healing cast by this Champion +5%.",
+"effectType": "Outgoing heal",
+"trigger": "Heals cast by mastery holder"
+},
+{
+"branch": "Support",
+"tier": 2,
+"cost": "30 Basic",
+"name": "Shieldbearer",
+"effect": "Shield buffs cast by this Champion +5%.",
+"effectType": "Outgoing Shield",
+"trigger": "Shields cast by mastery holder"
+},
+{
+"branch": "Support",
+"tier": 2,
+"cost": "30 Basic",
+"name": "Exalt in Death",
+"effect": "Heals this Champion by 10% of own MAX HP the first time an enemy dies in each round.",
+"effectType": "Self-heal",
+"trigger": "Once per round"
+},
+{
+"branch": "Support",
+"tier": 2,
+"cost": "30 Basic",
+"name": "Charged Focus",
+"effect": "ACC +20 while this Champion has no skills on cooldown.",
+"effectType": "Conditional stat",
+"trigger": "All skills must be off cooldown"
+},
+{
+"branch": "Support",
+"tier": 3,
+"cost": "80 Advanced",
+"name": "Healing Savior",
+"effect": "Healing and Shield value placed by this Champion +10% when the target ally is at 40% HP or below.",
+"effectType": "Outgoing sustain",
+"trigger": "Target current HP <=40%"
+},
+{
+"branch": "Support",
+"tier": 3,
+"cost": "80 Advanced",
+"name": "Rapid Response",
+"effect": "30% chance to increase this Champion's Turn Meter by 10% when a buff cast by this Champion is removed or expires.",
+"effectType": "Turn Meter boost",
+"trigger": "Rolls when own cast buff ends"
+},
+{
+"branch": "Support",
+"tier": 3,
+"cost": "80 Advanced",
+"name": "Swarm Smiter",
+"effect": "ACC +4 per living enemy; stacks to +16.",
+"effectType": "Conditional stat",
+"trigger": "Maximum 4 enemies counted"
+},
+{
+"branch": "Support",
+"tier": 3,
+"cost": "80 Advanced",
+"name": "Arcane Celerity",
+"effect": "30% chance to increase this Champion's Turn Meter by 10% when a debuff cast by this Champion is removed or expires.",
+"effectType": "Turn Meter boost",
+"trigger": "Rolls when own cast debuff ends"
+},
+{
+"branch": "Support",
+"tier": 4,
+"cost": "120 Advanced",
+"name": "Merciful Aid",
+"effect": "Healing and Shield value placed by this Champion +15% when the target ally is under Stun, Sleep, Fear, True Fear, or Freeze.",
+"effectType": "Outgoing sustain",
+"trigger": "Listed control debuff required on target"
+},
+{
+"branch": "Support",
+"tier": 4,
+"cost": "120 Advanced",
+"name": "Cycle of Magic",
+"effect": "5% chance at the start of each turn to reduce a random skill cooldown by 1 turn.",
+"effectType": "Cooldown reduction",
+"trigger": "Once at start of turn"
+},
+{
+"branch": "Support",
+"tier": 4,
+"cost": "120 Advanced",
+"name": "Lore of Steel",
+"effect": "Basic Artifact Set bonuses +15%, applied multiplicatively. Covers Life, Offense, Defense, Speed, C. RATE, C. DMG, Accuracy, and Resistance sets.",
+"effectType": "Set bonus modifier",
+"trigger": "Only listed basic sets"
+},
+{
+"branch": "Support",
+"tier": 4,
+"cost": "120 Advanced",
+"name": "Evil Eye",
+"effect": "The first default-skill hit on each target reduces that target's Turn Meter by 20% for single-target skills or 5% for AoE skills.",
+"effectType": "Turn Meter reduction",
+"trigger": "Once per target"
+},
+{
+"branch": "Support",
+"tier": 5,
+"cost": "200 Divine",
+"name": "Lasting Gifts",
+"effect": "30% chance to extend a buff cast by this Champion by 1 turn.",
+"effectType": "Buff extension",
+"trigger": "Cannot extend Block Damage, Unkillable, or Revive on Death"
+},
+{
+"branch": "Support",
+"tier": 5,
+"cost": "200 Divine",
+"name": "Spirit Haste",
+"effect": "SPD +8 per dead ally; stacks to +24.",
+"effectType": "Conditional stat",
+"trigger": "Maximum 3 dead allies counted"
+},
+{
+"branch": "Support",
+"tier": 5,
+"cost": "200 Divine",
+"name": "Sniper",
+"effect": "Chance to place debuffs from skills or Artifacts +5%.",
+"effectType": "Debuff chance",
+"trigger": "Does not affect Stun, Sleep, Freeze, Provoke, Fear, or True Fear"
+},
+{
+"branch": "Support",
+"tier": 5,
+"cost": "200 Divine",
+"name": "Master Hexer",
+"effect": "30% chance to extend a debuff cast by this Champion by 1 turn.",
+"effectType": "Debuff extension",
+"trigger": "Cannot extend Stun, Sleep, Freeze, Provoke, Bomb, Fear, or True Fear"
+},
+{
+"branch": "Support",
+"tier": 6,
+"cost": "350 Divine",
+"name": "Elixir of Life",
+"effect": "MAX HP +3,000.",
+"effectType": "Passive stat",
+"trigger": "Always active"
+},
+{
+"branch": "Support",
+"tier": 6,
+"cost": "350 Divine",
+"name": "Timely Intervention",
+"effect": "Increases this Champion's Turn Meter by 20% whenever an ally drops below 25% HP.",
+"effectType": "Turn Meter boost",
+"trigger": "Triggers on threshold crossing"
+},
+{
+"branch": "Support",
+"tier": 6,
+"cost": "350 Divine",
+"name": "Oppressor",
+"effect": "Turn Meter fill rate +2.5% per active debuff placed by this Champion; stacks to +10%.",
+"effectType": "Turn Meter fill rate",
+"trigger": "Maximum 4 active debuffs counted"
+},
+{
+"branch": "Support",
+"tier": 6,
+"cost": "350 Divine",
+"name": "Eagle-Eye",
+"effect": "ACC +50.",
+"effectType": "Passive stat",
+"trigger": "Always active"
+}
+]

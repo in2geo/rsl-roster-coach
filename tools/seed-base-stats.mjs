@@ -28,6 +28,7 @@
 // Emitted statements are fill-only (`and base_hp is null`), keyed on champions.id, and
 // replay-safe. Apply with tools/apply-seed-pooler.mjs.
 import fs from 'fs';
+import { loadNameResolverRest } from '../lib/champion-names.js';
 
 const [capPath, seedNo, title] = process.argv.slice(2);
 if (!capPath || !seedNo) {
@@ -63,11 +64,19 @@ for (const c of caps) {
 if (fatal.length) { console.error('REFUSING TO GENERATE:\n' + fatal.map(f=>'  ✗ '+f).join('\n')); process.exit(1); }
 console.log(`✓ ${caps.length} captures pass HP-multiple-of-15, plausibility bands and the percent-crit check.`);
 
+// Resolve each capture's name → champions.id through the registry (champions.name + champion_aliases),
+// then fetch/act BY ID — never a raw name=eq lookup. This also catches the short-name duplicate
+// problem (e.g. "Othorion" vs "Wallmaster Othorion") the old exactly-one-row guard was for: the
+// registry resolves each name to exactly one champion, or to nothing (→ genuinely missing → INSERT).
+const resolver = await loadNameResolverRest(get);
+
 const out = [], already = [], missing = [];
 for (const c of caps) {
-  const rows = await get(`champions?game_id=eq.raid_shadow_legends&name=eq.${encodeURIComponent(c.name)}&select=id,name,rarity,faction,base_hp,base_atk,base_def,base_spd,base_crit_rate,base_crit_dmg,base_res,base_acc`);
+  const hit = resolver.resolve(c.name);
+  if (!hit) { missing.push(c); continue; }   // not a champions.name nor an alias → needs an INSERT
+  const rows = await get(`champions?game_id=eq.raid_shadow_legends&id=eq.${encodeURIComponent(hit.id)}&select=id,name,rarity,faction,base_hp,base_atk,base_def,base_spd,base_crit_rate,base_crit_dmg,base_res,base_acc`);
   if (rows.length === 0) { missing.push(c); continue; }
-  if (rows.length > 1) { console.error(`✗ ${rows.length} rows match "${c.name}" — ambiguous, refusing.`); process.exit(1); }
+  if (rows.length > 1) { console.error(`✗ ${rows.length} rows match id for "${c.name}" — ambiguous, refusing.`); process.exit(1); }
   const row = rows[0];
   if (row.base_hp != null) {
     const diffs = [];

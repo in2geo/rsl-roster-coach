@@ -18,12 +18,15 @@ if (!model) { console.error(`unknown dungeon '${key}'. options: ${Object.keys(MO
 const want = process.argv[3] || 'GuapoDonni';
 
 const VOCAB = new Set((await rest('tags?select=name')).map(t => t.name));
-const champs = await rest('champions?select=type_id,name,rarity,champion_tags(status,tags(name))&game_id=eq.raid_shadow_legends');
-const byType = {}, byName = {};
+const champs = await rest('champions?select=id,type_id,name,rarity,champion_tags(status,tags(name))&game_id=eq.raid_shadow_legends');
+const { loadNameResolverRest } = await import('../lib/champion-names.js');
+const resolver = await loadNameResolverRest(rest); // alias-aware name → champions.id resolver
+const byType = {}, byId = {};
 for (const c of champs) {
   const tags = new Set((c.champion_tags ?? []).filter(x => x.status === 'approved').map(x => x.tags?.name).filter(Boolean));
   const rec = { name: c.name, tags };
-  if (c.type_id != null) byType[c.type_id] = rec; byName[c.name.toLowerCase()] = rec;
+  if (c.type_id != null) byType[c.type_id] = rec;
+  byId[c.id] = rec; // id-based key so alias resolution can hit it
 }
 const dir = 'gestal-sync/output';
 const file = fs.readdirSync(dir).find(f => f.includes(want) && f.endsWith('.json') && !f.startsWith('gear-corpus'));
@@ -32,7 +35,7 @@ const RANK = { Mythical: 6, Legendary: 5, Epic: 4, Rare: 3 };
 const seen = new Map();
 for (const c of snap.champions ?? []) {
   if (!RANK[c.rarity]) continue;
-  const rec = byType[c.baseTypeId] ?? byName[c.name?.toLowerCase()] ?? { tags: new Set() };
+  const rec = byType[c.baseTypeId] ?? byId[resolver.resolve(c.name)?.id] ?? { tags: new Set() }; // id-based resolution (alias-aware)
   const dev = c.level * 1000 + (c.stars || 0) * 100 + (RANK[c.rarity] || 0) * 10;
   const champ = { name: c.name, tags: rec.tags, dev };
   const prev = seen.get(c.name); if (!prev || champ.dev > prev.dev) seen.set(c.name, champ);
@@ -63,7 +66,7 @@ if (TEAM) {
   console.log(`\nFielded team check: ${TEAM.join(', ')}`);
   const covered = new Set();
   for (const n of TEAM) {
-    const rec = byName[n.toLowerCase()] || { tags: new Set() };
+    const rec = byId[resolver.resolve(n)?.id] || { tags: new Set() }; // id-based resolution (alias-aware)
     const roles = ev.problems.filter(p => p.tags.some(t => rec.tags.has(t))).map(p => p.key);
     for (const r of roles) covered.add(r);
     console.log(`  ${n.padEnd(22)} → ${roles.join(', ') || '(unresolved or no matching ability)'}`);

@@ -59,6 +59,9 @@ export default async function handler(req, res) {
     .filter(a => ownedNorm.has(normalizeName(a.alias))).map(a => a.champion_id))];
 
   const dbById = new Map();
+  // registry-exempt: candidate-widening PREFETCH (not an identity decision). The name leg only pulls
+  // canonical-name champions with a null type_id into the pool; the actual name→champions.id resolution is
+  // delegated to buildUserChampions (registry-based). Deduped by id below.
   for (const [col, vals] of [['type_id', ownedTypeIds], ['name', ownedNames], ['id', aliasChampIds]]) {
     if (!vals.length) continue;
     const { data, error } = await supabase

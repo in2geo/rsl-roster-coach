@@ -1,0 +1,355 @@
+MODEL turn-by-turn — Spider-13 — threshold mode (>50% lands), seed=null — LOSS in 364t
+team maxHP:  Ezio=17.5k  Vergis=16.8k  Bambus=26.0k  Pelops=29.8k  Tagoar=25.3k
+====================================================================================================================================
+Turn | Actor  | Skill                          | bossHP | spdr |    Ezio  Vergis  Bambus  Pelops  Tagoar
+------------------------------------------------------------------------------------------------------------------------------------
+   1 | Ezio   | A2                             |  1060k |    8 |   17.5k   16.8k   26.0k   29.8k   25.3k
+   2 | Vergis | A2                             |  1060k |   10 |   17.5k   16.8k   26.0k   29.8k   25.3k
+   3 | Bambus | A3                             |  1060k |   10 |   17.5k   16.8k   26.0k   29.8k   25.3k
+   4 | Pelops | A3                             |  1060k |   10 |   17.5k   16.8k   26.0k   29.8k   25.3k
+   5 | Tagoar | A2                             |  1058k |   10 |   17.5k   16.8k   26.0k   29.8k   25.3k
+   6 | Sp1    | basic attack                   |  1058k |   10 |   17.5k   16.8k   26.0k   29.8k   25.3k
+   7 | Sp2    | basic attack                   |  1058k |   10 |   17.5k   16.8k   26.0k   29.8k   25.3k
+   8 | Sp3    | basic attack                   |  1058k |   10 |   17.5k   16.8k   26.0k   29.8k   25.3k
+   9 | Sp4    | basic attack                   |  1058k |   10 |   17.5k   16.8k   26.0k   29.8k   25.3k
+  10 | Sp5    | basic attack                   |  1058k |   10 |   17.5k   16.8k   26.0k   29.8k   25.3k
+  11 | Sp6    | basic attack                   |  1058k |   10 |   17.5k   16.8k   26.0k   29.8k   25.3k
+  12 | Skavag | (boss turn)                    |  1055k |    4 |   17.5k   16.8k   26.0k   29.8k   25.3k
+  13 | Bambus | A2                             |  1052k |    6 |   17.5k   16.8k   26.0k   29.8k   25.3k
+  18 | Sp11   | basic attack                   |  1052k |   10 |   17.5k   16.8k   26.0k   29.8k   25.3k
+  19 | Sp12   | basic attack                   |  1052k |   10 |   17.5k   16.8k   26.0k   29.8k   25.3k
+  20 | Sp13   | basic attack                   |  1052k |   10 |   17.5k   16.8k   26.0k   29.8k   25.3k
+  21 | Sp14   | basic attack                   |  1052k |   10 |   17.5k   16.8k   26.0k   29.8k   25.3k
+  22 | Skavag | (boss turn)                    |  1004k |   10 |   17.5k   10.8k   26.0k   29.8k   25.3k
+  23 | Bambus | A1                             |  1004k |   10 |   17.5k   10.8k   26.0k   29.8k   25.3k
+  24 | Tagoar | A1                             |  1004k |   10 |   17.5k   10.8k   26.0k   29.8k   25.3k
+  25 | Vergis | A1                             |  1004k |   10 |   17.5k   10.8k   26.0k   29.8k   25.3k
+  26 | Pelops | A2                             |  1004k |    9 |   17.5k   10.8k   26.0k   29.8k   25.3k
+  27 | Ezio   | A3                             |  1004k |   10 |   17.5k   10.8k   26.0k   29.8k   25.3k
+  28 | Sp15   | basic attack                   |  1004k |   10 |   17.5k    9.3k   26.0k   29.8k   25.3k
+  29 | Sp16   | basic attack                   |  1004k |   10 |   17.5k    7.7k   26.0k   29.8k   25.3k
+  30 | Sp17   | basic attack                   |  1004k |   10 |   17.5k    6.4k   26.0k   29.8k   25.3k
+  31 | Sp18   | basic attack                   |  1004k |   10 |   17.5k    5.0k   26.0k   29.8k   25.3k
+  32 | Sp19   | basic attack                   |  1004k |   10 |   17.5k    3.6k   26.0k   29.8k   25.3k
+  33 | Sp20   | basic attack                   |  1004k |   10 |   17.5k    2.3k   26.0k   29.8k   25.3k
+  34 | Bambus | A1                             |  1004k |   10 |   17.5k    2.3k   26.0k   29.8k   25.3k
+  35 | Sp11   | basic attack                   |   973k |   10 |   17.5k     890   26.0k   29.8k   25.3k
+  36 | Sp12   | basic attack                   |   941k |   10 |   17.5k    DEAD   26.0k   29.8k   25.3k
+  37 | Sp13   | basic attack                   |   909k |   10 |   17.5k    DEAD   23.7k   29.8k   25.3k
+  38 | Pelops | A1                             |   909k |    9 |   17.5k    DEAD   23.7k   29.8k   25.3k
+  39 | Tagoar | A3                             |   909k |   10 |   17.5k    5.1k   23.7k   29.8k   25.3k
+  40 | Ezio   | A1                             |   909k |   10 |   17.5k    5.1k   23.7k   29.8k   25.3k
+  41 | Bambus | A3                             |   909k |   10 |   17.5k    5.1k   23.7k   29.8k   25.3k
+  42 | Sp21   | basic attack                   |   909k |   10 |   17.5k    5.1k   23.7k   29.8k   25.3k
+  43 | Skavag | (boss turn)                    |  1063k |    4 |   16.6k    5.1k   22.5k   29.8k   24.1k
+  44 | Vergis | A1                             |  1063k |    6 |   16.6k    7.6k   22.5k   29.8k   24.1k
+  45 | Tagoar | A1                             |  1063k |    8 |   16.6k    7.6k   22.5k   29.8k   24.1k
+  46 | Pelops | A3                             |  1063k |   10 |   16.6k    7.6k   22.5k   29.8k   24.1k
+  47 | Ezio   | A2                             |  1043k |   10 |   17.5k    7.6k   22.5k   29.8k   24.1k
+  48 | Bambus | A2                             |  1040k |   10 |   17.5k    7.6k   22.5k   29.8k   24.1k
+  49 | Sp23   | basic attack                   |  1040k |   10 |   17.5k    7.6k   22.5k   29.8k   24.1k
+  50 | Sp24   | basic attack                   |  1040k |   10 |   17.5k    7.6k   22.5k   29.8k   24.1k
+  51 | Sp25   | basic attack                   |  1040k |   10 |   17.5k    7.6k   22.5k   29.8k   24.1k
+  52 | Sp26   | basic attack                   |  1040k |   10 |   17.5k    7.6k   22.5k   29.8k   24.1k
+  53 | Vergis | A2                             |  1040k |   10 |   17.5k   10.1k   22.5k   29.8k   24.1k
+  54 | Tagoar | A2                             |  1038k |    9 |   17.5k   13.9k   26.0k   29.8k   25.3k
+  55 | Sp27   | basic attack                   |  1038k |    9 |   17.5k   13.9k   26.0k   29.8k   25.3k
+  56 | Sp28   | basic attack                   |  1038k |    9 |   17.5k   13.9k   26.0k   29.8k   25.3k
+  57 | Pelops | A1                             |  1038k |   10 |   17.5k   13.9k   26.0k   29.8k   25.3k
+  58 | Bambus | A1                             |  1036k |    9 |   17.5k   13.9k   26.0k   29.8k   25.3k
+  59 | Sp29   | basic attack                   |  1036k |    9 |   17.5k   13.9k   26.0k   29.8k   25.3k
+  60 | Sp30   | basic attack                   |  1036k |    9 |   17.5k   13.9k   26.0k   29.8k   25.3k
+  61 | Ezio   | A1                             |  1036k |    9 |   17.5k   13.9k   26.0k   29.8k   25.3k
+  62 | Sp31   | basic attack                   |  1036k |    9 |   17.5k   13.9k   26.0k   29.8k   25.3k
+  63 | Sp32   | basic attack                   |  1036k |    9 |   17.5k   13.9k   26.0k   29.8k   25.3k
+  64 | Skavag | (boss turn)                    |   982k |   10 |   17.5k    9.7k   26.0k   29.8k   25.3k
+  65 | Vergis | A1                             |   982k |    9 |   17.5k   12.2k   26.0k   29.8k   25.3k
+  66 | Tagoar | A1                             |   982k |    9 |   17.5k   12.2k   26.0k   29.8k   25.3k
+  67 | Bambus | A1                             |   980k |    9 |   17.5k   12.2k   26.0k   29.8k   25.3k
+  68 | Pelops | A2                             |   980k |    9 |   17.5k   12.2k   26.0k   29.8k   25.3k
+  69 | Ezio   | A3                             |   980k |    9 |   17.5k   12.2k   26.0k   29.8k   25.3k
+  71 | Sp34   | basic attack                   |   948k |    7 |   17.5k   12.2k   23.7k   29.8k   25.3k
+  72 | Vergis | A1                             |   948k |    9 |   17.5k   14.7k   23.7k   29.8k   25.3k
+  73 | Sp35   | basic attack                   |   948k |    9 |   17.5k   13.2k   23.7k   29.8k   25.3k
+  74 | Sp33   | basic attack                   |   948k |    9 |   17.5k   11.7k   23.7k   29.8k   25.3k
+  75 | Bambus | A3                             |   948k |   10 |   17.5k   11.7k   23.7k   29.8k   25.3k
+  76 | Tagoar | A1                             |   948k |   10 |   17.5k   11.7k   23.7k   29.8k   25.3k
+  77 | Sp36   | basic attack                   |   948k |   10 |   17.5k   10.6k   23.7k   29.8k   25.3k
+  78 | Pelops | A1                             |   948k |   10 |   17.5k   10.6k   23.7k   29.8k   25.3k
+  79 | Sp37   | basic attack                   |   948k |   10 |   17.5k    9.5k   23.7k   29.8k   25.3k
+  80 | Sp38   | basic attack                   |   948k |   10 |   17.5k    8.5k   23.7k   29.8k   25.3k
+  81 | Sp39   | basic attack                   |   948k |   10 |   17.5k    7.4k   23.7k   29.8k   25.3k
+  82 | Ezio   | A1                             |   948k |    9 |   17.5k    7.4k   23.7k   29.8k   25.3k
+  83 | Sp34   | basic attack                   |   948k |    9 |   17.5k    6.4k   23.7k   29.8k   25.3k
+  84 | Vergis | A1                             |   948k |   10 |   17.5k    9.0k   23.7k   29.8k   25.3k
+  85 | Bambus | A2                             |   945k |   10 |   17.5k    9.0k   23.7k   29.8k   25.3k
+  86 | Sp40   | basic attack                   |   945k |   10 |   17.5k    9.0k   23.7k   29.8k   25.3k
+  87 | Sp41   | basic attack                   |   945k |   10 |   17.5k    9.0k   23.7k   29.8k   25.3k
+  88 | Sp35   | basic attack                   |   945k |   10 |   17.5k    9.0k   23.7k   29.8k   25.3k
+  89 | Tagoar | A1                             |   945k |   10 |   17.5k    9.0k   23.7k   29.8k   25.3k
+  90 | Sp42   | basic attack                   |   945k |   10 |   17.5k    9.0k   23.7k   29.8k   25.3k
+  91 | Skavag | (boss turn)                    |  1064k |    4 |   17.3k    6.8k   23.2k   29.8k   24.8k
+  92 | Pelops | A3                             |  1064k |    6 |   17.3k    6.8k   23.2k   29.8k   24.8k
+  93 | Ezio   | A2                             |  1045k |    8 |   17.3k    6.8k   23.2k   29.8k   24.8k
+  94 | Bambus | A1                             |  1043k |   10 |   17.3k    6.8k   23.2k   29.8k   24.8k
+  95 | Vergis | A2                             |  1043k |   10 |   17.3k    9.4k   23.2k   29.8k   24.8k
+  96 | Tagoar | A1                             |  1043k |   10 |   17.3k    9.4k   23.2k   29.8k   24.8k
+  97 | Pelops | A1                             |  1043k |   10 |   17.3k    9.4k   23.2k   29.8k   24.8k
+  98 | Vergis | A1                             |  1043k |   10 |   17.3k   11.9k   23.2k   29.8k   24.8k
+ 100 | Sp45   | basic attack                   |  1043k |    9 |   17.3k   10.4k   23.2k   29.8k   24.8k
+ 101 | Sp46   | basic attack                   |  1043k |    9 |   17.3k    8.8k   23.2k   29.8k   24.8k
+ 102 | Sp47   | basic attack                   |  1043k |    9 |   17.3k    7.3k   23.2k   29.8k   24.8k
+ 103 | Bambus | A1                             |  1041k |   10 |   17.3k    7.3k   23.2k   29.8k   24.8k
+ 104 | Ezio   | A1                             |  1041k |    9 |   17.3k    7.3k   23.2k   29.8k   24.8k
+ 105 | Sp48   | basic attack                   |  1041k |    9 |   17.3k    5.9k   23.2k   29.8k   24.8k
+ 106 | Sp49   | basic attack                   |  1041k |    9 |   17.3k    4.6k   23.2k   29.8k   24.8k
+ 107 | Tagoar | A2                             |  1039k |   10 |   17.5k    8.4k   26.0k   29.8k   25.3k
+ 108 | Sp50   | basic attack                   |  1039k |   10 |   16.4k    7.3k   26.0k   29.8k   25.3k
+ 109 | Sp51   | basic attack                   |  1039k |   10 |   16.4k    5.9k   26.0k   29.8k   25.3k
+ 110 | Pelops | A2                             |  1039k |    9 |   16.4k    5.9k   26.0k   29.8k   25.3k
+ 111 | Vergis | A1                             |  1039k |   10 |   16.4k    8.5k   26.0k   29.8k   25.3k
+ 112 | Bambus | A3                             |  1039k |   10 |   16.4k    8.5k   26.0k   29.8k   25.3k
+ 113 | Sp52   | basic attack                   |  1039k |   10 |   16.4k    7.0k   26.0k   29.8k   25.3k
+ 114 | Sp53   | basic attack                   |  1039k |   10 |   16.4k    5.6k   26.0k   29.8k   25.3k
+ 115 | Skavag | (boss turn)                    |  1007k |   10 |   11.6k    DEAD   16.0k   22.2k   15.3k
+ 116 | Sp54   | basic attack                   |  1007k |   10 |   10.1k    DEAD   16.0k   22.2k   15.3k
+ 117 | Tagoar | A3                             |  1007k |   10 |   10.1k    5.1k   16.0k   22.2k   15.3k
+ 118 | Ezio   | A3                             |  1007k |    9 |   10.1k    5.1k   16.0k   22.2k   15.3k
+ 119 | Sp55   | basic attack                   |  1007k |    9 |   10.1k    5.1k   16.0k   22.2k   15.3k
+ 120 | Bambus | A2                             |  1004k |   10 |   10.1k    5.1k   16.0k   22.2k   15.3k
+ 124 | Sp56   | basic attack                   |  1004k |    8 |   10.1k    4.1k   16.0k   22.2k   15.3k
+ 128 | Ezio   | A1                             |  1004k |   10 |   10.1k    6.6k   16.0k   22.2k   15.3k
+ 129 | Bambus | A1                             |  1002k |   10 |   10.1k    6.6k   16.0k   22.2k   15.3k
+ 130 | Tagoar | A1                             |  1002k |    9 |   10.1k    6.6k   16.0k   22.2k   15.3k
+ 131 | Sp54   | basic attack                   |  1002k |    9 |   10.1k    5.6k   16.0k   22.2k   15.3k
+ 132 | Sp53   | basic attack                   |  1002k |    9 |   10.1k    4.7k   16.0k   22.2k   15.3k
+ 133 | Pelops | A3                             |  1002k |   10 |   10.1k    4.7k   16.0k   22.2k   15.3k
+ 134 | Sp55   | basic attack                   |  1002k |   10 |   10.1k    4.7k   16.0k   22.2k   15.3k
+ 135 | Vergis | A2                             |  1002k |   10 |   10.1k    7.2k   16.0k   22.2k   15.3k
+ 136 | Sp57   | basic attack                   |  1002k |   10 |   10.1k    7.2k   16.0k   22.2k   15.3k
+ 137 | Bambus | A1                             |  1002k |   10 |   10.1k    7.2k   16.0k   22.2k   15.3k
+ 138 | Ezio   | A2                             |   983k |    9 |   10.1k    7.2k   16.0k   22.2k   15.3k
+ 139 | Tagoar | A1                             |   983k |    9 |   10.1k    7.2k   16.0k   22.2k   15.3k
+ 140 | Sp56   | basic attack                   |   983k |    9 |   10.1k    7.2k   16.0k   22.2k   15.3k
+ 141 | Skavag | (boss turn)                    |  1043k |    4 |   10.1k    DEAD   16.0k   22.7k   15.3k
+ 142 | Pelops | A1                             |  1043k |    6 |   10.1k    DEAD   16.0k   23.6k   15.3k
+ 143 | Bambus | A3                             |  1043k |    8 |   10.1k    DEAD   16.0k   23.6k   15.3k
+ 144 | Tagoar | A1                             |  1043k |   10 |   10.1k    DEAD   16.0k   23.6k   15.3k
+ 145 | Ezio   | A1                             |  1043k |   10 |   10.1k    DEAD   16.0k   23.6k   15.3k
+ 146 | Sp64   | basic attack                   |  1043k |   10 |    9.6k    DEAD   16.0k   23.6k   15.3k
+ 147 | Sp65   | basic attack                   |  1043k |   10 |    8.5k    DEAD   16.0k   23.6k   15.3k
+ 148 | Sp66   | basic attack                   |  1043k |   10 |    7.5k    DEAD   16.0k   23.6k   15.3k
+ 149 | Sp67   | basic attack                   |  1043k |   10 |    6.6k    DEAD   16.0k   23.6k   15.3k
+ 150 | Pelops | A2                             |  1043k |    9 |    6.6k    DEAD   16.0k   26.1k   15.3k
+ 151 | Sp68   | basic attack                   |  1043k |    9 |    5.6k    DEAD   16.0k   26.1k   15.3k
+ 152 | Sp69   | basic attack                   |  1043k |    9 |    4.6k    DEAD   16.0k   26.1k   15.3k
+ 153 | Bambus | A2                             |  1040k |   10 |    4.6k    DEAD   16.0k   26.1k   15.3k
+ 154 | Sp70   | basic attack                   |  1040k |   10 |    4.6k    DEAD   16.0k   26.1k   15.3k
+ 155 | Sp71   | basic attack                   |  1040k |   10 |    4.6k    DEAD   16.0k   26.1k   15.3k
+ 156 | Tagoar | A2                             |  1038k |   10 |    8.4k    DEAD   19.8k   29.8k   19.1k
+ 157 | Ezio   | A3                             |  1038k |   10 |    8.4k    DEAD   19.8k   29.8k   19.1k
+ 158 | Sp72   | basic attack                   |  1038k |   10 |    8.4k    DEAD   19.8k   29.8k   19.1k
+ 159 | Sp73   | basic attack                   |  1038k |   10 |    8.4k    DEAD   19.8k   29.8k   19.1k
+ 160 | Pelops | A1                             |  1038k |   10 |    8.4k    DEAD   19.8k   29.8k   19.1k
+ 161 | Bambus | A1                             |  1036k |    9 |    8.4k    DEAD   19.8k   29.8k   19.1k
+ 162 | Sp66   | basic attack                   |  1036k |    9 |    8.4k    DEAD   19.8k   29.8k   19.1k
+ 163 | Sp67   | basic attack                   |  1036k |    9 |    8.4k    DEAD   19.8k   29.8k   19.1k
+ 164 | Sp68   | basic attack                   |  1036k |    9 |    8.4k    DEAD   19.8k   29.8k   19.1k
+ 165 | Sp69   | basic attack                   |  1036k |    9 |    7.6k    DEAD   19.8k   29.8k   19.1k
+ 166 | Skavag | (boss turn)                    |  1004k |   10 |    1.2k    DEAD   17.3k   29.8k   16.6k
+ 167 | Tagoar | A1                             |  1004k |   10 |    1.2k    DEAD   17.3k   29.8k   16.6k
+ 168 | Sp74   | basic attack                   |  1004k |   10 |    DEAD    DEAD   17.3k   29.8k   16.6k
+ 169 | Bambus | A1                             |  1004k |   10 |    DEAD    DEAD   17.3k   29.8k   16.6k
+ 170 | Pelops | A3                             |  1004k |   10 |    DEAD    DEAD   17.3k   29.8k   16.6k
+ 171 | Sp70   | basic attack                   |  1004k |   10 |    DEAD    DEAD   17.3k   29.8k   16.6k
+ 172 | Sp71   | basic attack                   |  1004k |   10 |    DEAD    DEAD   17.3k   29.8k   16.6k
+ 173 | Sp72   | basic attack                   |  1004k |   10 |    DEAD    DEAD   17.3k   29.8k   16.6k
+ 174 | Sp73   | basic attack                   |  1004k |   10 |    DEAD    DEAD   17.3k   29.8k   16.6k
+ 175 | Tagoar | A1                             |  1004k |   10 |    DEAD    DEAD   17.3k   29.8k   16.6k
+ 176 | Sp75   | basic attack                   |  1004k |   10 |    DEAD    DEAD   17.3k   29.8k   16.6k
+ 177 | Bambus | A3                             |  1004k |   10 |    DEAD    DEAD   17.3k   29.8k   16.6k
+ 178 | Sp66   | basic attack                   |  1004k |   10 |    DEAD    DEAD   17.3k   29.8k   16.6k
+ 179 | Sp67   | basic attack                   |  1004k |   10 |    DEAD    DEAD   17.3k   29.8k   16.6k
+ 180 | Pelops | A1                             |  1004k |   10 |    DEAD    DEAD   17.3k   29.8k   16.6k
+ 181 | Sp68   | basic attack                   |  1004k |   10 |    DEAD    DEAD   17.3k   29.8k   16.6k
+ 182 | Sp69   | basic attack                   |  1004k |   10 |    DEAD    DEAD   17.3k   29.8k   16.6k
+ 183 | Sp74   | basic attack                   |  1004k |   10 |    DEAD    DEAD   17.3k   29.8k   16.6k
+ 184 | Tagoar | A3                             |  1004k |   10 |    5.2k    5.1k   17.3k   29.8k   16.6k
+ 185 | Bambus | A2                             |  1001k |    9 |    5.2k    5.1k   17.3k   29.8k   16.6k
+ 186 | Sp70   | basic attack                   |   969k |    9 |    5.2k    5.1k   17.3k   29.8k   16.6k
+ 187 | Sp71   | basic attack                   |   937k |    9 |    5.2k    5.1k   17.3k   29.8k   16.6k
+ 188 | Sp75   | basic attack                   |   905k |    9 |    5.2k    5.1k   17.3k   29.8k   16.6k
+ 189 | Sp67   | basic attack                   |   873k |    9 |    5.2k    5.1k   17.3k   29.8k   16.6k
+ 190 | Sp72   | basic attack                   |   841k |    9 |    5.2k    5.1k   17.3k   29.8k   16.6k
+ 191 | Sp73   | basic attack                   |   809k |    9 |    4.5k    5.1k   17.3k   29.8k   16.6k
+ 192 | Pelops | A2                             |   809k |    9 |    4.5k    5.1k   17.3k   29.8k   16.6k
+ 193 | Skavag | (boss turn)                    |  1058k |    4 |    DEAD    2.7k   17.3k   29.8k   16.6k
+ 194 | Vergis | A1                             |  1058k |    6 |    DEAD    5.3k   17.3k   29.8k   16.6k
+ 195 | Tagoar | A1                             |  1058k |    8 |    DEAD    5.3k   17.3k   29.8k   16.6k
+ 196 | Bambus | A1                             |  1058k |   10 |    DEAD    5.3k   17.3k   29.8k   16.6k
+ 197 | Vergis | A1                             |  1058k |   10 |    DEAD    7.8k   17.3k   29.8k   16.6k
+ 198 | Pelops | A1                             |  1058k |   10 |    DEAD    7.8k   17.3k   29.8k   16.6k
+ 199 | Sp78   | basic attack                   |  1058k |   10 |    DEAD    6.4k   17.3k   29.8k   16.6k
+ 200 | Sp79   | basic attack                   |  1058k |   10 |    DEAD    5.0k   17.3k   29.8k   16.6k
+ 201 | Sp80   | basic attack                   |  1058k |   10 |    DEAD    3.7k   17.3k   29.8k   16.6k
+ 202 | Bambus | A1                             |  1057k |   10 |    DEAD    3.7k   17.3k   29.8k   16.6k
+ 203 | Tagoar | A2                             |  1054k |   10 |    DEAD    7.5k   21.1k   29.8k   20.4k
+ 204 | Sp81   | basic attack                   |  1054k |   10 |    DEAD    6.1k   21.1k   29.8k   20.4k
+ 205 | Sp82   | basic attack                   |  1054k |   10 |    DEAD    4.7k   21.1k   29.8k   20.4k
+ 206 | Sp77   | basic attack                   |  1054k |   10 |    DEAD    4.0k   21.1k   29.8k   20.4k
+ 207 | Sp83   | basic attack                   |  1054k |   10 |    DEAD    2.7k   21.1k   29.8k   20.4k
+ 208 | Sp84   | basic attack                   |  1054k |   10 |    DEAD    1.3k   21.1k   29.8k   20.4k
+ 209 | Sp85   | basic attack                   |  1054k |   10 |    DEAD    DEAD   21.1k   29.8k   20.4k
+ 210 | Sp86   | basic attack                   |  1054k |   10 |    DEAD    DEAD   18.9k   29.8k   20.4k
+ 211 | Skavag | (boss turn)                    |  1023k |   10 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 212 | Pelops | A3                             |  1023k |   10 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 213 | Bambus | A3                             |  1023k |   10 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 214 | Tagoar | A1                             |  1023k |    9 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 215 | Sp78   | basic attack                   |  1023k |    9 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 216 | Sp79   | basic attack                   |  1023k |    9 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 217 | Sp80   | basic attack                   |  1023k |    9 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 218 | Sp81   | basic attack                   |  1023k |    9 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 219 | Sp82   | basic attack                   |  1023k |    9 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 220 | Sp83   | basic attack                   |  1023k |    9 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 221 | Sp84   | basic attack                   |  1023k |    9 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 222 | Bambus | A2                             |  1020k |   10 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 223 | Sp85   | basic attack                   |  1020k |   10 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 224 | Sp86   | basic attack                   |  1020k |   10 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 225 | Pelops | A1                             |  1020k |   10 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 226 | Tagoar | A1                             |  1020k |   10 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 227 | Bambus | A1                             |  1018k |   10 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 228 | Sp78   | basic attack                   |   986k |   10 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 229 | Sp79   | basic attack                   |   954k |   10 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 230 | Sp80   | basic attack                   |   922k |   10 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 231 | Pelops | A2                             |   922k |    9 |    DEAD    DEAD   14.2k   29.8k   18.8k
+ 232 | Skavag | (boss turn)                    |  1055k |    4 |    DEAD    DEAD    9.7k   21.0k   18.7k
+ 233 | Tagoar | A1                             |  1055k |    6 |    DEAD    DEAD    9.7k   21.0k   18.7k
+ 234 | Bambus | A1                             |  1055k |    8 |    DEAD    DEAD    9.7k   21.0k   18.7k
+ 236 | Sp88   | basic attack                   |  1055k |   10 |    DEAD    DEAD    8.2k   21.0k   18.7k
+ 237 | Sp89   | basic attack                   |  1055k |   10 |    DEAD    DEAD    6.7k   21.0k   18.7k
+ 238 | Sp90   | basic attack                   |  1055k |   10 |    DEAD    DEAD    5.2k   21.0k   18.7k
+ 239 | Sp91   | basic attack                   |  1055k |   10 |    DEAD    DEAD    3.7k   21.0k   18.7k
+ 240 | Tagoar | A1                             |  1055k |   10 |    DEAD    DEAD    3.7k   21.0k   18.7k
+ 241 | Bambus | A3                             |  1055k |   10 |    DEAD    DEAD    3.7k   21.0k   18.7k
+ 242 | Sp92   | basic attack                   |  1055k |   10 |    DEAD    DEAD    2.7k   21.0k   18.7k
+ 243 | Sp93   | basic attack                   |  1055k |   10 |    DEAD    DEAD    1.7k   21.0k   18.7k
+ 244 | Sp94   | basic attack                   |  1055k |   10 |    DEAD    DEAD     619   21.0k   18.7k
+ 245 | Sp95   | basic attack                   |  1055k |   10 |    DEAD    DEAD    DEAD   21.0k   18.7k
+ 246 | Pelops | A3                             |  1055k |   10 |    DEAD    DEAD    DEAD   21.0k   18.7k
+ 247 | Sp96   | basic attack                   |  1055k |   10 |    DEAD    DEAD    DEAD   21.4k   18.7k
+ 248 | Sp97   | basic attack                   |  1055k |   10 |    DEAD    DEAD    DEAD   21.7k   18.7k
+ 249 | Sp88   | basic attack                   |  1055k |   10 |    DEAD    DEAD    DEAD   22.1k   18.7k
+ 250 | Sp89   | basic attack                   |  1055k |   10 |    DEAD    DEAD    DEAD   22.4k   18.7k
+ 251 | Sp90   | basic attack                   |  1055k |   10 |    DEAD    DEAD    DEAD   22.8k   18.7k
+ 252 | Sp91   | basic attack                   |  1055k |   10 |    DEAD    DEAD    DEAD   23.1k   18.7k
+ 253 | Skavag | (boss turn)                    |  1013k |   10 |    DEAD    DEAD    DEAD   22.4k   18.7k
+ 254 | Tagoar | A3                             |  1013k |   10 |    5.2k    5.1k    7.8k   22.4k   18.7k
+ 255 | Sp92   | basic attack                   |  1013k |   10 |    5.2k    5.1k    7.8k   22.4k   18.7k
+ 256 | Sp93   | basic attack                   |  1013k |   10 |    5.2k    5.1k    7.8k   22.4k   18.7k
+ 257 | Sp94   | basic attack                   |  1013k |   10 |    5.2k    5.1k    7.8k   22.4k   18.7k
+ 258 | Sp95   | basic attack                   |  1013k |   10 |    5.2k    5.1k    7.8k   22.4k   18.7k
+ 259 | Pelops | A1                             |  1013k |   10 |    5.2k    5.1k    7.8k   23.3k   18.7k
+ 260 | Sp96   | basic attack                   |   981k |   10 |    5.2k    5.1k    7.8k   23.3k   18.7k
+ 261 | Sp97   | basic attack                   |   949k |   10 |    5.2k    5.1k    7.8k   23.3k   18.7k
+ 262 | Sp88   | basic attack                   |   917k |   10 |    5.2k    5.1k    7.8k   23.3k   18.7k
+ 263 | Sp89   | basic attack                   |   885k |   10 |    5.2k    5.1k    7.8k   23.3k   18.7k
+ 264 | Sp90   | basic attack                   |   853k |   10 |    5.2k    5.1k    7.8k   23.3k   18.7k
+ 265 | Sp91   | basic attack                   |   821k |   10 |    5.0k    5.1k    7.8k   23.3k   18.7k
+ 266 | Vergis | A1                             |   821k |   10 |    5.0k    7.6k    7.8k   23.3k   18.7k
+ 267 | Ezio   | A1                             |   821k |    9 |    5.0k    7.6k    7.8k   23.3k   18.7k
+ 268 | Bambus | A2                             |   818k |   10 |    5.0k    7.6k    7.8k   23.3k   18.7k
+ 269 | Tagoar | A2                             |   816k |   10 |    8.8k   11.4k   11.6k   27.1k   22.5k
+ 270 | Sp92   | basic attack                   |   784k |   10 |    8.8k   11.4k   11.6k   27.1k   22.5k
+ 271 | Sp93   | basic attack                   |   752k |   10 |    8.8k   11.4k   11.6k   27.1k   22.5k
+ 272 | Pelops | A2                             |   752k |   10 |    8.8k   11.4k   11.6k   29.0k   22.5k
+ 273 | Vergis | A2                             |   752k |   10 |    8.8k   13.9k   11.6k   29.0k   22.5k
+ 274 | Bambus | A1                             |   750k |    9 |    8.8k   13.9k   15.5k   29.0k   22.5k
+ 275 | Sp94   | basic attack                   |   718k |    9 |    8.8k   13.9k   15.5k   29.0k   22.5k
+ 276 | Sp95   | basic attack                   |   686k |    9 |    8.8k   13.9k   15.5k   29.0k   22.5k
+ 277 | Tagoar | A1                             |   686k |   10 |    8.8k   13.9k   15.5k   29.0k   22.5k
+ 278 | Skavag | (boss turn)                    |   971k |    4 |    8.8k    DEAD   12.5k   29.0k   22.5k
+ 279 | Ezio   | A2                             |   952k |    6 |    8.8k    DEAD   12.5k   29.0k   22.5k
+ 280 | Bambus | A1                             |   951k |    8 |    8.8k    DEAD   16.4k   29.0k   22.5k
+ 281 | Pelops | A1                             |   951k |   10 |    8.8k    DEAD   16.4k   29.8k   22.5k
+ 282 | Ezio   | A1                             |   951k |   10 |    8.8k    DEAD   16.4k   29.8k   22.5k
+ 283 | Tagoar | A1                             |   951k |    9 |    8.8k    DEAD   16.4k   29.8k   22.5k
+ 284 | Sp101  | basic attack                   |   951k |    9 |    7.9k    DEAD   16.4k   29.8k   22.5k
+ 285 | Sp102  | basic attack                   |   951k |    9 |    6.5k    DEAD   16.4k   29.8k   22.5k
+ 286 | Sp103  | basic attack                   |   951k |    9 |    5.1k    DEAD   16.4k   29.8k   22.5k
+ 287 | Sp104  | basic attack                   |   951k |    9 |    3.7k    DEAD   16.4k   29.8k   22.5k
+ 288 | Sp105  | basic attack                   |   951k |    9 |    2.3k    DEAD   16.4k   29.8k   22.5k
+ 289 | Bambus | A3                             |   951k |   10 |    2.3k    DEAD   20.3k   29.8k   22.5k
+ 290 | Pelops | A3                             |   951k |   10 |    2.3k    DEAD   20.3k   29.8k   22.5k
+ 291 | Sp106  | basic attack                   |   951k |   10 |    2.3k    DEAD   20.3k   29.8k   22.5k
+ 292 | Sp107  | basic attack                   |   951k |   10 |    2.3k    DEAD   20.3k   29.8k   22.5k
+ 293 | Sp108  | basic attack                   |   951k |   10 |    2.3k    DEAD   20.3k   29.8k   22.5k
+ 294 | Sp109  | basic attack                   |   951k |   10 |    2.3k    DEAD   20.3k   29.8k   22.5k
+ 295 | Tagoar | A1                             |   951k |   10 |    2.3k    DEAD   20.3k   29.8k   22.5k
+ 296 | Ezio   | A3                             |   951k |    9 |    2.3k    DEAD   20.3k   29.8k   22.5k
+ 297 | Bambus | A2                             |   948k |   10 |    2.3k    DEAD   20.3k   29.8k   22.5k
+ 298 | Sp102  | basic attack                   |   948k |   10 |    2.3k    DEAD   20.3k   29.8k   22.5k
+ 299 | Sp103  | basic attack                   |   948k |   10 |    2.3k    DEAD   20.3k   29.8k   22.5k
+ 300 | Sp104  | basic attack                   |   948k |   10 |    2.3k    DEAD   20.3k   29.8k   22.5k
+ 301 | Sp105  | basic attack                   |   948k |   10 |    2.3k    DEAD   20.3k   29.8k   22.5k
+ 302 | Sp110  | basic attack                   |   948k |   10 |    2.3k    DEAD   20.3k   29.8k   22.5k
+ 303 | Skavag | (boss turn)                    |   889k |   10 |    2.3k    DEAD   20.3k   23.7k   22.5k
+ 304 | Pelops | A1                             |   889k |    9 |    2.3k    DEAD   20.3k   24.6k   22.5k
+ 305 | Sp106  | basic attack                   |   857k |    9 |    2.3k    DEAD   20.3k   23.4k   22.5k
+ 306 | Sp107  | basic attack                   |   825k |    9 |    2.3k    DEAD   20.3k   22.2k   22.5k
+ 307 | Sp108  | basic attack                   |   793k |    9 |    2.3k    DEAD   20.3k   21.1k   22.5k
+ 308 | Sp109  | basic attack                   |   762k |    9 |    2.3k    DEAD   20.3k   19.9k   22.5k
+ 309 | Tagoar | A1                             |   762k |    9 |    2.3k    DEAD   20.3k   19.9k   22.5k
+ 310 | Bambus | A1                             |   760k |    8 |    2.3k    DEAD   20.3k   19.9k   22.5k
+ 311 | Ezio   | A1                             |   760k |   10 |    2.3k    DEAD   20.3k   19.9k   22.5k
+ 312 | Sp111  | basic attack                   |   760k |   10 |    2.3k    DEAD   20.3k   18.2k   22.5k
+ 313 | Sp110  | basic attack                   |   728k |   10 |    2.3k    DEAD   20.3k   17.0k   22.5k
+ 314 | Pelops | A2                             |   728k |    9 |    2.3k    DEAD   20.3k   20.0k   22.5k
+ 315 | Bambus | A1                             |   726k |   10 |    2.3k    DEAD   20.3k   20.0k   22.5k
+ 316 | Tagoar | A2                             |   724k |   10 |    6.1k    DEAD   24.1k   23.8k   25.3k
+ 317 | Ezio   | A2                             |   704k |    5 |    6.1k    DEAD   24.1k   23.8k   25.3k
+ 318 | Sp114  | basic attack                   |   704k |    5 |    6.1k    DEAD   24.1k   23.8k   25.3k
+ 319 | Sp115  | basic attack                   |   704k |    5 |    6.1k    DEAD   24.1k   23.8k   25.3k
+ 320 | Sp112  | basic attack                   |   704k |    5 |    6.1k    DEAD   24.1k   23.8k   25.3k
+ 321 | Bambus | A3                             |   704k |    7 |    6.1k    DEAD   24.1k   23.8k   25.3k
+ 322 | Pelops | A1                             |   704k |    8 |    6.1k    DEAD   24.1k   24.7k   25.3k
+ 323 | Tagoar | A3                             |   704k |   10 |    6.1k    5.1k   24.1k   24.7k   25.3k
+ 324 | Sp113  | basic attack                   |   704k |   10 |    6.1k    5.1k   24.1k   24.7k   25.3k
+ 325 | Skavag | (boss turn)                    |   992k |    4 |    DEAD    DEAD   11.0k   16.0k   12.2k
+ 326 | Bambus | A2                             |   989k |    6 |    DEAD    DEAD   11.0k   16.0k   12.2k
+ 327 | Pelops | A3                             |   989k |    8 |    DEAD    DEAD   11.0k   16.0k   12.2k
+ 328 | Tagoar | A1                             |   989k |   10 |    DEAD    DEAD   11.0k   16.0k   12.2k
+ 329 | Bambus | A1                             |   989k |   10 |    DEAD    DEAD   11.0k   16.0k   12.2k
+ 330 | Sp124  | basic attack                   |   989k |   10 |    DEAD    DEAD   11.0k   16.0k   12.2k
+ 331 | Sp125  | basic attack                   |   989k |   10 |    DEAD    DEAD   11.0k   16.0k   12.2k
+ 332 | Sp126  | basic attack                   |   989k |   10 |    DEAD    DEAD   11.0k   16.0k   12.2k
+ 333 | Sp123  | basic attack                   |   989k |   10 |    DEAD    DEAD   11.0k   16.0k   12.2k
+ 334 | Pelops | A1                             |   989k |   10 |    DEAD    DEAD   11.0k   17.0k   12.2k
+ 335 | Sp127  | basic attack                   |   989k |   10 |    DEAD    DEAD   11.0k   16.3k   12.2k
+ 336 | Sp128  | basic attack                   |   989k |   10 |    DEAD    DEAD   11.0k   14.6k   12.2k
+ 337 | Sp129  | basic attack                   |   989k |   10 |    DEAD    DEAD   11.0k   13.0k   12.2k
+ 338 | Sp130  | basic attack                   |   989k |   10 |    DEAD    DEAD   11.0k   11.5k   12.2k
+ 339 | Tagoar | A1                             |   989k |   10 |    DEAD    DEAD   11.0k   11.5k   12.2k
+ 340 | Sp131  | basic attack                   |   989k |   10 |    DEAD    DEAD   11.0k   11.5k   12.2k
+ 341 | Sp132  | basic attack                   |   989k |   10 |    DEAD    DEAD   11.0k   11.5k   12.2k
+ 342 | Bambus | A1                             |   987k |   10 |    DEAD    DEAD   11.0k   11.5k   12.2k
+ 343 | Sp124  | basic attack                   |   955k |   10 |    DEAD    DEAD   11.0k   11.5k   12.2k
+ 344 | Sp125  | basic attack                   |   923k |   10 |    DEAD    DEAD   11.0k   11.5k   12.2k
+ 345 | Sp126  | basic attack                   |   891k |   10 |    DEAD    DEAD   11.0k   11.5k   12.2k
+ 346 | Pelops | A2                             |   891k |    9 |    DEAD    DEAD   11.0k   14.1k   12.2k
+ 347 | Skavag | (boss turn)                    |   859k |   10 |    DEAD    DEAD    DEAD   11.5k    3.7k
+ 348 | Sp127  | basic attack                   |   827k |   10 |    DEAD    DEAD    DEAD   11.5k    1.6k
+ 349 | Sp128  | basic attack                   |   795k |   10 |    DEAD    DEAD    DEAD   11.5k    DEAD
+ 350 | Sp129  | basic attack                   |   763k |   10 |    DEAD    DEAD    DEAD   10.4k    DEAD
+ 351 | Sp130  | basic attack                   |   731k |   10 |    DEAD    DEAD    DEAD    9.2k    DEAD
+ 352 | Sp131  | basic attack                   |   731k |   10 |    DEAD    DEAD    DEAD    8.0k    DEAD
+ 353 | Sp132  | basic attack                   |   731k |   10 |    DEAD    DEAD    DEAD    6.9k    DEAD
+ 354 | Sp124  | basic attack                   |   700k |   10 |    DEAD    DEAD    DEAD    5.7k    DEAD
+ 355 | Sp125  | basic attack                   |   668k |   10 |    DEAD    DEAD    DEAD    4.6k    DEAD
+ 356 | Sp126  | basic attack                   |   636k |   10 |    DEAD    DEAD    DEAD    3.4k    DEAD
+ 358 | Sp133  | basic attack                   |   636k |   10 |    DEAD    DEAD    DEAD    1.7k    DEAD
+ 359 | Sp127  | basic attack                   |   604k |   10 |    DEAD    DEAD    DEAD    1.7k    DEAD
+ 360 | Sp128  | basic attack                   |   572k |   10 |    DEAD    DEAD    DEAD    1.7k    DEAD
+ 361 | Sp129  | basic attack                   |   540k |   10 |    DEAD    DEAD    DEAD    1.7k    DEAD
+ 362 | Sp130  | basic attack                   |   508k |   10 |    DEAD    DEAD    DEAD    1.7k    DEAD
+ 363 | Sp131  | basic attack                   |   476k |   10 |    DEAD    DEAD    DEAD     724    DEAD
+ 364 | Sp132  | basic attack                   |   444k |   10 |    DEAD    DEAD    DEAD    DEAD    DEAD

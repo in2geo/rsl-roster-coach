@@ -235,8 +235,19 @@ export function scoreTeam(team, tagMeta, skillsByName = {}, cfg = {}) {
   for (const [b, target] of Object.entries(allocation)) {
     const cov = byBucket[b].sort((x, y) => y.rel - x.rel);
     if (!cov.length) { fill[b] = 0; continue; }
-    fill[b] = target * cov[0].rel;                                   // dedicated seat fills it
-    for (const extra of cov.slice(1)) fill[b] += target * extra.rel * BONUS_COVERER;
+    if (cfg.coverage?.[b] === 'probabilistic') {
+      // RELIABILITY, NOT STACKING (Mike, 2026-08-01, HP Burn on Spider). HP Burn is 1-PER-TARGET, so
+      // extra appliers do NOT stack — but each is another CHANCE TO LAND against chance/ACC/affinity
+      // gating and a constantly RESPAWNING swarm. So value them as coverage: P(the effect is up) =
+      // 1 − Π(1 − rel_i), capped at the target (you can't exceed 100% uptime). Three ~0.7 appliers ≈ 0.97
+      // vs one at 0.70 — the reliable burn engine the flat BONUS_COVERER (0.30 "surplus") can't express.
+      // ONLY for non-stacking DoT (HP Burn); Poison genuinely stacks and must NOT use this.
+      const p = 1 - cov.reduce((acc, c) => acc * (1 - Math.min(1, Math.max(0, c.rel))), 1);
+      fill[b] = target * p;
+    } else {
+      fill[b] = target * cov[0].rel;                                 // dedicated seat fills it
+      for (const extra of cov.slice(1)) fill[b] += target * extra.rel * BONUS_COVERER;
+    }
   }
   let grade = 0;
   const rows = [];

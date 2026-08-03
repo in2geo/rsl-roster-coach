@@ -36,23 +36,28 @@ const NEW = [
   if (!url) { console.error('SUPABASE_POOLER_URL / SUPABASE_DB_URL missing'); process.exit(1); }
   const c = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
   await c.connect();
+  // THE alias-aware name registry (champions.name + champion_aliases): resolve each NEW name →
+  // champions.id, then query BY ID — never a raw `name = any(...)` lookup, which silently misses
+  // any short-name whose champions.name differs (e.g. "Pharsalas" → "Pharsalas Gravedirt").
+  const { loadNameResolver } = await import('../lib/champion-names.js');
+  const resolver = await loadNameResolver(c);
   const names = [...new Set(NEW.map(x => x[0]))];
-  const ex = await c.query(
-    `select name from champions where game_id='raid_shadow_legends' and name = any($1)`, [names]);
-  const found = new Set(ex.rows.map(r => r.name));
+  const idByName = new Map();
+  for (const n of names) { const hit = resolver.resolve(n); if (hit) idByName.set(n, hit.id); }
+  const found = new Set([...idByName.keys()]);
   const missing = names.filter(n => !found.has(n));
   console.log('CHAMPIONS present: ' + found.size + '/' + names.length);
   console.log('CHAMPIONS MISSING from live champions table: ' + JSON.stringify(missing));
 
+  const ids = [...new Set([...idByName.values()])];
+  const idToName = new Map([...idByName].map(([n, id]) => [id, n]));   // champion_id → original NEW name
   const q = await c.query(
-    `select ch.name as cname, t.name as tname
+    `select ct.champion_id as cid, t.name as tname
        from champion_tags ct
-       join champions ch on ch.id=ct.champion_id
        join tags t on t.id=ct.tag_id
-      where ch.game_id='raid_shadow_legends'
-        and ch.name = any($1)
-        and t.name in ('Decrease Defense','Decrease Attack','Decrease Speed','Provoke')`, [names]);
-  const have = new Set(q.rows.map(r => r.cname + '||' + r.tname));
+      where ct.champion_id = any($1)
+        and t.name in ('Decrease Defense','Decrease Attack','Decrease Speed','Provoke')`, [ids]);
+  const have = new Set(q.rows.map(r => (idToName.get(r.cid) ?? r.cid) + '||' + r.tname));
   const already = NEW.filter(([n,t]) => have.has(n + '||' + t));
   const trulyNew = NEW.filter(([n,t]) => found.has(n) && !have.has(n + '||' + t));
   const blocked = NEW.filter(([n,t]) => !found.has(n));

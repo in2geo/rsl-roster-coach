@@ -27,6 +27,7 @@
 // Usage: node tools/gear-tiers.mjs
 import fs from 'fs';
 import { effectiveStats } from '../lib/effective-stats.js';
+import { loadNameResolverRest, normalizeName } from '../lib/champion-names.js';
 
 const env = {};
 for (const l of fs.readFileSync('.env.local', 'utf8').split(/\r?\n/)) {
@@ -36,12 +37,10 @@ const H = { apikey: env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${env.SUPAB
 const rest = async p => { const r = await fetch(`${env.SUPABASE_URL}/rest/v1/${p}`, { headers: H }); return r.ok ? r.json() : []; };
 
 const champs = await rest('champions?select=id,name,role,champion_tags(status,tags(name,is_debuff,bypasses_accuracy_check))&game_id=eq.raid_shadow_legends&limit=2000');
-const aliases = await rest('champion_aliases?select=alias,champion_id&limit=2000');
-const norm = s => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
-const idToName = Object.fromEntries(champs.map(c => [c.id, c.name]));
-const nameKey = {};
-for (const c of champs) nameKey[norm(c.name)] = c.name;
-for (const a of aliases) if (idToName[a.champion_id]) nameKey[norm(a.alias)] = idToName[a.champion_id];
+const norm = normalizeName;   // THE canonical champion-name normalizer (lib/champion-names.js)
+// THE alias-aware name registry (champions.name + champion_aliases): resolve any name/alias → the
+// canonical champion, no hand-rolled norm→champion map. See lib/champion-names.js.
+const resolver = await loadNameResolverRest(rest);
 
 // DoT sources cannot crit; ATK-multiplier tags can. A champion needs CRIT only if some of their
 // damage is attack-based — so "crit applies" = has an attack-damage tag.
@@ -90,7 +89,7 @@ for (const band of BANDS) {
     const acctStats = statsByAcct[b.displayName]; if (!acctStats) continue;
     clears++;
     for (const h of b.heroes) {
-      const canon = nameKey[norm(h.name)] ?? h.name;
+      const canon = resolver.resolve(h.name)?.name ?? h.name;
       const key = `${b.displayName}|${canon}|${band.label}`;
       if (seen.has(key)) continue;                     // one champion per account per band
       const stt = acctStats[norm(h.name)] ?? acctStats[norm(canon)];

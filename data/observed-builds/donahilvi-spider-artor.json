@@ -1,0 +1,152 @@
+{
+ "_source": "regenerated from Gestal sync DonaHilvi_a6261acc35588c94.json (syncedAt 2026-08-01T04:34:03.564Z)",
+ "_note": "total_stats = effectiveStats(base+gear), ROSTER screen (no aura/arena — the fixture harness layers those). lifesteal = 0.30 iff the Lifesteal 4-set is COMPLETE. gear_sets = piece counts (factual); only the Lifesteal set effect is consumed by the sim.",
+ "_generator": "tools/build-from-sync.mjs",
+ "champions": [
+  {
+   "name": "Michelangelo",
+   "level": 60,
+   "stars": 6,
+   "rarity": "Legendary",
+   "affinity": "Spirit",
+   "gear_sets": [
+    "Perception×4",
+    "Speed×2",
+    "null×1"
+   ],
+   "lifesteal": 0,
+   "base_spd": 99,
+   "base_hp": 14535,
+   "base_atk": 1421,
+   "base_def": 1002,
+   "total_stats": {
+    "hp": 21102,
+    "atk": 2546,
+    "def": 1405,
+    "spd": 196,
+    "crit_rate": 59,
+    "crit_dmg": 71,
+    "res": 84,
+    "acc": 237
+   }
+  },
+  {
+   "name": "Coldheart",
+   "level": 55,
+   "stars": 6,
+   "rarity": "Rare",
+   "affinity": "Void",
+   "gear_sets": [
+    "Offense×2",
+    "null×1",
+    "Immortal×1",
+    "Divine Life×1",
+    "Cruel×1",
+    "Perception×1"
+   ],
+   "lifesteal": 0,
+   "base_spd": 94,
+   "base_hp": 12315,
+   "base_atk": 1137,
+   "base_def": 674,
+   "total_stats": {
+    "hp": 18648,
+    "atk": 2258,
+    "def": 1044,
+    "spd": 159,
+    "crit_rate": 62,
+    "crit_dmg": 68,
+    "res": 40,
+    "acc": 99
+   }
+  },
+  {
+   "name": "Hilve the Rime-called",
+   "level": 50,
+   "stars": 5,
+   "rarity": "Legendary",
+   "affinity": "Force",
+   "gear_sets": [
+    "Relentless×2",
+    "Immortal×1",
+    "null×1",
+    "Perception×1",
+    "Retaliation×1",
+    "Destroy×1"
+   ],
+   "lifesteal": 0,
+   "base_spd": 105,
+   "base_hp": 14460,
+   "base_atk": 575,
+   "base_def": 972,
+   "total_stats": {
+    "hp": 33425,
+    "atk": 1076,
+    "def": 1305,
+    "spd": 165,
+    "crit_rate": 57,
+    "crit_dmg": 65,
+    "res": 37,
+    "acc": 51
+   }
+  },
+  {
+   "name": "Ninja",
+   "level": 60,
+   "stars": 6,
+   "rarity": "Legendary",
+   "affinity": "Magic",
+   "gear_sets": [
+    "Lifesteal×4",
+    "Perception×2",
+    "null×1"
+   ],
+   "lifesteal": 0.3,
+   "base_spd": 100,
+   "base_hp": 16350,
+   "base_atk": 1398,
+   "base_def": 914,
+   "total_stats": {
+    "hp": 22842,
+    "atk": 2436,
+    "def": 1319,
+    "spd": 167,
+    "crit_rate": 79,
+    "crit_dmg": 66,
+    "res": 78,
+    "acc": 70
+   }
+  },
+  {
+   "name": "Iudex Artor",
+   "level": 35,
+   "stars": 5,
+   "rarity": "Legendary",
+   "affinity": "Spirit",
+   "gear_sets": [
+    "null×1",
+    "Life×1",
+    "Perception×1",
+    "Immortal×1",
+    "Savage×1",
+    "Offense×1",
+    "Cursed×1"
+   ],
+   "lifesteal": 0,
+   "base_spd": 97,
+   "base_hp": 11670,
+   "base_atk": 558,
+   "base_def": 730,
+   "total_stats": {
+    "hp": 28667,
+    "atk": 723,
+    "def": 1185,
+    "spd": 148,
+    "crit_rate": 15,
+    "crit_dmg": 61,
+    "res": 30,
+    "acc": 35
+   }
+  }
+ ]
+}

@@ -47,21 +47,23 @@ const STRATEGIES = [
 ];
 
 // ── champ catalog (tags + damage multiplier), keyed by type_id + name ──────────────────────────
-const champs = await rest('champions?select=type_id,name,rarity,damage_multiplier:champion_skills(damage_multiplier),champion_tags(status,tags(name))&game_id=eq.raid_shadow_legends');
-const byType = {}, byName = {};
+const champs = await rest('champions?select=id,type_id,name,rarity,damage_multiplier:champion_skills(damage_multiplier),champion_tags(status,tags(name))&game_id=eq.raid_shadow_legends');
+const { loadNameResolverRest } = await import('../lib/champion-names.js');
+const resolver = await loadNameResolverRest(rest); // alias-aware name → champions.id resolver
+const byType = {}, byId = {};
 for (const c of champs) {
   const tags = new Set((c.champion_tags ?? []).filter(ct => ct.status === 'approved').map(ct => ct.tags?.name).filter(Boolean));
   const mults = (c.damage_multiplier ?? []).flatMap(s => (String(s.damage_multiplier).match(/[0-9]+\.?[0-9]*/g) || []).map(Number));
   const rec = { name: c.name, tags, mult: mults.length ? Math.max(...mults) : 0 };
   if (c.type_id != null) byType[c.type_id] = rec;
-  byName[c.name.toLowerCase()] = rec;
+  byId[c.id] = rec; // id-based key so alias resolution can hit it
 }
 const IN_SCOPE = new Set(['Rare', 'Epic', 'Legendary', 'Mythical']);
 const rosterOf = (snap) => {
   const r = [];
   for (const c of snap.champions ?? []) {
     if (!IN_SCOPE.has(c.rarity)) continue;
-    const rec = byType[c.baseTypeId] ?? byName[c.name?.toLowerCase()];
+    const rec = byType[c.baseTypeId] ?? byId[resolver.resolve(c.name)?.id]; // id-based resolution (alias-aware)
     if (rec) r.push({ name: c.name, level: c.level, tags: rec.tags, mult: rec.mult });
   }
   return r;

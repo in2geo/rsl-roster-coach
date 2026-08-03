@@ -8,6 +8,7 @@
  * Read-only. Usage: node --env-file=.env.local tools/cb-model-validate.mjs
  */
 import { readBattleHistory, readGestalRoster, buildUserChampions } from '../lib/gestal-context.js';
+import { buildNameResolver } from '../lib/champion-names.js';   // alias-aware name→champions.id registry — captured hero names reconcile by ID
 import { normalizeBattle, chestTierFor } from '../lib/clan-boss.js';
 import { estimateStats } from '../lib/estimate-stats.js';
 import { estimateCbDamage, fitCalibration, carriers } from '../lib/cb-damage-model.js';
@@ -15,7 +16,6 @@ import { parseMultiplier } from '../lib/multiplier-rank.js';
 import { createClient } from '@supabase/supabase-js';
 
 const s = createClient(process.env.SUPABASE_URL.replace(/\/rest\/v1\/?$/, ''), process.env.SUPABASE_SERVICE_KEY, { global: { fetch } });
-const norm = (x) => String(x ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const statOf = (uc, k) => { for (const a of ({ crit_rate: ['crit_rate', 'crate'], crit_dmg: ['crit_dmg', 'cdmg'] }[k] ?? [k])) { const v = uc?.effective_stats?.[a] ?? uc?._est?.[a]; if (v != null) return v; } return null; };
 const bestMult = (skills) => { let best = null; for (const sk of skills ?? []) { const t = String(sk.multiplier_type ?? '').toUpperCase(); if (!['ATK', 'HP', 'DEF'].includes(t)) continue; const v = parseMultiplier(sk.damage_multiplier, sk.multiplier_type, t); if (v != null && (best == null || v > best)) best = v; } return best; };
 
@@ -34,14 +34,17 @@ const { data: champs } = await s.from('champions')
 // See check-stat-estimator: `champs` is type_id-filtered, so null-type_id champions are already out.
 const { data: aliasRows } = await s.from('champion_aliases').select('alias,champion_id').limit(5000);
 const { userChampions } = buildUserChampions(roster?.champions ?? [], champs ?? [], aliasRows ?? []);
+// ONE registry (built from the champs + aliasRows already fetched, no extra query) — every captured hero name
+// reconciles to champions.id, so an alias/display-name variant lines up instead of silently dropping the hero.
+const resolver = buildNameResolver(champs ?? [], aliasRows ?? []);
 const ids = userChampions.map(u => u.champion?.id).filter(Boolean);
 const { data: skillRows } = await s.from('champion_skills').select('champion_id,damage_multiplier,multiplier_type').in('champion_id', ids).not('damage_multiplier', 'is', null);
 const skillsBy = {}; for (const r of skillRows ?? []) (skillsBy[r.champion_id] ??= []).push(r);
 const { data: cbStats } = await s.from('clan_boss_stats').select('difficulty,boss_hp');
 const bossHpByDiff = Object.fromEntries((cbStats ?? []).map(r => [r.difficulty, Number(r.boss_hp)]));
 
-// name → engine-ready champ.
-const byName = new Map();
+// champions.id → engine-ready champ.
+const byId = new Map();
 for (const uc of userChampions) {
   uc._est = uc.effective_stats ?? estimateStats(uc.champion, uc, { gearTier: uc.gear_tier });
   const champ = {
@@ -51,7 +54,7 @@ for (const uc of userChampions) {
     atk: statOf(uc, 'atk'), crit_rate: statOf(uc, 'crit_rate'), crit_dmg: statOf(uc, 'crit_dmg'), spd: statOf(uc, 'spd'),
     damage_multiplier_score: bestMult(skillsBy[uc.champion?.id]),
   };
-  for (const k of [uc.display_name, uc.champion?.name]) if (k) byName.set(norm(k), champ);
+  if (uc.champion?.id) byId.set(uc.champion.id, champ);
 }
 
 const { data: tierRows } = await s.from('clan_boss_chest_tiers')
@@ -63,7 +66,7 @@ for (const d in tiersByDiff) tiersByDiff[d].sort((a, b) => a.sort_order - b.sort
 console.log(`\nCB damage MODEL validation — ${roster?.displayName ?? accountId} — ${runs.length} run(s)\n`);
 for (const run of runs) {
   const heroes = (run.heroes ?? []).filter(h => typeof h.damage === 'number');
-  const team = heroes.map(h => byName.get(norm(h.name))).filter(Boolean);
+  const team = heroes.map(h => byId.get(resolver.resolve(h.name)?.id)).filter(Boolean);
   const bossHp = bossHpByDiff[run.difficulty] ?? null;
   if (!bossHp || team.length !== heroes.length) { console.log(`skip ${run.difficulty} (bossHp/team unresolved)`); continue; }
 
@@ -71,13 +74,13 @@ for (const run of runs) {
   const cal = fitCalibration(est.rawTotal, run.totalDamageDealt);
   const withAbs = estimateCbDamage(team, { bossHp, totalTurns: run.turns ?? null, calibration: cal });
 
-  const actByName = new Map(heroes.map(h => [norm(h.name), h.damage]));
+  const actById = new Map(heroes.map(h => [resolver.resolve(h.name)?.id, h.damage]));   // captured damage keyed by champions.id
   const actTotal = heroes.reduce((s2, h) => s2 + h.damage, 0);
 
   console.log(`${run.difficulty}  boss_hp=${bossHp.toLocaleString()}  turns=${run.turns}  total=${run.totalDamageDealt.toLocaleString()}`);
   console.log('  ' + 'CHAMP'.padEnd(20) + 'SOURCES'.padEnd(32) + 'model%   actual%   Δ');
   for (const r of withAbs.perChampion) {
-    const actShare = actTotal ? (actByName.get(norm(r.name)) ?? 0) / actTotal : 0;
+    const actShare = actTotal ? (actById.get(resolver.resolve(r.name)?.id) ?? 0) / actTotal : 0;
     const d = (r.share - actShare) * 100;
     console.log('  ' + String(r.name).padEnd(20) + (r.sources.join('+') || '—').padEnd(32) +
       `${(r.share * 100).toFixed(1).padStart(5)}%   ${(actShare * 100).toFixed(1).padStart(5)}%   ${(d >= 0 ? '+' : '') + d.toFixed(1)}`);

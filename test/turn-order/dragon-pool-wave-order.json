@@ -1,0 +1,46 @@
+{
+  "id": "dragon-pool-wave-order",
+  "_purpose": "TURN-ORDER anchor for the Dragon-16 DonaHilvi pool team (Michelangelo/Ninja/Hilvi/Iudex Artor/Coldheart). This is the reality-confirmed actor(:skill) sequence per wave phase, used to drive the TURN-MODEL calibration — the OPEN turn-counting/turn-order convention the handoff put on HOLD. Fixing the sim so these sequences match is the ROOT-CAUSE fix for the pool team's over-survival and Coldheart's over-deal (356k vs 223k). See knowledge/HANDOFF_2026-08-03_turn-model-root-cause.md.",
+  "fixture": "test/golden/dragon-donahilvi-pool-current.json",
+  "seed": 7,
+  "phases": {
+    "wave 1": {
+      "_status": "CONFIRMED vs reality for the first ~12-13 turns (Mike). All allies start at TM 0 and act in SPD order (Mikey 196 > Ninja 167 > Hilvi 165 > Coldheart 159 > Artor 148), then cycle under the AI A3>A2>A1 priority as cooldowns allow. The sim currently MATCHES this. Kept as a regression anchor so the turn-model work does not break the confirmed opening.",
+      "assertActors": true,
+      "assertSkills": true,
+      "expected": [
+        { "n": 1,  "actor": "Michelangelo", "skill": "A3" },
+        { "n": 2,  "actor": "Ninja",        "skill": "A2" },
+        { "n": 3,  "actor": "Hilvi",        "skill": "A2" },
+        { "n": 4,  "actor": "Coldheart",    "skill": "A2" },
+        { "n": 5,  "actor": "Artor",        "skill": "A2" },
+        { "n": 6,  "actor": "Michelangelo", "skill": "A2" },
+        { "n": 7,  "actor": "Ninja",        "skill": "A3" },
+        { "n": 8,  "actor": "Hilvi",        "skill": "A3" },
+        { "n": 9,  "actor": "Artor",        "skill": "A1" },
+        { "n": 10, "actor": "Coldheart",    "skill": "A3" },
+        { "n": 11, "actor": "Michelangelo", "skill": "A1" },
+        { "n": 12, "actor": "Ninja",        "skill": "A1" },
+        { "n": 13, "actor": "Hilvi",        "skill": "A1" }
+      ]
+    },
+    "wave 2": {
+      "_status": "TARGET — currently FAILS. Reality (Mike): the team gets NO TM boosts at wave 2 (the A2/A3 boost-skills are still on cooldown from wave 1), so the whole team moves ONCE each in SPD order, THEN Faceless goes 6th and casts Lightning (5.5x ATK, ~12k) on Coldheart; two mob shots (Lightning + Arbalester Lucky Shot) kill her, she is revived by Hilvi, and she enters the boss phase weakened. The SIM instead floods ~13 ally actions before the first mob acts 14th — because (a) ally turn meter carries across the wave transition and (b) the A2 boost-skills RECHARGED during a too-long wave 1. Only ACTOR order is asserted here (the exact skills depend on carried cooldown state, which is itself part of what must be fixed).",
+      "assertActors": true,
+      "assertSkills": false,
+      "expected": [
+        { "n": 1, "actor": "Michelangelo" },
+        { "n": 2, "actor": "Ninja" },
+        { "n": 3, "actor": "Hilvi" },
+        { "n": 4, "actor": "Coldheart" },
+        { "n": 5, "actor": "Artor" },
+        { "n": 6, "actor": "Faceless", "side": "enemy" }
+      ]
+    }
+  },
+  "_phaseDurations": {
+    "_note": "The turn-model goal, from the handoff: sim phase durations must fall from 36/42/106 (wave1/wave2/boss) to reality's 25/25/51. The boss phase (106 vs 51) is the dominant overrun; the waves are secondary but gate the wave-2 burst timing.",
+    "reality": { "wave1": 25, "wave2": 25, "boss": 51 },
+    "sim_2026_08_02": { "wave1": 36, "wave2": 42, "boss": 106 }
+  }
+}

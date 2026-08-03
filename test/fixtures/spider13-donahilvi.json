@@ -1,0 +1,38 @@
+{
+  "id": "spider13-donahilvi",
+  "_source": "Spider's Den Stage 13 with DonaHilvi's pool-selected AoE-nuke team (Michelangelo, Coldheart, Hilvi, Ninja, Alice). Stats from the fresh Gestal sync (a6261acc35588c94) via tools/build-from-sync.mjs → data/observed-builds/donahilvi-spider.json. NOTE: the pool put this team at Spider STAGE 15 (wall tier), but the sim is only validated at stage 13; stage-15 boss passives are deferred in spider.js. This is a stage-13 MODEL run to exercise the new recipes, NOT a reality-anchored WR run (no reality capture for this account/team yet).",
+  "content": {
+    "dungeon": "Spider's Den",
+    "difficulty": "Normal",
+    "stage": 13,
+    "mode": "Full Auto",
+    "speed": "1x"
+  },
+  "result": {
+    "outcome": "UNKNOWN",
+    "_note": "No reality anchor yet for DonaHilvi on Spider. This fixture exists to RUN the new recipes, not to assert a golden outcome."
+  },
+  "_names": "team = short single-word names (become combatant names → champKey → recipe key). roster maps each to the Gestal EXPORT name, which both keys the build file and resolves to champions.name (Hilvi via seed 213 alias, Alice via existing alias).",
+  "team": [
+    "Michelangelo",
+    "Coldheart",
+    "Hilvi",
+    "Ninja",
+    "Alice"
+  ],
+  "roster": {
+    "Michelangelo": "Michelangelo",
+    "Coldheart": "Coldheart",
+    "Hilvi": "Hilve the Rime-called",
+    "Ninja": "Ninja",
+    "Alice": "Alice The Wanderer"
+  },
+  "inputs": {
+    "_status": "RUNTIME — stats from the live Gestal sync (DonaHilvi a6261acc35588c94) via tools/build-from-sync.mjs.",
+    "Michelangelo": { "build": "data/observed-builds/donahilvi-spider.json" },
+    "Coldheart": { "build": "data/observed-builds/donahilvi-spider.json" },
+    "Hilvi": { "build": "data/observed-builds/donahilvi-spider.json" },
+    "Ninja": { "build": "data/observed-builds/donahilvi-spider.json" },
+    "Alice": { "build": "data/observed-builds/donahilvi-spider.json" }
+  }
+}
