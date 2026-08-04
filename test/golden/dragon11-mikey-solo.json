@@ -1,0 +1,25 @@
+{
+  "id": "dragon11-mikey-solo",
+  "_source": "AD-HOC solo test (NOT golden). Michelangelo solo on Dragon's Lair 11 to observe his Lifesteal 4-set sustain. Stats from the FRESH Gestal sync a6261acc35588c94 via build-from-sync -> data/observed-builds/donahilvi-mikey-solo.json (gear_sets Lifesteal×4/Perception×2, lifesteal 0.3). Built 2026-08-04.",
+  "content": { "dungeon": "Dragon's Lair", "difficulty": "Normal", "stage": 11, "mode": "Full Auto", "speed": "1x" },
+  "result": {
+    "outcome": "WIN",
+    "turns": 70,
+    "survivors": 1,
+    "_note": "Reality from user solo capture 2026-08-04 (Lifesteal 4-set): WIN, 70t, 1/1 survivor, dealt 509,765. ⚠ KNOWN SIM GAP: sim loses this ~60% of the time — the boss dies ~20% too slow (kill-speed residual, e.g. Ninja/Mikey buff-uptime), so the escalating purple bar outruns Mikey and Scorch wipes him. Reality kills fast enough to stay ahead of the ramp."
+  },
+  "battle_layers": {
+    "_note": "Michelangelo is the leader (ACC aura +70, applies to himself solo). arenaPct 0.06 = measured account HP/ATK/DEF bonus. No SPD aura.",
+    "auraSpdPct": 0,
+    "accAura": 70,
+    "arenaPct": 0.06
+  },
+  "team": ["Michelangelo"],
+  "roster": { "Michelangelo": "Michelangelo" },
+  "inputs": {
+    "Michelangelo": { "build": "data/observed-builds/donahilvi-mikey-solo.json" }
+  },
+  "qa_notes": [
+    "Ad-hoc solo fixture — NOT a golden assertion. Verifies fresh-sync gear (Lifesteal 4-set) flows into the sim."
+  ]
+}

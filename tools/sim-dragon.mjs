@@ -141,7 +141,7 @@ for (const c of cases) {
   // Purple bar = 20% of Hellrazor's Max HP (Mike, verified 2026-07-22) — a REAL threshold, no longer
   // the null-driven never/always bracket. Interrupting it is a team-DAMAGE check, so this number now
   // inherits the placeholder-damage error (DEF_K nominal, damage_multiplier 38% populated).
-  const content = makeDragonContent({ stageNumber: c.stage, purpleBarHp: 0.20 * c.boss.maxHp, waves: dragonWavesFor(c.stage), boss: c.boss });
+  const content = makeDragonContent({ stageNumber: c.stage, waves: dragonWavesFor(c.stage), boss: c.boss });
   const state = makeState({ allies, enemies: [] });
   state.purpleBarLeft = 0;
   const TRACE = process.argv.includes('--trace') && rows.length === 0;

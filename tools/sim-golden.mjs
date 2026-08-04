@@ -150,7 +150,7 @@ if (HAS_DB) {
     if (missing.length) { runs.push({ id: r.id, skipped: `no exact build for ${missing.join(', ')}` }); continue; }
 
     const waves = buildWaves(g.content.stage);
-    const content = makeDragonContent({ stageNumber: g.content.stage, purpleBarHp: 0.20 * boss.maxHp, waves, boss });
+    const content = makeDragonContent({ stageNumber: g.content.stage, waves, boss });
     const state = makeState({ allies, enemies: [] });
     state.purpleBarLeft = 0;
     const l = console.log; console.log = () => {};

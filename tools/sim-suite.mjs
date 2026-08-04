@@ -80,7 +80,7 @@ function buildDragonEnemies(stage) {
     }),
     actEnemy: actEnemyMob,
   }));
-  const content = makeDragonContent({ stageNumber: stage, purpleBarHp: 0.20 * boss.maxHp, waves, boss });
+  const content = makeDragonContent({ stageNumber: stage, waves, boss });
   return { boss, waves, content };
 }
 

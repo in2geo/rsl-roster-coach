@@ -1,0 +1,66 @@
+{
+ "_source": "regenerated from Gestal sync DonaHilvi_a6261acc35588c94.json (syncedAt 2026-08-04T16:40:44.126Z)",
+ "_note": "total_stats = effectiveStats(base+gear), ROSTER screen (no aura/arena — the fixture harness layers those). lifesteal = 0.30 iff the Lifesteal 4-set is COMPLETE. gear_sets = piece counts (factual); only the Lifesteal set effect is consumed by the sim.",
+ "_generator": "tools/build-from-sync.mjs",
+ "champions": [
+  {
+   "name": "Michelangelo",
+   "level": 60,
+   "stars": 6,
+   "rarity": "Legendary",
+   "affinity": "Spirit",
+   "gear_sets": [
+    "Lifesteal×4",
+    "Perception×2",
+    "null×1"
+   ],
+   "lifesteal": 0.3,
+   "has_boss_mastery": false,
+   "mastery_count": 11,
+   "masteries": [
+    "Deadly Precision",
+    "Pinpoint Accuracy",
+    "Charged Focus",
+    "Keen Strike",
+    "Heart of Glory",
+    "Single Out",
+    "Bring It Down",
+    "Swarm Smiter",
+    "Lore of Steel",
+    "Arcane Celerity",
+    "Cycle of Magic"
+   ],
+   "base_spd": 99,
+   "base_hp": 14535,
+   "base_atk": 1421,
+   "base_def": 1002,
+   "skill_levels": {
+    "A1": {
+     "level": 5,
+     "maxLevel": 5,
+     "maxed": true
+    },
+    "A2": {
+     "level": 3,
+     "maxLevel": 4,
+     "maxed": false
+    },
+    "A3": {
+     "level": 4,
+     "maxLevel": 4,
+     "maxed": true
+    }
+   },
+   "total_stats": {
+    "hp": 22644,
+    "atk": 2587,
+    "def": 1215,
+    "spd": 166,
+    "crit_rate": 79,
+    "crit_dmg": 66,
+    "res": 78,
+    "acc": 70
+   }
+  }
+ ]
+}

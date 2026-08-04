@@ -137,7 +137,7 @@ async function buildFight(seed) {
   // already calls applyBattleLayers with defaults; the Dragon path historically did not.
   if (g.battle_layers) applyBattleLayers(allies, g.battle_layers);
 
-  const content = makeDragonContent({ stageNumber: stage, purpleBarHp: 0.20 * boss.maxHp, waves, boss });
+  const content = makeDragonContent({ stageNumber: stage, waves, boss, ...(process.env.PURPLE_BAR_PCT ? { purpleBarHp: Number(process.env.PURPLE_BAR_PCT) * boss.maxHp } : {}) });
   const state = makeState({ allies, enemies: [], seed });
   state.purpleBarLeft = 0;
   return { state, content, allies };
