@@ -5,11 +5,11 @@
   "result": {
     "outcome": "WIN",
     "turns": 104,
-    "survivors": 2,
-    "winRate": 0.92,
-    "_note": "Reality for THIS pool team (Mikey/Ninja/Hilvi/Artor/Coldheart) = HIGH but NOT 100%: captured 11W/1L at St16 (~92%, median 104t as of 2026-08-02). Wins 96/101/104/108/109/113t; the 1 loss (2026-08-02) dealt 1,179,351 = ~96% of the ~1,226,226 kill threshold — wiped ~47K short. (Separately, a DIFFERENT Ezio+Xenomorph team also has a St16 loss — don't fold that in.) Wins are CLOSE (Mike first-party): typically ~2/5 alive at victory (carries Ninja+Mikey survive; supports Hilvi/Artor/Coldheart end very low or DEAD via the revive chain). Team-total dealt converges on ~1,226,226 (boss effective EHP). A faithful sim should land ~high-80s WR, fragile: frequent support deaths, ~2/5 survivors — NOT a 5/5 clear, NOT 100%."
+    "survivors": 5,
+    "winRate": 0.96,
+    "_note": "Reality for THIS pool team (Mikey/Ninja/Hilvi/Artor/Coldheart) at Dragon St16 — from 40 COMBINED captures (24 watcher battle-log + 16 manual victory-screen transcriptions, aggregated 2026-08-04), superseding the earlier 6-battle anchor. WIN RATE ~96% (watcher 23W/1L, manual 15W/1L). Wins median 104t (range 86-115). MEDIAN 5/5 SURVIVORS — the earlier '~2/5' was a small-sample artifact. Supports DO die, but only in a minority: death rate Ninja 0% / Mikey 4% / Coldheart 17% / Hilvi 22% / Artor 30% (n=23). Per-hero DEALT median (manual wins, n=15): Ninja 613k, Mikey 301k, Coldheart 223k, Hilvi 48k, Artor 27k. TAKEN med: Mikey 20k / Ninja 31k / Hilvi 37k / Coldheart 42k / Artor 43k. HEALING med: Ninja 147k / Artor 80k / Coldheart 24k / Mikey 22k / Hilvi 16k. Team-total dealt converges on ~1,226,226 (boss effective EHP). A faithful sim should land ~96% WR, MEDIAN 5/5 survivors (with support death rates ~17-30%), and — THE remaining gap — ~104 turns (the sim currently runs ~156, ~50% long)."
   },
-  "reality_notes": "POOL TEAM 5W/1L ≈ 83% at St16 (the loss dealt ~1.179M = 96% of the ~1.226M kill threshold — died just short). Wins 96-113t (median ~104); ~2/5 survive (carries live, supports low/dead). NOTE the in-game stat screen bakes in Arena (+6% base HP/ATK/DEF, measured); build-from-sync omits it, so battle_layers re-adds it below.",
+  "reality_notes": "POOL TEAM ~96% WR at St16 from 40 COMBINED captures (24 watcher + 16 manual, aggregated 2026-08-04): 23W/1L watcher, 15W/1L manual. Wins 86-115t, median 104. MEDIAN 5/5 survivors (supersedes the stale small-sample '2/5'); supports die only in a minority (Artor 30% / Hilvi 22% / Coldheart 17% / Mikey 4% / Ninja 0%). THE open sim gap is TURNS: sim median ~156 vs reality 104 (~50% long); WR and survivor count now MATCH. NOTE the in-game stat screen bakes in Arena (+6% base HP/ATK/DEF, measured); build-from-sync omits it, so battle_layers re-adds it below.",
   "timeline": [
     { "turn": 25,  "phase": "wave 1 → wave 2", "obs": "wave 1 dies at turn 25 (Mike first-party 2026-08-02)", "confidence": "high" },
     { "turn": 50,  "phase": "wave 2 → boss",   "obs": "wave 2 dies at turn 50 (25t per wave)", "confidence": "high" },
