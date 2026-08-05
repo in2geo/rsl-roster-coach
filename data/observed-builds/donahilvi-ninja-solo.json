@@ -1,0 +1,70 @@
+{
+ "_source": "regenerated from Gestal sync DonaHilvi_a6261acc35588c94.json (syncedAt 2026-08-04T23:42:35.403Z)",
+ "_note": "total_stats = effectiveStats(base+gear), ROSTER screen (no aura/arena — the fixture harness layers those). lifesteal = 0.30 iff the Lifesteal 4-set is COMPLETE. gear_sets = piece counts (factual); only the Lifesteal set effect is consumed by the sim.",
+ "_generator": "tools/build-from-sync.mjs",
+ "champions": [
+  {
+   "name": "Ninja",
+   "level": 60,
+   "stars": 6,
+   "rarity": "Legendary",
+   "affinity": "Magic",
+   "gear_sets": [
+    "Lifesteal×4",
+    "Perception×2",
+    "null×1"
+   ],
+   "lifesteal": 0.3,
+   "has_boss_mastery": true,
+   "mastery_count": 15,
+   "masteries": [
+    "Deadly Precision",
+    "Keen Strike",
+    "Heart of Glory",
+    "Single Out",
+    "Bring It Down",
+    "Methodical",
+    "Pinpoint Accuracy",
+    "Charged Focus",
+    "Swarm Smiter",
+    "Lore of Steel",
+    "Evil Eye",
+    "Life Drinker",
+    "Master Hexer",
+    "Sniper",
+    "Warmaster"
+   ],
+   "base_spd": 100,
+   "base_hp": 16350,
+   "base_atk": 1398,
+   "base_def": 914,
+   "skill_levels": {
+    "A1": {
+     "level": 1,
+     "maxLevel": 5,
+     "maxed": false
+    },
+    "A2": {
+     "level": 1,
+     "maxLevel": 6,
+     "maxed": false
+    },
+    "A3": {
+     "level": 1,
+     "maxLevel": 5,
+     "maxed": false
+    }
+   },
+   "total_stats": {
+    "hp": 22842,
+    "atk": 2436,
+    "def": 1319,
+    "spd": 167,
+    "crit_rate": 79,
+    "crit_dmg": 66,
+    "res": 78,
+    "acc": 70
+   }
+  }
+ ]
+}

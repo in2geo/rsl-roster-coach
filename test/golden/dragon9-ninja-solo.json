@@ -1,0 +1,16 @@
+{
+  "id": "dragon9-ninja-solo",
+  "_source": "Ninja solo on Dragon's Lair 9. Stats from fresh Gestal sync a6261acc35588c94 (Refreshed 2026-08-04T23:40, Ninja gear now captured) via build-from-sync -> data/observed-builds/donahilvi-ninja-solo.json (Lifesteal x4 / Perception x2, lifesteal 0.3, SPD 167). Built 2026-08-04 to test the Escalation passive vs a real solo run.",
+  "content": { "dungeon": "Dragon's Lair", "difficulty": "Normal", "stage": 9, "mode": "Full Auto", "speed": "1x" },
+  "result": {
+    "outcome": "WIN",
+    "turns": 47,
+    "survivors": 1,
+    "_note": "Reality from user solo capture 2026-08-04: WIN, 47t, 1/1 survivor, dealt 299,024, taken 52,578, healed 75,891. Escalation-passive test anchor."
+  },
+  "battle_layers": { "auraSpdPct": 0, "accAura": 0, "arenaPct": 0.06 },
+  "team": ["Ninja"],
+  "roster": { "Ninja": "Ninja" },
+  "inputs": { "Ninja": { "build": "data/observed-builds/donahilvi-ninja-solo.json" } },
+  "qa_notes": ["Ad-hoc solo fixture for the Ninja Escalation investigation."]
+}
