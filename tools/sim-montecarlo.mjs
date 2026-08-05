@@ -37,7 +37,9 @@ const DIR = path.join(REPO, 'test', 'golden');
 
 const argFixture = process.argv[2] && !/^\d+$/.test(process.argv[2]) ? process.argv[2] : null;
 const N = Number(process.argv.find((a, i) => i >= 2 && /^\d+$/.test(a)) ?? 100);
-const MASTERY = (process.env.SIM_MASTERY ?? 'off').toLowerCase();   // 'off' | 'offense'
+// Masteries now come from the build via buildBattle (REAL per-account: b.has_boss_mastery + b.masteries).
+// SIM_MASTERY off/real/offense is RETIRED (see buildFight). SIM_NO_MASTERY=1 blanks them for an A/B.
+const MASTERY = process.env.SIM_NO_MASTERY === '1' ? 'none (SIM_NO_MASTERY)' : 'real (per-account, from build)';
 
 if (!process.env.SUPABASE_URL) {
   console.log('sim-montecarlo needs the DB (champion kits + boss + waves). Run with --env-file=.env.local');
@@ -83,64 +85,22 @@ const isDamageDealer = (cat) => (cat?.champion_skills ?? []).some(s => {
 });
 
 // Build a FRESH set of combatants each run (combat mutates hp/buffs/cooldowns). rng is per-run.
+// UNIFIED PATH (all dungeons, 2026-08-04): buildBattle dispatches per-dungeon (Dragon waves+boss,
+// Spider spawn template), stamps champId/recipeKey (identity by ID), and reads REAL per-account masteries
+// from the build (b.has_boss_mastery + b.masteries — the full mastery layer). installRecipeRun then runs the
+// authored recipes AND their trigger/passive machinery (poison redirects, revives, TM mechanics).
+// Previously Dragon had a BESPOKE path that skipped installRecipeRun → recipe-driven mechanics never fired
+// (Bambus's Sleeping-Sage poison redirect → boss never got poisoned → ~2× turn inflation for DoT teams). It
+// also carried its own off/real/offense SIM_MASTERY bracket; that is RETIRED — masteries now come from the
+// build (per-account real), matching sim-per-hero-bands so the two rungs agree. (SIM_NO_MASTERY=1 blanks them
+// for an A/B.) See git log: montecarlo/bands Dragon-path divergence (Bambus 304t bespoke vs 158t unified).
 async function buildFight(seed) {
-  // NON-DRAGON (Spider …): build + run exactly like sim-per-hero-bands so the two agree. buildBattle
-  // dispatches to makeSpiderContent (spawn template, consume snowball) and installRecipeRun runs the
-  // authored champion recipes — NOT the Dragon-only Hellrazor path below.
-  if (!isDragon) {
-    const built = await buildBattle({ rest, fixture: g, repoRoot: REPO });
-    if (built.skip) throw new Error(`buildBattle skipped: ${built.skip}`);
-    applyBattleLayers(built.allies);
-    const state = makeState({ allies: built.allies, enemies: [], seed });
-    installRecipeRun(state);
-    return { state, content: built.content, allies: built.allies };
-  }
-  const boss = makeCombatant({ name: bossRow.enemy_name, side: 'enemy', role: 'boss',
-    maxHp: +bossRow.hp, atk: +bossRow.atk, def: +bossRow.def, spd: +bossRow.spd,
-    acc: +bossRow.acc, res: +bossRow.res, critRate: +bossRow.crit_rate, critDmg: +bossRow.crit_dmg,
-    affinity: g.content.boss_affinity ?? 'Void' });
-  boss.immune = HELLRAZOR_IMMUNE;
-
-  const waveRows = enemyRows.filter(e => e.enemy_role === 'wave' && e.stage_number === stage);
-  const waves = [...new Set(waveRows.map(e => e.wave_number))].sort((a, b) => a - b).map(wn => ({
-    enemies: waveRows.filter(e => e.wave_number === wn).sort((a, b) => a.position - b.position).map(r => {
-      const cat = byId[r.champion_id];
-      return makeCombatant({ name: `${r.enemy_name}#${r.position}`, side: 'enemy', role: 'wave',
-        maxHp: +r.hp, atk: +r.atk, def: +r.def, spd: +r.spd, acc: +r.acc, res: +r.res,
-        critRate: +r.crit_rate, critDmg: +r.crit_dmg, affinity: cat?.affinity,
-        skills: readSkillKit(cat?.champion_skills ?? []) });
-    }),
-    actEnemy: actEnemyMob,
-  }));
-
-  const allies = g.team.map(name => {
-    const canon = g.roster?.[name] ?? name;
-    const hit = resolver.resolveOrThrow(canon, 'montecarlo team hero');
-    const cat = byId[hit.id];
-    const b = builds[cat?.name] ?? builds[canon] ?? builds[name];
-    if (!b) throw new Error(`no build for ${name}`);
-    const s = b.total_stats;
-    return makeCombatant({ name: canon, side: 'ally',
-      maxHp: s.hp, atk: s.atk, def: s.def, spd: s.spd, acc: s.acc, res: s.res,
-      critRate: s.crit_rate, critDmg: s.crit_dmg, affinity: b.affinity ?? cat?.affinity,
-      lifesteal: gearLifesteal(b.gear_sets),
-      // 'off' = nobody; 'offense' = GENERALIZATION (assume every damage-dealer carries a boss mastery);
-      // 'real' = the per-account TRUTH from Gestal masteryIds (build.has_boss_mastery, via build-from-sync).
-      bossMastery: MASTERY === 'offense' ? isDamageDealer(cat)
-        : MASTERY === 'real' ? !!b.has_boss_mastery
-        : false,
-      skills: readSkillKit(cat?.champion_skills ?? []) });
-  });
-
-  // Account-level battle layers (leader aura + Arena), applied only when the fixture declares them so
-  // existing Dragon fixtures (e.g. DonBambus, no battle_layers) are unchanged. The Spider path above
-  // already calls applyBattleLayers with defaults; the Dragon path historically did not.
-  if (g.battle_layers) applyBattleLayers(allies, g.battle_layers);
-
-  const content = makeDragonContent({ stageNumber: stage, waves, boss, ...(process.env.PURPLE_BAR_PCT ? { purpleBarHp: Number(process.env.PURPLE_BAR_PCT) * boss.maxHp } : {}) });
-  const state = makeState({ allies, enemies: [], seed });
-  state.purpleBarLeft = 0;
-  return { state, content, allies };
+  const built = await buildBattle({ rest, fixture: g, repoRoot: REPO });
+  if (built.skip) throw new Error(`buildBattle skipped: ${built.skip}`);
+  applyBattleLayers(built.allies, g.battle_layers);   // fixture layers when declared (Dragon), defaults otherwise (Spider)
+  const state = makeState({ allies: built.allies, enemies: [], seed });
+  installRecipeRun(state);
+  return { state, content: built.content, allies: built.allies };
 }
 
 // ── run N seeded battles ───────────────────────────────────────────────────────
