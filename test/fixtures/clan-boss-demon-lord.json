@@ -1,0 +1,33 @@
+{
+  "id": "clan-boss-demon-lord",
+  "_source": "Clan Boss (Demon Lord) Hard, VOID key, with the DonBambus-adjacent poison team captured for the Demon Lord (data/observed-builds/2026-07-22-demon-lord.json). This exists to RUN the new Clan Boss sim path (v0), NOT as a reality anchor — there is no captured CB run for this account/team yet, and the boss's ATK/DEF/mastery-cap magnitudes are bracketed (see clan_boss.js / CLAN_BOSS_REVIEW.md). Headline metric = TOTAL damage banked -> chest tier; the DoT (poison/HP-burn, absolute caps) is the reliable part.",
+  "content": {
+    "dungeon": "Clan Boss",
+    "difficulty": "Hard",
+    "affinity": "Void",
+    "bossAtk": null,
+    "mode": "Full Auto",
+    "speed": "1x"
+  },
+  "result": {
+    "outcome": "UNKNOWN",
+    "_note": "No reality anchor yet. Toggle the boss affinity (Void vs Force/Magic/Spirit) to exercise weak hits; toggle SIM_CB_SURVIVE for the survival bracket."
+  },
+  "_names": "team = short single-word names (become combatant names -> champKey -> recipe key). roster maps each to the build-file name, which both keys the build and resolves via the champion-names registry.",
+  "team": ["Ezio", "Pelops", "Bambus", "Tagoar", "Kael"],
+  "roster": {
+    "Ezio": "Ezio Auditore",
+    "Pelops": "Pelops the Victor",
+    "Bambus": "Bambus Fourleaf",
+    "Tagoar": "Tagoar",
+    "Kael": "Kael"
+  },
+  "inputs": {
+    "_status": "RUNTIME — stats from data/observed-builds/2026-07-22-demon-lord.json (Demon Lord Hard capture).",
+    "Ezio": { "build": "data/observed-builds/2026-07-22-demon-lord.json" },
+    "Pelops": { "build": "data/observed-builds/2026-07-22-demon-lord.json" },
+    "Bambus": { "build": "data/observed-builds/2026-07-22-demon-lord.json" },
+    "Tagoar": { "build": "data/observed-builds/2026-07-22-demon-lord.json" },
+    "Kael": { "build": "data/observed-builds/2026-07-22-demon-lord.json" }
+  }
+}

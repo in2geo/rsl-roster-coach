@@ -60,7 +60,7 @@ const ANCHOR = { GuapoDonni: ['Ezio Auditore', 'Xenomorph', 'Duchess Lilitu', 'D
 const outDir = path.join(REPO, 'gestal-sync/output');
 const files = fs.readdirSync(outDir).filter(f => f.endsWith('.json') && !/^gear-corpus/.test(f));
 
-console.log(`══ CB SHADOW (refined goals) — difficulty ${DIFFICULTY}, ACC floor ${ACC_FLOOR} ══`);
+console.log(`══ CB SHADOW (refined goals) — difficulty ${DIFFICULTY}, recommended ACC ~${ACC_FLOOR} (advisory — landing via debuffLandChance) ══`);
 console.log(`needs: ${CB_NEEDS.map(n => n.role).join(', ')}\n`);
 
 for (const file of files) {

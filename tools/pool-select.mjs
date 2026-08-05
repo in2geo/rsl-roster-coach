@@ -23,7 +23,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { buildUserChampions } from '../lib/gestal-context.js';
 import { mapRoster, usabilityTier, pickLeaderFrom, applyLeaderAura } from '../lib/match-engine.js';
-import { scoreTeam, ALLOCATION, BUCKETS, DEAD_ON_CB } from './bucket-score.mjs';
+import { scoreTeam, ALLOCATION, BUCKETS, DEAD_ON_CB, CB_OVERFILL, cbDotThroughput } from './bucket-score.mjs';
 import { DRAGON_ALLOCATION, DRAGON_BUCKETS, DEAD_ON_DRAGON } from '../lib/dragon-rubric.js';
 import { CB_ACC_FLOOR } from '../lib/cb-shadow-goals.js';
 import { FK_STRATEGIES } from '../lib/fire-knight-rubric.js';
@@ -49,7 +49,9 @@ const ARG3       = ARGV[1];
 const DIFFICULTY = ARG3 || 'Brutal';
 const STAGE      = Number(ARG3) || 15;
 const CONTENT_CFG = {
-  cb:          { cfg: { allocation: ALLOCATION, buckets: BUCKETS, dead: DEAD_ON_CB,
+  cb:          { cfg: { allocation: ALLOCATION, buckets: BUCKETS, dead: DEAD_ON_CB, overfill: CB_OVERFILL,
+                        coverage: { damage: 'stacking' },   // CB is a DoT RACE — poison/burn stacks, so extra carriers add near-full value (not 0.30 surplus)
+                        stackDemand: { damage: 1.75 },      // a FULL CB damage bucket needs ~2 real poisoners → a 1-real-poisoner team reads SHORT → repair adds the 2nd (sanctioned demand-as-short-bucket)
                         accFloor: CB_ACC_FLOOR[DIFFICULTY] ?? 150 }, label: `Clan Boss ${DIFFICULTY}` },
   dragon:      { cfg: { allocation: DRAGON_ALLOCATION, buckets: DRAGON_BUCKETS, dead: DEAD_ON_DRAGON,
                         accFloor: 130 }, label: "Dragon's Lair" },
@@ -70,11 +72,15 @@ if (!RUN_CFG) {
 const GEARW = { starter: 1, fair: 2, good: 3, endgame: 4 };
 const RARW  = { Rare: 1, Epic: 2, Legendary: 3, Mythical: 4 };
 export function devScore(c) {
-  return 0.40 * (usabilityTier(c) / 3)
-       + 0.25 * ((GEARW[c.gear_tier] ?? 1) / 4)
-       + 0.20 * Math.min(1, (c.level ?? 0) / 60)
-       + 0.10 * Math.min(1, (c.stars ?? 0) / 6)
-       + 0.05 * ((RARW[c.rarity] ?? 1) / 4);
+  // GEAR-EXCLUDED (Mike 2026-08-05): gear is easily re-optimized for the content, so it must NOT decide
+  // WHICH champions to recommend — the player re-gears the recommended five. What persists is investment:
+  // LEVEL leads (a Lv60 severely out-stats a Lv40 once BOTH are geared), then stars/ascension, then rarity.
+  // Removed the 0.25×gear term AND the usabilityTier(c) term (usabilityTier itself gates on gear tier; it is
+  // kept ONLY as the eligibility filter below, not the ranking). Level 60 ⇒ 6★, so level+stars track
+  // "maxed for rank": 6★Lv60 > 5★Lv50 > 4★Lv40 regardless of current gear.
+  return 0.55 * Math.min(1, (c.level ?? 0) / 60)
+       + 0.30 * Math.min(1, (c.stars ?? 0) / 6)
+       + 0.15 * ((RARW[c.rarity] ?? 1) / 4);
 }
 
 /** Which bucket is furthest below its target? Returns null when nothing is short. */
@@ -361,12 +367,38 @@ for (let f = 0; ; f += 1000) {
 const tagRows = await rest('tags?select=name,is_debuff,bypasses_accuracy_check');
 const tagMeta = Object.fromEntries((tagRows || []).map(t => [t.name, { is_debuff: t.is_debuff, bypasses_accuracy_check: t.bypasses_accuracy_check }]));
 
+// CONTRIBUTION MODEL (CONTRIBUTION_MODEL_SPEC.md §8) — per-skill DoT throughput from champion_skill_tags,
+// keyed by champion NAME (matches championDelivery's champ.name lookup). CB only: feeds the damage bucket
+// magnitude-aware throughput (Xeno/Narma ≫ Coldheart) in place of binary tag presence. Champions without
+// per-skill rows yet keep the binary rel (roster-population transition).
+const idToName = Object.fromEntries(db.map(c => [c.id, c.name]));
+const cstRows = await rest('champion_skill_tags?select=champion_id,stacks,hits,condition,magnitude_pct,chance_unbooked,tags(name)&status=eq.approved');
+const _skillTagsByName = {};
+for (const r of (cstRows || [])) { const n = idToName[r.champion_id]; if (!n) continue; (_skillTagsByName[n] ??= []).push({ tag: r.tags?.name, stacks: r.stacks, hits: r.hits, condition: r.condition, magnitude_pct: r.magnitude_pct, chance_unbooked: r.chance_unbooked }); }
+const dotThroughputByName = Object.fromEntries(Object.entries(_skillTagsByName).map(([n, rows]) => [n, cbDotThroughput(rows)]));
+if (CONTENT === 'cb' && RUN_CFG?.cfg) RUN_CFG.cfg.damageThroughput = dotThroughputByName;
+
 for (const f of fs.readdirSync(path.join(REPO, 'gestal-sync/output')).filter(x => x.endsWith('.json') && !/^gear-corpus/.test(x))) {
   const snap = JSON.parse(fs.readFileSync(path.join(REPO, 'gestal-sync/output', f), 'utf8'));
   const { userChampions } = buildUserChampions(snap.champions ?? [], db, aliasRows);
   const mapped = mapRoster(userChampions, {}).mapped;
   const pool = mapped.filter(c => usabilityTier(c) >= 2);
   if (pool.length < 5) continue;
+  // SHOW_VALUES=1 — per-champion STANDALONE CB value (their own weighted bucket contribution), ranked.
+  // Diagnostic for the contribution model: shows who the model rates as a carry vs filler.
+  if (process.env.SHOW_VALUES) {
+    const cfg = withAffinity(RUN_CFG.cfg);
+    const vals = pool.map(c => {
+      const s = scoreTeam([c], tagMeta, skillsByName, cfg);
+      const fills = s.rows.filter(r => r.got > 0.01).sort((a, b) => b.got - a.got)
+                          .map(r => `${r.bucket} ${(r.pct * 100).toFixed(0)}%`);
+      return { name: c.name, dev: devScore(c), value: s.grade, fills };
+    }).sort((a, b) => b.value - a.value);
+    console.log(`\n══ ${snap.displayName ?? f} — ${RUN_CFG.label}: standalone champ VALUES (top 10) ══`);
+    for (const v of vals.slice(0, 10))
+      console.log(`  ${v.value.toFixed(1).padStart(6)}  ${v.name.padEnd(22)} (dev ${v.dev.toFixed(2)})  ${v.fills.join(' · ')}`);
+    continue;
+  }
   // Multi-strategy: build a team PER strategy, then take the best. Single-allocation: one run.
   let best, chosen = null;
   if (RUN_CFG.strategies) {

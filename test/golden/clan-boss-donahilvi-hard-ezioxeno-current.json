@@ -1,0 +1,14 @@
+{
+  "_source": "SECOND Clan Boss reality anchor (user capture 2, 2026-08-05). Demon Lord HARD, DonaHilvi, a DIFFERENT team than capture 1: Ezio / Ninja / Michelangelo / Mausoleum Mage / Xenomorph (full-auto). This team was NOT the pool recommendation (pool traded Xenomorph out for cleanse) yet it OUT-DAMAGES the pool team 7.82M vs 6.21M.",
+  "content": { "dungeon": "Clan Boss", "difficulty": "Hard", "affinity": "unknown (not shown)" },
+  "durationSeconds": 286,
+  "totalDamageDealt": 7820000,
+  "heroes": [
+    { "name": "Ezio",          "level": 50, "dealt": 150106,  "taken": 31991, "healed": 5092 },
+    { "name": "Ninja",         "level": 60, "dealt": 4048906, "taken": 86422, "healed": 598674 },
+    { "name": "Michelangelo",  "level": 60, "dealt": 395573,  "taken": 41836, "healed": 31717 },
+    { "name": "Mausoleum Mage","level": 40, "dealt": 28584,   "taken": 34865, "healed": 59194 },
+    { "name": "Xenomorph",     "level": 50, "dealt": 3204116, "taken": 43846, "healed": 29885 }
+  ],
+  "_findings": "Carries: Ninja 4.05M (HP-Burn engine) + Xenomorph 3.20M (~41%). Ezio only 150k (under-geared: 2 equipped artifacts). This BEATS the pool team (capture 1, 6.21M) by +26% — the pool swapped Xenomorph OUT for cleanse (Mausoleum Mage), trading away a 3.2M carry. Signals the CB pool over-weights support utility (cleanse) vs raw damage carries in a DAMAGE RACE. Compare: capture 1 = clan-boss-donahilvi-hard-current.json."
+}

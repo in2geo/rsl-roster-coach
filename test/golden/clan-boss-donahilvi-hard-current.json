@@ -1,0 +1,14 @@
+{
+  "_source": "FIRST Clan Boss reality anchor — in-game RESULT screen (user capture 2026-08-05). Demon Lord HARD, DonaHilvi's pool team (Michelangelo/Ninja/Hilvi/Mausoleum Mage/Artak), full-auto. Per-hero rows are dealt / taken / healed from the result screen. This is the ground truth to calibrate the CB sim (lib/sim/clan_boss.js) against.",
+  "content": { "dungeon": "Clan Boss", "difficulty": "Hard", "affinity": "unknown (not shown on result screen)" },
+  "durationSeconds": 301,
+  "totalDamageDealt": 6210000,
+  "heroes": [
+    { "name": "Michelangelo", "level": 60, "dealt": 497111, "taken": 50331, "healed": 35624 },
+    { "name": "Ninja",        "level": 60, "dealt": 4946541, "taken": 76706, "healed": 754041 },
+    { "name": "Hilvi",         "level": 50, "dealt": 100546, "taken": 45865, "healed": 23670 },
+    { "name": "Mausoleum Mage","level": 40, "dealt": 35827, "taken": 43548, "healed": 48923 },
+    { "name": "Artak",         "level": 49, "dealt": 639386, "taken": 43855, "healed": 15436 }
+  ],
+  "_findings": "HP BURN is the carry, via NINJA (not direct/lifesteal — corrected 2026-08-05). Ninja A2 Hailburn places up to 3 [HP Burn] (75%/hit, 3t) AND instantly activates all [HP Burn] on the boss; A3 Cyan Slash ignores 50% boss DEF and cuts Hailburn's cooldown by 1 → he spams the place+activate loop. So most of Ninja's 4.95M is HP-Burn damage; Artak (also HP Burn) adds part of his 639k. Sim v0 credited ~6.3M HP burn vs reality's ~4.5-5M → ~1.3x over, from the MISSING 'only one HP Burn on the boss at a time' constraint (sim ticks Ninja's + Artak's burns simultaneously; reality holds one). So the sim is DIRECTIONALLY RIGHT (HP burn = carry) and ~30-40% high, NOT 10x off — the single-HP-Burn fix is the calibration lever. lifesteal healed (Ninja 754k) is off that burn+direct damage."
+}

@@ -1,0 +1,14 @@
+{
+  "_source": "THIRD Clan Boss reality anchor (user capture 3, 2026-08-05). Demon Lord HARD, DonaHilvi. Team: Ezio / Ninja / Michelangelo / Iudex Artor / Xenomorph (Ezio now GEARED). Swaps Mausoleum Mage (cleanse) from capture 2 for Iudex Artor (amplify+sustain). Highest damage of the three: 9.0M.",
+  "content": { "dungeon": "Clan Boss", "difficulty": "Hard", "affinity": "unknown (not shown)" },
+  "durationSeconds": 397,
+  "totalDamageDealt": 9003376,
+  "heroes": [
+    { "name": "Ezio",         "level": 50, "dealt": 411418,  "taken": 58746, "healed": 17805 },
+    { "name": "Ninja",        "level": 60, "dealt": 4665883, "taken": 80007, "healed": 658047 },
+    { "name": "Michelangelo", "level": 60, "dealt": 468388,  "taken": 39457, "healed": 21426 },
+    { "name": "Iudex Artor",  "level": 40, "dealt": 55454,   "taken": 50768, "healed": 102963 },
+    { "name": "Xenomorph",    "level": 50, "dealt": 3402233, "taken": 40599, "healed": 32865 }
+  ],
+  "_findings": "Carries again = Ninja 4.67M (HP-Burn) + Xenomorph 3.40M (Poison) = ~8M of 9M. Ezio now GEARED → 411k direct (vs 150k gimped in capture 2) + his activation value hides in the carries' bars. Iudex Artor deals only 55k HIMSELF but his value is AMPLIFY+SUSTAIN (Increase ATK / Strengthen / Increase TM / AoE Heal / Revive): he boosted the carries AND extended the fight to 6:37 (longest) → more DoT ticks → more total damage (multiplicative sustain, damage-mechanics §3). SWAPPING cleanse (Mausoleum Mage, capture 2) FOR amp/sustain (Artor) added +1.2M (7.82M→9.0M) — so CLEANSE was not the priority the pool thought; amp/sustain of the DoT carries was. Progression: pool team 6.21M -> Ezio/Xeno 7.82M -> +Artor 9.0M (+45% over the pool pick)."
+}

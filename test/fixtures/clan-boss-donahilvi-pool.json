@@ -1,0 +1,30 @@
+{
+  "id": "clan-boss-donahilvi-pool",
+  "_source": "DonaHilvi's pool-selected Clan Boss team (tools/pool-select.mjs cb Hard): Hilvi, Ninja, Michelangelo, Mausoleum Mage, Artak — leader Michelangelo (ACC 70). Stats from the live Gestal sync (a6261acc35588c94) via tools/build-from-sync.mjs -> data/observed-builds/donahilvi-cb-pool.json. NOTE: the pool fielded Michelangelo + Mausoleum Mage on POTENTIAL (under-geared/low-level), so this reflects the roster's ACTUAL developing state, not a maxed team. No CB reality anchor for this account yet.",
+  "content": {
+    "dungeon": "Clan Boss",
+    "difficulty": "Hard",
+    "affinity": "Void",
+    "bossAtk": null,
+    "mode": "Full Auto",
+    "speed": "1x"
+  },
+  "battle_layers": { "auraSpdPct": 0, "arenaPct": 0.03, "accAura": 70 },
+  "result": { "outcome": "UNKNOWN", "_note": "Damage-race benchmark; no reality anchor." },
+  "team": ["Michelangelo", "Ninja", "Hilvi", "Mage", "Artak"],
+  "roster": {
+    "Michelangelo": "Michelangelo",
+    "Ninja": "Ninja",
+    "Hilvi": "Hilve the Rime-called",
+    "Mage": "Mausoleum Mage",
+    "Artak": "Artak"
+  },
+  "inputs": {
+    "_status": "RUNTIME — stats from data/observed-builds/donahilvi-cb-pool.json (DonaHilvi sync a6261acc35588c94).",
+    "Michelangelo": { "build": "data/observed-builds/donahilvi-cb-pool.json" },
+    "Ninja": { "build": "data/observed-builds/donahilvi-cb-pool.json" },
+    "Hilvi": { "build": "data/observed-builds/donahilvi-cb-pool.json" },
+    "Mage": { "build": "data/observed-builds/donahilvi-cb-pool.json" },
+    "Artak": { "build": "data/observed-builds/donahilvi-cb-pool.json" }
+  }
+}

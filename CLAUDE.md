@@ -54,7 +54,7 @@ battles. Consequences that bind every session:
 
 ## HARD RULE: read the dungeon's `*_REVIEW.md` BEFORE touching its model
 
-`FIRE_KNIGHT_REVIEW.md` · `ICE_GOLEM_REVIEW.md` · `SPIDER_REVIEW.md` · `DRAGON_REVIEW.md` (repo root)
+`FIRE_KNIGHT_REVIEW.md` · `ICE_GOLEM_REVIEW.md` · `SPIDER_REVIEW.md` · `DRAGON_REVIEW.md` · `CLAN_BOSS_REVIEW.md` (repo root)
 are the **per-dungeon source-mechanics packets** — verbatim boss kits, stat floors per tier, affinity
 rotations, deferred items, and the open questions already put to Mike. `lib/dungeon-mechanics.js` is a
 SUMMARY of these, not a substitute: it omits numbers the reviews carry.

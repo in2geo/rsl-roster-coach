@@ -39,10 +39,36 @@ import { tagDelivery } from '../lib/bucket-magnitude.js';
 const DIFFICULTY = process.argv[2] || 'Brutal';
 const ACC_FLOOR = CB_ACC_FLOOR[DIFFICULTY] ?? 150;
 
-// ── The allocation — RULED by Mike 2026-07-18. Sums to 100 / exactly 5.0 seats. ──
+// ── The allocation — sums to 100 / exactly 5.0 seats. ──
+// CB-OBJECTIVE REVISION (Mike, 2026-08-05, from 3 reality captures + the documented CB mechanics):
+// Clan Boss is a DAMAGE-MAXIMIZATION RACE, not a cover-each-role-once fight. The prior allocation
+// (mit 20 / dmg 20 / tempo 20 / sustain 15 / amp 15 / cleanse 10) treated damage as ONE seat that
+// saturated, so the selector traded away a 2nd/3rd DoT carry for cleanse — benching Xenomorph (a 3.2M
+// poison carry) for a cleanser. Reality: DoT carries (poison/HP-burn) + an activator + amp/sustain WIN;
+// cleanse was never the priority (the 9.0M team ran NO cleanser). So for CB:
+//   • DAMAGE is the dominant, STACKABLE objective (paired with CB_OVERFILL below — no decay past target,
+//     so stacking poison/burn keeps paying up to the 10-debuff cap).
+//   • AMPLIFICATION 15 (2026-08-05) — only HALF its tags actually multiply DoT (Poison Sensitivity, Debuff
+//     Activation = the activator that detonates + un-caps, Increase Debuff Duration, Increase ACC-to-land);
+//     the rest (Decrease DEF / Weaken / Increase ATK·C.Rate·C.DMG) amplify ATTACK damage, which is DEF-
+//     INDEPENDENT poison's non-factor (damage-mechanics §1). So it is NOT worth more than tempo → trimmed
+//     20→15 (the contribution model should later SPLIT DoT-amp from attack-amp per team damage type).
+//   • SUSTAIN up — it EXTENDS the fight, and more survival turns multiply every DoT tick (damage-mechanics §3;
+//     capture 3: adding Iudex Artor's heals/revive stretched the key to 6:37 and lifted damage 7.8M→9.0M).
+//   • TEMPO 15 (2026-08-05, raised 10→15) — turn economy FEEDS the DoT race: more team turns before the
+//     ~50-turn wall = more poison ticks + re-applies + activations. MITIGATION (Decrease ATK) 15, a survival
+//     extender at Brutal+. CLEANSE 5, minor (the boss's affinity debuffs; the 9.0M team ran no cleanser).
+// Anchors: test/golden/clan-boss-donahilvi-hard-*.json (6.21M pool pick → 7.82M → 9.0M). CB-only (Dragon
+// etc. pass their own allocation); measure via a pool-select re-run, do not fit to these three keys.
 export const ALLOCATION = {
-  mitigation: 20, damage: 20, tempo: 20, sustain: 15, amplification: 15, cleanse: 10,
+  mitigation: 15, damage: 30, tempo: 15, sustain: 20, amplification: 15, cleanse: 5,
 };
+
+// Per-bucket credit past target (see bucketCredit). CB DAMAGE does NOT decay past target: a 2nd/3rd DoT
+// carry keeps FULL value (overfill 1 = linear), because CB rewards STACKING poison/burn toward the
+// 10-debuff cap, unlike coverage content where a 2nd stunner is redundant. All other buckets keep the
+// default diminishing return. Consumed by pool-select's cb cfg.
+export const CB_OVERFILL = { damage: 1 };
 
 // ── Bucket membership — every entry is a Mike ruling or follows from one (see the taxonomy doc). ──
 export const BUCKETS = {
@@ -78,9 +104,16 @@ export const BUCKETS = {
 // HP Burn half of that same passive is very much alive).
 // Previously these scored zero only by ACCIDENT — they were simply absent from every CB need — so the
 // engine reached the right answer with no rule behind it. Now it is explicit.
+// AoE DAMAGE (Mike 2026-08-05): dead for a DIFFERENT reason than the CC family — not immunity, but NO
+// WAVES + a SINGLE target, so an AoE hit is no better than single-target (in-game: "no point selecting AoE
+// champions, pick multi-hits"). It earns no CB share. NOTE this is the AoE-SPREAD tag only — the underlying
+// damage still counts through Single Target Damage / Multi-Hit A1 (multi-hit = more Warmaster/Giant-Slayer
+// procs, which IS valuable) and through Poison/HP-Burn throughput. Keeping AoE Damage dead future-proofs the
+// damage bucket for when direct damage is credited alongside DoT.
 export const DEAD_ON_CB = new Set(['Freeze', 'AoE Freeze', 'Sleep', 'AoE Sleep', 'Stun', 'AoE Stun',
   'Provoke', 'Fear', 'True Fear', 'Sheep', 'Petrification', 'Ensnare', 'Seal', 'Master Seal', 'Hex',
-  'Decrease Turn Meter', 'AoE Decrease Turn Meter', 'Block Revive', 'Buff Strip', 'Steal Buffs']);
+  'Decrease Turn Meter', 'AoE Decrease Turn Meter', 'Block Revive', 'Buff Strip', 'Steal Buffs',
+  'AoE Damage']);
 
 /* A bucket's membership is EITHER a plain array of tags (every tag weight 1) OR an object
  * { tag: weight } for per-tag weighting WITHIN the bucket. Both forms are supported so every existing
@@ -102,6 +135,35 @@ const bucketOf = (tag, buckets = BUCKETS) =>
 // rest are genuine but secondary. NOT the old 0.25x saturation cliff — that punished the 2nd coverer
 // of a need the team still needed; this says the need is already MET and more is surplus.
 const BONUS_COVERER = 0.30;
+// STACKING coverage (CB poison/HP-burn damage): a genuine DoT STACK — each EXTRA carrier adds most of a
+// seat (STACK_BONUS), not the 0.30 "surplus", because Clan Boss rewards piling poison/burn toward the
+// 10-debuff cap (a damage RACE, not cover-once). Capped at STACK_CAP× the target to reflect that past
+// ~2-3 carriers the 10-debuff limit binds. Enabled per-bucket via cfg.coverage[b] === 'stacking'.
+const STACK_BONUS = 0.75;
+const STACK_CAP = 2.5;
+
+// PER-CHAMPION CB DoT THROUGHPUT (contribution model, CONTRIBUTION_MODEL_SPEC.md §8) — computed from
+// champion_skill_tags rows (per-skill Poison/HP-Burn with magnitude), so a premier poisoner (multiple
+// unconditional sources, big % , high stacks) outranks an incidental one. Replaces binary tag presence in
+// the CB damage bucket (see championDelivery). `skillTags` = [{tag, magnitude_pct, stacks, hits,
+// chance_unbooked, condition}]. Normalized so a solid single unconditional 5% poison ≈ 1.0; premier
+// multi-source champs capped at 1.5. CB-specific: poison magnitude = the strength (5% = 2× a 2.5%).
+export function cbDotThroughput(skillTags) {
+  const REDUCE = { 'self-combo': 0.4, 'on-attacked': 0.3, 'ally-gated': 0, 'crit': 0.6 };  // conditions that gate placement
+  let tp = 0;
+  for (const r of (skillTags ?? [])) {
+    if (r.tag !== 'Poison' && r.tag !== 'HP Burn') continue;            // the two CB stacking DoTs
+    const stacks = Number(r.stacks ?? 1) || 1;
+    const hits   = Number(r.hits ?? 1) || 1;
+    const chance = Math.min(1, Math.max(0, (r.chance_unbooked ?? 100) / 100));
+    const place  = 1 - Math.pow(1 - chance, hits);                      // multi-hit = multiple tries to land
+    const key    = r.condition ? String(r.condition).split('(')[0].trim() : null;
+    const cond   = key ? (REDUCE[key] ?? 1) : 1;                        // unconditional = 1; self-combo/on-attacked gated
+    const mag    = r.tag === 'Poison' ? ((Number(r.magnitude_pct) || 2.5) / 2.5) : 2.0;  // 5%→2 / 2.5%→1; HP Burn = strong flat DoT
+    tp += mag * stacks * place * cond;
+  }
+  return Math.min(1.5, tp / 2.0);
+}
 
 /** How well this champion DELIVERS each bucket they touch (0..1). Independent of how many other
  *  buckets they cover — a champion who does four jobs does each of them fully (that is exactly why
@@ -177,6 +239,16 @@ function championDelivery(champ, tagMeta, skillsByName, cfg) {
       affinityNotes.push({ champion: champ.name, tag: t, bucket: b, factor: affinity,
                            affinity: champ.affinity, bossAffinity, placementSource });
   }
+  // CB CONTRIBUTION MODEL: replace the binary damage-bucket rel with per-skill DoT THROUGHPUT (magnitude-
+  // aware), so a premier poisoner outranks an incidental one (Coldheart's one conditional poison ≠ Xeno's
+  // engine). Only for champs with per-skill data (cfg.damageThroughput); others keep the binary rel during
+  // the roster-population transition. Overrides only the `damage` bucket — every other bucket is unchanged.
+  if (cfg.damageThroughput) {
+    // A champ WITHOUT per-skill data reads 0 CB damage (presumed non-carrier until populated) — so a
+    // fake-poisoner team reads SHORT on damage and the existing repair swaps in a real poisoner. Populate
+    // the roster to include real non-DoT damage; until then unpopulated champs contribute 0 CB damage.
+    out.damage = cfg.damageThroughput[champ.name] ?? 0;
+  }
   return { buckets: out, gates, warnings, affinityNotes };
 }
 
@@ -244,6 +316,16 @@ export function scoreTeam(team, tagMeta, skillsByName = {}, cfg = {}) {
       // ONLY for non-stacking DoT (HP Burn); Poison genuinely stacks and must NOT use this.
       const p = 1 - cov.reduce((acc, c) => acc * (1 - Math.min(1, Math.max(0, c.rel))), 1);
       fill[b] = target * p;
+    } else if (cfg.coverage?.[b] === 'stacking') {
+      // STACKING (CB poison/HP-burn): sum the carriers (each extra worth STACK_BONUS, not the 0.30 surplus),
+      // then divide by DEMAND — how many FULL carriers make a full bucket (CB damage ≈ 2 real poisoners).
+      // So ONE real poisoner reads ~57% (SHORT) → the repair loop adds a 2nd; TWO fill it; STACK_CAP caps
+      // over-stacking (the 10-debuff ceiling). This is the SANCTIONED "express the demand as a short bucket"
+      // (poolSelect line 213): a fake-poisoner team reads short, so repair swaps in a real one — no grade-max.
+      const demand = cfg.stackDemand?.[b] ?? 1;
+      let sum = cov[0].rel;
+      for (const extra of cov.slice(1)) sum += extra.rel * STACK_BONUS;
+      fill[b] = Math.min(target * STACK_CAP, target * (sum / demand));
     } else {
       fill[b] = target * cov[0].rel;                                 // dedicated seat fills it
       for (const extra of cov.slice(1)) fill[b] += target * extra.rel * BONUS_COVERER;
@@ -342,7 +424,7 @@ const RUNS = [
   { label: 'Gnut     (20.20M, master,      177t)', names: ['Gnut', 'Pelops the Victor', 'Narma the Returned', 'Glorious Pallas', 'Fahrakin the Fat'] },
 ];
 
-console.log(`══ POOL/BUCKET GRADE — Clan Boss ${DIFFICULTY} (ACC floor ${ACC_FLOOR}) ══`);
+console.log(`══ POOL/BUCKET GRADE — Clan Boss ${DIFFICULTY} (recommended ACC ~${ACC_FLOOR}, advisory — landing via debuffLandChance) ══`);
 console.log(`allocation: ${Object.entries(ALLOCATION).map(([b, v]) => `${b} ${v}%`).join(' · ')}\n`);
 for (const run of RUNS) {
   const team = run.names.map(n => byName[n]).filter(Boolean);

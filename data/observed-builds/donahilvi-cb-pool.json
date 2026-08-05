@@ -1,0 +1,298 @@
+{
+ "_source": "regenerated from Gestal sync DonaHilvi_a6261acc35588c94.json (syncedAt 2026-08-05T17:38:56.088Z)",
+ "_note": "total_stats = effectiveStats(base+gear), ROSTER screen (no aura/arena — the fixture harness layers those). lifesteal = 0.30 iff the Lifesteal 4-set is COMPLETE. gear_sets = piece counts (factual); only the Lifesteal set effect is consumed by the sim.",
+ "_generator": "tools/build-from-sync.mjs",
+ "champions": [
+  {
+   "name": "Hilvi",
+   "level": 50,
+   "stars": 5,
+   "rarity": "Legendary",
+   "affinity": "Force",
+   "gear_sets": [
+    "Relentless×2",
+    "Immortal×1",
+    "null×1",
+    "Perception×1",
+    "Retaliation×1",
+    "Destroy×1"
+   ],
+   "lifesteal": 0,
+   "has_boss_mastery": false,
+   "mastery_count": 14,
+   "masteries": [
+    "Deadly Precision",
+    "Keen Strike",
+    "Single Out",
+    "Bring It Down",
+    "Methodical",
+    "Pinpoint Accuracy",
+    "Exalt in Death",
+    "Charged Focus",
+    "Swarm Smiter",
+    "Arcane Celerity",
+    "Lore of Steel",
+    "Cycle of Magic",
+    "Lasting Gifts",
+    "Master Hexer"
+   ],
+   "base_spd": 105,
+   "base_hp": 14460,
+   "base_atk": 575,
+   "base_def": 972,
+   "skill_levels": {
+    "A1": {
+     "level": 1,
+     "maxLevel": 5,
+     "maxed": false
+    },
+    "A2": {
+     "level": 1,
+     "maxLevel": 3,
+     "maxed": false
+    },
+    "A3": {
+     "level": 1,
+     "maxLevel": 3,
+     "maxed": false
+    }
+   },
+   "total_stats": {
+    "hp": 33425,
+    "atk": 1076,
+    "def": 1305,
+    "spd": 165,
+    "crit_rate": 57,
+    "crit_dmg": 65,
+    "res": 37,
+    "acc": 51
+   }
+  },
+  {
+   "name": "Ninja",
+   "level": 60,
+   "stars": 6,
+   "rarity": "Legendary",
+   "affinity": "Magic",
+   "gear_sets": [
+    "Lifesteal×4",
+    "Perception×2",
+    "null×1"
+   ],
+   "lifesteal": 0.3,
+   "has_boss_mastery": true,
+   "mastery_count": 15,
+   "masteries": [
+    "Deadly Precision",
+    "Keen Strike",
+    "Heart of Glory",
+    "Single Out",
+    "Bring It Down",
+    "Methodical",
+    "Pinpoint Accuracy",
+    "Charged Focus",
+    "Swarm Smiter",
+    "Lore of Steel",
+    "Evil Eye",
+    "Life Drinker",
+    "Master Hexer",
+    "Sniper",
+    "Warmaster"
+   ],
+   "base_spd": 100,
+   "base_hp": 16350,
+   "base_atk": 1398,
+   "base_def": 914,
+   "skill_levels": {
+    "A1": {
+     "level": 1,
+     "maxLevel": 5,
+     "maxed": false
+    },
+    "A2": {
+     "level": 1,
+     "maxLevel": 6,
+     "maxed": false
+    },
+    "A3": {
+     "level": 1,
+     "maxLevel": 5,
+     "maxed": false
+    }
+   },
+   "total_stats": {
+    "hp": 22842,
+    "atk": 2436,
+    "def": 1319,
+    "spd": 167,
+    "crit_rate": 79,
+    "crit_dmg": 66,
+    "res": 78,
+    "acc": 70
+   }
+  },
+  {
+   "name": "Michelangelo",
+   "level": 60,
+   "stars": 6,
+   "rarity": "Legendary",
+   "affinity": "Spirit",
+   "gear_sets": [
+    "Perception×3",
+    "Offense×1",
+    "Divine Critical Rate×1",
+    "null×1",
+    "Speed×1"
+   ],
+   "lifesteal": 0,
+   "has_boss_mastery": false,
+   "mastery_count": 11,
+   "masteries": [
+    "Deadly Precision",
+    "Pinpoint Accuracy",
+    "Charged Focus",
+    "Keen Strike",
+    "Heart of Glory",
+    "Single Out",
+    "Bring It Down",
+    "Swarm Smiter",
+    "Lore of Steel",
+    "Arcane Celerity",
+    "Cycle of Magic"
+   ],
+   "base_spd": 99,
+   "base_hp": 14535,
+   "base_atk": 1421,
+   "base_def": 1002,
+   "skill_levels": {
+    "A1": {
+     "level": 5,
+     "maxLevel": 5,
+     "maxed": true
+    },
+    "A2": {
+     "level": 3,
+     "maxLevel": 4,
+     "maxed": false
+    },
+    "A3": {
+     "level": 4,
+     "maxLevel": 4,
+     "maxed": true
+    }
+   },
+   "total_stats": {
+    "hp": 22172,
+    "atk": 2121,
+    "def": 1486,
+    "spd": 157,
+    "crit_rate": 63,
+    "crit_dmg": 60,
+    "res": 72,
+    "acc": 170
+   }
+  },
+  {
+   "name": "Mausoleum Mage",
+   "level": 40,
+   "stars": 4,
+   "rarity": "Epic",
+   "affinity": "Force",
+   "gear_sets": [
+    "Perception×1",
+    "Immortal×1",
+    "Savage×1",
+    "Offense×1",
+    "Cursed×1",
+    "Accuracy×1"
+   ],
+   "lifesteal": 0,
+   "has_boss_mastery": false,
+   "mastery_count": 0,
+   "masteries": [],
+   "base_spd": 97,
+   "base_hp": 9645,
+   "base_atk": 524,
+   "base_def": 470,
+   "skill_levels": {
+    "A1": {
+     "level": 1,
+     "maxLevel": 5,
+     "maxed": false
+    },
+    "A2": {
+     "level": 1,
+     "maxLevel": 2,
+     "maxed": false
+    },
+    "A3": {
+     "level": 1,
+     "maxLevel": 5,
+     "maxed": false
+    }
+   },
+   "total_stats": {
+    "hp": 21957,
+    "atk": 851,
+    "def": 824,
+    "spd": 155,
+    "crit_rate": 15,
+    "crit_dmg": 61,
+    "res": 37,
+    "acc": 43
+   }
+  },
+  {
+   "name": "Artak",
+   "level": 49,
+   "stars": 5,
+   "rarity": "Legendary",
+   "affinity": "Magic",
+   "gear_sets": [
+    "Perception×2",
+    "Accuracy×2",
+    "null×1",
+    "Lifesteal×1",
+    "CriticalHeal×1"
+   ],
+   "lifesteal": 0,
+   "has_boss_mastery": false,
+   "mastery_count": 2,
+   "masteries": [
+    "Deadly Precision",
+    "Pinpoint Accuracy"
+   ],
+   "base_spd": 100,
+   "base_hp": 14775,
+   "base_atk": 665,
+   "base_def": 817,
+   "skill_levels": {
+    "A1": {
+     "level": 1,
+     "maxLevel": 5,
+     "maxed": false
+    },
+    "A2": {
+     "level": 1,
+     "maxLevel": 5,
+     "maxed": false
+    },
+    "A3": {
+     "level": 1,
+     "maxLevel": 5,
+     "maxed": false
+    }
+   },
+   "total_stats": {
+    "hp": 30511,
+    "atk": 864,
+    "def": 1126,
+    "spd": 158,
+    "crit_rate": 74,
+    "crit_dmg": 99,
+    "res": 30,
+    "acc": 137
+   }
+  }
+ ]
+}
