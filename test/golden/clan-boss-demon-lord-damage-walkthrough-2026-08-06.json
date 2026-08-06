@@ -10,9 +10,13 @@
     { "turn": 4, "skill": "Flesh Wither", "hits": 2, "gatheringFury": 1, "decreaseAtkOnBoss": true,
       "damage": { "Ezio Auditore": 1586, "Ninja": 2108, "Xenomorph": 1264, "Iudex Artor": 1634, "Michelangelo": null },
       "debuff": "Void 2.5% Poison on all", "note": "2-hit AoE WITH Decrease ATK on the boss (confirms the #1 survival lever cuts his AoEs). Numbers may be per-hit or 2-hit total — TBD. Per-champ order is noisy (Ninja highest despite mid DEF) — likely per-hit crit/variance." },
-    { "turn": 11, "skill": "Dark Nova", "hits": 1, "decreaseAtkOnBoss": true, "globalTurnApprox": 68,
+    { "turn": 11, "skill": "Dark Nova", "hits": 1, "decreaseAtkOnBoss": true,
       "damage": { "Michelangelo": 5785, "Ninja": 4941, "Xenomorph": 3584 },
-      "note": "⭐ Ninja 4941 = 3.2× his turn-1 hit (1544) EVEN under Decrease ATK → implied Gathering Fury ~6.4× at boss turn 11. Only possible if GF counts GLOBAL turns (~68 by the boss's 11th activation), NOT boss activations. FIXED: gatheringFury(state.turn). Team STILL ALIVE here (took ~20% HP) → reality out-heals a 6.4× boss." }
+      "note": "F(11)=2.5× (reviewer formula, BOSS turns). Ninja 4941 vs base×F = 1544×2.5=3860 → the extra is per-hit crit/variance (the numbers are noisy). Team still alive." },
+    { "turn": 14, "skill": "Dark Nova", "decreaseAtkOnBoss": true, "event": "FIRST DEATH: Iudex Artor",
+      "damage": { "Iudex Artor": 6514 },
+      "note": "⭐ First champ death at boss turn 14 (F(14)=4.75×), Artor to a 6514 Dark Nova. Clean SURVIVAL anchor. Sim (real mode) fully wipes at boss turn ~16 — survival TIMING now ~right." }
   ],
+  "gatheringFury": "REVIEWER FORMULA (implemented 2026-08-06): F(T) on BOSS turns — T<10:1×; 10-19: 1+0.75(T-9); T>=20: 8.5+(T-19). F(10)=1.75 F(11)=2.5 F(14)=4.75 F(20)=9.5 F(50)=39.5. Additive on pre-Fury damage, before DEF.",
   "_calibration_status": "BOSS side calibrated to reality: CB_BOSS_HIT Hard=2460 (turn-1 Dark Nova, Ninja exact), CB_CRUSH_PCT=0.113 (turn-3 Crushing Force), Gathering Fury on GLOBAL turns (turn-11 per-hit ~matches). ⚠ THE RESIDUAL IS TEAM SUSTAIN, NOT THE BOSS: with the boss calibrated, the sim's team WIPES at boss-turn ~11 (banks ~2M) while reality survives to bank 9.88M — because the sim under-models the team's HEALING/LIFESTEAL/REVIVE throughput (capture: Ninja healed 713k, Iudex Artor revives). The survival model ('real') is therefore OPT-IN (SIM_CB_SURVIVE=real); default stays 'optimistic' until sustain is calibrated. NEXT: reproduce reality's per-champ HEALED column (713k Ninja etc.) — check lifesteal gear/heal cadence/revive firing."
 }
