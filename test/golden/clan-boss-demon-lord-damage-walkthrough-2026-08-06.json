@@ -13,9 +13,14 @@
     { "turn": 11, "skill": "Dark Nova", "hits": 1, "decreaseAtkOnBoss": true,
       "damage": { "Michelangelo": 5785, "Ninja": 4941, "Xenomorph": 3584 },
       "note": "F(11)=2.5× (reviewer formula, BOSS turns). Ninja 4941 vs base×F = 1544×2.5=3860 → the extra is per-hit crit/variance (the numbers are noisy). Team still alive." },
-    { "turn": 14, "skill": "Dark Nova", "decreaseAtkOnBoss": true, "event": "FIRST DEATH: Iudex Artor",
-      "damage": { "Iudex Artor": 6514 },
-      "note": "⭐ First champ death at boss turn 14 (F(14)=4.75×), Artor to a 6514 Dark Nova. Clean SURVIVAL anchor. Sim (real mode) fully wipes at boss turn ~16 — survival TIMING now ~right." }
+    { "turn": 14, "skill": "Dark Nova", "event": "FIRST DEATH: Iudex Artor",
+      "damage": { "Iudex Artor": 6514, "Ninja": 9281 }, "ninjaVeil": false,
+      "note": "⭐ First death at boss turn 14 (F(14)=4.75×). Sim (real mode) fully wipes ~turn 16 → survival TIMING ~right. TWO findings from Ninja 9281 (no veil) vs turn-11 4941 (veil): (1) VEIL DOES NOT reduce Dark Nova — 9281/4941=1.88 ≈ F ratio 4.75/2.5=1.9 (AoE ignores veil). (2) BOSS +25% ATK BUFF present: Ninja base 1544 × 1.25 × F fits both turns (×2.5→4825≈4941; ×4.75→9167≈9281) — likely Dark Nova self +25% ATK applying on VOID too; and it fits with Decrease ATK NOT reducing (debuff had expired — team didn't keep it up)." }
+    { "turn": 17, "skill": "AoE (Dark Nova/Flesh Wither)", "event": "DEATH: Xenomorph (poison carrier)",
+      "damage": { "Xenomorph": 16022, "Ninja": 12431 }, "veil": true,
+      "note": "Xeno (16022 = 87% MaxHP) dies — the POISON CARRIER. Death timeline: Artor t14 → Xeno t17 → Ezio ~t18. Fight wipes ~turn 18-22. Xeno dying at t17 caps his poison contribution (~4.97M over ~17 turns = ~292k poison/boss-turn)." },
+    { "turn": 18, "skill": "Crushing Force", "target": "Ezio Auditore", "damage": { "Ezio Auditore": 22468 },
+      "note": "⭐⭐ VALIDATES Crushing Force: model predicts 0.113 × F(18)=7.75 × Ezio 25583 = 22409 vs actual 22468 (0.3% error). 88% of Ezio MaxHP in one hit — boss nearly one-shots by turn 18. Boss damage model now confirmed across turns 1/3/11/14/18." }
   ],
   "gatheringFury": "REVIEWER FORMULA (implemented 2026-08-06): F(T) on BOSS turns — T<10:1×; 10-19: 1+0.75(T-9); T>=20: 8.5+(T-19). F(10)=1.75 F(11)=2.5 F(14)=4.75 F(20)=9.5 F(50)=39.5. Additive on pre-Fury damage, before DEF.",
   "_calibration_status": "BOSS side calibrated to reality: CB_BOSS_HIT Hard=2460 (turn-1 Dark Nova, Ninja exact), CB_CRUSH_PCT=0.113 (turn-3 Crushing Force), Gathering Fury on GLOBAL turns (turn-11 per-hit ~matches). ⚠ THE RESIDUAL IS TEAM SUSTAIN, NOT THE BOSS: with the boss calibrated, the sim's team WIPES at boss-turn ~11 (banks ~2M) while reality survives to bank 9.88M — because the sim under-models the team's HEALING/LIFESTEAL/REVIVE throughput (capture: Ninja healed 713k, Iudex Artor revives). The survival model ('real') is therefore OPT-IN (SIM_CB_SURVIVE=real); default stays 'optimistic' until sustain is calibrated. NEXT: reproduce reality's per-champ HEALED column (713k Ninja etc.) — check lifesteal gear/heal cadence/revive firing."
