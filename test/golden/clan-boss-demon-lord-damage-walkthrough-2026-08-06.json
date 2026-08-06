@@ -20,8 +20,25 @@
       "damage": { "Xenomorph": 16022, "Ninja": 12431 }, "veil": true,
       "note": "Xeno (16022 = 87% MaxHP) dies — the POISON CARRIER. Death timeline: Artor t14 → Xeno t17 → Ezio ~t18. Fight wipes ~turn 18-22. Xeno dying at t17 caps his poison contribution (~4.97M over ~17 turns = ~292k poison/boss-turn)." },
     { "turn": 18, "skill": "Crushing Force", "target": "Ezio Auditore", "damage": { "Ezio Auditore": 22468 },
-      "note": "⭐⭐ VALIDATES Crushing Force: model predicts 0.113 × F(18)=7.75 × Ezio 25583 = 22409 vs actual 22468 (0.3% error). 88% of Ezio MaxHP in one hit — boss nearly one-shots by turn 18. Boss damage model now confirmed across turns 1/3/11/14/18." }
+      "note": "⭐⭐ VALIDATES Crushing Force: model predicts 0.113 × F(18)=7.75 × Ezio 25583 = 22409 vs actual 22468 (0.3% error). 88% of Ezio MaxHP in one hit — boss nearly one-shots by turn 18." },
+    { "turn": 19, "skill": "Crushing Force", "target": "Ninja", "event": "TEAM WIPE (last champ dies)",
+      "damage": { "Ninja": 24142 },
+      "note": "⭐ FULL WIPE at boss turn 19. 24142 on Ninja (23333 MaxHP = 103% one-shot); predicted 0.113 × F(19)=8.5 × 23333 = 22411, actual 24142 (crit/variance). FIGHT = 19 boss turns, total 9.88M. Sim (real mode) wipes ~t16 — survival timing within 3 turns." }
   ],
+  "fightSummary": {
+    "_note": "This turn-by-turn is the SAME run as test/golden/clan-boss-donahilvi-hard-ezioxeno-artor-current.json (9.0M / 6:37). Total 9,003,376 (NOT the separate 9.88M/4:17 run).",
+    "wipeBossTurn": 19, "durationSeconds": 397,
+    "deaths": { "Iudex Artor": 14, "Xenomorph": 17, "Ezio Auditore": 18, "Ninja": 19 },
+    "totalDamage": 9003376, "simRealModeWipe": 16,
+    "finalHeroes": {
+      "Ezio Auditore": { "dealt": 411418, "taken": 58746, "healed": 17805 },
+      "Ninja":         { "dealt": 4665883, "taken": 80007, "healed": 658047 },
+      "Michelangelo":  { "dealt": 468388, "taken": 39457, "healed": 21426 },
+      "Iudex Artor":   { "dealt": 55454, "taken": 50768, "healed": 102963 },
+      "Xenomorph":     { "dealt": 3402233, "taken": 40599, "healed": 32865 }
+    },
+    "_calibrationGap": "Reality banks 9.0M over 19 boss turns (~474k/turn); sim real-mode banks ~2.87M DoT over ~16 turns (~180k/turn) → DoT/direct throughput ~2.6x low. Carriers: Ninja 4.67M (HP-burn + direct), Xeno 3.40M (poison + direct). Team heal ~833k total (Ninja 658k lifesteal dominant). Boss DAMAGE model validated t1-19; the total gap is throughput + slightly-early wipe (16 vs 19)."
+  },
   "gatheringFury": "REVIEWER FORMULA (implemented 2026-08-06): F(T) on BOSS turns — T<10:1×; 10-19: 1+0.75(T-9); T>=20: 8.5+(T-19). F(10)=1.75 F(11)=2.5 F(14)=4.75 F(20)=9.5 F(50)=39.5. Additive on pre-Fury damage, before DEF.",
   "_calibration_status": "BOSS side calibrated to reality: CB_BOSS_HIT Hard=2460 (turn-1 Dark Nova, Ninja exact), CB_CRUSH_PCT=0.113 (turn-3 Crushing Force), Gathering Fury on GLOBAL turns (turn-11 per-hit ~matches). ⚠ THE RESIDUAL IS TEAM SUSTAIN, NOT THE BOSS: with the boss calibrated, the sim's team WIPES at boss-turn ~11 (banks ~2M) while reality survives to bank 9.88M — because the sim under-models the team's HEALING/LIFESTEAL/REVIVE throughput (capture: Ninja healed 713k, Iudex Artor revives). The survival model ('real') is therefore OPT-IN (SIM_CB_SURVIVE=real); default stays 'optimistic' until sustain is calibrated. NEXT: reproduce reality's per-champ HEALED column (713k Ninja etc.) — check lifesteal gear/heal cadence/revive firing."
 }
