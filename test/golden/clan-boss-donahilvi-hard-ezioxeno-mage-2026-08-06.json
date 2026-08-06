@@ -1,0 +1,14 @@
+{
+  "_source": "FIFTH Clan Boss reality anchor (user capture, 2026-08-06). Demon Lord HARD, DonaHilvi post-rework. SAME core (Ezio/Ninja/Michelangelo/Xenomorph) as the 9.88M capture but 5th seat = MAUSOLEUM MAGE instead of Iudex Artor. Result 8.44M / 3:18. A direct A/B on the flex/support seat.",
+  "content": { "dungeon": "Clan Boss", "difficulty": "Hard", "affinity": "unknown (not shown)" },
+  "durationSeconds": 198,
+  "totalDamageDealt": 8447982,
+  "heroes": [
+    { "name": "Ezio",           "level": 50, "dealt": 278665,  "taken": 56904, "healed": 18538 },
+    { "name": "Ninja",          "level": 60, "dealt": 3795017, "taken": 91829, "healed": 678615 },
+    { "name": "Michelangelo",   "level": 60, "dealt": 414400,  "taken": 46376, "healed": 32755 },
+    { "name": "Mausoleum Mage", "level": 44, "dealt": 42606,   "taken": 43508, "healed": 77781 },
+    { "name": "Xenomorph",      "level": 50, "dealt": 3917294, "taken": 42093, "healed": 33904 }
+  ],
+  "_findings": "⭐ 5th-SEAT A/B (both post-rework 2026-08-06): Iudex Artor 9.88M / 4:17 vs Mausoleum Mage 8.44M / 3:18 → IUDEX ARTOR +1.44M (+17%). Iudex Artor (amp: Increase ATK / Strengthen / Increase TM; sustain: AoE Heal / Revive) boosts the DoT carries AND EXTENDS the fight (4:17 vs 3:18 = more poison/HP-burn ticks); Mausoleum Mage (cleanse) does not. This CONFIRMS the Archetype Selector's #1 seat choice (Iudex Artor over Mausoleum Mage) is correct. ⚠ CALIBRATION SIGNAL: champValue ranks Mausoleum Mage (0.81) ABOVE Iudex Artor (0.71) — BACKWARDS — because it values each champ in ISOLATION and misses that Iudex Artor's amp/sustain MULTIPLIES the carries' output + fight length (damage-mechanics §4: a support's value hides in OTHER champs' bars, Artor himself deals only 42k-65k). The SIM correctly ranked the Iudex Artor team higher (9.54M DoT), so the arbiter compensates for the pruner's blind spot. Do NOT hand-tune champValue; the fix is a contribution term crediting granted-multipliers/sustain, calibrated against captures like this. Carries again: Xenomorph 3.92M poison + Ninja 3.80M HP-burn = ~7.7M DoT of 8.44M."
+}
