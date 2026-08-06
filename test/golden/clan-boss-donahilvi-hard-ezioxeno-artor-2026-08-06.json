@@ -1,0 +1,14 @@
+{
+  "_source": "FOURTH Clan Boss reality anchor (user capture, 2026-08-06). Demon Lord HARD, DonaHilvi POST-REWORK. SAME team as the 08-05 ezioxeno-artor anchor (Ezio/Ninja/Michelangelo/Iudex Artor/Xenomorph) but higher + faster after account changes: 9.88M in 4:17 vs 9.0M in 6:37. Kept as a SECOND sample of the same team (range 9.0-9.88M) per reality-anchors-single-run-trap. Xenomorph jumped 3.40M->4.97M with development.",
+  "content": { "dungeon": "Clan Boss", "difficulty": "Hard", "affinity": "unknown (not shown)" },
+  "durationSeconds": 257,
+  "totalDamageDealt": 9880534,
+  "heroes": [
+    { "name": "Ezio",         "level": 50, "dealt": 315431,  "taken": 75183, "healed": 19137 },
+    { "name": "Ninja",        "level": 60, "dealt": 4077666, "taken": 67647, "healed": 713828 },
+    { "name": "Michelangelo", "level": 60, "dealt": 454168,  "taken": 44307, "healed": 22369 },
+    { "name": "Iudex Artor",  "level": 40, "dealt": 64806,   "taken": 56033, "healed": 139589 },
+    { "name": "Xenomorph",    "level": 50, "dealt": 4968463, "taken": 44147, "healed": 43649 }
+  ],
+  "_findings": "DoT race: Xenomorph 4.97M (Poison) + Ninja 4.08M (HP Burn) = ~9.05M DoT of 9.88M total; direct (Ezio 315k / Mikey 454k / Artor 65k) is the ~0.8M remainder. Iudex Artor deals 65k himself but amplifies+sustains the carries. ⭐ ARCHETYPE-SELECTOR VALIDATION (2026-08-06): the selector picked this EXACT five on merit (no forcing; Michelangelo #1 by champValue 1.64, team value 6.02 = its #1), and tools/cb-sim-finalists.mjs ranked it #1 at 9.54M confirmed DoT — matching reality's ~9.05M DoT / 9.88M total within ~5-9%. Post-rework the key sped up 6:37->4:17. NOTE golden count goes 56/7 -> 56/8 (one more damage-anchor of the same known structural class — not a regression)."
+}

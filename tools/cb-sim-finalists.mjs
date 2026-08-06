@@ -18,6 +18,8 @@ import { capabilityProfile } from '../lib/capability-profile.js';
 import { archetypeById } from '../lib/archetypes/clan-boss.js';
 import { assessFeasibility } from '../lib/selection/feasibility.js';
 import { generateTeams } from '../lib/selection/candidate-generator.js';
+import { selectLeader, leaderAuraLayer } from '../lib/selection/leader.js';
+import { CB_ACC_FLOOR } from '../lib/cb-shadow-goals.js';
 import { makeState, simulate } from '../lib/sim/engine.js';
 import { buildBattle, applyBattleLayers } from '../lib/sim/dragon-fixture.js';
 import { installRecipeRun } from '../lib/sim/interpreter.js';
@@ -38,7 +40,9 @@ const seeds = Number(process.argv[5] || 3);
 const arch = archetypeById('poison_sustain');
 
 // ── selection (Stages 3-6) ──
-let db = []; for (let o = 0; ; o += 1000) { const d = await rest(`champions?select=id,name,type_id,rarity,affinity,base_spd,champion_tags(status,tags(name)),champion_skills(slot,skill_name,cooldown_base,cooldown_booked,skill_summary)&game_id=eq.raid_shadow_legends&limit=1000&offset=${o}`); if (!d.length) break; db = db.concat(d); if (d.length < 1000) break; }
+let db = []; for (let o = 0; ; o += 1000) { const d = await rest(`champions?select=id,name,type_id,rarity,affinity,base_spd,champion_tags(status,tags(name)),champion_skills(slot,skill_name,cooldown_base,cooldown_booked,skill_summary),champion_auras(aura_type,aura_value,aura_area,aura_restriction,aura_summary)&game_id=eq.raid_shadow_legends&limit=1000&offset=${o}`); if (!d.length) break; db = db.concat(d); if (d.length < 1000) break; }
+const dbByName = Object.fromEntries(db.map(c => [c.name, c]));
+const aurasByChampId = Object.fromEntries(db.map(c => [c.id, c.champion_auras ?? []]));
 let aliasRows = []; for (let o = 0; ; o += 1000) { const d = await rest(`champion_aliases?select=alias,champion_id&limit=1000&offset=${o}`); if (!d.length) break; aliasRows = aliasRows.concat(d); if (d.length < 1000) break; }
 const tagRows = await rest('tags?select=name,is_debuff,bypasses_accuracy_check');
 const tagMeta = Object.fromEntries((tagRows || []).map(t => [t.name, { is_debuff: t.is_debuff, bypasses_accuracy_check: t.bypasses_accuracy_check }]));
@@ -77,9 +81,13 @@ if (missingBuilds.length) console.log(`⚠ no build for: ${missingBuilds.join(',
 // ── sim each finalist over N seeds ──
 const TURN_CAP = Number(process.env.SIM_CB_TURNCAP ?? 600);
 async function simTeam(members) {
+  // Select the LEADER (its aura) for this exact team, then apply it in the sim (SPD aura → more turns →
+  // more DoT; ACC aura → landing). Only the leader's aura is live in RSL.
+  const teamChamps = members.map(n => dbByName[n]).filter(Boolean);
+  const leader = selectLeader(teamChamps, aurasByChampId, { contentArea: 'clan_boss', accFloor: CB_ACC_FLOOR[difficulty] ?? 0 });
   const fixture = {
     content: { dungeon: 'Clan Boss', difficulty, affinity: 'Void', bossAtk: null },
-    battle_layers: { auraSpdPct: 0, arenaPct: 0.03, accAura: 0 },   // constant, fair across finalists (coarse)
+    battle_layers: { auraSpdPct: 0, arenaPct: 0.03, accAura: 0, leaderAura: leaderAuraLayer(leader) },
     team: members, roster: Object.fromEntries(members.map(n => [n, n])),
     inputs: Object.fromEntries(members.map(n => [n, { build: buildRel }])),
   };
@@ -95,7 +103,8 @@ async function simTeam(members) {
     const d = Math.round(led.poisonExact + led.hpBurnExact);
     dot.push(d); surv.push(res.survivors.length); direct.push(Math.max(0, Math.round((st.cbDamageToBoss ?? 0) - d)));
   }
-  return { dot: median(dot), surv: median(surv), direct: median(direct) };
+  const ldr = leader ? `${leader.name} (${leader.aura_type} ${leader.aura_value})` : 'none';
+  return { dot: median(dot), surv: median(surv), direct: median(direct), leader: ldr };
 }
 
 const results = [];
@@ -111,5 +120,6 @@ for (const [i, r] of results.entries()) {
   if (r.skip) { console.log(`#${i + 1}  [skipped: ${r.skip}]  ${r.t.members.join(', ')}`); continue; }
   console.log(`#${i + 1}  DoT ${fmt(r.dot)}  survivors ${r.surv}/5  (direct≤${fmt(r.direct)}, selValue ${r.t.value.toFixed(2)})`);
   console.log(`     ${r.t.members.join(', ')}`);
+  console.log(`     leader: ${r.leader}`);
 }
 try { fs.unlinkSync(path.join(REPO, buildRel)); } catch {}
