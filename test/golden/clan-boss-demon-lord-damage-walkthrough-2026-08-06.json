@@ -1,0 +1,18 @@
+{
+  "_source": "First-party turn-by-turn Demon Lord DAMAGE walkthrough (user, 2026-08-06). CB HARD, Void key, DonaHilvi team Ezio/Ninja/Michelangelo/Xenomorph/Iudex Artor. Champs under Veil. Purpose: calibrate the boss's per-hit damage (CB_BOSS_HIT, CB_CRUSH_PCT, and the Gathering-Fury ramp) from reality, not fitted totals. Colors appear to be the STRUCK CHAMP's affinity tint (Magic=yellow, Force/Void=red), NOT crit.",
+  "content": { "dungeon": "Clan Boss", "difficulty": "Hard", "affinity": "Void" },
+  "champMaxHp": { "Ezio Auditore": 25583, "Ninja": 23333, "Michelangelo": 22608, "Xenomorph": 18396, "Iudex Artor": 29674 },
+  "bossTurns": [
+    { "turn": 1, "skill": "Dark Nova", "hits": 1, "gatheringFury": 1, "decreaseAtkOnBoss": false,
+      "damage": { "Ninja": 1544, "Xenomorph": 1480, "Ezio Auditore": 1903 }, "note": "1-hit Void AoE, no debuff; base ATK-vs-DEF. Pins CB_BOSS_HIT Hard≈2460 (Ninja exact)." },
+    { "turn": 3, "skill": "Crushing Force", "gatheringFury": 1, "target": "Ezio Auditore",
+      "damage": { "Ezio Auditore": 2899 }, "debuff": "Stun 1t (unresistable)", "note": "single-target %MaxHP = 2899/25583 = 11.3% MaxHP. Pins CB_CRUSH_PCT≈0.113." },
+    { "turn": 4, "skill": "Flesh Wither", "hits": 2, "gatheringFury": 1, "decreaseAtkOnBoss": true,
+      "damage": { "Ezio Auditore": 1586, "Ninja": 2108, "Xenomorph": 1264, "Iudex Artor": 1634, "Michelangelo": null },
+      "debuff": "Void 2.5% Poison on all", "note": "2-hit AoE WITH Decrease ATK on the boss (confirms the #1 survival lever cuts his AoEs). Numbers may be per-hit or 2-hit total — TBD. Per-champ order is noisy (Ninja highest despite mid DEF) — likely per-hit crit/variance." },
+    { "turn": 11, "skill": "Dark Nova", "hits": 1, "decreaseAtkOnBoss": true, "globalTurnApprox": 68,
+      "damage": { "Michelangelo": 5785, "Ninja": 4941, "Xenomorph": 3584 },
+      "note": "⭐ Ninja 4941 = 3.2× his turn-1 hit (1544) EVEN under Decrease ATK → implied Gathering Fury ~6.4× at boss turn 11. Only possible if GF counts GLOBAL turns (~68 by the boss's 11th activation), NOT boss activations. FIXED: gatheringFury(state.turn). Team STILL ALIVE here (took ~20% HP) → reality out-heals a 6.4× boss." }
+  ],
+  "_calibration_status": "BOSS side calibrated to reality: CB_BOSS_HIT Hard=2460 (turn-1 Dark Nova, Ninja exact), CB_CRUSH_PCT=0.113 (turn-3 Crushing Force), Gathering Fury on GLOBAL turns (turn-11 per-hit ~matches). ⚠ THE RESIDUAL IS TEAM SUSTAIN, NOT THE BOSS: with the boss calibrated, the sim's team WIPES at boss-turn ~11 (banks ~2M) while reality survives to bank 9.88M — because the sim under-models the team's HEALING/LIFESTEAL/REVIVE throughput (capture: Ninja healed 713k, Iudex Artor revives). The survival model ('real') is therefore OPT-IN (SIM_CB_SURVIVE=real); default stays 'optimistic' until sustain is calibrated. NEXT: reproduce reality's per-champ HEALED column (713k Ninja etc.) — check lifesteal gear/heal cadence/revive firing."
+}
