@@ -12,6 +12,7 @@ import { capabilityProfile } from '../lib/capability-profile.js';
 import { archetypeById } from '../lib/archetypes/clan-boss.js';
 import { assessFeasibility } from '../lib/selection/feasibility.js';
 import { generateTeams } from '../lib/selection/candidate-generator.js';
+import { champValue } from '../lib/selection/team-score.js';
 
 if (!process.env.SUPABASE_URL) { console.log('no DB — run with --env-file=.env.local'); process.exit(0); }
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -47,26 +48,31 @@ const rosterProfiles = pool.map(uc => {
 
 const feas = assessFeasibility(rosterProfiles, arch);
 console.log(`\n### ${file.split('_')[0]} — ${arch.label} (pool ${pool.length}) ###`);
-if (!feas.feasible) { console.log(`NOT feasible — missing: ${feas.missing.join(', ')}`); process.exit(0); }
+for (const r of feas.requirements) {
+  if (r.kind === 'budget') {
+    const comps = r.components.map(c => `${c.key} ${(c.best?.coverage ?? 0).toFixed(2)}${c.best ? '(' + c.best.name + ')' : ''}`).join(' + ');
+    console.log(`   ${r.met ? '✓' : '✗'} ${r.key} budget ${r.rosterMax.toFixed(2)}/${r.minTotal}  = ${comps}`);
+  } else {
+    console.log(`   ${r.met ? '✓' : '✗'} ${r.key} (${r.candidates.length}) ${r.candidates.slice(0, 3).map(c => c.name + ' ' + c.coverage.toFixed(2)).join(', ')}`);
+  }
+}
+if (!feas.feasible) { console.log(`\nNOT feasible — missing: ${feas.missing.join(', ')}`); process.exit(0); }
+
+const profileByName = Object.fromEntries(rosterProfiles.map(c => [c.name, c.profile]));
+// Roster champs ranked by VALUE (contribution to the CB objective) — the strongest surface here on merit.
+const byValue = rosterProfiles.map(c => ({ name: c.name, v: champValue(c.profile) })).sort((a, b) => b.v - a.v);
+console.log(`\ntop champs by value (contribution to objective): ${byValue.slice(0, 6).map(c => `${c.name} ${c.v.toFixed(2)}`).join(', ')}`);
 
 const { teams, truncated, generated } = generateTeams(rosterProfiles, arch, feas, { K: 6, cap: 2000 });
-if (truncated) console.log(`⚠ generation hit the cap — showing top ${topN} of ${generated}+ (truncated)`);
+if (truncated) console.log(`⚠ generation hit the cap of ${generated}+ teams (truncated)`);
+const ranked = teams.sort((a, b) => b.value - a.value);
 
-// COARSE rank (Stage 6 stub): sum of attributed requirement coverage + a stacking bonus for fillPreference
-// seats. Deliberately coarse — this only prunes to finalists; the SIM is the arbiter.
-const profileByName = Object.fromEntries(rosterProfiles.map(c => [c.name, c.profile]));
-const fillCov = (n) => Math.max(0, ...(arch.fillPreference || []).map(cap => profileByName[n]?.[cap]?.coverage ?? 0));
-const score = (t) => {
-  const reqSum = Object.values(t.coverage).reduce((s, v) => s + (v?.coverage ?? 0), 0);
-  const stack = (t.filled || []).reduce((s, n) => s + 0.5 * fillCov(n), 0);
-  return reqSum + stack;
-};
-const ranked = teams.map(t => ({ ...t, score: score(t) })).sort((a, b) => b.score - a.score);
-
-console.log(`generated ${generated} valid teams. Top ${Math.min(topN, ranked.length)} by coarse coverage:\n`);
+console.log(`\ngenerated ${generated} valid teams. Top ${Math.min(topN, ranked.length)} by team value (SIM is the final arbiter):\n`);
 for (const [i, t] of ranked.slice(0, topN).entries()) {
-  console.log(`#${i + 1}  score ${t.score.toFixed(2)}  ${t.members.join(', ')}`);
+  const mem = t.members.map(n => `${n}(${champValue(profileByName[n]).toFixed(2)})`).join(', ');
+  console.log(`#${i + 1}  value ${t.value.toFixed(2)}  ${mem}`);
   const cov = Object.entries(t.coverage).map(([k, v]) => `${k}=${v ? v.by + ' ' + v.coverage.toFixed(2) : '—'}`).join(' · ');
+  const bud = Object.entries(t.budgets || {}).map(([k, b]) => `${k} ${b.total.toFixed(2)} [${b.breakdown.map(c => c.key + ' ' + c.coverage.toFixed(2)).join('/')}]`).join(' · ');
   console.log(`     ${cov}`);
-  if (t.filled.length) console.log(`     fill: ${t.filled.join(', ')}`);
+  if (bud) console.log(`     ${bud}`);
 }

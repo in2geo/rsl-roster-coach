@@ -48,8 +48,13 @@ for (const f of fs.readdirSync(path.join(REPO, 'gestal-sync/output')).filter(x =
   const r = assessFeasibility(profiles, arch);
   console.log(`══ ${acct} (pool ${pool.length}) — ${r.feasible ? 'FEASIBLE ✅' : 'NOT feasible ❌ (missing: ' + r.missing.join(', ') + ')'}`);
   for (const req of r.requirements) {
-    const top = req.candidates.slice(0, 3).map(c => `${c.name}[${c.cap} ${c.coverage.toFixed(2)}]`).join(', ');
-    console.log(`   ${req.met ? '✓' : '✗'} ${req.key.padEnd(22)} (${req.candidates.length}) ${top || '— none ≥ ' + req.minScore}`);
+    if (req.kind === 'budget') {
+      const comps = req.components.map(c => `${c.key} ${(c.best?.coverage ?? 0).toFixed(2)}${c.best ? '(' + c.best.name + ')' : ''}`).join(' + ');
+      console.log(`   ${req.met ? '✓' : '✗'} ${req.key.padEnd(22)} budget ${req.rosterMax.toFixed(2)}/${req.minTotal} = ${comps}`);
+    } else {
+      const top = req.candidates.slice(0, 3).map(c => `${c.name}[${c.cap} ${c.coverage.toFixed(2)}]`).join(', ');
+      console.log(`   ${req.met ? '✓' : '✗'} ${req.key.padEnd(22)} (${req.candidates.length}) ${top || '— none ≥ ' + req.minScore}`);
+    }
   }
   console.log('');
 }
