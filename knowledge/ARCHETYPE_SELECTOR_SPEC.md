@@ -52,7 +52,7 @@ archetypes:
 | Group | Archetypes | Needs exact SPD tune? | Where valid |
 |---|---|---|---|
 | **Sustain** | poison-sustain, direct-sustain, hybrid-sustain | No | **App-shippable** |
-| **Rotation** | unkillable, shield-infinity, block-damage, revive-on-death | Yes | **Sim-only / advanced** until per-champion SPD collection exists |
+| **Rotation** | unkillable, shield-infinity (start here); block-damage, revive-on-death (deferred) | Yes | **Sim-only / advanced** until per-champion SPD collection exists |
 
 Every archetype carries `requiresSpeedTune: boolean`. The app only recommends `false` ones; the
 sim may evaluate all. Do not let the app promise an unkillable comp it cannot tune.
@@ -128,12 +128,12 @@ key instead of by bucket.
   id: "poison_sustain",
   strategy: "conventional",
   requiresSpeedTune: false,
-  hardRequirements: {
-    bossDamageSuppression: { anyOf: ["decreaseAtk"], minScore: 0.70 },
-    protection:            { anyOf: ["allyProtection","increaseDefense","strengthen","shield"], minScore: 0.60 },
-    recovery:              { anyOf: ["leech","healing","continuousHeal"], minScore: 0.50 },
-    poisonEngine:          { anyOf: ["poison","poisonActivation","poisonExtension"], minScore: 0.60 },
-    stunPlan:              { anyOf: ["blockDebuffs","cleanse","controlledStunTarget"] }
+  hardRequirements: {                                                   // minScores per §11.1 (CALIBRATION-NEEDED)
+    poisonEngine:          { anyOf: ["poison","poisonActivation","poisonExtension"], minScore: 0.65 },  // highest — defining function
+    bossDamageSuppression: { anyOf: ["decreaseAtk"], minScore: 0.65 },  // required for THIS archetype (a no-DecreaseATK heal-tank is a separate archetype)
+    recovery:              { anyOf: ["leech","healing","continuousHeal"], minScore: 0.55 },
+    protection:            { anyOf: ["allyProtection","increaseDefense","strengthen","shield"], minScore: 0.55 },
+    stunPlan:              { anyOf: ["blockDebuffs","cleanse","controlledStunTarget"] }  // presence-only, no minScore
   },
   optional: [...],
   penalties: ["debuffBarPressure","affinityRisk","buildGap"]
@@ -197,14 +197,50 @@ is the `buildScale` + gate work already built.
 8. Add the speed-tune group ONLY after a rotation validator exists; flagged sim-only.
 9. Retire the repair loop after the sim confirms the new path wins on the real metric.
 
-## 11. Open decisions (need Mike)
+## 11. Recommended defaults (drafted 2026-08-06 — pending Mike sign-off)
 
-1. **poison-sustain requirement thresholds** — the `minScore` values above are placeholders.
-2. **Archetype roster & counts** — confirm the sustain templates' exact role slots (e.g. 2 DoT
-   carriers + activator + amp + reviver), and the full CB archetype list.
-3. **`current_build` vs `development_plan`** default for the app.
-4. **Redundancy rule** — quantitative test for when a 2nd same-role champ is worth a seat.
-5. **Enumeration cap** — max teams evaluated per archetype before pruning.
+**11.1 poison-sustain thresholds** — feasibility floors, low enough to admit real teams, high
+enough to reject nominal coverage; the coarse score + sim differentiate above them:
+
+| Function | minScore |
+|---|--:|
+| poisonEngine | 0.65 (highest — defining function) |
+| bossDamageSuppression (Decrease ATK) | 0.65 (primary survival lever; DEF-independent poison does NOT want Decrease DEF here) |
+| recovery | 0.55 |
+| protection | 0.55 |
+| stunPlan | presence-only |
+
+⚠ CALIBRATION-NEEDED placeholders, same class as CLAUDE.md's dungeon stat floors — recalibrate
+against sim outcomes; do NOT tune before the pipeline can score (implement-don't-fit).
+
+**11.2 Archetype roster** — define by FUNCTION SET (not rigid seat counts); multi-role champs
+cover multiple functions and free seats.
+- **poison-sustain** (app): the 5 functions above; freed seats → 2nd poison carrier (stacking).
+- **direct-sustain** (app): suppression + protection + recovery + directDamageEngine
+  (singleTargetDamage · multiHitA1, ideally Warmaster/Giant Slayer) + amplification (here
+  Decrease DEF DOES matter — direct damage is DEF-dependent) + stunPlan; freed seat → 2nd dealer/amp.
+- **hybrid-sustain** (app): both engines at lower floors (0.50 each) + suppression + recovery +
+  stunPlan; freed seat → stronger engine.
+- **rotation group** (sim-only): start with unkillable + shield-infinity; defer block-damage /
+  revive-on-death until proven needed. A no-Decrease-ATK heal-tank is a SEPARATE archetype to add
+  later — do not loosen poison-sustain to absorb it.
+
+**11.3 Build mode** — default `current_build` (a team usable now); `development_plan` is an opt-in
+view. Automatic fallback: if NO archetype is currently feasible, switch to `development_plan`,
+clearly labeled ("you can't complete a CB archetype yet; closest is X, build Y") — never return empty.
+
+**11.4 Redundancy rule** — capability-type-specific (this is where "don't overfill" gets a real
+mechanism instead of unbounded linear):
+- STACKING (poison/HP-burn/direct damage): keep adding carriers WHILE total DoT stays under the
+  10-debuff-bar ceiling — `Σ(expectedPlacementsPerBossTurn × avg_duration) < ~10`. Bounds the
+  stacking that current `CB_OVERFILL:1` leaves unbounded.
+- NON-STACKING (Decrease ATK / cleanse / protection / recovery): a 2nd earns a seat ONLY if it
+  lifts that function's effective uptime by ≥ 0.15, OR is a multi-role champ covering a still-missing
+  function. Otherwise the seat goes to a stacking role or flex.
+
+**11.5 Enumeration cap** — prune candidate lists to top K=6 per function (by capability × buildScale);
+cap valid teams per archetype at 2,000 (safety backstop; `log()` any truncation — no silent caps);
+send top 20 valid teams per archetype to the sim.
 
 ---
 
