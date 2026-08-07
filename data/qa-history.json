@@ -59002,5 +59002,122 @@
       "missing_data": 0,
       "not_scored": 7
     }
+  },
+  {
+    "ts": "2026-08-07T19:22:41.315Z",
+    "commit": "7d81886",
+    "rung": "model-qa",
+    "pass": 10,
+    "fail": 4,
+    "blocks": 4,
+    "scorecard": [
+      {
+        "name": "teeth (mutation)",
+        "layer": "meta",
+        "status": "RED (1)"
+      },
+      {
+        "name": "op registry↔interpreter",
+        "layer": "1",
+        "status": "RED (4)"
+      },
+      {
+        "name": "champion-identity (one protocol, no raw-name lookups)",
+        "layer": "1",
+        "status": "green"
+      },
+      {
+        "name": "game-magnitude anchor (Raid tables)",
+        "layer": "2",
+        "status": "green"
+      },
+      {
+        "name": "II-A damage toy battles",
+        "layer": "2/3",
+        "status": "green"
+      },
+      {
+        "name": "II-B placement toy",
+        "layer": "2/3",
+        "status": "green"
+      },
+      {
+        "name": "II-C state toy",
+        "layer": "2/3",
+        "status": "green"
+      },
+      {
+        "name": "II-D passives toy",
+        "layer": "2/3",
+        "status": "RED (1)"
+      },
+      {
+        "name": "boss sequence (Hellrazor)",
+        "layer": "2/3",
+        "status": "green"
+      },
+      {
+        "name": "Spider sequence (Skavag)",
+        "layer": "2/3",
+        "status": "green"
+      },
+      {
+        "name": "invariants (property)",
+        "layer": "5",
+        "status": "green"
+      },
+      {
+        "name": "sensitivity (metamorphic)",
+        "layer": "6",
+        "status": "green"
+      },
+      {
+        "name": "regression snapshot",
+        "layer": "meta",
+        "status": "RED (24)"
+      },
+      {
+        "name": "roll census (RNG)",
+        "layer": "meta",
+        "status": "green"
+      },
+      {
+        "name": "card→recipe coverage",
+        "layer": "1",
+        "status": "SKIPPED (no DB)"
+      },
+      {
+        "name": "DB→recipe fidelity",
+        "layer": "1",
+        "status": "SKIPPED (no DB)"
+      },
+      {
+        "name": "recipe champion ↔ registry (champKey collision)",
+        "layer": "1",
+        "status": "SKIPPED (no DB)"
+      },
+      {
+        "name": "hand-calc golden (turns 1–8)",
+        "layer": "4",
+        "status": "SKIPPED (no DB)"
+      },
+      {
+        "name": "turn order + no inert mechanic (outcome)",
+        "layer": "4",
+        "status": "SKIPPED (no DB)"
+      },
+      {
+        "name": "wave coverage L1/2/3 (stage 17)",
+        "layer": "1",
+        "status": "SKIPPED (no DB)"
+      }
+    ],
+    "buckets": {
+      "spec_violation": 4,
+      "high_impact_deferrals": 16,
+      "unimplemented": 1,
+      "missing_data": 0,
+      "not_scored": 7
+    }
   }
 ]
