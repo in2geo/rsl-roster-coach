@@ -1,5 +1,5 @@
 -- ============================================================================
--- 2026-08-07 — FLAGGED NAME-ONLY corruption fix (7 champions) — DRAFT, NOT YET APPLIED
+-- 2026-08-07 — FLAGGED NAME-ONLY corruption fix (7 champions) — APPLIED 2026-08-07 (22 UPDATE + 5 INSERT, all rowCount=1)
 --
 -- The 7 ALL_WRONG champions the batch seed (2026-08-07_namefix_batch_ayumilove.sql) could NOT
 -- auto-fix: DB skill count != AyumiLove count. Root cause: the bad-bulk seed 104 OMITTED a skill
@@ -13,7 +13,8 @@
 --
 -- skill_id = worksheet C-ID prefix + slot (from existing rows). INSERTs idempotent on skill_id.
 -- verification_status=proposed (HUMAN REVIEW). Source AyumiLove (Tier-2). Old names in review_notes.
--- Worksheet writeback owed on approve. Apply via tools/apply-seed-pooler.mjs AFTER review.
+-- Worksheet writeback DONE 2026-08-07 (Skills tab: 22 rows updated + 5 rows appended; backup
+-- BACKUP-2026-08-07-preFlagged7.xlsx). APPLIED to live DB via tools/apply-seed-pooler.mjs.
 -- ============================================================================
 begin;
 
