@@ -1,14 +1,14 @@
 -- ============================================================================
--- 2026-08-07 — Missing champions captured from HellHades (7 of 8) — DRAFT, NOT YET APPLIED
+-- 2026-08-07 — Missing champions captured from HellHades (8 of 8) — APPLIED 2026-08-07 (verified live: all 8 resolve, skills+aura present)
 --
 -- Champions HellHades has that our DB lacked (newer than the 2026-07-13 refresh), surfaced by the
 -- alias audit. Skills + aura + cooldowns: HellHades (Tier-2, human-read verbatim). Base stats: in-game
 -- Index screenshots (Mike) — every base_hp validated as a multiple of 15. Identity (rarity/role/faction/
 -- affinity): in-game screenshots. skill verification_status='proposed' (HUMAN REVIEW). new C-IDs assigned.
 --
--- DEFERRED: (1) Xalgaze Fangwall — awaiting its in-game screenshot (role/affinity/stats). (2) Heinrik
--- Demondoom is a TRANSFORMING champion — only his BASE form is here; his Alternate Form skills need an
--- in-game capture. (3) champion_tags — generate from skill_summary per the tag policy (separate pass).
+-- DEFERRED: (1) Heinrik Demondoom is a TRANSFORMING champion — only his BASE form is here; his Alternate
+-- Form skills need an in-game capture. (2) champion_tags — generate from skill_summary per the tag policy
+-- (separate pass, human-reviewed).
 -- Apply via tools/apply-seed-pooler.mjs AFTER review.
 -- ============================================================================
 begin;
@@ -146,5 +146,24 @@ insert into champion_auras (champion_id, aura_id, aura_type, aura_value, aura_ar
 select ch.id, 'C000942-AURA', 'SPD', '20%', 'All Battles', null, 'Increases Ally SPD in All Battles by 20%.', 'proposed', 'HellHades (skills/aura, human-read) + in-game Index (stats) 2026-08-07 — missing-champion capture'
   from champions ch where ch.game_id='raid_shadow_legends' and ch.name='Khamir Scald-eye'
   and not exists (select 1 from champion_auras au join champions c2 on c2.id=au.champion_id where c2.name='Khamir Scald-eye');
+
+-- ── Xalgaze Fangwall  (Legendary / Magic / Defense / Demonspawn)  C000943
+insert into champions (game_id, name, faction, affinity, rarity, role, base_hp, base_atk, base_def, base_spd, base_crit_rate, base_crit_dmg, base_res, base_acc, source_citation)
+select 'raid_shadow_legends', 'Xalgaze Fangwall', 'Demonspawn', 'Magic', 'Legendary', 'Defense', 18990, 859, 1454, 103, 15, 63, 30, 10, 'HellHades (skills/aura, human-read) + in-game Index (stats) 2026-08-07 — missing-champion capture'
+  where not exists (select 1 from champions where game_id='raid_shadow_legends' and name='Xalgaze Fangwall');
+insert into champion_skills (champion_id, skill_id, slot, skill_name, skill_summary, cooldown_base, cooldown_booked, damage_multiplier, multiplier_type, ascension_required, verification_status, source)
+select ch.id, v.skill_id, v.slot, v.nm, v.summ, v.cdb, v.cdbk, v.mult, v.mt, 0, 'proposed', 'HellHades (skills/aura, human-read) + in-game Index (stats) 2026-08-07 — missing-champion capture'
+  from champions ch join (values
+    ('C000943-A1', 'A1', 'Unsettling Warrior', 'Attacks 1 enemy 1 time. Has a 50% chance to place a [True Fear] debuff for 1 turn. Also has a 50% chance to place a [Block Active Skills] debuff for 1 turn, if the target is under a [Leech] debuff.', '0', '0', '4.3', 'DEF'),
+    ('C000943-A2', 'A2', 'Horrific Mission', 'Attacks all enemies 2 times. Each hit will ignore 15% of each target''s DEF. The first hit has a 75% chance of placing a [Leech] debuff for 2 turns. The second hit has a 75% chance of placing a 50% [Decrease RES] debuff for 2 turns.', '4', '3', '2.1', 'DEF'),
+    ('C000943-A3', 'A3', 'Unholy Resilience', 'Places a 60% [Increase DEF] buff, a 50% [Increase ACC] buff, and a 30% [Reflect Damage] buff on all allies for 2 turns.', '5', '3', null, null),
+    ('C000943-Passive', 'Passive', 'Construct Of Siroth [P]', 'All [Reflect Damage] buffs on this Champion and their allies reflect 30% more damage. If there are multiple Champions on the team with this skill, only one will activate. This skill will not activate on duplicate copies of this Champion, if this particular Champion is dead. Whenever this Champion is attacked, reflects 50% of the damage this Champion receives back to the attacker. Heals this Champion by 50% of any damage received from enemy skills while under a [Reflect Damage] buff.', null, null, null, null)
+  ) as v(skill_id, slot, nm, summ, cdb, cdbk, mult, mt) on true
+  where ch.game_id='raid_shadow_legends' and ch.name='Xalgaze Fangwall'
+  and not exists (select 1 from champion_skills s where s.skill_id=v.skill_id);
+insert into champion_auras (champion_id, aura_id, aura_type, aura_value, aura_area, aura_restriction, aura_summary, verification_status, source)
+select ch.id, 'C000943-AURA', 'DEF', '30%', 'All Battles', null, 'Increases Ally DEF in All Battles by 30%.', 'proposed', 'HellHades (skills/aura, human-read) + in-game Index (stats) 2026-08-07 — missing-champion capture'
+  from champions ch where ch.game_id='raid_shadow_legends' and ch.name='Xalgaze Fangwall'
+  and not exists (select 1 from champion_auras au join champions c2 on c2.id=au.champion_id where c2.name='Xalgaze Fangwall');
 
 commit;
