@@ -8,58 +8,60 @@ Fix path: Tier-1 (AyumiLove/in-game) → committed seed → apply, like Morag/St
 
 ## ALL_WRONG (50) — every name invented (highest priority)
 
-| Champion | Rar | DB names (wrong) | AyumiLove names (real) |
-|---|---|---|---|
-| Amoch | L | Sacred Rebuke, Dragonkin's Curse, Ancestral Blessing, Growing Might | Satrap's Secrets, Dragonkin Knowledge, Ward of the Heritage, Resilient Caste |
-| Boragar | L | Ancient Staff, Rune of Shielding, Rune of Warding, Elder's Wisdom | Antique Staff, Souls of Old Stone, Rune of Energy, Boragar's Blazon [Passive] |
-| Chani | E | Jaguar's Bite, Jungle Haze, Envenomed Arrows | Insidious Arrow, Soul Fire, Shower of Misery, Sureshot |
-| Claidna | L | Whispering Slumber, Verdant Restoration, Grovewarden's Blessing, Sylvan Aegis | Touch of Slumber, Lost In The Woods, Otherworld Infusion, Fey Monarch |
-| Cromax | L | Moonlit Edge, Umbral Curse, Lunar Eclipse, Blood Hex | Lunar Lance, Moonlight Bonds, Blood Moon, Silver Fear |
-| Deephook Nagis | E | Tidal Crash, Reactive Scales, Hooking Jab, Serpent's Embrace | Catching Prey, Tidal Cleanse, Sea Snake Surge, Tritonean Might |
-| Demytha | E | Spirit Siphon, Miracle Heal, Hallowed Protector, Rite of Transference | Fires of Old, Light of the Deep, Channel the Bloodline |
-| Djamarsa | E | Mystic Touch, Soothing Ritual, Mass Rebirth, Fateful Twist | Night's Finger, Radiant Moon, Moonlit March, Phasing |
-| Dune Lord Greggor | L | Axe of Unity, Sandstorm Shield, Rallying Cry, Desert's Fury | Desert Ax, Earthcleave, Bestial Yell, Desert Monolith |
-| Enda | E | Glimmering Edge, Lunar Flurry, Moonlit Sustenance, Lunar Swiftness | Silvern Slash, Glimmer, Chain of Delusion, Lunar Cycle |
-| Fu-Shan | L | Pummel, Quake Stomp, Shatter Defenses | Howl, Frightful Claws, Shred |
-| Galapo | E | Sewer Lash, Mending Mist, Dragonkin's Gift, Final Wish | Roll with the Times, Reclusive Sage, You've Much to Learn, Outliver of Empires |
-| Ginro | L | Skill Disruption, Unstoppable Stun, Stork's Guard, Tenacious Talons | Plunging Beak, Befuddle, Gatewatch Stance, Laughing Gull |
-| Kaja | L | Pummel, War Ritual, Savage Charge | Firecracker, Back With A Bang, Royal Flush, Dynamic Duo |
-| Karato | L | Kitsune's Blades, Fox's Cunning, Soulscourge, Soul Reaper | Three Visitations, Bedevil, Suppression Ward, Stoicism |
-| Kassandra | L | Piercing Strikes, Debilitating Blow, Warrior's Resolve, Assassin's Cunning, Combat Prowess | West Wind Rush, Spear Of Leonidas, Isu's Blessing, Everything Is Permitted, Blood Of Sparta |
-| Keberon | L | Searing Mark, Brand of Damnation, Infernal Eruption, Underflame's Resilience | Fiery Rend, Searing Brand, Pyrenei Power, Underflame’s Protection |
-| King Gallcobar | L | Cobra Lash, Venomous Overload, King's Protection, Serpent's Spite | Tanglestaff, Vitriolic Thorns, Hypertrophy, Bramble Shaman |
-| Klaazag | L | Fearful Exchange, Overwhelming Curse, Keyhulk's Guard, Debilitating Force | Dreadtone, Seismic Dissonance, Mindless Muscle, Drone of Agony |
-| Knosson | L | Unstoppable Charge, Bronze Rage, Goring Presence, Crushing Horns | Strength of Lakon, By The Horns, Hard-earned Confidence, Is That All You've Got? |
-| Konstantin | L | Daystar, Sun Eater, Solar Flare, Hunter's Instinct | Sword of Suns, Rune Shatter, Quietude, Exalted |
-| Korugar | L | Cleanse and Boost, Molten Axe, Team Protection, Stat Boost | Strange Animus, Bell's Toll, Conduit of Agonies, Violence Locus |
-| Kroz | L | Skull Sunder, Bombardment Plan, Triggering Charge, Chain Reaction | Pulverizing Pummel, Battlefield Sapper, Mangonel Maul, Bomb Breacher |
-| Lady Eresh | E | Soul Scythe, Soul Swap, Soul Bond | Meticulous Adversary, Blur of Knives, Deathrite Evocation, Slip Between |
-| Lady Noelle | L | Frigid Judgment, Winter's Solace, Noelle's Gift, Grandmother's Favor | Icecrack staff, Invigorating Chill, Hearthkeeper, Cyromatic Queen |
-| Leminisi | L | Gilded Blades, Winged Fury, Celestial Rebuke, Spirit's Aegis | Auric Talons, Intercept The Threat, Venerated Warrior, Scourge Of Evil |
-| Liburga | E | Noxious Bite, Corrupting Touch, War Leader, Venomous Skin | Dripping Down, Boil From Within, Vigor Bloom, Irradiate |
-| Lonatharil | L | Aegis of the Fallen, Coordinated Assault, Shattering Blow | Gallantry, Flicker Barrier, Finest Hour, Piercer |
-| Lord Entertainer Fabian | L | Disrupting Flourish, Chilling Performance, Grand Finale, Unending Encore | Service In Death, Unwelcome Guest, Spectral Flourish, Ghost With The Most |
-| Losan K'Leth | L | Astropic Axe, Unity's Equilibrium, Spirit Siphon, Grand Protector | Atrophic Ax, Spirit Calculus, Finality Disc, The Representation |
-| Maddak | E | Hammer and Anvil, Skyiron Rebuke, Debilitating Barrage, Keen Eye | Portable Cannonade, Scattershot Barrage, Beast Feller, Eyes of a Sunseeker |
-| Maranix | L | Slicing Gale, Witching Blades, Hex-Reaper, Witchlight Barrier | Reaper's Due, Excruciate, Inexortable End, Death's Collector |
-| Marichka | L | Joint Strike, Unbreakable Bulwark, Resolute Cleanse, Last Stand | United We Triumph, Font of Tenacity, Nurtured Friendship, Giving All |
-| Merouka | E | Ferocious Greatswords, Steadfast Rescue, Unyielding Valor, Stalwart Sentinel | Tarfield Affliction, Badlands Witchery, Return From The Slime, Springy |
-| Mithrala | L | Serpent's Kiss, Venomous Embrace, Mithrala's Blessing, Serpent's Ward | Libation of Pain, Sigil of Toxic Glory, Brimming Cylix, Gaze of Stone |
-| Old Ghrukkus | E | Skull Rattle, Ghastly Chimes, Cacophonous Dirge | Beating Staff, Toe the Line, Harsh Discipline |
-| Phranox | E | Twin Talons, Unfettered Fury, Prey on the Weak | Carve Through, Tender Mercies, Isolate |
-| Pontiff Augustin | L | Holy Strike, Divine Intervention, Sacred Rite, Vigilant Protector | Edenic Blades, Shackle The Unjust, Ethereal Benediction, Your Eminence |
-| Praeva | L | Slithering Transfer, Healing Scales, Viper's Revival, Debuff Absorption & Turn Meter Boost | Bolt of Affliction, Malignant Energy, Seed of Corruption, Sacrificial Servant |
-| Rakka | L | Viletide Strike, Viletide Support, Viletide Momentum | Ichor of Life, Oozing Blessing, Plasm Rebirth, Creep |
-| Roric | L | Crushing Blow, Dragon's Roar, Wyrmbane's Hammer | Wyrmslayer Hammer, Dragon Rage, Scale Breaker, Titan's End |
-| Scion | E | Cursed Strike, Bane, Hellfire Wave | Nightmare Khopesh, Evil Seed, Crawling Chaos, Incarnate |
-| Spikehead | R | Stomp, Battle Cry, Rip |  |
-| Taras | L | Attack 1, Attack 2, Attack 3, Passive 1, Passive 2 | Shatter Upon Us, Hero's Intercession, Constant Pressure, Fierce Battler, Poise |
-| Tatura | L | Skill 1, Skill 2, Skill 3, Passive Skill | Solar Ray, Wings of Shelter, Otherworld Breach, Glimmer Hide |
-| Thorn | E | Barbed Lash, Dreadful Splinters, Bulwark of Thorns, Living Wood | Vineblades, Horrifying Visage, One With Corruption, Dark Sustenance |
-| Tomoe | E | Elegant Cut, Fan Dance, Poised for Glory, Sensei's Focus | Stab and Grab, Bamboozle, Thick as Thieves, Brethren |
-| Yaga | E | Gaping Maw, Ravenous, Insatiable | Virulent Cleaver, Hungering Plague, Rot From Within |
-| Yelagirna | E | Foehammer, War Cry, Skull Sunder, Life for a Life | Breath Taker, Mortify, Sword of Loss, Great Cycle |
-| Zii | E | Twin Fangs, Blood Drinker, Unstoppable, Thrill of the Kill | Brush Choppers, Crown Breaker, Ancient Rage, Assassin of Kings |
+Split by a mechanics diff (Jaccard of DB-summary vs AyumiLove-description effect tokens): **NAME-ONLY 37** (kit correct → batch rename) · **BORDERLINE 7** (mixed → Tier-1 review) · **DEEP 6** (kit also wrong → full re-capture). Heuristic — the NAME-ONLY bucket is high-confidence (high overlap proves same champion + name-only corruption); BORDERLINE/DEEP need human eyes (one, Spikehead, has no usable AyumiLove page).
+
+| Champion | Rar | Fix | jac | DB names (wrong) | AyumiLove names (real) |
+|---|---|---|---|---|---|
+| Boragar | L | NAME-ONLY | 0.57 | Ancient Staff, Rune of Shielding, Rune of Warding, Elder's Wisdom | Antique Staff, Souls of Old Stone, Rune of Energy, Boragar's Blazon [Passive] |
+| Chani | E | NAME-ONLY | 0.50 | Jaguar's Bite, Jungle Haze, Envenomed Arrows | Insidious Arrow, Soul Fire, Shower of Misery, Sureshot |
+| Claidna | L | NAME-ONLY | 0.88 | Whispering Slumber, Verdant Restoration, Grovewarden's Blessing, Sylvan Aegis | Touch of Slumber, Lost In The Woods, Otherworld Infusion, Fey Monarch |
+| Cromax | L | NAME-ONLY | 0.71 | Moonlit Edge, Umbral Curse, Lunar Eclipse, Blood Hex | Lunar Lance, Moonlight Bonds, Blood Moon, Silver Fear |
+| Deephook Nagis | E | NAME-ONLY | 0.91 | Tidal Crash, Reactive Scales, Hooking Jab, Serpent's Embrace | Catching Prey, Tidal Cleanse, Sea Snake Surge, Tritonean Might |
+| Demytha | E | NAME-ONLY | 1.00 | Spirit Siphon, Miracle Heal, Hallowed Protector, Rite of Transference | Fires of Old, Light of the Deep, Channel the Bloodline |
+| Djamarsa | E | NAME-ONLY | 0.50 | Mystic Touch, Soothing Ritual, Mass Rebirth, Fateful Twist | Night's Finger, Radiant Moon, Moonlit March, Phasing |
+| Enda | E | NAME-ONLY | 0.67 | Glimmering Edge, Lunar Flurry, Moonlit Sustenance, Lunar Swiftness | Silvern Slash, Glimmer, Chain of Delusion, Lunar Cycle |
+| Fu-Shan | L | NAME-ONLY | 1.00 | Pummel, Quake Stomp, Shatter Defenses | Howl, Frightful Claws, Shred |
+| Galapo | E | NAME-ONLY | 1.00 | Sewer Lash, Mending Mist, Dragonkin's Gift, Final Wish | Roll with the Times, Reclusive Sage, You've Much to Learn, Outliver of Empires |
+| Karato | L | NAME-ONLY | 0.50 | Kitsune's Blades, Fox's Cunning, Soulscourge, Soul Reaper | Three Visitations, Bedevil, Suppression Ward, Stoicism |
+| Kassandra | L | NAME-ONLY | 0.92 | Piercing Strikes, Debilitating Blow, Warrior's Resolve, Assassin's Cunning, Combat Prowess | West Wind Rush, Spear Of Leonidas, Isu's Blessing, Everything Is Permitted, Blood Of Sparta |
+| Keberon | L | NAME-ONLY | 0.56 | Searing Mark, Brand of Damnation, Infernal Eruption, Underflame's Resilience | Fiery Rend, Searing Brand, Pyrenei Power, Underflame’s Protection |
+| King Gallcobar | L | NAME-ONLY | 0.71 | Cobra Lash, Venomous Overload, King's Protection, Serpent's Spite | Tanglestaff, Vitriolic Thorns, Hypertrophy, Bramble Shaman |
+| Klaazag | L | NAME-ONLY | 0.90 | Fearful Exchange, Overwhelming Curse, Keyhulk's Guard, Debilitating Force | Dreadtone, Seismic Dissonance, Mindless Muscle, Drone of Agony |
+| Knosson | L | NAME-ONLY | 0.75 | Unstoppable Charge, Bronze Rage, Goring Presence, Crushing Horns | Strength of Lakon, By The Horns, Hard-earned Confidence, Is That All You've Got? |
+| Korugar | L | NAME-ONLY | 0.50 | Cleanse and Boost, Molten Axe, Team Protection, Stat Boost | Strange Animus, Bell's Toll, Conduit of Agonies, Violence Locus |
+| Kroz | L | NAME-ONLY | 0.67 | Skull Sunder, Bombardment Plan, Triggering Charge, Chain Reaction | Pulverizing Pummel, Battlefield Sapper, Mangonel Maul, Bomb Breacher |
+| Lady Eresh | E | NAME-ONLY | 0.57 | Soul Scythe, Soul Swap, Soul Bond | Meticulous Adversary, Blur of Knives, Deathrite Evocation, Slip Between |
+| Lady Noelle | L | NAME-ONLY | 0.60 | Frigid Judgment, Winter's Solace, Noelle's Gift, Grandmother's Favor | Icecrack staff, Invigorating Chill, Hearthkeeper, Cyromatic Queen |
+| Leminisi | L | NAME-ONLY | 1.00 | Gilded Blades, Winged Fury, Celestial Rebuke, Spirit's Aegis | Auric Talons, Intercept The Threat, Venerated Warrior, Scourge Of Evil |
+| Liburga | E | NAME-ONLY | 1.00 | Noxious Bite, Corrupting Touch, War Leader, Venomous Skin | Dripping Down, Boil From Within, Vigor Bloom, Irradiate |
+| Lonatharil | L | NAME-ONLY | 1.00 | Aegis of the Fallen, Coordinated Assault, Shattering Blow | Gallantry, Flicker Barrier, Finest Hour, Piercer |
+| Lord Entertainer Fabian | L | NAME-ONLY | 0.56 | Disrupting Flourish, Chilling Performance, Grand Finale, Unending Encore | Service In Death, Unwelcome Guest, Spectral Flourish, Ghost With The Most |
+| Losan K'Leth | L | NAME-ONLY | 0.55 | Astropic Axe, Unity's Equilibrium, Spirit Siphon, Grand Protector | Atrophic Ax, Spirit Calculus, Finality Disc, The Representation |
+| Maranix | L | NAME-ONLY | 1.00 | Slicing Gale, Witching Blades, Hex-Reaper, Witchlight Barrier | Reaper's Due, Excruciate, Inexortable End, Death's Collector |
+| Marichka | L | NAME-ONLY | 0.75 | Joint Strike, Unbreakable Bulwark, Resolute Cleanse, Last Stand | United We Triumph, Font of Tenacity, Nurtured Friendship, Giving All |
+| Old Ghrukkus | E | NAME-ONLY | 1.00 | Skull Rattle, Ghastly Chimes, Cacophonous Dirge | Beating Staff, Toe the Line, Harsh Discipline |
+| Pontiff Augustin | L | NAME-ONLY | 0.77 | Holy Strike, Divine Intervention, Sacred Rite, Vigilant Protector | Edenic Blades, Shackle The Unjust, Ethereal Benediction, Your Eminence |
+| Rakka | L | NAME-ONLY | 0.56 | Viletide Strike, Viletide Support, Viletide Momentum | Ichor of Life, Oozing Blessing, Plasm Rebirth, Creep |
+| Scion | E | NAME-ONLY | 0.67 | Cursed Strike, Bane, Hellfire Wave | Nightmare Khopesh, Evil Seed, Crawling Chaos, Incarnate |
+| Taras | L | NAME-ONLY | 0.63 | Attack 1, Attack 2, Attack 3, Passive 1, Passive 2 | Shatter Upon Us, Hero's Intercession, Constant Pressure, Fierce Battler, Poise |
+| Tatura | L | NAME-ONLY | 0.88 | Skill 1, Skill 2, Skill 3, Passive Skill | Solar Ray, Wings of Shelter, Otherworld Breach, Glimmer Hide |
+| Thorn | E | NAME-ONLY | 0.80 | Barbed Lash, Dreadful Splinters, Bulwark of Thorns, Living Wood | Vineblades, Horrifying Visage, One With Corruption, Dark Sustenance |
+| Tomoe | E | NAME-ONLY | 0.88 | Elegant Cut, Fan Dance, Poised for Glory, Sensei's Focus | Stab and Grab, Bamboozle, Thick as Thieves, Brethren |
+| Yaga | E | NAME-ONLY | 0.50 | Gaping Maw, Ravenous, Insatiable | Virulent Cleaver, Hungering Plague, Rot From Within |
+| Yelagirna | E | NAME-ONLY | 0.83 | Foehammer, War Cry, Skull Sunder, Life for a Life | Breath Taker, Mortify, Sword of Loss, Great Cycle |
+| Amoch | L | BORDERLINE | 0.46 | Sacred Rebuke, Dragonkin's Curse, Ancestral Blessing, Growing Might | Satrap's Secrets, Dragonkin Knowledge, Ward of the Heritage, Resilient Caste |
+| Dune Lord Greggor | L | BORDERLINE | 0.47 | Axe of Unity, Sandstorm Shield, Rallying Cry, Desert's Fury | Desert Ax, Earthcleave, Bestial Yell, Desert Monolith |
+| Ginro | L | BORDERLINE | 0.33 | Skill Disruption, Unstoppable Stun, Stork's Guard, Tenacious Talons | Plunging Beak, Befuddle, Gatewatch Stance, Laughing Gull |
+| Konstantin | L | BORDERLINE | 0.45 | Daystar, Sun Eater, Solar Flare, Hunter's Instinct | Sword of Suns, Rune Shatter, Quietude, Exalted |
+| Maddak | E | BORDERLINE | 0.43 | Hammer and Anvil, Skyiron Rebuke, Debilitating Barrage, Keen Eye | Portable Cannonade, Scattershot Barrage, Beast Feller, Eyes of a Sunseeker |
+| Merouka | E | BORDERLINE | 0.43 | Ferocious Greatswords, Steadfast Rescue, Unyielding Valor, Stalwart Sentinel | Tarfield Affliction, Badlands Witchery, Return From The Slime, Springy |
+| Roric | L | BORDERLINE | 0.33 | Crushing Blow, Dragon's Roar, Wyrmbane's Hammer | Wyrmslayer Hammer, Dragon Rage, Scale Breaker, Titan's End |
+| Kaja | L | DEEP | 0.00 | Pummel, War Ritual, Savage Charge | Firecracker, Back With A Bang, Royal Flush, Dynamic Duo |
+| Mithrala | L | DEEP | 0.15 | Serpent's Kiss, Venomous Embrace, Mithrala's Blessing, Serpent's Ward | Libation of Pain, Sigil of Toxic Glory, Brimming Cylix, Gaze of Stone |
+| Phranox | E | DEEP | 0.20 | Twin Talons, Unfettered Fury, Prey on the Weak | Carve Through, Tender Mercies, Isolate |
+| Praeva | L | DEEP | 0.20 | Slithering Transfer, Healing Scales, Viper's Revival, Debuff Absorption & Turn Meter Boost | Bolt of Affliction, Malignant Energy, Seed of Corruption, Sacrificial Servant |
+| Spikehead | R | DEEP | 0.00 | Stomp, Battle Cry, Rip |  |
+| Zii | E | DEEP | 0.22 | Twin Fangs, Blood Drinker, Unstoppable, Thrill of the Kill | Brush Choppers, Crown Breaker, Ancient Rage, Assassin of Kings |
 
 ## PARTIAL — active-skill mismatch (27)
 
