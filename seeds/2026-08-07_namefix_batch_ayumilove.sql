@@ -1,5 +1,5 @@
 -- ============================================================================
--- 2026-08-07 — NAME-ONLY corruption batch fix (30 champions) — DRAFT, NOT YET APPLIED
+-- 2026-08-07 — NAME-ONLY corruption batch fix (30 champions) — APPLIED 2026-08-07 (119 rows, all rowCount=1)
 --
 -- Source: bad-bulk skill-name corruption audit. These champions were flagged ALL_WRONG by
 -- tools/ayumilove-name-diff.mjs (DB skill NAMES from the raid.guide-derived "worksheet Skills
@@ -11,7 +11,8 @@
 -- Refreshes BOTH skill_name and skill_summary from AyumiLove (Tier-2 factual skill text; also closes
 -- the minor mechanic gaps at the lower-jac end). verification_status=proposed (HUMAN REVIEW before
 -- promoting to verified). Old (invented) name kept in review_notes. Worksheet writeback owed on approve.
--- Apply via tools/apply-seed-pooler.mjs AFTER review.
+-- APPLIED to live DB 2026-08-07 via tools/apply-seed-pooler.mjs (verified: Keberon → Fiery Rend /
+-- Searing Brand / Pyrenei Power / Underflame's Protection; Fu-Shan → Howl / Frightful Claws / Shred).
 -- ============================================================================
 begin;
 
