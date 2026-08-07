@@ -32,15 +32,35 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const CONN = new Set(['the', 'of', 'and', 'a', 'an', 'to', 'in', 'at', 'by', 'for', 'from', 'on', 'de']);
 const nameFromSlug = (slug) => slug.split('-').map((w, i) => (i > 0 && CONN.has(w)) ? w : w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
-async function ayumiSlugs() {
-  const cf = path.join(CACHE, '_ayumi_slugs.json');
+// SOURCE = ayumilove (default) | hellhades. Both are WordPress; enumerate champion slugs from the sitemap.
+const SOURCE = (process.argv[2] || process.env.ALIAS_SOURCE || 'ayumilove').toLowerCase();
+const SRC_CFG = {
+  ayumilove: {
+    index: 'https://ayumilove.net/sitemap_index.xml',
+    subMatch: /post-sitemap/,
+    slugRe: /raid-shadow-legends-([a-z0-9-]+?)-skill-mastery-equip-guide/g,
+  },
+  hellhades: {
+    // dedicated champion sitemaps (RAID); slug is the last path segment of /raid/champions/<slug>/
+    subs: ['https://hellhades.com/champions-sitemap.xml', 'https://hellhades.com/champions-sitemap2.xml'],
+    slugRe: /hellhades\.com\/raid\/champions\/([a-z0-9-]+?)\//g,
+  },
+};
+
+async function sourceSlugs() {
+  const cfg = SRC_CFG[SOURCE];
+  if (!cfg) throw new Error(`unknown source "${SOURCE}" (use ayumilove | hellhades)`);
+  const cf = path.join(CACHE, `_${SOURCE}_slugs.json`);
   if (fs.existsSync(cf)) return JSON.parse(fs.readFileSync(cf, 'utf8'));
-  const idx = await (await fetch('https://ayumilove.net/sitemap_index.xml', { headers: UA })).text();
-  const subs = [...idx.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]).filter((u) => /post-sitemap/.test(u));
+  let subs = cfg.subs;
+  if (!subs) {
+    const idx = await (await fetch(cfg.index, { headers: UA })).text();
+    subs = [...idx.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]).filter((u) => cfg.subMatch.test(u));
+  }
   const slugs = new Set();
   for (const s of subs) {
     const t = await (await fetch(s, { headers: UA })).text();
-    for (const m of t.matchAll(/raid-shadow-legends-([a-z0-9-]+?)-skill-mastery-equip-guide/g)) slugs.add(m[1]);
+    for (const m of t.matchAll(cfg.slugRe)) slugs.add(m[1]);
     await sleep(300);
   }
   const arr = [...slugs].sort();
@@ -53,8 +73,8 @@ async function ayumiSlugs() {
   const aliases = await restP('champion_aliases?select=champion_id,alias');
   const R = buildNameResolver(champs, aliases);
   const nameById = Object.fromEntries(champs.map((c) => [c.id, c.name]));
-  const slugs = await ayumiSlugs();
-  console.log(`our champions ${champs.length} · alias rows ${aliases.length} · AyumiLove slugs ${slugs.length}\n`);
+  const slugs = await sourceSlugs();
+  console.log(`SOURCE=${SOURCE} · our champions ${champs.length} · alias rows ${aliases.length} · source slugs ${slugs.length}\n`);
 
   const ADD_FULL = [], ADD_SHORT = [], NO_SHORT = [], UNMATCHED = [], AMBIG = [];
   // word → set of champions whose NAME contains it (distinctiveness = appears in exactly one champion)
@@ -90,9 +110,9 @@ async function ayumiSlugs() {
     for (const w of distinctive) if (!R.resolve(w)) ADD_SHORT.push({ champId: c.id, champName: c.name, addAlias: w });
   }
 
-  const out = { generatedFrom: 'ayumilove-sitemap', ADD_FULL, ADD_SHORT, NO_SHORT, UNMATCHED, AMBIG };
-  fs.writeFileSync(path.join(CACHE, '_alias_proposals.json'), JSON.stringify(out, null, 2));
-  console.log(`ADD_FULL  (AyumiLove full name → our champ, missing alias): ${ADD_FULL.length}`);
+  const out = { generatedFrom: `${SOURCE}-sitemap`, ADD_FULL, ADD_SHORT, NO_SHORT, UNMATCHED, AMBIG };
+  fs.writeFileSync(path.join(CACHE, `_alias_proposals_${SOURCE}.json`), JSON.stringify(out, null, 2));
+  console.log(`ADD_FULL  (${SOURCE} full name → our champ, missing alias): ${ADD_FULL.length}`);
   ADD_FULL.slice(0, 20).forEach((x) => console.log(`   + "${x.addAlias}" → ${x.champName}${x.apostrophe ? '  ⚠apostrophe?' : ''}`));
   if (ADD_FULL.length > 20) console.log(`   … +${ADD_FULL.length - 20} more`);
   console.log(`\nADD_SHORT (distinctive-word short form missing, SAFE to add): ${ADD_SHORT.length}`);
@@ -100,9 +120,9 @@ async function ayumiSlugs() {
   if (ADD_SHORT.length > 30) console.log(`   … +${ADD_SHORT.length - 30} more`);
   console.log(`\nNO_SHORT (multi-word, no distinctive word — compound/skin, no safe short form): ${NO_SHORT.length}`);
   console.log('   ' + NO_SHORT.slice(0, 25).join(', ') + (NO_SHORT.length > 25 ? ` … +${NO_SHORT.length - 25}` : ''));
-  console.log(`\nAMBIGUOUS (AyumiLove full name maps to >1 of our champs, review): ${AMBIG.length}`);
+  console.log(`\nAMBIGUOUS (${SOURCE} full name maps to >1 of our champs, review): ${AMBIG.length}`);
   AMBIG.slice(0, 12).forEach((x) => console.log(`   ? "${x.addAlias}" → ${x.candidates.join(' / ')}`));
-  console.log(`\nUNMATCHED (AyumiLove champ not tied to any of ours — we may lack it or name differs): ${UNMATCHED.length}`);
-  console.log('   ' + UNMATCHED.slice(0, 20).join(', ') + (UNMATCHED.length > 20 ? ` … +${UNMATCHED.length - 20}` : ''));
-  console.log(`\nproposals → ${path.join(CACHE, '_alias_proposals.json')}`);
+  console.log(`\nUNMATCHED (${SOURCE} champ not tied to any of ours — we may lack it or name differs): ${UNMATCHED.length}`);
+  console.log('   ' + UNMATCHED.slice(0, 30).join(', ') + (UNMATCHED.length > 30 ? ` … +${UNMATCHED.length - 30}` : ''));
+  console.log(`\nproposals → ${path.join(CACHE, `_alias_proposals_${SOURCE}.json`)}`);
 })();
