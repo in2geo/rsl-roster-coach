@@ -10,7 +10,8 @@
 --
 -- Refreshes BOTH skill_name and skill_summary from AyumiLove (Tier-2 factual skill text; also closes
 -- the minor mechanic gaps at the lower-jac end). verification_status=proposed (HUMAN REVIEW before
--- promoting to verified). Old (invented) name kept in review_notes. Worksheet writeback owed on approve.
+-- promoting to verified). Old (invented) name kept in review_notes. Worksheet writeback DONE 2026-08-07
+-- (master Skills tab, 119 rows → name+summary+status 'Needs Review'; backup BACKUP-2026-08-07-preNameOnlyBatch.xlsx).
 -- APPLIED to live DB 2026-08-07 via tools/apply-seed-pooler.mjs (verified: Keberon → Fiery Rend /
 -- Searing Brand / Pyrenei Power / Underflame's Protection; Fu-Shan → Howl / Frightful Claws / Shred).
 -- ============================================================================
