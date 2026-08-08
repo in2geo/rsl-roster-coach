@@ -5736,6 +5736,89 @@
     { "slot": 4, "name": "Coldheart", "displayName": "Coldheart", "level": 57, "damage": 262395, "taken": 35758, "healing": 21923 }
    ],
    "notes": "Dragon's Lair St16 WIN 86t / 3:30 (Artor pool; NEW BEST TURNS — beats 89t). Pool now 15W/1L (~94%). Team-total 1,226,234 — EHP constant. Fast clean run: Mikey took only 3,896, Hilvi 14,116 (fast kill → supports survive). Reality Ninja 613k >> Coldheart 262k. Ninja 142K lifesteal. Reward ★4 gear + 18.9K silver + 59 gold. (Logged right after the 5b engine fix — hard CC now freezes skill cooldowns per reviewer spec.)"
+  },
+  {
+   "source": "manual (victory-screen transcription)",
+   "capturedAt": "2026-08-07",
+   "displayName": "DonaHilvi",
+   "dungeon": "Clan Boss",
+   "boss": "Demon Lord",
+   "stageNumber": null,
+   "difficulty": "Hard",
+   "result": "Victory",
+   "turns": null,
+   "timeSeconds": 293,
+   "totalDamage": 13788241,
+   "team": [ "Ezio", "Ninja", "Mikey", "Artor", "Xenomorph" ],
+   "teamVariant": "EzioXeno + Artor (CB Hard, Mikey lead) — correct gear",
+   "heroes": [
+    { "slot": 0, "name": "Ezio Auditore", "displayName": "Ezio", "level": 50, "damage": 437177, "taken": 82863, "healing": 26158 },
+    { "slot": 1, "name": "Ninja", "displayName": "Ninja", "level": 60, "damage": 5611705, "taken": 99955, "healing": 914497 },
+    { "slot": 2, "name": "Michelangelo", "displayName": "Mikey", "level": 60, "damage": 1469250, "taken": 45394, "healing": 127819 },
+    { "slot": 3, "name": "Iudex Artor", "displayName": "Artor", "level": 40, "damage": 65203, "taken": 55372, "healing": 140717 },
+    { "slot": 4, "name": "Xenomorph", "displayName": "Xenomorph", "level": 60, "damage": 6204906, "taken": 64034, "healing": 95176 }
+   ],
+   "energy": null,
+   "notes": "Clan Boss DEMON LORD — HARD, CORRECT GEAR. 13.78M total damage in 4:53 (team-total dealt 13,788,241). Xenomorph 6,204,906 (poison DoT carry); Ninja 5,611,705; Mikey 1,469,250; Ezio 437,177; Artor 65,203. Healing: Ninja 914,497 (lifesteal), Artor 140,717, Mikey 127,819 (leech), Xeno 95,176, Ezio 26,158. Mikey is leader. CB is damage-based (no win/loss); result='Victory'=completed run. Key screen '59/2'. Great Hall + Arena baked into Gestal live stats. CONTRAST with the earlier OFF-BUILD run (Mikey Lifesteal / Ninja naked, 8.65M in 3:42, NOT recorded): correct gear +59% total; Xeno 4.99M->6.20M (+24%) tracks the +32% longer duration (per-second ~flat) — DoT scales with survival time."
+  },
+  {
+   "source": "manual (video turn-by-turn)",
+   "capturedAt": "2026-08-07",
+   "displayName": "DonaHilvi",
+   "dungeon": "Clan Boss",
+   "boss": "Demon Lord",
+   "stageNumber": null,
+   "difficulty": "Hard",
+   "result": "Defeat",
+   "captureType": "mechanics (Crushing Force stun-targeting + death order; no per-hero damage)",
+   "turns": 17,
+   "timeSeconds": null,
+   "team": [ "Ezio", "Ninja", "Mikey", "Mausoleum Mage", "Xenomorph" ],
+   "teamVariant": "EzioXeno + Mausoleum Mage (Mausoleum Mage in Artor's slot)",
+   "stunLog": [
+    { "turn": 3, "target": "Ezio" },
+    { "turn": 6, "target": "Ezio" },
+    { "turn": 9, "target": "Mausoleum Mage", "note": "Ezio carried a [Shield] this turn -> stun redirected off Ezio to the next-lowest effective-HP ally" }
+   ],
+   "heroes": [
+    { "slot": 0, "name": "Ezio Auditore", "displayName": "Ezio", "level": 50, "deathTurn": 11, "damage": null, "taken": null, "healing": null },
+    { "slot": 1, "name": "Ninja", "displayName": "Ninja", "level": 60, "deathTurn": 17, "damage": null, "taken": null, "healing": null },
+    { "slot": 2, "name": "Michelangelo", "displayName": "Mikey", "level": 60, "deathTurn": 15, "damage": null, "taken": null, "healing": null },
+    { "slot": 3, "name": "Mausoleum Mage", "displayName": "Mausoleum Mage", "level": null, "deathTurn": 12, "damage": null, "taken": null, "healing": null },
+    { "slot": 4, "name": "Xenomorph", "displayName": "Xenomorph", "level": 60, "deathTurn": 16, "damage": null, "taken": null, "healing": null }
+   ],
+   "energy": null,
+   "notes": "Clan Boss DEMON LORD — HARD, DonaHilvi. VIDEO turn-by-turn of a PREVIOUS run using Mausoleum Mage in Artor's slot. GROUND TRUTH for Crushing Force (boss A1) STUN TARGETING. Boss stuns every 3 turns: t3 Ezio, t6 Ezio, t9 Mausoleum Mage — the t9 switch happened BECAUSE Ezio carried a [Shield] buff, raising his effective HP above the next ally. => Crushing Force targets LOWEST EFFECTIVE HP (HP+Shield), redirected by shields — the same easiest-to-kill + shield-deterrent rule as Spider, NOT the sim's 'highest-MaxHP ally' placeholder (clan_boss.js:156). Death cascade in effective-HP order: Ezio t11, Mausoleum Mage t12, Mikey t15, Xeno t16, Ninja t17 (Ninja tankiest — lifesteal + Escalation). Full wipe (Defeat) at t17. NO per-hero damage read from this video (mechanics capture). Use to (a) repoint Crushing Force targeting to lowest-effective-HP and (b) set its cadence to every 3 boss turns."
+  },
+  {
+   "source": "manual (video turn-by-turn)",
+   "capturedAt": "2026-08-07",
+   "displayName": "DonaHilvi",
+   "dungeon": "Clan Boss",
+   "boss": "Demon Lord",
+   "stageNumber": null,
+   "difficulty": "Hard",
+   "result": "Defeat",
+   "captureType": "mechanics (Crushing Force stun-targeting + death order; no per-hero damage)",
+   "turns": 19,
+   "timeSeconds": null,
+   "team": [ "Ezio", "Ninja", "Mikey", "Artor", "Xenomorph" ],
+   "teamVariant": "EzioXeno + Artor (stun-targeting anchor #2; current-HP redirect)",
+   "stunLog": [
+    { "turn": 3, "target": "Ezio" },
+    { "turn": 6, "target": "Ezio" },
+    { "turn": 9, "target": "Ezio" },
+    { "turn": 12, "target": "Artor", "note": "Artor had lower CURRENT HP than Ezio at this point -> stun retargeted to the new lowest-effective-HP ally (current-HP redirect; the Mausoleum run showed the shield redirect)" }
+   ],
+   "heroes": [
+    { "slot": 0, "name": "Ezio Auditore", "displayName": "Ezio", "level": 50, "deathTurn": 18, "damage": null, "taken": null, "healing": null },
+    { "slot": 1, "name": "Ninja", "displayName": "Ninja", "level": 60, "deathTurn": 19, "damage": null, "taken": null, "healing": null },
+    { "slot": 2, "name": "Michelangelo", "displayName": "Mikey", "level": 60, "deathTurn": 16, "damage": null, "taken": null, "healing": null },
+    { "slot": 3, "name": "Iudex Artor", "displayName": "Artor", "level": 40, "deathTurn": 14, "damage": null, "taken": null, "healing": null },
+    { "slot": 4, "name": "Xenomorph", "displayName": "Xenomorph", "level": 60, "deathTurn": 17, "damage": null, "taken": null, "healing": null }
+   ],
+   "energy": null,
+   "notes": "Clan Boss DEMON LORD — HARD, DonaHilvi. VIDEO turn-by-turn, Artor team (Ezio/Ninja/Mikey/Artor/Xeno). GROUND TRUTH #2 for Crushing Force stun targeting (companion to the Mausoleum Mage run). Boss stuns every 3 turns: t3/t6/t9 Ezio, t12 ARTOR — the t12 switch happened because Artor's CURRENT HP dropped below Ezio's (current-HP redirect; the Mausoleum run showed the SHIELD redirect). Together these pin targeting = LOWEST CURRENT EFFECTIVE HP (HP + shield). Death cascade: Artor t14, Mikey t16, Xeno t17, Ezio t18, Ninja t19 (Ninja last — tankiest; lifesteal + Escalation). Note Ezio survived to t18 (4th) because once Artor became the low-HP seat the boss focused Artor off Ezio. Full wipe (Defeat) t19. No per-hero damage (mechanics capture). Used to VALIDATE the clan_boss.js Crushing Force targeting (lowest-effective-HP) + every-3-turn cadence fix (2026-08-07)."
   }
  ]
 }
