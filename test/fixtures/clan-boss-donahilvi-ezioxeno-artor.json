@@ -1,0 +1,9 @@
+{
+  "_source": "RUNTIME fixture — DonaHilvi EzioXeno + Artor CB team (Ezio/Ninja/Mikey/Artor/Xenomorph), Demon Lord Hard. Reality anchor: 13.78M in 4:53 (2026-08-07 correct-gear capture). NOTE: Ninja + Artor equipped gear is UNDER-CAPTURED in the Gestal sync (~15/307 gear-link gap) — their sim stats fall back near-naked, so they will not match reality.",
+  "content": { "dungeon": "Clan Boss", "difficulty": "Hard", "affinity": "Void", "bossAtk": null, "mode": "Full Auto", "speed": "1x" },
+  "team": ["Ezio", "Ninja", "Mikey", "Artor", "Xenomorph"],
+  "roster": { "Ezio": "Ezio Auditore", "Ninja": "Ninja", "Mikey": "Michelangelo", "Artor": "Iudex Artor", "Xenomorph": "Xenomorph" },
+  "inputs": {
+    "team": { "build": "data/observed-builds/donahilvi-cb.json" }
+  }
+}
