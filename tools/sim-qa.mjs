@@ -80,6 +80,7 @@ const actions = runRung('sim-actions.mjs');      // action verification — DB, 
 const snapshot = runRung('sim-snapshot.mjs');    // rung 10 — no DB, regression snapshot (runs on pristine engine, before mutation)
 const data = runRung('sim-validate-data.mjs');   // rung 1 — needs DB (inherits env from --env-file)
 const perHeroBands = runRung('sim-per-hero-bands.mjs', ['40']);   // PER-HERO REALITY BANDS — the SINGLE per-hero reality gate (folded in the old sim-survival-oracle 2026-07-29). Whole-fight DEALT/TAKEN/HEALING per hero vs the captured p10–p90 (Spider-13 hand-verified + Dragon-16 reader). TAKEN outside the band = broken-mechanic signature → spec_violation (blocks, the oracle's old teeth); DEALT = damage-incompleteness → reality gap; HEALING = report-only. Standalone tool keeps a hard ±20% exit gate.
+const outcome = runRung('sim-suite.mjs', ['6', '--no-history']);   // RUNG 8 — DB, OUTCOME: win/loss over the FULL captured corpus (Dragon+Spider) → a real balanced-accuracy number. This is the scoring LEVEL the protocol long marked "not scored"; sim-suite makes it scoreable. N=6 = a fast in-protocol read (deterministic per N); the canonical number is the watcher's N=10 / a standalone run. NON-BLOCKING (outcome incompleteness = reality gap, like golden-outcome).
 const mut = runRung('sim-mutants.mjs');          // rung 9 — no DB, mutation testing: does the suite have teeth?
 
 // ── classify every finding into the four buckets ────────────────────────────────
@@ -154,6 +155,15 @@ if (perHeroBands.json && !perHeroBands.json.skipped) {
 } else if (perHeroBands.json?.skipped) ledger.reality_gap.push(`per-hero bands skipped — ${perHeroBands.json.skipped} (run with --env-file=.env.local)`);
 
 for (const [lv, st] of LEVELS) if (st === 'unsupported') ledger.reality_gap.push(`level NOT scored: ${lv}`);
+
+// OUTCOME (rung 8) — win/loss over the FULL captured corpus (sim-suite: Dragon+Spider), the scoring LEVEL the
+// protocol used to mark "not scored". It now produces a real balanced-accuracy number. Per the golden-outcome
+// rule above, getting the outcome wrong stays a REALITY GAP (bucket 4, non-blocking) — completeness, not a spec break.
+if (outcome.json) {
+  const o = outcome.json;
+  const per = Object.entries(o.byDungeon || {}).map(([d, x]) => `${d.split("'")[0]} ${(100 * x.balanced).toFixed(0)}%`).join(' / ');
+  ledger.reality_gap.push(`outcome (win/loss, ${o.n} captures): balanced ${(100 * o.balanced).toFixed(1)}% [${per}] — ${o.fp} false-clears / ${o.fn} false-walls (Simulator vs reality)`);
+} else ledger.reality_gap.push('outcome rung (sim-suite) — no report (needs --env-file=.env.local)');
 
 // TRACE ORACLE (rung 3b): where the sim's turn-by-turn diverges from the recorded fight. A REALITY GAP
 // (bucket 4), never a blocker — the sim is known-incomplete. The value is the LOCALISED first-divergence
@@ -234,6 +244,14 @@ if (perHeroBands.json && !perHeroBands.json.skipped) console.log(`    ${perHeroB
 else if (perHeroBands.json?.skipped) console.log(`    ⏳ skipped — ${perHeroBands.json.skipped} (needs --env-file=.env.local)`);
 else console.log('    ⚠ no report');
 
+console.log('\n▶ OUTCOME — WIN/LOSS vs the FULL captured corpus (rung 8 — sim-suite, Dragon + Spider)');
+if (outcome.json) {
+  const o = outcome.json;
+  const per = Object.entries(o.byDungeon || {}).map(([d, x]) => `${d.split("'")[0]} ${(100 * x.balanced).toFixed(1)}% (${x.n})`).join('  ·  ');
+  console.log(`    balanced ${(100 * o.balanced).toFixed(1)}% over ${o.n} captures   ·   ${per}`);
+  console.log(`    (50% = coin flip; ${o.fp} false-clears / ${o.fn} false-walls · reality gap, not a gate — the completeness lever is recipes)`);
+} else console.log('    ⏳ no report — needs --env-file=.env.local');
+
 console.log('\n▶ REGRESSION SNAPSHOT (rung 10 — does the engine still do what it did at the last blessing?)');
 if (snapshot.json && snapshot.json.blessed) console.log(`    · baseline (re)created — ${snapshot.json.scenarios} scenario(s) frozen`);
 else if (snapshot.json) console.log(`    ${snapshot.json.fail === 0 ? '✅ MATCHES' : '✗ DRIFT'} — ${snapshot.json.scenarios - snapshot.json.driftScenarios.length}/${snapshot.json.scenarios} scenarios match baseline${snapshot.json.fail ? `  ·  moved: ${snapshot.json.driftScenarios.join(', ')}  (re-bless if intended: SNAPSHOT_BLESS=1)` : ''}`);
@@ -259,7 +277,7 @@ console.log(`    → ${counts.implemented || 0} implemented · ${counts.partial 
 
 console.log('\n▶ REALITY SCORING LEVELS (graded only where the sim is complete enough)');
 for (const [lv, st] of LEVELS) console.log(`    ${st === 'supported' ? '✅' : st === 'partial' ? '◐ ' : '⃠ '} ${lv}  [${st}]`);
-console.log('    (supported levels are scored by gate 2: node --env-file=.env.local tools/sim-dragon.mjs)');
+console.log('    (OUTCOME level scored above by sim-suite over the full corpus; other supported levels via gate 2: tools/sim-dragon.mjs)');
 
 // ── DEFECT LEDGER ────────────────────────────────────────────────────────────────
 console.log('\n╔══════════════════════════════════════════════════════════════════════╗');
