@@ -1,12 +1,12 @@
 {
- "_source": "regenerated from Gestal sync DonaHilvi_a6261acc35588c94.json (syncedAt 2026-08-08T02:49:16.137Z)",
+ "_source": "regenerated from Gestal sync DonaHilvi_a6261acc35588c94.json (syncedAt 2026-08-08T15:53:54.961Z)",
  "_note": "total_stats = effectiveStats(base+gear), ROSTER screen (no aura/arena — the fixture harness layers those). lifesteal = 0.30 iff the Lifesteal 4-set is COMPLETE. gear_sets = piece counts (factual); only the Lifesteal set effect is consumed by the sim.",
  "_generator": "tools/build-from-sync.mjs",
  "champions": [
   {
    "name": "Ezio Auditore",
-   "level": 50,
-   "stars": 5,
+   "level": 11,
+   "stars": 6,
    "rarity": "Legendary",
    "affinity": "Spirit",
    "gear_sets": [
@@ -21,9 +21,9 @@
    "mastery_count": 0,
    "masteries": [],
    "base_spd": 94,
-   "base_hp": 11175,
-   "base_atk": 1012,
-   "base_def": 721,
+   "base_hp": 9780,
+   "base_atk": 886,
+   "base_def": 631,
    "skill_levels": {
     "A1": {
      "level": 1,
@@ -42,9 +42,9 @@
     }
    },
    "total_stats": {
-    "hp": 25248,
-    "atk": 1226,
-    "def": 1113,
+    "hp": 22695,
+    "atk": 1091,
+    "def": 1009,
     "spd": 166,
     "crit_rate": 74,
     "crit_dmg": 99,
@@ -277,8 +277,8 @@
    },
    "total_stats": {
     "hp": 23427,
-    "atk": 2829,
-    "def": 1649,
+    "atk": 2904,
+    "def": 1694,
     "spd": 187,
     "crit_rate": 92,
     "crit_dmg": 88,
