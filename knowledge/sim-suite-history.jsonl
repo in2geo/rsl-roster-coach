@@ -1,1 +1,2 @@
 {"at":"2026-08-08T23:41:57.394Z","dungeon":"Dragon's Lair","N":3,"n":269,"balanced":0.623,"winRecall":0.931,"lossRecall":0.316,"false_clears":26,"false_walls":16,"note":null}
+{"at":"2026-08-09T00:18:01.424Z","dungeons":["Dragon's Lair","Spider's Den"],"N":3,"n":470,"balanced":0.627,"winRecall":0.716,"lossRecall":0.537,"false_clears":38,"false_walls":110,"byDungeon":{"Dragon's Lair":{"n":269,"balanced":0.623,"false_clears":26},"Spider's Den":{"n":201,"balanced":0.564,"false_clears":12}},"note":null}

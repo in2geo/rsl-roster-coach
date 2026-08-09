@@ -7,10 +7,10 @@
 // N seeded battles → a WIN RATE), and predict WIN iff win-rate ≥ 0.5. The 0.5 threshold is PINNED, not
 // fitted — turning a win-rate into a binary is the one knob, and per implement-don't-fit it stays put.
 //
-// SCOPE = the DRAGON subset (the only dungeon with a full enemy table + champion recipes today). Same
-// case filter as battle-suite so the two are apples-to-apples: run this, then `battle-suite --by-dungeon`
-// for the aggregate's Dragon line, and read the balanced-accuracy delta. This is the graduation proof —
-// a NUMBER, next to the 52.9% aggregate floor, not a description.
+// SCOPE = the dungeons with a sim content module + enemy table: DRAGON + SPIDER (Spider added 2026-08-08).
+// Same case source + filter as battle-suite so the two are apples-to-apples: run this, then
+// `battle-suite --by-dungeon` and read the balanced-accuracy delta PER DUNGEON. The graduation proof — a
+// NUMBER per dungeon, next to the old model's line, not a description. `--dungeon spider` narrows to one.
 //
 // KNOWN v1 GAPS (flagged, not hidden): lifesteal gear-set sourcing for the roster path isn't wired yet
 // (defaults 0 → survival-tank champs like Pelops under-survive); only 9 units have recipes, the rest run
@@ -25,6 +25,7 @@ import { makeCombatant, makeState, simulate, actEnemyMob } from '../lib/sim/engi
 import { installRecipeRun } from '../lib/sim/interpreter.js';
 import { readSkillKit, CONFIRMED_SKILL_ORDER, gearLifesteal } from '../lib/sim/ai.js';
 import { makeDragonContent, HELLRAZOR_IMMUNE } from '../lib/sim/dragon.js';
+import { makeSpiderContent, SKAVAG_IMMUNE } from '../lib/sim/spider.js';
 import { buildUserChampions, fetchAliasRows } from '../lib/gestal-context.js';
 import { mapRoster, pickLeaderFrom, applyLeaderAura } from '../lib/match-engine.js';
 import { buildRosterIndex, loadNameResolverRest } from '../lib/champion-names.js';
@@ -35,7 +36,11 @@ const N = Number(process.argv.find((a, i) => i >= 2 && /^\d+$/.test(a)) ?? 25);
 const BRIEF      = process.argv.includes('--brief');      // one-line readout (for watch-reconcile)
 const NO_HISTORY = process.argv.includes('--no-history'); // read-only run
 const NOTE       = (i => i > -1 ? process.argv[i + 1] ?? null : null)(process.argv.indexOf('--note'));
-const DUNGEON = "Dragon's Lair";
+// Dungeons the sim can grade today (content module + enemy table both exist). `--dungeon <substr>` narrows
+// to one (e.g. --dungeon spider); default = all supported.
+const ALL_DUNGEONS = ["Dragon's Lair", "Spider's Den"];
+const DUNGEON_ARG = (i => i > -1 ? process.argv[i + 1] : null)(process.argv.indexOf('--dungeon'));
+const DUNGEONS = DUNGEON_ARG ? ALL_DUNGEONS.filter(d => d.toLowerCase().includes(DUNGEON_ARG.toLowerCase())) : ALL_DUNGEONS;
 
 if (!process.env.SUPABASE_URL) { console.log('sim-suite needs the DB. Run with --env-file=.env.local'); process.exit(2); }
 const BASE = process.env.SUPABASE_URL.replace(/\/rest\/v1\/?$/, '');
@@ -58,19 +63,38 @@ const nameResolver = await loadNameResolverRest(rest);
 // SPD/ATK/DEF/HP auras are %-of-BASE (not total); area/restriction aware. Dragon floors ACC/RES.
 const auraRows = await rest('champion_auras?select=champion_id,aura_type,aura_value,aura_area,aura_restriction,aura_summary');
 
-// ── Dragon enemy table + per-stage affinity (the opposing side the turn loop needs) ──
-const dun = (await rest('dungeons?select=id,name&game_id=eq.raid_shadow_legends')).find(x => x.name === DUNGEON);
-const enemyRows = await rest('dungeon_stage_enemies?select=stage_number,enemy_role,enemy_name,wave_number,position,champion_id,hp,atk,def,spd,res,acc,crit_rate,crit_dmg&dungeon_id=eq.' + dun.id);
-const affRows = await rest('dungeon_stage_affinities?select=stage_number,affinity&dungeon_id=eq.' + dun.id);
-const stageAff = Object.fromEntries(affRows.map(r => [r.stage_number, r.affinity]));
-const hasStage = (stage) => enemyRows.some(e => e.stage_number === stage && e.enemy_role === 'boss');
+// ── per-dungeon enemy tables + affinities (the opposing side the turn loop needs) ──
+const dunRows = await rest('dungeons?select=id,name&game_id=eq.raid_shadow_legends');
+const DUNGEON_DATA = {};   // name -> { enemyRows, stageAff }
+for (const name of DUNGEONS) {
+  const dun = dunRows.find(x => x.name === name);
+  const enemyRows = await rest('dungeon_stage_enemies?select=stage_number,enemy_role,enemy_name,wave_number,position,champion_id,hp,atk,def,spd,res,acc,crit_rate,crit_dmg&dungeon_id=eq.' + dun.id);
+  const affRows = await rest('dungeon_stage_affinities?select=stage_number,affinity&dungeon_id=eq.' + dun.id);
+  DUNGEON_DATA[name] = { enemyRows, stageAff: Object.fromEntries(affRows.map(r => [r.stage_number, r.affinity])) };
+}
+const hasStage = (dungeon, stage) => (DUNGEON_DATA[dungeon]?.enemyRows ?? []).some(e => e.stage_number === stage && e.enemy_role === 'boss');
 
-// Build the Dragon enemy side (boss + waves) for a stage — fresh each run (combat mutates state).
-function buildDragonEnemies(stage) {
+// Build the enemy side + content for a (dungeon, stage) — fresh each run (combat mutates state). Mirrors the
+// per-dungeon assembly in lib/sim/dragon-fixture.js (Dragon: boss + discrete waves; Spider: boss + spawn template).
+function buildEnemies(dungeon, stage) {
+  const { enemyRows, stageAff } = DUNGEON_DATA[dungeon];
   const bossRow = enemyRows.find(e => e.stage_number === stage && e.enemy_role === 'boss');
   const boss = makeCombatant({ name: bossRow.enemy_name, side: 'enemy', role: 'boss',
     maxHp: +bossRow.hp, atk: +bossRow.atk, def: +bossRow.def, spd: +bossRow.spd, acc: +bossRow.acc, res: +bossRow.res,
     critRate: +bossRow.crit_rate, critDmg: +bossRow.crit_dmg, affinity: stageAff[stage] ?? 'Void' });
+
+  if (dungeon === "Spider's Den") {
+    boss.immune = SKAVAG_IMMUNE;
+    // ONE Spiderling `add` row per stage = a SPAWN TEMPLATE (makeSpiderContent instantiates up to 10). acc:75 is
+    // the real Spiderling ACC — the DB add-row's 100 is the in-game "suggested resistance" yellow number, NOT
+    // accuracy (Mike first-party 2026-07-28). Spiderlings take the STAGE affinity. Mirrors dragon-fixture.js.
+    const addRow = enemyRows.find(e => e.enemy_role === 'add' && e.stage_number === stage);
+    const spawnTemplate = addRow ? { level: 60, maxHp: +addRow.hp, atk: +addRow.atk, def: +addRow.def, spd: +addRow.spd,
+      acc: 75, res: +addRow.res, critRate: +addRow.crit_rate, critDmg: +addRow.crit_dmg, affinity: stageAff[stage] } : null;
+    return { boss, content: makeSpiderContent({ stageNumber: stage, boss, spawnTemplate }) };
+  }
+
+  // Dragon: boss + discrete WAVES (real champions with kit/affinity from champion_id).
   boss.immune = HELLRAZOR_IMMUNE;
   const waveRows = enemyRows.filter(e => e.enemy_role === 'wave' && e.stage_number === stage);
   const waves = [...new Set(waveRows.map(e => e.wave_number))].sort((a, b) => a - b).map(wn => ({
@@ -83,8 +107,7 @@ function buildDragonEnemies(stage) {
     }),
     actEnemy: actEnemyMob,
   }));
-  const content = makeDragonContent({ stageNumber: stage, waves, boss });
-  return { boss, waves, content };
+  return { boss, content: makeDragonContent({ stageNumber: stage, waves, boss }) };
 }
 
 // Build one ally combatant from a mapped-roster champ (real effective stats + kit).
@@ -119,12 +142,12 @@ for (const f of fs.readdirSync(path.join(REPO, 'gestal-sync/output')).filter(x =
 }
 
 // ── the Monte-Carlo turn-loop predictor ──
-function predictTurnLoop(team, stage, lsById = {}) {
+function predictTurnLoop(dungeon, team, stage, lsById = {}) {
   let wins = 0;
   for (let seed = 1; seed <= N; seed++) {
     const allies = team.map(c => allyCombatant(c, lsById));
-    const { content } = buildDragonEnemies(stage);
-    const state = makeState({ allies, enemies: [], seed }); state.purpleBarLeft = 0;
+    const { content } = buildEnemies(dungeon, stage);
+    const state = makeState({ allies, enemies: [], seed }); state.purpleBarLeft = 0;   // Dragon-only; no-op for Spider
     installRecipeRun(state);   // run recipes for champs that have them (Perfect Veil, immunities, Second Wind, incoming mods); others fall back to applySkill
     const l = console.log; console.log = () => {};
     const res = simulate(state, content, { turnCap: 400 });
@@ -135,17 +158,17 @@ function predictTurnLoop(team, stage, lsById = {}) {
   return { predWin: winRate >= 0.5, winRate };
 }
 
-// ── cases (same source + filter as battle-suite; scoped to Dragon) ──
+// ── cases (same source + filter as battle-suite; scoped to the sim's supported dungeons) ──
 const runs = await rest('run_reconciliations?select=account_id,display_name,content,successful,duration_seconds,turns,team_fielded&order=battle_captured_at.desc&limit=2000');
 const cases = [], leaderTally = {}; let lifestealHits = 0;
-const skipped = { no_outcome: 0, not_dragon: 0, no_stage: 0, no_enemies: 0, no_roster: 0, partial_team: 0 };
+const skipped = { no_outcome: 0, not_supported: 0, no_stage: 0, no_enemies: 0, no_roster: 0, partial_team: 0 };
 for (const r of runs) {
   if (r.successful !== true && r.successful !== false) { skipped.no_outcome++; continue; }
   const m = String(r.content ?? '').match(/^(.*?)\s+Stage\s+(\d+)/i);
   if (!m) { skipped.no_stage++; continue; }
   const dungeon = m[1], stage = +m[2];
-  if (dungeon !== DUNGEON) { skipped.not_dragon++; continue; }
-  if (!hasStage(stage)) { skipped.no_enemies++; continue; }
+  if (!DUNGEONS.includes(dungeon)) { skipped.not_supported++; continue; }
+  if (!hasStage(dungeon, stage)) { skipped.no_enemies++; continue; }
   const roster = rosterByAccount[r.account_id];
   if (!roster) { skipped.no_roster++; continue; }
   let tf = r.team_fielded; if (typeof tf === 'string') { try { tf = JSON.parse(tf); } catch { tf = []; } }
@@ -160,53 +183,61 @@ for (const r of runs) {
   const leader = pickLeaderFrom(team, auras, { contentArea: 'dungeon', thresholdStats: ['acc', 'res'] });
   const auraTeam = applyLeaderAura(team, leader);
   for (const [, v] of Object.entries(lsById)) if (v > 0) lifestealHits++;
-  const p = predictTurnLoop(auraTeam, stage, lsById);
+  const p = predictTurnLoop(dungeon, auraTeam, stage, lsById);
   leaderTally[leader ? `${leader.name} (${leader.aura_type} ${leader.aura_value})` : '(no aura)'] = (leaderTally[leader ? `${leader.name} (${leader.aura_type} ${leader.aura_value})` : '(no aura)'] ?? 0) + 1;
-  cases.push({ acct: r.display_name ?? r.account_id, stage, actualWin: r.successful, ...p, dur: r.duration_seconds, turns: r.turns });
+  cases.push({ acct: r.display_name ?? r.account_id, dungeon, stage, actualWin: r.successful, ...p, dur: r.duration_seconds, turns: r.turns });
 }
 
-// ── score (mirror of battle-suite.score) ──
-const wins = cases.filter(c => c.actualWin), losses = cases.filter(c => !c.actualWin);
-const tp = wins.filter(c => c.predWin).length, fn = wins.length - tp;
-const tn = losses.filter(c => !c.predWin).length, fp = losses.length - tn;
-const winRecall = wins.length ? tp / wins.length : null, lossRecall = losses.length ? tn / losses.length : null;
-const balanced = (winRecall != null && lossRecall != null) ? (winRecall + lossRecall) / 2 : null;
+// ── score (mirror of battle-suite.score): OVERALL + per dungeon ──
+function score(rows) {
+  const wins = rows.filter(c => c.actualWin), losses = rows.filter(c => !c.actualWin);
+  const tp = wins.filter(c => c.predWin).length, fn = wins.length - tp;
+  const tn = losses.filter(c => !c.predWin).length, fp = losses.length - tn;
+  const winRecall = wins.length ? tp / wins.length : null, lossRecall = losses.length ? tn / losses.length : null;
+  const balanced = (winRecall != null && lossRecall != null) ? (winRecall + lossRecall) / 2 : null;
+  return { n: rows.length, wins: wins.length, losses: losses.length, tp, fn, tn, fp, winRecall, lossRecall, balanced };
+}
+const s = score(cases);
+const byDun = {}; for (const d of DUNGEONS) { const rows = cases.filter(c => c.dungeon === d); if (rows.length) byDun[d] = score(rows); }
 const pct = v => v == null ? '  n/a' : (100 * v).toFixed(1).padStart(5) + '%';
+const r3 = v => v == null ? null : Math.round(v * 1000) / 1000;
 
 // ── history + delta (mirror of battle-suite). sim-suite is DETERMINISTIC for a fixed N (seeds 1..N), so a
 // move is a real change in code / captures / N — not RNG noise. Appended only on a move → a changelog of the
-// SIMULATOR's number, standing next to battle-suite's old-model number. This is step 1 of NORTH_STAR.md:
-// re-aim the shadow at the Simulator so its progress is watched, not re-derived by hand. ──
+// SIMULATOR's number(s), standing next to battle-suite's old-model line. NORTH_STAR.md step 1. ──
 const HIST = path.join(REPO, 'knowledge', 'sim-suite-history.jsonl');
-const r3 = v => v == null ? null : Math.round(v * 1000) / 1000;
 let hist = [];
 try { hist = fs.readFileSync(HIST, 'utf8').split(/\r?\n/).filter(Boolean).map(l => JSON.parse(l)); } catch { /* first run */ }
 const prev  = hist.length ? hist[hist.length - 1] : null;
-const entry = { at: new Date().toISOString(), dungeon: DUNGEON, N, n: cases.length, balanced: r3(balanced),
-                winRecall: r3(winRecall), lossRecall: r3(lossRecall), false_clears: fp, false_walls: fn, note: NOTE };
+const entry = { at: new Date().toISOString(), dungeons: DUNGEONS, N, n: s.n, balanced: r3(s.balanced),
+                winRecall: r3(s.winRecall), lossRecall: r3(s.lossRecall), false_clears: s.fp, false_walls: s.fn,
+                byDungeon: Object.fromEntries(Object.entries(byDun).map(([d, x]) => [d, { n: x.n, balanced: r3(x.balanced), false_clears: x.fp }])), note: NOTE };
 const moved = !prev || prev.n !== entry.n || prev.balanced !== entry.balanced || prev.N !== entry.N;
 if (moved && !NO_HISTORY) { fs.mkdirSync(path.dirname(HIST), { recursive: true }); fs.appendFileSync(HIST, JSON.stringify(entry) + '\n'); }
-const dBal = (prev && prev.balanced != null && balanced != null) ? 100 * (balanced - prev.balanced) : null;
+const dBal = (prev && prev.balanced != null && s.balanced != null) ? 100 * (s.balanced - prev.balanced) : null;
 const signed = (v, d = 1) => Math.abs(v) < 0.5 / 10 ** d ? `±${(0).toFixed(d)}` : `${v > 0 ? '+' : '−'}${Math.abs(v).toFixed(d)}`;
 const deltaStr = prev == null ? 'no prior run recorded'
   : `${signed(dBal ?? 0)}pp vs ${prev.at.slice(0, 16).replace('T', ' ')}${prev.N !== N ? ` (was N=${prev.N})` : ''}`;
+const perDun = Object.entries(byDun).map(([d, x]) => `${d.split("'")[0]} ${pct(x.balanced).trim()}(${x.n})`).join(' · ');
 
 if (BRIEF) {
-  console.log(`══ SIM SUITE  Dragon N=${N}  balanced ${pct(balanced).trim()}  (${deltaStr})`
-    + `  win ${pct(winRecall).trim()} loss ${pct(lossRecall).trim()}  false-clears ${fp}`);
+  console.log(`══ SIM SUITE  N=${N}  balanced ${pct(s.balanced).trim()}  (${deltaStr})  [${perDun}]  false-clears ${s.fp}`);
   process.exit(0);
 }
 
-console.log(`\n══ SIM SUITE (turn loop + RNG) ══  Dragon's Lair · N=${N} seeded battles/case`);
-console.log(`   cases: ${cases.length}   skipped: ${Object.entries(skipped).map(([k, v]) => `${k} ${v}`).join(', ')}`);
+console.log(`\n══ SIM SUITE (turn loop + RNG) ══  ${DUNGEONS.join(' + ')} · N=${N} seeded battles/case`);
+console.log(`   cases: ${s.n}   skipped: ${Object.entries(skipped).map(([k, v]) => `${k} ${v}`).join(', ')}`);
 console.log(`   leader aura applied: ${Object.entries(leaderTally).map(([k, v]) => `${k} ×${v}`).join(' · ')}`);
-console.log(`   lifesteal champs applied (across ${cases.length} cases): ${lifestealHits}`);
-console.log(`\n   BALANCED ACCURACY   ${pct(balanced)}   <- turn loop vs the aggregate's Dragon line`);
+console.log(`   lifesteal champs applied (across ${s.n} cases): ${lifestealHits}`);
+console.log(`\n   BALANCED ACCURACY   ${pct(s.balanced)}   <- turn loop, all supported dungeons`);
 console.log(`   change              ${deltaStr}`);
-console.log(`   win recall          ${pct(winRecall)}   (won, predicted win ${tp}/${wins.length})`);
-console.log(`   loss recall         ${pct(lossRecall)}   (lost, predicted loss ${tn}/${losses.length})`);
-console.log(`\n   won,  predicted LOSS  ${String(fn).padStart(3)}   false wall`);
-console.log(`   lost, predicted WIN   ${String(fp).padStart(3)}   FALSE CLEAR`);
-console.log(`\n   compare: run  node --env-file=.env.local tools/battle-suite.mjs --by-dungeon  (Dragon's Lair line)\n`);
-console.log('QA_JSON ' + JSON.stringify({ tool: 'sim-suite', dungeon: DUNGEON, N, n: cases.length,
-  balanced, winRecall, lossRecall, tp, fp, tn, fn, wins: wins.length, losses: losses.length }));
+console.log(`   win recall          ${pct(s.winRecall)}   (won, predicted win ${s.tp}/${s.wins})`);
+console.log(`   loss recall         ${pct(s.lossRecall)}   (lost, predicted loss ${s.tn}/${s.losses})`);
+console.log(`\n   won,  predicted LOSS  ${String(s.fn).padStart(3)}   false wall`);
+console.log(`   lost, predicted WIN   ${String(s.fp).padStart(3)}   FALSE CLEAR`);
+console.log('\n   per dungeon               n   balanced   false-clears');
+for (const [d, x] of Object.entries(byDun)) console.log('   ' + d.padEnd(22) + String(x.n).padStart(4) + '   ' + pct(x.balanced) + '   ' + String(x.fp).padStart(6));
+console.log(`\n   compare: node --env-file=.env.local tools/battle-suite.mjs --by-dungeon  (old model, per dungeon)\n`);
+console.log('QA_JSON ' + JSON.stringify({ tool: 'sim-suite', dungeons: DUNGEONS, N, n: s.n,
+  balanced: s.balanced, winRecall: s.winRecall, lossRecall: s.lossRecall, tp: s.tp, fp: s.fp, tn: s.tn, fn: s.fn,
+  wins: s.wins, losses: s.losses, byDungeon: Object.fromEntries(Object.entries(byDun).map(([d, x]) => [d, { n: x.n, balanced: x.balanced, fp: x.fp, fn: x.fn }])) }));
