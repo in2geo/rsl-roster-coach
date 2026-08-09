@@ -4,6 +4,34 @@ See `PROJECT_BRIEF.md` for full context (product vision, data model, worked
 examples, monetization, build order). This file holds only the rules that
 should apply in every session.
 
+## ⭐ THE NORTH STAR — read `knowledge/NORTH_STAR.md` before any modeling / prediction / architecture work
+
+The goal keeps getting re-derived and lost between sessions. This is the anchor so it isn't.
+
+**The app is TWO engines:** (1) **team selection** (tags/roles pick the five — live, roughly works via
+`selectTeam`); (2) **stage prediction = the SIMULATOR** (`lib/sim/` — the turn-by-turn Model **+ RNG +
+masteries + arena**). **The Simulator is the INTENDED stage predictor; making it so is the whole point of the
+Model/Simulator work.** Tag-only prediction failed because it is survival-blind — that is why the Simulator was
+built.
+
+**Current reality (verified 2026-08-08):** the Simulator is **NOT in production** (`lib/sim/` is `tools/`-only).
+The live stage rec is a survival-blind **tag-coverage scan** (`computeVerdictBand`). The **shadow/Deep Blue
+grader** (`reconcile-runs` + `watch-reconcile` + `battle-suite.mjs`) still runs but grades the **OLD
+contribution model (~38–44%)**, NOT the Simulator. The Simulator's own grader `tools/sim-suite.mjs` exists +
+scores balanced accuracy but is **Dragon-only and orphaned**. **Proof the direction is right:** on the same 269
+Dragon captures, Simulator **61.0%** vs old model **38.3%** (+22.7pp; loss recall still weak at 29%).
+
+**Roadmap (in order, do not skip #1):** 1) **re-aim the shadow at the Simulator** — wire `sim-suite` into the
+auto loop with history+delta + a throttle (prerequisite: else sim gains stay invisible and get re-derived by
+hand — the project's chronic disease); 2) **grow sim coverage** (per-dungeon enemy tables + champion recipes —
+the finite recipe-op/mechanic burndown); 3) **swap the Simulator in as the live stage predictor** (survival
+finally reaches production); 4) **retire the old systems** via git.
+
+**DISCIPLINE — every session:** the destination is the **Simulator as stage predictor, measured by
+`sim-suite`**. Before starting work ask **"does this move the `sim-suite` number?"** — hand-calibrating one
+champion in isolation does not unless it flows through the graded loop. **Do NOT "improve the old system"** — it
+is being retired, not augmented. Full detail: `knowledge/NORTH_STAR.md`.
+
 ## What this is
 A mobile-first PWA that gives new/limited-roster Raid: Shadow Legends
 players a personalized "what should I do next" recommendation, based on
