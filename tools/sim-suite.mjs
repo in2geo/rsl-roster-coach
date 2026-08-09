@@ -32,6 +32,9 @@ import { buildRosterIndex, loadNameResolverRest } from '../lib/champion-names.js
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, '..');
 const N = Number(process.argv.find((a, i) => i >= 2 && /^\d+$/.test(a)) ?? 25);
+const BRIEF      = process.argv.includes('--brief');      // one-line readout (for watch-reconcile)
+const NO_HISTORY = process.argv.includes('--no-history'); // read-only run
+const NOTE       = (i => i > -1 ? process.argv[i + 1] ?? null : null)(process.argv.indexOf('--note'));
 const DUNGEON = "Dragon's Lair";
 
 if (!process.env.SUPABASE_URL) { console.log('sim-suite needs the DB. Run with --env-file=.env.local'); process.exit(2); }
@@ -170,11 +173,36 @@ const winRecall = wins.length ? tp / wins.length : null, lossRecall = losses.len
 const balanced = (winRecall != null && lossRecall != null) ? (winRecall + lossRecall) / 2 : null;
 const pct = v => v == null ? '  n/a' : (100 * v).toFixed(1).padStart(5) + '%';
 
+// ── history + delta (mirror of battle-suite). sim-suite is DETERMINISTIC for a fixed N (seeds 1..N), so a
+// move is a real change in code / captures / N — not RNG noise. Appended only on a move → a changelog of the
+// SIMULATOR's number, standing next to battle-suite's old-model number. This is step 1 of NORTH_STAR.md:
+// re-aim the shadow at the Simulator so its progress is watched, not re-derived by hand. ──
+const HIST = path.join(REPO, 'knowledge', 'sim-suite-history.jsonl');
+const r3 = v => v == null ? null : Math.round(v * 1000) / 1000;
+let hist = [];
+try { hist = fs.readFileSync(HIST, 'utf8').split(/\r?\n/).filter(Boolean).map(l => JSON.parse(l)); } catch { /* first run */ }
+const prev  = hist.length ? hist[hist.length - 1] : null;
+const entry = { at: new Date().toISOString(), dungeon: DUNGEON, N, n: cases.length, balanced: r3(balanced),
+                winRecall: r3(winRecall), lossRecall: r3(lossRecall), false_clears: fp, false_walls: fn, note: NOTE };
+const moved = !prev || prev.n !== entry.n || prev.balanced !== entry.balanced || prev.N !== entry.N;
+if (moved && !NO_HISTORY) { fs.mkdirSync(path.dirname(HIST), { recursive: true }); fs.appendFileSync(HIST, JSON.stringify(entry) + '\n'); }
+const dBal = (prev && prev.balanced != null && balanced != null) ? 100 * (balanced - prev.balanced) : null;
+const signed = (v, d = 1) => Math.abs(v) < 0.5 / 10 ** d ? `±${(0).toFixed(d)}` : `${v > 0 ? '+' : '−'}${Math.abs(v).toFixed(d)}`;
+const deltaStr = prev == null ? 'no prior run recorded'
+  : `${signed(dBal ?? 0)}pp vs ${prev.at.slice(0, 16).replace('T', ' ')}${prev.N !== N ? ` (was N=${prev.N})` : ''}`;
+
+if (BRIEF) {
+  console.log(`══ SIM SUITE  Dragon N=${N}  balanced ${pct(balanced).trim()}  (${deltaStr})`
+    + `  win ${pct(winRecall).trim()} loss ${pct(lossRecall).trim()}  false-clears ${fp}`);
+  process.exit(0);
+}
+
 console.log(`\n══ SIM SUITE (turn loop + RNG) ══  Dragon's Lair · N=${N} seeded battles/case`);
 console.log(`   cases: ${cases.length}   skipped: ${Object.entries(skipped).map(([k, v]) => `${k} ${v}`).join(', ')}`);
 console.log(`   leader aura applied: ${Object.entries(leaderTally).map(([k, v]) => `${k} ×${v}`).join(' · ')}`);
 console.log(`   lifesteal champs applied (across ${cases.length} cases): ${lifestealHits}`);
 console.log(`\n   BALANCED ACCURACY   ${pct(balanced)}   <- turn loop vs the aggregate's Dragon line`);
+console.log(`   change              ${deltaStr}`);
 console.log(`   win recall          ${pct(winRecall)}   (won, predicted win ${tp}/${wins.length})`);
 console.log(`   loss recall         ${pct(lossRecall)}   (lost, predicted loss ${tn}/${losses.length})`);
 console.log(`\n   won,  predicted LOSS  ${String(fn).padStart(3)}   false wall`);
