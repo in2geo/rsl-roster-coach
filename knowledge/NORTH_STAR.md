@@ -5,6 +5,11 @@ the thread. This is the permanent anchor. `CLAUDE.md` points here as READ-FIRST.
 modeling, prediction, or architecture work, read this first and check your work against it. Established
 2026-08-08 after a long session that reconstructed the whole picture from scratch.
 
+> **⚠ AMENDMENT 2026-08-09 — read §7 before acting on §5/§6.** The **destination is unchanged** (Simulator as
+> stage predictor). But a turn-by-turn CB session forced a revision to the **measurement and retention** mechanism:
+> the win/loss metric is too coarse, and the automated ground truth step #1 depends on **does not reliably exist**.
+> §5 step 1 and §6's discipline question are amended in §7.
+
 ---
 
 ## 1. The app is TWO engines (the vision, in Mike's words)
@@ -101,3 +106,63 @@ ceiling.** The turn-by-turn approach decisively beats the tag approach it replac
 Simulator `lib/sim/`; sim grader `tools/sim-suite.mjs`; old grader `tools/battle-suite.mjs`; shadow
 `tools/reconcile-runs.mjs` + `tools/watch-reconcile.mjs`. See `knowledge/DEEP_BLUE_STATUS.md`,
 `knowledge/MODEL_AS_REIMPLEMENTATION.md`.
+
+---
+
+## 7. AMENDMENT 2026-08-09 — measurement & retention, forced by the turn-by-turn CB session
+
+A full session building an **independent turn-by-turn CB hand-calc** and walking it against a real DonaHilvi
+video ([[cb-handcalc-turn-by-turn-calibration-2026-08-09]]; handoff
+`HANDOFF_2026-08-09_cb-turn-by-turn-method-dragon-and-cross-account.md`) advanced the destination but exposed two
+false premises under §5's step 1 and §6's discipline. **The destination (§1–4) stands. This amends §5 step 1 and §6.**
+
+**The requirement (Mike's, non-negotiable):** the Model computes **EVERY SINGLE ACTION, in order, at a granular
+level** — who acts, which skill, which target, the computed result — and "correct" means **every action matches
+reality**. Per-hero and grand total are **DERIVED sums of the actions, never the target**; get every action right
+and the sums are right automatically. Do NOT compute toward, or grade primarily by, an aggregate. (`tools/handcalc/DUNGEON_TEMPLATE.md`
+states this in full.)
+
+**Why the win/loss metric is too coarse.** `sim-suite`/`battle-suite` grade **balanced accuracy on win/loss** — one
+bit per battle. A total is *underdetermined*: many wrong models fit it because per-champion errors cancel. Proof
+this session: the model sat at **0.97× on total damage while Xenomorph was 0.64× and the direct-dealers were ~1.4×**
+— errors that offset into a "right" total. A win/loss (or total) grader would have called that half-wrong model good.
+
+**Output granularity ≠ verification granularity — do not conflate them.** The Model must ALWAYS emit every action
+(the requirement above). What the unreliable data limits is only *inspection* of that output: **per-action** when a
+human reads a video (the real bar), **per-hero** dealt/taken/healed when only result screens exist (a fallback that
+catches cross-champion cancellation but not within-champion, e.g. Xeno's direct-over + poison-under). A data limit
+on checking is never a licence to compute at a coarser grain.
+
+**Why step 1 (wire the automated shadow) rests on a false premise.** Step 1 assumes a working automated
+capture→reconcile→measure loop. **That data isn't reliable:** the per-action battle-reader blobs are **uncracked**
+(tried many times; the passive-read boundary forbids injection), and the per-hero capture has been **deemed
+unreliable** (duplicates; captures only occasionally). You cannot auto-grade against data that isn't there. So the
+prerequisite as written is not executable.
+
+**The forced consequence — this is actually the right architecture.** No reliable data ⇒ you **cannot fit** ⇒ you
+**must implement the real mechanics** (which is `MODEL_AS_REIMPLEMENTATION.md`'s thesis anyway). An *implemented*
+model needs data only to **verify a mechanic once**, then generalises to unseen teams/stages; a *fitted* model
+needs data everywhere. So verification becomes a **bounded, human-gated, compounding** activity, not an automated
+firehose:
+- **Sensor = the human** (Mike reads a real video). Same Deep Blue loop (capture→reconcile→measure→propose→retain),
+  just at higher fidelity through the only reliable sensor.
+- **Bounded & compounding:** verification is **one-time per mechanic** (pin boss DEF once, a champion kit once);
+  **the champion library is dungeon-independent**, so a champ verified anywhere is verified everywhere. Per-dungeon
+  cost = the enemy packet + any new champions, and it **shrinks** as the library grows.
+- **Generalisation to new teams is the payoff** (and the bridge to the team-selection engine): the enemy
+  calibration applies to *every* team; interactions **emerge** from the implementation. Harden each dungeon with a
+  **few deliberately DIVERSE teams** (poison / direct-nuke / control) so different mechanic classes get exercised —
+  a pure-poison team hid the DEF≈0 bug this session because poison is DEF-independent.
+- **Retention (curing the "re-derived by hand" disease):** until a reliable capture exists, persistence = **memory
+  + handoff + PORTING the findings into `lib/sim`**. Porting is the real cure — a finding in the hand-calc is still
+  "invisible." (Open item: CB's DEF≈0 / rotation / SPD 140 / kits are NOT yet in `lib/sim/clan_boss.js`.)
+
+**Amended step 1:** replace "wire the automated shadow" with **"establish a per-hero/per-action fidelity check
+against the battles we CAN reliably verify (human-read videos), and PORT verified findings into `lib/sim`."** If a
+reliable automated capture ever lands, revert toward the original automated loop — but do not block on it.
+
+**Amended discipline question (§6):** "does this move the `sim-suite` (win/loss) number?" would score this session
+**no** (hand-calc, coarse metric, Dragon-only) even though it clearly advanced the destination — so the question
+was measuring the wrong thing. Replace with: **"did it make the Simulator's per-action behaviour match reality on a
+verified battle, and is it captured so it persists (memory/handoff, and ported into `lib/sim`)?"** Everything else
+in §6 stands (don't patch the old system; wiring beats fidelity; the Simulator is the destination).
