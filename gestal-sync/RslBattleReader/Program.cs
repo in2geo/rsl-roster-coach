@@ -98,6 +98,38 @@ if (args.Contains("--cbdamage"))
 // Usage: --dungeondamage
 if (args.Contains("--dungeondamage")) { RslBattleReader.CbDamageReader.DungeonRun(); return; }
 
+// Diagnostic: scan for LIVE BattleHero instances and read current HP mid-battle (pause the fight
+// first). Confirms the live battle-state is sample-able so we can build an HP-over-time timeline
+// ourselves. Usage: --livehp
+if (args.Contains("--livehp")) { RslBattleReader.CbDamageReader.LiveHpScan(); return; }
+
+// In-battle HP sampler: builds an HP-over-time timeline (per-champ phase-at-death + boss damage/turn)
+// by sampling live BattleHero.CurrentHp. Start it, then run an AUTO battle. Usage: --samplebattle [maxSeconds]
+{
+    int si = Array.IndexOf(args, "--samplebattle");
+    if (si >= 0) { int m = (si + 1 < args.Length && int.TryParse(args[si + 1], out var v)) ? v : 180; RslBattleReader.BattleSampler.Run(m); return; }
+}
+
+// Inspection pass: dump a live ally + boss BattleHero field layout to locate maxHP/TM/buff-list
+// offsets. Pause a battle mid-fight first. Usage: --inspecthero [slots=96]
+{
+    int hi = Array.IndexOf(args, "--inspecthero");
+    if (hi >= 0) { int m = (hi + 1 < args.Length && int.TryParse(args[hi + 1], out var v)) ? v : 96; RslBattleReader.BattleSampler.InspectHeroes(m); return; }
+
+    // Effect-kind probe: dump the boss's AppliedEffect objects (+ their skills) to find where the
+    // debuff KIND is encoded. Run on a boss with KNOWN debuffs. Usage: --inspecteffect
+    if (args.Contains("--inspecteffect")) { RslBattleReader.BattleSampler.InspectEffects(); return; }
+
+    int rsr = Array.IndexOf(args, "--readstr");
+    if (rsr >= 0 && rsr + 1 < args.Length)
+    {
+        var hx = args[rsr + 1].Replace("0x", "", StringComparison.OrdinalIgnoreCase);
+        if (long.TryParse(hx, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out var a))
+            RslBattleReader.BattleSampler.ReadStringAt(a);
+        return;
+    }
+}
+
 // Diagnostic: find HeroBattleStatsContext instances directly + decode damage. Usage: --herostats [max]
 {
     int rsi = Array.IndexOf(args, "--roundstats");

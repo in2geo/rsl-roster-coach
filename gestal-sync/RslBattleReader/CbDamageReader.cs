@@ -484,6 +484,62 @@ internal static class CbDamageReader
         proc?.Dispose();
     }
 
+    /// <summary>
+    /// PROBE (2026-08-10): can we read LIVE per-hero current HP DURING a battle? The game's
+    /// per-round StatisticsByHero dict is empty both mid- and post-battle (see RoundStatsScan), so a
+    /// ready-made timeline isn't readable. But BattleHero.CurrentHp (0x58) IS live — the plan is to
+    /// SAMPLE it each poll and build the HP-over-time series ourselves. This confirms the live
+    /// BattleHero objects are reachable + which offset holds current HP.
+    ///
+    /// Pause a battle mid-fight, then run --livehp. Prints every BattleHero with hp>0: typeId, slot,
+    /// current HP. The player's team should show 5 rows with partial HP. Passive read.
+    /// </summary>
+    public static void LiveHpScan()
+    {
+        var (mem, proc) = Open();
+        if (mem is null) return;
+        using (mem)
+        {
+            var gameAsm = mem.FindModuleBase("GameAssembly.dll");
+            if (gameAsm == nint.Zero) { Console.WriteLine("[livehp] GameAssembly.dll not found."); proc?.Dispose(); return; }
+
+            // BattleHero lives in the live battle state; its namespace is unknown, so resolve by name
+            // only and report the namespace we land on.
+            nint klass = Il2CppClassResolver.ResolveByNameAny(mem, "BattleHero", out var usedNs);
+            if (klass == nint.Zero) { Console.WriteLine("[livehp] no class named 'BattleHero' in memory (is a battle live? or the name differs)."); proc?.Dispose(); return; }
+            Console.WriteLine($"[livehp] BattleHero klass=0x{klass:X} (ns={usedNs}); scanning heap...");
+
+            int TID = Il2Cpp.Il2CppOffsets.BHero_TypeId, SLOT = Il2Cpp.Il2CppOffsets.BHero_Slot, HP = Il2Cpp.Il2CppOffsets.BHero_CurrentHp;
+            var hits = new List<(nint addr, int tid, int slot, long hp)>();
+            var buf = new byte[8 * 1024 * 1024];
+            foreach (var (baseAddr, size) in mem.EnumerateReadableRegions())
+            {
+                for (long off = 0; off < size; off += buf.Length)
+                {
+                    int chunk = (int)Math.Min(buf.Length, size - off);
+                    var view = chunk == buf.Length ? buf : new byte[chunk];
+                    if (!mem.TryReadBytes((nint)((long)baseAddr + off), view)) continue;
+                    for (int i = 0; i + 8 <= chunk; i += 8)
+                    {
+                        if (BitConverter.ToInt64(view, i) != (long)klass) continue;
+                        var h = (nint)((long)baseAddr + off + i);
+                        int tid = mem.ReadInt32(h + TID);
+                        int slot = mem.ReadInt32(h + SLOT);
+                        long hp = mem.ReadInt64(h + HP);
+                        if (tid > 0 && tid < 100000 && hp > 0) hits.Add((h, tid, slot, hp));
+                    }
+                }
+            }
+            hits.Sort((a, b) => a.addr.CompareTo(b.addr));
+            Console.WriteLine($"[livehp] {hits.Count} BattleHero instance(s) with hp>0 (showing up to 60):");
+            foreach (var (addr, tid, slot, hp) in hits.Take(60))
+                Console.WriteLine($"  @0x{addr:X}  typeId={tid,6}  slot={slot,3}  curHp={hp / 1000f,12:F0}  (raw={hp})");
+            if (hits.Count == 0)
+                Console.WriteLine("[livehp] none found — either no battle is live, or BattleHero's HP offset differs (try a fresh dump).");
+        }
+        proc?.Dispose();
+    }
+
     private static (ProcessMemory?, Process?) Open()
     {
         Process? proc = null;

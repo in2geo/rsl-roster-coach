@@ -35,6 +35,15 @@ const REPO = path.join(__dirname, '..');
 const N = Number(process.argv.find((a, i) => i >= 2 && /^\d+$/.test(a)) ?? 25);
 const BRIEF      = process.argv.includes('--brief');      // one-line readout (for watch-reconcile)
 const NO_HISTORY = process.argv.includes('--no-history'); // read-only run
+const DIAGNOSE   = process.argv.includes('--diagnose');   // dump false-wall / false-clear cases with failure mode
+const PERHERO_I  = process.argv.indexOf('--perhero');     // --perhero <acctSubstr> <stage>: one Spider battle, sim per-hero vs reality
+const PERHERO_ACCT  = PERHERO_I > -1 ? process.argv[PERHERO_I + 1] : null;
+const PERHERO_STAGE = PERHERO_I > -1 ? +process.argv[PERHERO_I + 2] : null;
+const TRACE      = process.argv.includes('--trace');      // with --perhero: run the deterministic MODEL (seed=null, no RNG) + full turn-by-turn trace
+// --timeline: grade the sim's boss-HP CURVE (damage rate over the fight) against captured in-battle
+// timelines (the sampler's boss-HP-over-time), not just win/loss. --timeline-path overrides the log path.
+const TIMELINE   = process.argv.includes('--timeline');
+const TIMELINE_PATH = (i => i > -1 ? process.argv[i + 1] : null)(process.argv.indexOf('--timeline-path'));
 const NOTE       = (i => i > -1 ? process.argv[i + 1] ?? null : null)(process.argv.indexOf('--note'));
 // Dungeons the sim can grade today (content module + enemy table both exist). `--dungeon <substr>` narrows
 // to one (e.g. --dungeon spider); default = all supported.
@@ -143,7 +152,7 @@ for (const f of fs.readdirSync(path.join(REPO, 'gestal-sync/output')).filter(x =
 
 // ── the Monte-Carlo turn-loop predictor ──
 function predictTurnLoop(dungeon, team, stage, lsById = {}) {
-  let wins = 0;
+  let wins = 0, wipes = 0, timeouts = 0, survSum = 0, turnSum = 0, bossHpLossSum = 0, lossSeeds = 0, reviveSum = 0, deathSum = 0;
   for (let seed = 1; seed <= N; seed++) {
     const allies = team.map(c => allyCombatant(c, lsById));
     const { content } = buildEnemies(dungeon, stage);
@@ -152,10 +161,100 @@ function predictTurnLoop(dungeon, team, stage, lsById = {}) {
     const l = console.log; console.log = () => {};
     const res = simulate(state, content, { turnCap: 400 });
     console.log = l;
-    if (res.won) wins++;
+    survSum += (res.survivors?.length ?? 0); turnSum += (res.turns ?? 0);
+    reviveSum += (res.revives?.length ?? 0);
+    deathSum += (res.deaths ?? []).filter(e => !/^Spiderling#/i.test(e.who ?? '')).length;   // ALLY deaths only (exclude the swarm)
+    if (res.won) { wins++; continue; }
+    lossSeeds++;
+    // failure mode: TIMED OUT (boss never died — a DAMAGE/under-credit loss) vs WIPED (team died — a SURVIVAL loss)
+    if (/turn cap/i.test(res.reason || '') || (res.turns ?? 0) >= 400) timeouts++; else wipes++;
+    const boss = state.enemies.find(e => e.role === 'boss');
+    if (boss) bossHpLossSum += Math.max(0, boss.hp) / (boss.maxHp || 1);
   }
   const winRate = wins / N;
-  return { predWin: winRate >= 0.5, winRate };
+  return { predWin: winRate >= 0.5, winRate,
+    diag: { wipes, timeouts, avgSurv: survSum / N, avgTurns: Math.round(turnSum / N),
+            avgRevives: reviveSum / N, avgDeaths: deathSum / N,
+            bossHpAtLoss: lossSeeds ? bossHpLossSum / lossSeeds : null } };
+}
+
+// ── --timeline: grade the sim's boss-HP CURVE vs captured in-battle timelines ────────────────────
+// Reads local battle-log.json (where the sampler writes `timeline`). For each entry with a boss
+// timeline in a supported dungeon, run the DETERMINISTIC sim (seed=null, EV) with a per-turn boss-HP
+// recorder, then compare the sim's boss-HP-fraction curve to the captured one — normalized to
+// battle-progress [0,1]. This grades the SHAPE of the fight (the damage rate the CB hand-calc checks
+// by hand), not just the binary outcome. Self-contained: the entry carries account + stage + heroes.
+if (TIMELINE) {
+  const blPath = TIMELINE_PATH ?? path.join(REPO, 'gestal-sync/output/battle-log.json');
+  if (!fs.existsSync(blPath)) { console.log(`[timeline] battle-log not found: ${blPath}`); process.exit(2); }
+  const log = JSON.parse(fs.readFileSync(blPath, 'utf8'));
+  const withTl = log.filter(e => e?.timeline?.boss?.trace?.length && DUNGEONS.includes(e.dungeon) && e.stageNumber && hasStage(e.dungeon, e.stageNumber));
+  if (!withTl.length) { console.log(`[timeline] no entries with a boss timeline in ${DUNGEONS.join('/')} (need battles captured by the sampler-wired watcher).`); process.exit(0); }
+
+  // linear-interpolate a curve (pts sorted by .p ascending) at normalized progress p∈[0,1].
+  const sampleAt = (pts, p) => {
+    if (p <= pts[0].p) return pts[0].v;
+    if (p >= pts[pts.length - 1].p) return pts[pts.length - 1].v;
+    for (let i = 1; i < pts.length; i++) if (pts[i].p >= p) { const a = pts[i - 1], b = pts[i]; return a.v + (p - a.p) / ((b.p - a.p) || 1) * (b.v - a.v); }
+    return pts[pts.length - 1].v;
+  };
+  const GRID = Array.from({ length: 19 }, (_, i) => (i + 1) / 20); // 0.05..0.95
+
+  let fidSum = 0, graded = 0;
+  for (const e of withTl) {
+    const roster = rosterByAccount[e.accountId];
+    if (!roster) { console.log(`[timeline] skip ${e.stage}: no roster for ${e.displayName ?? e.accountId}`); continue; }
+    const team = (e.heroes ?? []).map(h => roster.get(h.name)).filter(Boolean);
+    if (team.length < 3) { console.log(`[timeline] skip ${e.stage}: partial team (${team.length})`); continue; }
+    const auras = auraRows.filter(a => team.some(c => c.id === a.champion_id));
+    const leader = pickLeaderFrom(team, auras, { contentArea: 'dungeon', thresholdStats: ['acc', 'res'] });
+    const auraTeam = applyLeaderAura(team, leader);
+    const lsMap = lifestealByAccount[e.accountId] ?? {};
+    const lsById = {}; for (const h of e.heroes ?? []) { const c = roster.get(h.name); if (c && (lsMap[h.name] ?? lsMap[c.name])) lsById[c.id] = lsMap[h.name] ?? lsMap[c.name]; }
+
+    // deterministic sim with a per-turn boss-HP recorder
+    const allies = auraTeam.map(c => allyCombatant(c, lsById));
+    const { content } = buildEnemies(e.dungeon, e.stageNumber);
+    const state = makeState({ allies, enemies: [], seed: null }); state.purpleBarLeft = 0;
+    installRecipeRun(state);
+    const simPts = [];
+    state.onTurn = (st) => { const bo = st.enemies.find(x => x.role === 'boss'); if (bo) simPts.push({ turn: st.turn, hpFrac: Math.max(0, bo.hp) / (bo.maxHp || 1), nEnemies: st.enemies.filter(x => x.alive).length }); };
+    const l = console.log; if (!TRACE) console.log = () => {};
+    const res = simulate(state, content, { turnCap: 400, trace: TRACE });
+    console.log = l;
+    if (simPts.length < 2) { console.log(`[timeline] skip ${e.stage}: sim produced no boss curve`); continue; }
+
+    const simMaxT = simPts[simPts.length - 1].turn || 1;
+    const simCurve = simPts.map(x => ({ p: x.turn / simMaxT, v: x.hpFrac }));
+    const b = e.timeline.boss;
+    const realDur = b.trace[b.trace.length - 1].tSec || 1;
+    const realCurve = b.trace.map(x => ({ p: x.tSec / realDur, v: Math.max(0, x.hp) / (b.maxHp || 1) }));
+
+    // Wave→boss transition: sim = first turn only the boss is alive; reality = first trace point where
+    // boss HP starts dropping (>1% off max). If the sim's transition is LATER (bigger %), the sim's WAVE
+    // phase is proportionally too long — the boss-damage clock starts late, back-loading the curve.
+    const simWaveClear = simPts.find(x => x.nEnemies <= 1)?.turn ?? simMaxT;
+    const simWaveFrac = simWaveClear / simMaxT;
+    const realBossStart = b.trace.find(x => x.hp < b.maxHp * 0.99);
+    const realWaveFrac = realBossStart ? realBossStart.tSec / realDur : null;
+
+    let mae = 0; for (const p of GRID) mae += Math.abs(sampleAt(simCurve, p) - sampleAt(realCurve, p)); mae /= GRID.length;
+    fidSum += mae; graded++;
+
+    const dbMax = state.enemies.find(x => x.role === 'boss')?.maxHp ?? null;
+    const capMax = Math.round(b.maxHp / (e.timeline.fixedDivisor || 1));
+    console.log(`\n══ ${e.displayName} — ${e.stage} — real ${e.result} ${e.turns}t | sim ${res.won ? 'WIN' : 'LOSS'} ${res.turns}t ══`);
+    console.log(`   boss maxHP: captured ${capMax}  sim/DB ${dbMax}${dbMax && Math.abs(dbMax - capMax) / capMax > 0.1 ? '  ⚠ >10% off — DB enemy table needs calibrating' : ''}`);
+    console.log(`   boss-HP curve MAE = ${(mae * 100).toFixed(1)}%  (lower = sim damage-rate matches reality)`);
+    console.log(`   wave→boss transition: real @${realWaveFrac != null ? Math.round(realWaveFrac * 100) + '%' : '?'} progress · sim @${Math.round(simWaveFrac * 100)}% (turn ${simWaveClear}/${simMaxT})`
+      + `${realWaveFrac != null && simWaveFrac - realWaveFrac > 0.12 ? '  ⚠ sim wave phase too long → boss damage starts late' : ''}`);
+    const show = GRID.filter((_, i) => i % 2 === 1);
+    console.log(`   progress %  ${show.map(p => String(Math.round(p * 100)).padStart(5)).join('')}`);
+    console.log(`   real bossHP% ${show.map(p => String(Math.round(sampleAt(realCurve, p) * 100)).padStart(5)).join('')}`);
+    console.log(`   sim  bossHP% ${show.map(p => String(Math.round(sampleAt(simCurve, p) * 100)).padStart(5)).join('')}`);
+  }
+  console.log(`\n[timeline] graded ${graded} battle(s) · mean boss-HP-curve MAE = ${graded ? (100 * fidSum / graded).toFixed(1) + '%' : 'n/a'}  — the sim's damage-rate fidelity vs captured reality (the continuous signal beside win/loss)`);
+  process.exit(0);
 }
 
 // ── cases (same source + filter as battle-suite; scoped to the sim's supported dungeons) ──
@@ -182,10 +281,36 @@ for (const r of runs) {
   const auras = auraRows.filter(a => team.some(c => c.id === a.champion_id));
   const leader = pickLeaderFrom(team, auras, { contentArea: 'dungeon', thresholdStats: ['acc', 'res'] });
   const auraTeam = applyLeaderAura(team, leader);
+  // PER-HERO reality anchor: run ONE traced battle and put the sim's per-hero taken/healed/survived next to the
+  // captured reality. This is the turn-by-turn / reality-anchored check — localizes the divergence (e.g. an
+  // under-credited healer) instead of guessing coefficients from the aggregate.
+  if (PERHERO_ACCT && dungeon === "Spider's Den" && stage === PERHERO_STAGE
+      && String(r.display_name ?? '').toLowerCase().includes(PERHERO_ACCT.toLowerCase())) {
+    const allies = auraTeam.map(c => allyCombatant(c, lsById));
+    const { content } = buildEnemies(dungeon, stage);
+    // TRACE = the deterministic MODEL: seed=null (no RNG, pure EV) + trace so the turn-by-turn is watchable and
+    // reproducible. Otherwise seed=1 (one Monte-Carlo draw) for the per-hero summary.
+    const state = makeState({ allies, enemies: [], seed: TRACE ? null : 1 }); state.purpleBarLeft = 0;
+    installRecipeRun(state);
+    const l = console.log; if (!TRACE) console.log = () => {};
+    const res = simulate(state, content, { turnCap: 400, trace: TRACE });
+    console.log = l;
+    console.log(`\n══ PER-HERO — ${r.display_name} ${dungeon} s${stage} — ${TRACE ? 'MODEL (seed=null)' : 'SIM'} ${res.won ? 'WIN' : 'LOSS'} in ${res.turns}t (${res.reason}) | REALITY WIN in ${r.turns}t/${r.duration_seconds}s ══`);
+    console.log(`   ${'champ'.padEnd(22)} ${'sim:alive taken healed'.padEnd(34)} | reality:survived taken healed`);
+    let tf = r.team_fielded; if (typeof tf === 'string') { try { tf = JSON.parse(tf); } catch { tf = []; } }
+    const realOf = n => (tf ?? []).find(h => (h.name ?? '') === n) ?? {};
+    for (const a of allies) {
+      const rl = realOf(a.name);
+      const sim = `${String(a.alive).padEnd(6)} ${String(Math.round(a.taken)).padStart(9)} ${String(Math.round(a.healed)).padStart(9)}`;
+      const real = `${String(rl.survived).padEnd(6)} ${String(rl.defense ?? '?').padStart(9)} ${String(rl.healing ?? '?').padStart(9)}`;
+      console.log(`   ${a.name.padEnd(22)} ${sim.padEnd(34)} | ${real}`);
+    }
+    process.exit(0);
+  }
   for (const [, v] of Object.entries(lsById)) if (v > 0) lifestealHits++;
   const p = predictTurnLoop(dungeon, auraTeam, stage, lsById);
   leaderTally[leader ? `${leader.name} (${leader.aura_type} ${leader.aura_value})` : '(no aura)'] = (leaderTally[leader ? `${leader.name} (${leader.aura_type} ${leader.aura_value})` : '(no aura)'] ?? 0) + 1;
-  cases.push({ acct: r.display_name ?? r.account_id, dungeon, stage, actualWin: r.successful, ...p, dur: r.duration_seconds, turns: r.turns });
+  cases.push({ acct: r.display_name ?? r.account_id, dungeon, stage, actualWin: r.successful, ...p, dur: r.duration_seconds, turns: r.turns, team: auraTeam.map(c => c.name) });
 }
 
 // ── score (mirror of battle-suite.score): OVERALL + per dungeon ──
@@ -219,6 +344,24 @@ const signed = (v, d = 1) => Math.abs(v) < 0.5 / 10 ** d ? `±${(0).toFixed(d)}`
 const deltaStr = prev == null ? 'no prior run recorded'
   : `${signed(dBal ?? 0)}pp vs ${prev.at.slice(0, 16).replace('T', ' ')}${prev.N !== N ? ` (was N=${prev.N})` : ''}`;
 const perDun = Object.entries(byDun).map(([d, x]) => `${d.split("'")[0]} ${pct(x.balanced).trim()}(${x.n})`).join(' · ');
+
+if (DIAGNOSE) {
+  const fmt = c => `  s${String(c.stage).padStart(2)} WR${String(Math.round(c.winRate * 100)).padStart(3)}%  `
+    + `wipe ${c.diag.wipes}/timeout ${c.diag.timeouts}  bossHP@loss ${c.diag.bossHpAtLoss == null ? ' n/a' : (100 * c.diag.bossHpAtLoss).toFixed(0).padStart(3) + '%'}  `
+    + `rev ${c.diag.avgRevives.toFixed(1)}/death ${c.diag.avgDeaths.toFixed(1)}  surv ${c.diag.avgSurv.toFixed(1)}  ${c.diag.avgTurns}t  [${c.acct}] ${c.team.join(', ')}`;
+  for (const d of DUNGEONS) {
+    const fw = cases.filter(c => c.dungeon === d && c.actualWin && !c.predWin).sort((a, b) => a.stage - b.stage);
+    console.log(`\n══ ${d} — ${fw.length} FALSE WALLS (won in reality, sim predicts loss) ══`);
+    console.log(`   failure mode: WIPE = team died (survival over-punish) · TIMEOUT = boss never died in 400t (damage under-credit)`);
+    console.log(`   rev/death = avg [revive]/death events per battle (N=${N})`);
+    const wipeN = fw.reduce((n, c) => n + c.diag.wipes, 0), toN = fw.reduce((n, c) => n + c.diag.timeouts, 0);
+    const revN = fw.reduce((n, c) => n + c.diag.avgRevives, 0), deathN = fw.reduce((n, c) => n + c.diag.avgDeaths, 0);
+    console.log(`   aggregate loss-seeds across these cases: WIPE ${wipeN} · TIMEOUT ${toN}`);
+    console.log(`   aggregate per-battle avg across ${fw.length} cases: revives ${revN.toFixed(1)} · deaths ${deathN.toFixed(1)}  (ratio ${deathN ? (revN / deathN * 100).toFixed(0) : 0}% of deaths reversed)`);
+    for (const c of fw) console.log(fmt(c));
+  }
+  process.exit(0);
+}
 
 if (BRIEF) {
   console.log(`══ SIM SUITE  N=${N}  balanced ${pct(s.balanced).trim()}  (${deltaStr})  [${perDun}]  false-clears ${s.fp}`);

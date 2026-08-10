@@ -61,6 +61,12 @@ internal sealed class BattleWatcher(string outputPath)
     // keyed by team slot. StatisticsByHero is empty post-battle, so this is the survival source.
     private (Dictionary<int, (int typeId, bool survived)> map, DateTime at)? _latestSurvival;
 
+    // In-battle HP sampler (BattleSampler): a dedicated thread samples live BattleHero HP + boss
+    // debuff count during each fight and attaches the timeline retroactively to the just-logged entry
+    // (the sampler finishes ~12s after the result is emitted). Klass is cached per attached process.
+    private nint _battleHeroKlass;
+    private ProcessMemory? _klassMem;
+
     // ── Entry point ───────────────────────────────────────────────────────────
 
     public async Task RunAsync(CancellationToken ct)
@@ -78,6 +84,9 @@ internal sealed class BattleWatcher(string outputPath)
 
         // Poll at 100ms to catch momentary result writes before the game clears them
         _ = Task.Run(() => FastFilePollerAsync(ct), ct);
+
+        // In-battle HP sampler — builds a per-champ/boss HP timeline during each fight
+        _ = Task.Run(() => SamplingLoopAsync(ct), ct);
 
         while (!ct.IsCancellationRequested)
         {
@@ -1006,6 +1015,54 @@ internal sealed class BattleWatcher(string outputPath)
 
     // ── File parsing ─────────────────────────────────────────────────────────
 
+
+    // ── In-battle HP sampler ──────────────────────────────────────────────────
+    // A dedicated thread samples live BattleHero HP + boss debuff count during each fight
+    // (BattleSampler.SampleOneBattle), then attaches the timeline to the just-logged entry. The
+    // sampler finishes ~12s after the result is emitted, so this is retroactive by design.
+    private async Task SamplingLoopAsync(CancellationToken ct)
+    {
+        Console.WriteLine("[sampler] in-battle HP sampler running");
+        while (!ct.IsCancellationRequested)
+        {
+            var mem = _mem;
+            if (mem is null) { try { await Task.Delay(1000, ct); } catch { } continue; }
+            if (!ReferenceEquals(mem, _klassMem)) { _battleHeroKlass = nint.Zero; _klassMem = mem; }
+            if (_battleHeroKlass == nint.Zero)
+            {
+                var ga = mem.FindModuleBase("GameAssembly.dll");
+                if (ga != nint.Zero) _battleHeroKlass = Il2CppClassResolver.ResolveByNameAny(mem, "BattleHero", out _);
+                if (_battleHeroKlass == nint.Zero) { try { await Task.Delay(2000, ct); } catch { } continue; }
+            }
+            BattleTimeline? tl = null;
+            try { tl = BattleSampler.SampleOneBattle(mem, _battleHeroKlass, acquireWaitMs: 3000, maxSec: 300, ct); }
+            catch (Exception ex) { Console.WriteLine($"[sampler] error: {ex.Message}"); }
+            if (tl is not null) AttachTimeline(tl);
+            else { try { await Task.Delay(2000, ct); } catch { } }   // idle back-off between scans
+        }
+    }
+
+    private void AttachTimeline(BattleTimeline tl)
+    {
+        lock (_captureLock)
+        {
+            // Entries are newest-last; attach to the most recent one still missing a timeline.
+            for (int i = _log.Count - 1; i >= 0 && i >= _log.Count - 4; i--)
+            {
+                if (_log[i].Timeline is not null) continue;
+                if (!DateTime.TryParse(_log[i].CapturedAt, System.Globalization.CultureInfo.InvariantCulture,
+                        System.Globalization.DateTimeStyles.AdjustToUniversal, out var t)) continue;
+                if ((DateTime.UtcNow - t).TotalSeconds > 120) break;   // older than the sampler's own runtime → give up
+                _log[i].Timeline = tl;
+                Flush();
+                var b = tl.Boss;
+                Console.WriteLine($"[sampler] timeline → {_log[i].Stage ?? "?"} ({tl.Allies.Count} allies, {tl.FrameCount} frames" +
+                                  (b is not null ? $"; boss {b.TypeId} {b.StartHp / tl.FixedDivisor:F0}->{b.EndHp / tl.FixedDivisor:F0}, {b.Trace.Count} pts" : "") + ")");
+                return;
+            }
+            Console.WriteLine("[sampler] captured a timeline but found no recent un-timelined entry to attach.");
+        }
+    }
 
     // ── Output ────────────────────────────────────────────────────────────────
 

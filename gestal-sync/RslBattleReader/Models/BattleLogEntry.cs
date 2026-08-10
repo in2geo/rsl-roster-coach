@@ -51,6 +51,12 @@ internal sealed class BattleLogEntry
 
     public List<BattleHero> Heroes { get; init; } = [];
 
+    /// <summary>In-battle HP timeline (per-champ HP course + boss HP-over-time with debuff count),
+    /// built by the live sampler and attached retroactively a few seconds after the entry is written
+    /// (the sampler finishes after the result is emitted). Null when no timeline was captured.
+    /// Settable for that retroactive attach.</summary>
+    public BattleTimeline? Timeline { get; set; }
+
     public static BattleLogEntry From(BattleResultSnapshot s) => new()
     {
         AccountId       = s.AccountId,

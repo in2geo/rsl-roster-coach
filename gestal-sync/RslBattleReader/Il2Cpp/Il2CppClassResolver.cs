@@ -100,6 +100,26 @@ internal static class Il2CppClassResolver
         return found;
     }
 
+    /// <summary>
+    /// Resolve the first structurally-valid Il2CppClass whose name == <paramref name="name"/>,
+    /// IGNORING namespace, and report the namespace found. Diagnostic use — when the namespace is
+    /// unknown (e.g. locating BattleHero for the live-HP probe). Returns Zero if no such class.
+    /// </summary>
+    public static nint ResolveByNameAny(ProcessMemory mem, string name, out string foundNs)
+    {
+        string ns = "";
+        var found = ScanForClass(mem, name, c =>
+        {
+            if (!ProcessMemory.IsValidPointer(c) || !mem.IsReadable(c)) return false;
+            if (mem.ReadPointer(c + Class_ElementClass) != c) return false;
+            if (mem.ReadCString(mem.ReadPointer(c + Class_Name)) != name) return false;
+            ns = mem.ReadCString(mem.ReadPointer(c + Class_Namespace)) ?? "";
+            return true;
+        });
+        foundNs = ns;
+        return found;
+    }
+
     private static bool LooksLikeNested(ProcessMemory mem, nint cand, string innerName, string outerName)
     {
         if (!ProcessMemory.IsValidPointer(cand) || !mem.IsReadable(cand)) return false;
