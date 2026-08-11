@@ -7,8 +7,11 @@
 // UNDER the selected survival + turn-order assumptions. Direct-hit (boss DEF=0 upper bound) and mastery
 // (excluded) are reported SEPARATELY and never folded into the chest. Read the FLAGS.
 //
+// The boss ALWAYS deals his escalating AoE and the team is ground down until it WIPES (fight length = boss
+// damage vs sustain) — there is no "nobody dies" mode. Total banked = survival duration × per-turn output.
+//
 // Usage: node --env-file=.env.local tools/sim-clan-boss.mjs [fixture]
-//   env: SIM_CB_SURVIVE=optimistic|none · SIM_CB_TURNCAP=<globalActionSafetyCap, default 600> · SIM_SEED=<n> · TRACE=1
+//   env: SIM_CB_TURNCAP=<globalActionSafetyCap, default 600> · SIM_SEED=<n> · TRACE=1
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';

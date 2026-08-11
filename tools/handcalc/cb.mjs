@@ -15,6 +15,11 @@ const LEADER_ACC = 70;       // Michelangelo ACC aura, all battles
 // ⚙ boss (calibrate against taken + fight length):
 // BOSS CALIBRATED to reality (walkthrough 2026-08-06, validated t1–19):
 const CB_BOSS_HIT = 2460;    // per-hit AoE base (turn-1 Dark Nova, Ninja exact) — used instead of atk×coeff
+// PER-SKILL AoE split (Mike first-party 2026-08-10): the two AoEs hit very differently per hit. t1 Flesh
+// Wither (2 hits) = 789 to Xeno; t2 Dark Nova (1 hit) = 1,289 → Dark Nova ~3.3× Flesh Wither per hit. The old
+// single CB_BOSS_HIT over-credited Flesh Wither. Dark Nova base verified by t17 (9,632 crit ≈ model 9,840).
+const DN_HIT = +(process.env.DN_HIT || CB_BOSS_HIT);   // Dark Nova per-hit base
+const FW_HIT = +(process.env.FW_HIT || CB_BOSS_HIT);   // Flesh Wither per-hit base (calibrate to t1: 2×FW = 789)
 const CRUSH_MAXHP = 0.113;   // Crushing Force = 11.3% MAX HP (turn-3: 2899/25583)
 const GF = T => T < 10 ? 1 : T < 20 ? 1 + 0.75*(T-9) : 8.5 + (T-19);   // Gathering Fury, GLOBAL turn (F(11)=2.5, F(19)=8.5)
 // Boss DEF — CORRECTED 2026-08-09 via turn-by-turn video hits (supersedes the earlier Mikey back-calc that gave 3000).
@@ -39,9 +44,21 @@ const snap = JSON.parse(fs.readFileSync(new URL('../../gestal-sync/output/DonaHi
 const NAMES = ['Ezio Auditore','Ninja','Michelangelo','Iudex Artor','Xenomorph'];
 const LS = { 'Ninja': 0.30 };
 const MASTERY = { 'Ninja':'WM', 'Michelangelo':'WM' };
+// REAL in-game effective stats read off the 2026-08-10 in-game stat/Set-Info screenshots (Total Stats =
+// base + ALL gear/set/mastery/Great-Hall bonuses; battle leader aura added separately below). Override the
+// STALE snapshot gear when REALSTATS=1 — the snapshot was Aug-9 and its gear no longer matches the account.
+const GEAR_STATS = process.env.REALSTATS ? {
+  'Michelangelo':  { hp:27840, atk:2089, def:1546, spd:191, crate:35, cdmg:60,  res:92,  acc:212 },
+  'Xenomorph':     { hp:24438, atk:2979, def:1754, spd:190, crate:92, cdmg:88,  res:53,  acc:251 },
+  'Ninja':         { hp:23822, atk:2602, def:1469, spd:168, crate:79, cdmg:66,  res:100, acc:81  },
+  'Ezio Auditore': { hp:29887, atk:1502, def:1321, spd:167, crate:79, cdmg:109, res:30,  acc:149 },
+  'Iudex Artor':   { hp:31199, atk:1009, def:1311, spd:155, crate:15, cdmg:61,  res:37,  acc:43  },
+} : null;
 function build(name) {
   const raw = (snap.champions||[]).find(c => c.name===name || c.name.startsWith(name.split(' ')[0]));
-  const s = effectiveFromRaw(raw); s.acc += LEADER_ACC;
+  const s = effectiveFromRaw(raw);
+  if (GEAR_STATS && GEAR_STATS[raw.name]) Object.assign(s, GEAR_STATS[raw.name]);   // inject real gear-inclusive totals
+  s.acc += LEADER_ACC;
   return { name: raw.name, ...s, maxHp: s.hp, hp: s.hp, alive: true,
     lifesteal: LS[raw.name]||0, mastery: MASTERY[raw.name]||null,
     dmg:0, directDmg:0, wmDmg:0, healed:0, taken:0, acts:0, tm:0, cd:{}, atkMult:1, cdmgBonus:0, escSet:{},
@@ -94,7 +111,7 @@ function tickDots() {                                             // on the boss
 }
 
 const castDiag = {};
-const survDiag = { deaths:[], revives:0, reviveLog:[], bossTurns:0, decAtkUp:0, leechUp:0 };
+const survDiag = { deaths:[], revives:0, reviveLog:[], bossTurns:0, decAtkUp:0, leechUp:0, hitInstances:0, strHits:0 };
 // ── champion turns (full kits from KITS.md) ──────────────────────────────────────
 function actChamp(c) {
   const dec = s => c.cd[s] = Math.max(0, (c.cd[s]||0)-1);
@@ -122,8 +139,10 @@ function actChamp(c) {
     return hit(c,3.9,1);
   }
   if (n === 'Michelangelo') {
-    if ((c.cd.A2||0)<=0) { c._skill='A2 Express Delivery'; c.cd.A2=4; setDecDef(c); return hit(c,6,1); }                 // 75% Decrease DEF
-    if ((c.cd.A3||0)<=0) { c._skill='A3 Shell Cyclone'; c.cd.A3=5; boss.leech=2; boss.dec_atk=2; c.buffs.taunt={turns:2}; return hit(c,5,1); }  // Leech + Decrease ATK + Taunt
+    // Auto-AI opens with (and prioritises) A3 Shell Cyclone — Leech + Decrease-ATK from turn 1 (Mike first-party
+    // 2026-08-10: "mikey opens with shell cyclone → boss has leech and decrease attack right away"). A3 before A2.
+    if ((c.cd.A3||0)<=0) { c._skill='A3 Shell Cyclone'; c.cd.A3=4; boss.leech=2; boss.dec_atk=2; c.buffs.taunt={turns:2}; if(process.env.XHP)console.log(`      >> Mikey A3 (Leech+DecATK+Taunt) @ boss t${boss.turn}`); return hit(c,5,1); }  // Leech + Decrease ATK + Taunt · BOOKED cd 4 (Mike fully booked, only booked champ)
+    if ((c.cd.A2||0)<=0) { c._skill='A2 Express Delivery'; c.cd.A2=3; setDecDef(c); return hit(c,6,1); }                 // 75% Decrease DEF · BOOKED cd 3
     { c._skill='A1 Boo-Yah'; const d = hit(c,2,2); if (c.crate>0) c.buffs.increaseAtk={turns:2}; return d; }             // A1 2×2; Increase ATK on crit (EV: crate>0)
   }
   if (n === 'Ezio Auditore') {
@@ -140,7 +159,7 @@ function actChamp(c) {
   if (n === 'Iudex Artor') {
     const dead = team.filter(x=>!x.alive).sort((a,b)=>a.maxHp-b.maxHp)[0];
     if ((c.cd.A3||0)<=0 && dead) { c._skill='A3 Revive'; c.cd.A3=6; dead.alive=true; dead.hp=dead.maxHp*0.5; dead.tm=50; dead.buffs.increaseAtk={turns:1}; survDiag.revives++; survDiag.reviveLog.push(`${dead.name}@t${boss.turn}`); return 0; }   // A3 Revival Mandate: revive lowest-MaxHP dead ally 50% HP/TM
-    if ((c.cd.A2||0)<=0) { c._skill='A2 Inspiration'; c.cd.A2=5; for (const a of alive()){ a.tm+=15; a.buffs.increaseAtk={turns:2}; a.buffs.strengthen={turns:2}; } return 0; }
+    if ((c.cd.A2||0)<=0) { c._skill='A2 Inspiration'; c.cd.A2=5; for (const a of alive()){ a.tm+=15; a.buffs.increaseAtk={turns:2}; a.buffs.strengthen={turns:2}; } if(process.env.XHP)console.log(`      >> Artor A2 (Strengthen+TM+IncATK) @ boss t${boss.turn}`); return 0; }
     c._skill='A1 Censer Whirl'; const h=0.05*c.maxHp;                                         // A1: heal all allies 5% Artor MaxHP
     for (const a of alive()) a.hp=Math.min(a.maxHp,a.hp+h);
     c.healed += h*alive().length;                                                             // credited to Artor
@@ -154,6 +173,7 @@ function setDecDef(c) { boss.dec_def = 2; }   // any 60% Decrease DEF → 2t (no
 function actBoss(gt) {
   tickDots();                                          // DoTs tick on boss turn
   boss.turn++;
+  const _xeTaken0 = F('Xenomorph')?.taken ?? 0;        // snapshot to report boss damage to Xeno THIS round
   const gf = GF(boss.turn);                            // Gathering Fury ramps over the BOSS's own turns (F(11)=2.5, F(19)=8.5)
   const ph = boss.turn % 3;
   const decA = boss.dec_atk>0 ? 0.50 : 1;              // Mikey A3 Decrease ATK −50% (survival lever)
@@ -163,22 +183,23 @@ function actBoss(gt) {
     if (c.name==='Michelangelo') { const ev = c.buffs.taunt ? 0.30 : 0.15; raw *= (1-ev); }
     // Ezio Full Synchronization: 35% nullify a hit dealing >50% MaxHP (Crushing Force late-game) — EV reduction
     if (c.name==='Ezio Auditore' && raw > 0.5*c.maxHp) raw *= (1 - 0.35);
+    survDiag.hitInstances++; if (c.buffs.strengthen) survDiag.strHits++;   // Strengthen coverage on incoming hits
     let dmg = raw * (c.buffs.strengthen?0.75:1);
     if (c.buffs.shield && c.buffs.shield.value>0) { const a=Math.min(dmg,c.buffs.shield.value); c.buffs.shield.value-=a; dmg-=a; c.taken+=a; }
     c.hp -= dmg; c.taken += dmg; if (c.hp<=0 && c.alive){ c.hp=0; c.alive=false; survDiag.deaths.push(`${c.name}@t${boss.turn}`); }
     // Mikey A4: gains [Shield] = 300% ATK when hit, only if he has no active shield (re-applies when broken, not every hit)
     if (c.name==='Michelangelo' && c.alive && !(c.buffs.shield && c.buffs.shield.value>0)) c.buffs.shield = { value: 3*c.atk };
   };
-  const aoeHit = c => CB_BOSS_HIT * gf * decA * defMit(c.def, boss.level);   // per-hit AoE (calibrated base × GF × decATK × DEF)
+  const aoeHit = (c, base) => base * gf * decA * defMit(c.def, boss.level);   // per-hit AoE (per-skill base × GF × decATK × DEF)
   // CONFIRMED rotation (first-party live 2026-08-09): 3-cycle FLESH WITHER (T1/4/7) → DARK NOVA (T2/5/8) → CRUSHING FORCE (T3/6/9).
-  if (ph===1) {   // Flesh Wither: 2-hit AoE
-    for (const c of alive()) incoming(c, 2*aoeHit(c));
-  } else if (ph===2) {   // Dark Nova: 1-hit AoE (Void)
-    for (const c of alive()) incoming(c, aoeHit(c));
+  if (ph===1) {   // Flesh Wither: 2-hit AoE (softer per hit)
+    for (const c of alive()) incoming(c, 2*aoeHit(c, FW_HIT));
+  } else if (ph===2) {   // Dark Nova: 1-hit AoE (Void), harder per hit
+    for (const c of alive()) incoming(c, aoeHit(c, DN_HIT));
   } else {   // ph===0 Crushing Force: single-target 11.3% MaxHP + unresistable Stun. Taunt draws it (T3 stunned Mikey ✓); else Ezio (unveiled) else lowest HP%.
     const mikey=F('Michelangelo'), ezio=F('Ezio Auditore');
     let tgt = (mikey.alive&&mikey.buffs.taunt) ? mikey : (ezio.alive&&!ezio.buffs.veil) ? ezio : alive().sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0];
-    if (tgt){ incoming(tgt, tgt.maxHp*CRUSH_MAXHP*gf); tgt.stunned=true; }
+    if (tgt){ incoming(tgt, tgt.maxHp*CRUSH_MAXHP*gf); tgt.stunned=true; if(process.env.XHP)console.log(`      >> Crushing Force STUNS ${tgt.name} @ boss t${boss.turn} (Mikey taunt=${mikey.buffs.taunt?'Y':'n'})`); }
   }
   // Xeno passive Caustic Blood: UNBOOKED 25% chance to place a 5% [Poison] on the attacker PER HIT taken (seed 45; Xeno not booked).
   // Flesh Wither = 2 hits → 2 chances; Dark Nova = 1 hit → 1 chance.
@@ -187,6 +208,7 @@ function actBoss(gt) {
   // decrement boss-debuff durations (they tick on the boss's turn)
   boss.dec_def=Math.max(0,boss.dec_def-1); boss.dec_atk=Math.max(0,boss.dec_atk-1);
   boss.leech=Math.max(0,boss.leech-1); boss.psens=Math.max(0,boss.psens-1);
+  if (process.env.XHP) { const x=F('Xenomorph'); const skill=['Crushing Force','Flesh Wither','Dark Nova'][ph]; const mit=decA*(x.buffs.strengthen?0.75:1); const dmgToXeno=Math.round(x.taken-_xeTaken0); console.log(`  [boss t${boss.turn} ${skill} GF${gf.toFixed(1)}] decATK=${decA<1?'Y':'n'} leech=${boss.leech>0?'Y':'n'} | boss→Xeno ${dmgToXeno.toLocaleString().padStart(7)} | Xeno ${Math.round(100*x.hp/x.maxHp)}% veil=${x.buffs.veil?'Y':'n'} str=${x.buffs.strengthen?'Y':'n'} mit×${mit.toFixed(3)} ${x.alive?'':'DEAD'}`); }
 }
 
 // ── TURN-METER SCHEDULER: fight until the team WIPES (survival race). ─────────────
@@ -280,5 +302,5 @@ for (const s of cumByBossTurn) {
   console.log(`  t${String(s.turn).padStart(2)}  ${String(s.total).padStart(9)}${r?`   vs ${r}  (${(s.total/r).toFixed(2)}×)`:''}${mark}`);
 }
 console.log(`\nSURVIVAL: deaths ${survDiag.deaths.join(', ')}  (real: Artor@14, Xeno@17, Ezio@18, Ninja@19)`);
-console.log(`  revives: ${survDiag.revives} [${survDiag.reviveLog.join(', ')}]  ·  Decrease-ATK uptime: ${(100*survDiag.decAtkUp/survDiag.bossTurns).toFixed(0)}%  ·  Leech uptime: ${(100*survDiag.leechUp/survDiag.bossTurns).toFixed(0)}%`);
+console.log(`  revives: ${survDiag.revives} [${survDiag.reviveLog.join(', ')}]  ·  Decrease-ATK uptime: ${(100*survDiag.decAtkUp/survDiag.bossTurns).toFixed(0)}%  ·  Leech uptime: ${(100*survDiag.leechUp/survDiag.bossTurns).toFixed(0)}%  ·  Strengthen coverage: ${survDiag.hitInstances?(100*survDiag.strHits/survDiag.hitInstances).toFixed(0):0}% of ${survDiag.hitInstances} hits`);
 console.log('\n⚙ calibrate vs video: BOSS0.atk/def/spd, CRUSH_MAXHP, GF ramp, rotation. Everything else = stats + verbatim kits.');
