@@ -105,8 +105,19 @@ internal static class Il2CppClassResolver
     /// IGNORING namespace, and report the namespace found. Diagnostic use — when the namespace is
     /// unknown (e.g. locating BattleHero for the live-HP probe). Returns Zero if no such class.
     /// </summary>
+    // Namespace found for the last ResolveByNameAny of each name (cache is by name).
+    private static readonly ConcurrentDictionary<string, string> _nsByName = new();
+
     public static nint ResolveByNameAny(ProcessMemory mem, string name, out string foundNs)
     {
+        // Cache: a resolved class pointer is stable for the process lifetime. Re-validate so a
+        // stale entry (after a game restart) is transparently re-resolved. This matters for speed —
+        // each miss is a full two-pass memory scan, and callers resolve many classes.
+        if (_cache.TryGetValue(name, out var cached) && ProcessMemory.IsValidPointer(cached) && mem.IsReadable(cached)
+            && mem.ReadPointer(cached + Class_ElementClass) == cached
+            && mem.ReadCString(mem.ReadPointer(cached + Class_Name)) == name)
+        { foundNs = _nsByName.TryGetValue(name, out var cns) ? cns : ""; return cached; }
+
         string ns = "";
         var found = ScanForClass(mem, name, c =>
         {
@@ -117,6 +128,7 @@ internal static class Il2CppClassResolver
             return true;
         });
         foundNs = ns;
+        if (found != nint.Zero) { _cache[name] = found; _nsByName[name] = ns; }
         return found;
     }
 

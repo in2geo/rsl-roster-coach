@@ -7,3 +7,7 @@ battle-dumps/
 output/
 *.bin
 hero-debug.txt
+
+# Third-party IL2CPP dumper binaries (~25MB; fetched on demand, not source).
+# Note: cannot read the current metadata v39 build anyway — see the gear-extractor memory.
+RslBattleReader/tools/Il2CppDumper/

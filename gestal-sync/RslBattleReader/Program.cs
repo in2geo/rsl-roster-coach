@@ -28,6 +28,24 @@ if (args.Contains("--gear"))
     return;
 }
 
+// Durable-offset calibration: dump a class's declared fields (name + offset) live from
+// Il2CppClass metadata. Usage: --fields Artifact,Hero,UserArtifactData
+{
+    int fi = Array.IndexOf(args, "--fields");
+    if (fi >= 0 && fi + 1 < args.Length)
+    {
+        RslBattleReader.Il2Cpp.Il2CppFieldResolver.Run(args[fi + 1]);
+        return;
+    }
+}
+
+// Probe: confirm the equipped-gear linkage container layouts (UserArtifactData).
+if (args.Contains("--artdata"))
+{
+    RslBattleReader.ArtifactReader.DebugUserArtifactData();
+    return;
+}
+
 // Debug: dump Hero objects matching a heroId. Usage: --hero 11
 {
     int hi = Array.IndexOf(args, "--hero");

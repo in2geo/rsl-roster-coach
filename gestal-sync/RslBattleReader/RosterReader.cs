@@ -23,7 +23,7 @@ namespace RslBattleReader;
 [SupportedOSPlatform("windows")]
 internal static class RosterReader
 {
-    public record OwnedHero(int Id, int TypeId, int Grade, int Level, int EmpowerLevel, bool InStorage);
+    public record OwnedHero(int Id, int TypeId, int BaseTypeId, int Grade, int Level, int EmpowerLevel, bool InStorage);
 
     public static void Run()
     {
@@ -57,7 +57,7 @@ internal static class RosterReader
         // Emit JSON for the validation diff against the Gestal export.
         var outPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "output", "roster-memory.json"));
         Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
-        var shaped = heroes.Select(h => new { heroId = h.Id, typeId = h.TypeId, stars = h.Grade, level = h.Level, empowerLevel = h.EmpowerLevel, inStorage = h.InStorage });
+        var shaped = heroes.Select(h => new { heroId = h.Id, typeId = h.TypeId, baseTypeId = h.BaseTypeId, stars = h.Grade, level = h.Level, empowerLevel = h.EmpowerLevel, inStorage = h.InStorage });
         File.WriteAllText(outPath, System.Text.Json.JsonSerializer.Serialize(shaped, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
         Console.WriteLine($"\n[roster] wrote {outPath}");
     }
@@ -89,8 +89,15 @@ internal static class RosterReader
                     if (typeId is <= 0 or > 10_000_000) continue;
                     if (grade is < 1 or > 6) continue;
                     if (level is < 1 or > 60) continue;
+
+                    // baseTypeId (the stable, un-ascended champion id the DB joins on): the game encodes
+                    // ascension (0-6) as the ONES digit of typeId, so baseTypeId = typeId - (typeId % 10).
+                    // Verified exact vs Gestal across 300 champions (Hero._type -> HeroType.Id gives the
+                    // ASCENDED id, not the base, so the arithmetic rule is the correct source).
+                    int baseTypeId = typeId - (typeId % 10);
+
                     bool stored = mem.ReadBool(obj + Hero_InStorage) || mem.ReadBool(obj + Hero_InBathhouse);
-                    byId[id] = new OwnedHero(id, typeId, grade, level,
+                    byId[id] = new OwnedHero(id, typeId, baseTypeId, grade, level,
                         mem.ReadInt32(obj + Hero_EmpowerLevel), stored);
                 }
             }

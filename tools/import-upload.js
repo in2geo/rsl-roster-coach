@@ -1,42 +1,74 @@
 /**
- * PC companion uploader (Option A). Reads the local Gestal export that sync.js
- * produces and POSTs it to /api/import as the signed-in user, so the deployed app
- * can show a synced roster.
+ * PC companion uploader. Reads the local roster and POSTs it to /api/import as the
+ * signed-in user, so the deployed app can show a synced roster.
+ *
+ * Two roster sources:
+ *   --source memory  (default)  read the LIVE game client's memory directly via
+ *                    RslBattleReader (Gestal-free; always current). Requires Raid
+ *                    running with the account loaded. Gear is validated exact; champion
+ *                    masteries/books/base-stats are not yet extracted (see lib/memory-roster.js).
+ *   --source gestal              read the Gestal export sync.js produces (needs a manual
+ *                    Gestal Refresh + sync.js run first; can go stale).
  *
  * One-time setup for the user:
  *   1. Sign in on the website, open the (hidden) PC-import page, copy the upload token.
- *   2. Make the account active in Gestal and click Refresh (so the export is current).
- *   3. Run sync.js, then this uploader.
+ *   2. memory: just have Raid open on the account.  gestal: Refresh Gestal, run sync.js.
+ *   3. Run this uploader.
  *
  * Usage:
- *   node tools/import-upload.js --token <accessToken> [--url https://app/api/import] [--account <id>]
+ *   node tools/import-upload.js --token <accessToken> [--source memory|gestal]
+ *        [--url https://app/api/import] [--account <id>] [--dry-run]
  *   (or set IMPORT_TOKEN and IMPORT_URL in the environment)
  */
 import { readGestalRoster } from '../lib/gestal-context.js';
+import { readMemoryRoster } from '../lib/memory-roster.js';
 
 const args = process.argv.slice(2);
 const flag = (k) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : undefined; };
+const has  = (k) => args.includes(k);
 
 const token   = flag('--token')   ?? process.env.IMPORT_TOKEN;
 const url     = flag('--url')     ?? process.env.IMPORT_URL ?? 'http://localhost:3000/api/import';
 const account = flag('--account') ?? null;
+const source  = flag('--source')  ?? process.env.IMPORT_SOURCE ?? 'memory';
+const dryRun  = has('--dry-run');
 
-if (!token) {
-  console.error('Missing upload token. Pass --token <accessToken> or set IMPORT_TOKEN.');
+if (!['memory', 'gestal'].includes(source)) {
+  console.error(`Invalid --source "${source}". Use "memory" (live game memory) or "gestal".`);
+  process.exit(1);
+}
+if (!token && !dryRun) {
+  console.error('Missing upload token. Pass --token <accessToken> or set IMPORT_TOKEN (or use --dry-run).');
   console.error('Get it from the website PC-import page after signing in.');
   process.exit(1);
 }
 
-const roster = readGestalRoster(account);
-if (!roster) {
-  console.error('No Gestal export found. Run sync.js first (and Refresh Gestal so it\'s current).');
-  process.exit(1);
+let roster;
+if (source === 'memory') {
+  const noRun = has('--no-run');
+  console.log(noRun
+    ? 'Using the reader\'s existing output (--no-run; no live read)…'
+    : 'Reading live game memory via RslBattleReader (this takes ~1-2 min)…');
+  try {
+    roster = readMemoryRoster({ run: !noRun });
+  } catch (e) {
+    console.error(`✗ Memory read failed: ${e.message}`);
+    console.error('  Make sure Raid is running with the account loaded, and the reader is built (dotnet build).');
+    process.exit(1);
+  }
+  if (!roster) { console.error('Memory reader produced no roster output.'); process.exit(1); }
+} else {
+  roster = readGestalRoster(account);
+  if (!roster) {
+    console.error('No Gestal export found. Run sync.js first (and Refresh Gestal so it\'s current).');
+    process.exit(1);
+  }
 }
 
-// Staleness hint: lastSnapshotAt is the Gestal extraction time.
+// Staleness hint: lastSnapshotAt is the extraction time (always ~now on the memory path).
 const extractedAt = roster.lastSnapshotAt ?? null;
 const ageMin = extractedAt ? Math.round((Date.now() - new Date(extractedAt)) / 60000) : null;
-if (ageMin != null && ageMin > 30)
+if (source === 'gestal' && ageMin != null && ageMin > 30)
   console.warn(`⚠ Gestal snapshot is ${ageMin} min old — Refresh Gestal + re-run sync.js for current gear.`);
 
 const body = {
@@ -50,8 +82,20 @@ const body = {
   roster: { champions: roster.champions ?? [], artifacts: roster.artifacts ?? [] },
 };
 
-console.log(`Uploading ${body.roster.champions.length} champions / ${body.roster.artifacts.length} artifacts`);
-console.log(`  account: ${roster.displayName} (${roster.accountId})  →  ${url}`);
+const equipped = body.roster.artifacts.filter((a) => a.equippedOnHeroId != null).length;
+console.log(`Source: ${source}. ${body.roster.champions.length} champions / ${body.roster.artifacts.length} artifacts (${equipped} equipped).`);
+console.log(`  account: ${roster.displayName} (${roster.accountId})  →  ${dryRun ? '(dry run, not sending)' : url}`);
+
+if (!body.account.accountId) {
+  console.error('✗ No accountId resolved — cannot import. (memory: is Raid running with the account loaded?)');
+  process.exit(1);
+}
+
+if (dryRun) {
+  console.log(`✓ Dry run OK. Body ready: account ${body.account.accountId}, ` +
+              `${body.roster.champions.length} champions, ${body.roster.artifacts.length} artifacts. Not sent.`);
+  process.exit(0);
+}
 
 const res = await fetch(url, {
   method: 'POST',
