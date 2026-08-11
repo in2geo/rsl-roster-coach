@@ -23,6 +23,31 @@ internal static class ArtifactReader
     private static readonly Dictionary<int, int> SlotMap = new()
     { [1] = 1, [2] = 4, [3] = 3, [4] = 5, [5] = 0, [6] = 2, [7] = 6, [8] = 7, [9] = 8 };
 
+    // RE diagnostic: DUMP_ART=<artifactId> dumps that artifact's ArtifactBonus bytes (main + substats) so the
+    // statKind/value/isAbsolute layout can be pinned against a known piece (e.g. id 121 = Mikey boots SPD +40).
+    private static readonly int DumpId = int.TryParse(Environment.GetEnvironmentVariable("DUMP_ART"), out var d) ? d : -1;
+
+    private static void DumpBonus(ProcessMemory mem, nint addr, string label)
+    {
+        if (addr == nint.Zero) { Console.WriteLine($"{label}: null"); return; }
+        var b = new byte[48];
+        if (!mem.TryReadBytes(addr, b)) { Console.WriteLine($"{label} @0x{addr:X}: unreadable"); return; }
+        int kind = BitConverter.ToInt32(b, 0x10);
+        var ptr18 = mem.ReadPointer(addr + 0x18);
+        Console.WriteLine($"{label} @0x{addr:X}: kind@10={kind}  ptr@18=0x{ptr18:X}");
+        if (ptr18 != nint.Zero)
+        {
+            var v = new byte[40];
+            if (mem.TryReadBytes(ptr18, v))
+            {
+                var sb = new System.Text.StringBuilder("        behind ptr@18: ");
+                for (int k = 0; k < 40; k += 4) sb.Append($"[{k:X2}]{BitConverter.ToInt32(v, k)}/{BitConverter.ToSingle(v, k):0.##} ");
+                Console.WriteLine(sb.ToString());
+                Console.WriteLine($"        i64@10={BitConverter.ToInt64(v, 0x10)}  d@10={BitConverter.ToDouble(v, 0x10):0.####}  d@18={BitConverter.ToDouble(v, 0x18):0.####}");
+            }
+        }
+    }
+
     public static void Run()
     {
         var proc = FindRaid();
@@ -90,6 +115,23 @@ internal static class ArtifactReader
                     if (level is < 0 or > 16) continue;
                     var (asc, hasAsc) = mem.ReadNullableInt(obj, Art_AscendLevel);
                     byId[id] = new Artifact(id, slot, rank, rarity, set, level, hasAsc ? asc : null);
+
+                    if (id == DumpId)
+                    {
+                        Console.WriteLine($"\n[bonus-RE] artifact {id} @0x{obj:X} (slotKind={slot} set={set} rank={rank} lvl={level})");
+                        var ob = new byte[0x90];
+                        if (mem.TryReadBytes(obj, ob)) { var s = new System.Text.StringBuilder("  ARTIFACT OBJ ints: "); for (int k = 0x10; k < 0x90; k += 4) s.Append($"[{k:X2}]{BitConverter.ToInt32(ob, k)} "); Console.WriteLine(s.ToString()); }
+                        DumpBonus(mem, mem.ReadPointer(obj + Art_PrimaryBonus), "  PRIMARY");
+                        var listPtr = mem.ReadPointer(obj + Art_SecondaryBonuses);
+                        if (listPtr != nint.Zero)
+                        {
+                            var arr = mem.ReadPointer(listPtr + List_BackingArray);
+                            int sz = mem.ReadInt32(listPtr + List_Size);
+                            Console.WriteLine($"  SecondaryBonuses list @0x{listPtr:X} size={sz}");
+                            for (int e = 0; e < sz && e < 8; e++)
+                                DumpBonus(mem, mem.ReadPointer(arr + Array_DataOffset + e * Array_ElementSize), $"  SUB[{e}]");
+                        }
+                    }
                 }
             }
         }

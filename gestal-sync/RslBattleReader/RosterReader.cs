@@ -121,10 +121,55 @@ internal static class RosterReader
                     var obj = baseAddr + (nint)(off + i);
                     if (mem.ReadInt32(obj + Hero_Id) != targetId) continue;
                     found++;
-                    var b = new byte[0x20]; mem.TryReadBytes(obj + 0x30, b);
-                    string hex = string.Join(" ", b.Select((x, k) => $"{0x30 + k:X2}:{x:X2}"));
                     Console.WriteLine($"  obj=0x{obj:X} typeId={mem.ReadInt32(obj + Hero_TypeId)} grade={mem.ReadInt32(obj + Hero_Grade)} level={mem.ReadInt32(obj + Hero_Level)}");
-                    Console.WriteLine($"    bytes 0x30-0x4F: {hex}");
+                    // Find the equipped-gear collection: scan Hero fields for a pointer that reads as a
+                    // List<Artifact> (backing array @+0x10, size @+0x18) whose elements' Art_Id look like gear ids.
+                    var ob = new byte[0x600]; mem.TryReadBytes(obj, ob);
+                    for (int k = 0x38; k + 8 <= 0x600; k += 8)
+                    {
+                        long p = BitConverter.ToInt64(ob, k);
+                        if (p < 0x10000000000L || p > 0x300000000000L) continue;
+                        // (a) try as Dictionary<K,Artifact>: count@0x20, entries array@0x18 (data@0x20), 24-byte entries, value ptr @ entry+0x10
+                        int dcount = mem.ReadInt32((nint)p + 0x20);
+                        if (dcount is >= 4 and <= 12)
+                        {
+                            var entA = (long)mem.ReadPointer((nint)p + 0x18);
+                            if (entA > 0x10000000000L)
+                            {
+                                var dids = new List<int>();
+                                for (int e = 0; e < dcount; e++)
+                                {
+                                    var vptr = (long)mem.ReadPointer((nint)entA + Array_DataOffset + e * 24 + 0x10);
+                                    var key = mem.ReadInt32((nint)entA + Array_DataOffset + e * 24 + 0x08);
+                                    if (vptr > 0x10000000000L) dids.Add(mem.ReadInt32((nint)vptr + Art_Id));
+                                    else dids.Add(-key);
+                                }
+                                Console.WriteLine($"    DICT@0x{k:X2}=0x{p:X} count={dcount} valArtIds=[{string.Join(",", dids)}]");
+                            }
+                        }
+                        var arrP = (long)mem.ReadPointer((nint)p + List_BackingArray);
+                        int sz = mem.ReadInt32((nint)p + List_Size);
+                        if (sz <= 0 || sz > 12 || arrP < 0x10000000000L) continue;
+                        // read backing array as int32 elements (List<int> = artifact ids) AND as 8-byte pointers→Art_Id
+                        var arrHdr = new byte[Array_DataOffset + sz * 8];
+                        mem.TryReadBytes((nint)arrP, arrHdr);
+                        var asInts = new List<int>();
+                        for (int e = 0; e < sz; e++) asInts.Add(BitConverter.ToInt32(arrHdr, Array_DataOffset + e * 4));
+                        var asPtrIds = new List<int>();
+                        for (int e = 0; e < sz; e++) { var el = BitConverter.ToInt64(arrHdr, Array_DataOffset + e * 8); if (el > 0x10000000000L) asPtrIds.Add(mem.ReadInt32((nint)el + Art_Id)); }
+                        Console.WriteLine($"    ptr@0x{k:X2}=0x{p:X} size={sz} asInt32=[{string.Join(",", asInts)}] asPtr→id=[{string.Join(",", asPtrIds)}]");
+                        if (sz == 6)
+                        {
+                            var el0 = BitConverter.ToInt64(arrHdr, Array_DataOffset);
+                            if (el0 > 0x10000000000L)
+                            {
+                                var eb = new byte[0x40]; mem.TryReadBytes((nint)el0, eb);
+                                var es = new System.Text.StringBuilder($"      elem[0]@0x{el0:X} ints: ");
+                                for (int j = 0x10; j < 0x40; j += 4) es.Append($"[{j:X2}]{BitConverter.ToInt32(eb, j)} ");
+                                Console.WriteLine(es.ToString());
+                            }
+                        }
+                    }
                 }
             }
         Console.WriteLine($"[hero] {found} object(s) for Id={targetId}.");

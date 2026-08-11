@@ -15,9 +15,23 @@ comes only from Gestal (`gestal-sync/output/<name>_<accountId>.json`, produced b
 - ✅ **Gear scalar reader (`--gear`): scalar fields CLEAN** — slotId/gearSetId/rarityId/
   rank/level/ascension match across all shared artifacts; reconciles to the in-game
   counts (816 unequipped gear + 181 unequipped accessories + 64 equipped = 1061 owned).
-- ⏳ **Remaining:** owned-artifact filter (drop ~28 non-owned/transient objects the broad
-  scan catches → exactly 1061); nested main stat / substats / equippedOnHeroId; then swap
-  `import-upload.js` off Gestal once the gear diff is fully clean.
+- ✅ **ArtifactBonus (main stat + substats) decode: SOLVED 2026-08-10** — verified EXACTLY vs
+  Mikey's boots (id 121: SPD+40 main; ATK+14/HP+909/ATK%+5/CRATE%+5 subs). Layout:
+  - `ArtifactBonus.kind` (StatKindId enum) @ **+0x10**; value-pointer @ **+0x18**.
+  - value object: `isAbsolute` @ **+0x10** (1=flat, 0=percent); the number is a **Fixed int64 @
+    +0x18, ÷ 2³²**. Flat → the integer (40/14/909); percent → the fraction (0.05 = 5%).
+  - Secondary bonuses = `List<ArtifactBonus>` @ Art+0x58 (backing array @List+0x10, size @+0x18,
+    8-byte object-pointer elements @ array+0x20).
+  - **StatKindId enum (partial):** HP=1, ATK=2, SPD=4, CRATE=7. TODO: DEF/RES/ACC/CDMG.
+- ⏳ **equippedOnHeroId — NOT yet located (2026-08-10).** NOT a plain field on the Artifact object
+  (no heroId 29 in bytes 0x10-0x8C). Hero near-field collections are: skills = `List` @ Hero+0x60
+  (size 6, elems have skillId@+0x1C e.g. 99401); an unidentified `List` size 8 @ Hero+0x1D0 (elems are
+  object-ptrs, not Artifacts). Gear collection not found by List/Dict blind-scan 0x38-0x600. **NEXT:
+  stop blind-scanning — regenerate `dump.cs` and read the Hero/Artifact class field definitions to pin
+  the equipped-gear field + the rest of the StatKindId enum directly.** RE diagnostics left in
+  `ArtifactReader.cs` (DUMP_ART=<id>) + `RosterReader.cs` (`--hero <id>` list/dict/elem dumps).
+- ⏳ **Remaining after that:** owned-artifact filter (→ exactly 1061); wire the decode into the
+  `--gear` output shape; then swap `import-upload.js` off Gestal once the gear diff is fully clean.
 
 Code: `RslBattleReader/RosterReader.cs` (`--roster`), `ArtifactReader.cs` (`--gear`),
 `tools/diff-roster.mjs`, `tools/diff-gear.mjs`.
