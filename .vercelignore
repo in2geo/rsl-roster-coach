@@ -1,2 +1,3 @@
-# Dead endpoint — superseded by /api/match. Excluded to stay under the Hobby 12-function cap.
-api/analyse.js
+# Keep the deployed serverless-function count under the Hobby 12-function cap.
+# Archived/retired code (not deployed):
+_archive/
