@@ -187,10 +187,48 @@ internal static class ArtifactReader
         Console.WriteLine($"[gear] wrote {outPath}");
     }
 
+    // Lightweight completeness probe: total equipped pieces currently in memory. 0 = the inventory /
+    // artifact data isn't loaded (the equipped map is empty). Used by the watch-and-capture loop.
+    public static int EquippedCount(ProcessMemory mem, nint moduleBase)
+    {
+        var uad = ResolveUserArtifactData(mem, moduleBase, out _);
+        if (uad == nint.Zero) return -1;
+        var uadClass = Il2CppClassResolver.ResolveByNameAny(mem, "UserArtifactData", out _);
+        var hadClass = Il2CppClassResolver.ResolveByNameAny(mem, "HeroArtifactData", out _);
+        int oByHero = Il2CppFieldResolver.OffsetOf(mem, uadClass, "ArtifactDataByHeroId");
+        int oByKind = Il2CppFieldResolver.OffsetOf(mem, hadClass, "ArtifactIdByKind");
+        if (oByHero < 0 || oByKind < 0) return -1;
+        var byHero = mem.ReadPointer(uad + oByHero);
+        if (!ProcessMemory.IsValidPointer(byHero)) return -1;
+        var entries = mem.ReadPointer(byHero + Dict_Entries);
+        if (!ProcessMemory.IsValidPointer(entries)) return -1;
+        long cap = mem.ReadInt64(entries + Array_MaxLength);
+        if (cap < 0 || cap > 100_000) return -1;
+        int total = 0;
+        for (long e = 0; e < cap; e++)
+        {
+            var entry = entries + Array_DataOffset + (nint)(e * 24);
+            if (mem.ReadInt32(entry) < 0) continue;
+            var had = mem.ReadPointer(entry + 16);
+            if (!ProcessMemory.IsValidPointer(had) || mem.ReadPointer(had) != hadClass) continue;
+            var byKind = mem.ReadPointer(had + oByKind);
+            var kEnt = mem.ReadPointer(byKind + Dict_Entries);
+            if (!ProcessMemory.IsValidPointer(kEnt)) continue;
+            long kcap = mem.ReadInt64(kEnt + Array_MaxLength);
+            for (long k = 0; k < kcap && k < 20; k++)
+            {
+                var eb = kEnt + Array_DataOffset + (nint)(k * 16);
+                if (mem.ReadInt32(eb) < 0) continue;
+                if (mem.ReadInt32(eb + 12) > 0) total++;
+            }
+        }
+        return total;
+    }
+
     // Navigate AppModel._userWrapper -> UserWrapper.Artifacts (EquipmentWrapper) -> the object that
     // IS-A UserArtifactData (its live class is the derived UpdatableArtifactData). Returns the object
     // pointer; outputs the UserArtifactData BASE class (source of the inherited field offsets).
-    private static nint ResolveUserArtifactData(ProcessMemory mem, nint moduleBase, out nint uadBaseClass)
+    internal static nint ResolveUserArtifactData(ProcessMemory mem, nint moduleBase, out nint uadBaseClass)
     {
         uadBaseClass = Il2CppClassResolver.ResolveByNameAny(mem, "UserArtifactData", out _);
         var nav = new Il2CppNavigator(mem, moduleBase);

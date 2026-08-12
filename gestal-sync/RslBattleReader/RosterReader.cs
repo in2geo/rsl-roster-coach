@@ -284,6 +284,85 @@ internal static class RosterReader
         return null;
     }
 
+    // Lightweight probe: (non-storage champions, of those with a populated Hero.Skills list). Per-hero
+    // Skills only load once the game has read the collection, so this fraction is the completeness signal.
+    private static (int total, int withSkills) ProbeSkills(ProcessMemory mem, long heroClass, int oSkills)
+    {
+        var seen = new HashSet<int>();
+        int total = 0, withSkills = 0;
+        const int chunk = 0x100000; var buf = new byte[chunk];
+        foreach (var (baseAddr, size) in mem.EnumerateReadableRegions())
+            for (long off = 0; off < size; off += chunk)
+            {
+                int toRead = (int)Math.Min(chunk, size - off);
+                var rb = toRead == chunk ? buf : new byte[toRead];
+                if (!mem.TryReadBytes(baseAddr + (nint)off, rb)) continue;
+                for (int i = 0; i + 8 <= toRead; i += 8)
+                {
+                    if (BitConverter.ToInt64(rb, i) != heroClass) continue;
+                    var obj = baseAddr + (nint)(off + i);
+                    int id = mem.ReadInt32(obj + Hero_Id), typeId = mem.ReadInt32(obj + Hero_TypeId);
+                    int grade = mem.ReadInt32(obj + Hero_Grade), level = mem.ReadInt32(obj + Hero_Level);
+                    if (id <= 0 || id > 2_000_000_000 || typeId is <= 0 or > 10_000_000) continue;
+                    if (grade is < 1 or > 6 || level is < 1 or > 60) continue;
+                    if (mem.ReadBool(obj + Hero_InStorage) || mem.ReadBool(obj + Hero_InBathhouse)) continue;
+                    if (!seen.Add(id)) continue;
+                    total++;
+                    var sk = mem.ReadPointer(obj + oSkills);
+                    if (ProcessMemory.IsValidPointer(sk) && mem.ReadInt32(sk + List_Size) > 0) withSkills++;
+                }
+            }
+        return (total, withSkills);
+    }
+
+    // WATCH-AND-CAPTURE: passively poll until the per-hero data (skills + equipped gear) is fully loaded
+    // AND stable, then run the full roster+gear capture. Never captures a half-loaded state, so it can't
+    // overwrite good data with a partial read. Reads only — it can NOT open the collection itself (that
+    // would be injection); it waits for the player to be in it during normal play. Usage: --watch [timeoutSec]
+    public static void WatchCapture(int timeoutSec = 600)
+    {
+        var proc = FindRaid(); if (proc is null) { Console.WriteLine("[watch] Raid not running."); return; }
+        using var mem = ProcessMemory.OpenById(proc.Id); if (mem is null) { Console.WriteLine("[watch] could not open process (run as admin)."); return; }
+        var moduleBase = mem.FindModuleBase("GameAssembly.dll");
+        if (moduleBase == nint.Zero) { Console.WriteLine("[watch] GameAssembly.dll not found."); return; }
+        var heroClass = Il2CppClassResolver.Resolve(mem, moduleBase, Hero_TypeInfo_RVA, "Hero", "SharedModel.Meta.Heroes");
+        if (heroClass == nint.Zero) { Console.WriteLine("[watch] Hero class not present — open the game to the account."); return; }
+        int oSkills = Il2CppFieldResolver.OffsetOf(mem, heroClass, "Skills");
+        if (oSkills < 0) { Console.WriteLine("[watch] could not resolve Hero.Skills."); return; }
+
+        Console.WriteLine("[watch] waiting for a COMPLETE read (skills + equipped gear loaded). " +
+                          "Open the Champion Collection (and inventory) in-game; capture fires automatically.");
+        long deadline = Environment.TickCount64 + timeoutSec * 1000L;
+        int lastSkills = -1, lastEquipped = -1;
+        while (true)
+        {
+            var (total, withSkills) = ProbeSkills(mem, (long)heroClass, oSkills);
+            int equipped = ArtifactReader.EquippedCount(mem, moduleBase);
+            double cov = total > 0 ? (double)withSkills / total : 0;
+            bool skillsOk = total >= 20 && cov >= 0.90;      // ~all non-storage champs carry skills when loaded
+            bool gearOk = equipped > 0;                       // any active account has equipped gear
+            bool stable = withSkills == lastSkills && equipped == lastEquipped;   // data stopped growing = fully loaded
+            Console.WriteLine($"[watch] skills {withSkills}/{total} ({cov:P0}){(skillsOk ? " ok" : "")}; equipped {equipped}{(gearOk ? " ok" : "")}{(skillsOk && gearOk && stable ? "  -> COMPLETE" : "")}");
+
+            if (skillsOk && gearOk && stable)
+            {
+                Console.WriteLine("[watch] data complete + stable — capturing roster + gear…");
+                Run();
+                ArtifactReader.Run();
+                Console.WriteLine("[watch] capture done. (Upload with: import-upload.js --source memory --no-run)");
+                return;
+            }
+            if (Environment.TickCount64 > deadline)
+            {
+                Console.WriteLine($"[watch] timeout after {timeoutSec}s — per-hero data never fully loaded. " +
+                                  "Open the Champion Collection + inventory in-game, then re-run. Nothing captured.");
+                return;
+            }
+            lastSkills = withSkills; lastEquipped = equipped;
+            System.Threading.Thread.Sleep(4000);
+        }
+    }
+
     // Resolve the live StaticData singleton: AppModel -> StaticDataManager -> StaticData.
     private static nint ResolveStaticData(ProcessMemory mem, nint moduleBase)
     {

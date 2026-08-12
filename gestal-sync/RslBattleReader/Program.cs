@@ -28,6 +28,18 @@ if (args.Contains("--gear"))
     return;
 }
 
+// Watch-and-capture: poll until per-hero data (skills + gear) is fully loaded + stable, then capture.
+// Never captures a half-loaded state. Usage: --watch [timeoutSeconds]
+{
+    int wi = Array.IndexOf(args, "--watch");
+    if (wi >= 0)
+    {
+        int to = (wi + 1 < args.Length && int.TryParse(args[wi + 1], out var t)) ? t : 600;
+        RslBattleReader.RosterReader.WatchCapture(to);
+        return;
+    }
+}
+
 // Durable-offset calibration: dump a class's declared fields (name + offset) live from
 // Il2CppClass metadata. Usage: --fields Artifact,Hero,UserArtifactData
 {
