@@ -56,6 +56,19 @@ if (args.Contains("--artdata"))
     }
 }
 
+// Dump all HeroType base-stat coefficients to output/basestats-coeffs.json.
+if (args.Contains("--basestatsdump")) { RslBattleReader.RosterReader.BaseStatsDump(); return; }
+
+// Probe: base stats via static HeroData. Usage: --basestats <baseTypeId>
+{
+    int bs = Array.IndexOf(args, "--basestats");
+    if (bs >= 0 && bs + 1 < args.Length && int.TryParse(args[bs + 1], out var bt))
+    {
+        RslBattleReader.RosterReader.BaseStatsProbe(bt);
+        return;
+    }
+}
+
 // Probe: static skill maxLevel lookup. Usage: --skillmax 401,402,403
 {
     int sm = Array.IndexOf(args, "--skillmax");

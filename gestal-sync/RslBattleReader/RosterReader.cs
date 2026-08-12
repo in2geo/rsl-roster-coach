@@ -24,8 +24,33 @@ namespace RslBattleReader;
 internal static class RosterReader
 {
     public record SkillState(int SkillId, int Level, int MaxLevel);
+    public record BaseStats(int Hp, int Atk, int Def, int Spd, int Res, int Acc, int Crate, int Cdmg);
     public record OwnedHero(int Id, int TypeId, int BaseTypeId, int Grade, int Level, int EmpowerLevel, bool InStorage,
-        int[] MasteryIds, SkillState[] Skills);
+        int[] MasteryIds, SkillState[] Skills, BaseStats? BaseStats);
+
+    // Stat scaling M(stars, level): a champion's leveled HP/ATK/DEF = base-coefficient × M, with HP
+    // additionally × 15 (game constant; the coefficient is the 1★ Lv1 value). Flat stats (SPD/RES/ACC/
+    // CRATE/CDMG) don't scale. Per-star linear fit M = A + B·(level-1), derived vs Gestal (mean err
+    // ~0.2%, EXACT for 6★ Lv60 where M=11.01). Ascension flat bonuses (~3% on ascended champs) are NOT
+    // modelled — Gestal bakes them into baseStats and no table exists; acceptable for the sim.
+    private static readonly double[] StatA = { 0, 1.0, 1.5998, 2.4317, 3.4968, 4.6489, 7.00 };   // index = stars
+    private static readonly double[] StatB = { 0, 0.065, 0.065, 0.06637, 0.06232, 0.06692, 0.068 };
+    private const double HpFactor = 15.0;
+    private static double StatMultiplier(int stars, int level)
+    {
+        if (stars < 1 || stars > 6) return 1.0;
+        return StatA[stars] + StatB[stars] * (level - 1);
+    }
+    private static BaseStats? ComputeBaseStats(BaseCoeffs? c, int stars, int level)
+    {
+        if (c is null) return null;
+        double m = StatMultiplier(stars, level), F = 4294967296.0;
+        return new BaseStats(
+            (int)Math.Round(c.Hp / F * m * HpFactor),
+            (int)Math.Round(c.Atk / F * m),
+            (int)Math.Round(c.Def / F * m),
+            c.Spd, c.Res, c.Acc, c.Crate, c.Cdmg);
+    }
 
     public static void Run()
     {
@@ -57,10 +82,11 @@ internal static class RosterReader
             SkTypeId:    skillClass != nint.Zero ? Il2CppFieldResolver.OffsetOf(mem, skillClass, "TypeId") : -1,
             SkLevel:     skillClass != nint.Zero ? Il2CppFieldResolver.OffsetOf(mem, skillClass, "Level") : -1);
         var skillMax = BuildSkillMaxLevels(mem, moduleBase);
+        var baseCoeffs = BuildBaseStatsMap(mem, moduleBase);
         Console.WriteLine($"[roster] parity: MasteryData@{px.MasteryData} Skills@{px.Skills} Masteries@{px.Masteries} " +
-                          $"Skill.TypeId@{px.SkTypeId}/.Level@{px.SkLevel}; skillMax map={skillMax.Count}");
+                          $"Skill.TypeId@{px.SkTypeId}/.Level@{px.SkLevel}; skillMax map={skillMax.Count}; baseCoeffs map={baseCoeffs.Count}");
 
-        var heroes = ScanHeroes(mem, (long)heroClass, px, skillMax);
+        var heroes = ScanHeroes(mem, (long)heroClass, px, skillMax, baseCoeffs);
         if (heroes.Count == 0) { Console.WriteLine("[roster] no Hero objects found — is the account at the Champions screen?"); return; }
 
         int active = heroes.Count(h => !h.InStorage);
@@ -77,6 +103,9 @@ internal static class RosterReader
             empowerLevel = h.EmpowerLevel, inStorage = h.InStorage,
             masteryIds = h.MasteryIds,
             skills = h.Skills.Select(s => new { skillId = s.SkillId, level = s.Level, maxLevel = s.MaxLevel }),
+            baseStats = h.BaseStats is null ? null : new {
+                hp = h.BaseStats.Hp, atk = h.BaseStats.Atk, def = h.BaseStats.Def, spd = h.BaseStats.Spd,
+                res = h.BaseStats.Res, acc = h.BaseStats.Acc, crate = h.BaseStats.Crate, cdmg = h.BaseStats.Cdmg },
         });
         File.WriteAllText(outPath, System.Text.Json.JsonSerializer.Serialize(shaped, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
         Console.WriteLine($"\n[roster] wrote {outPath}");
@@ -125,7 +154,7 @@ internal static class RosterReader
     // Walk readable regions; every 8-aligned slot equal to the Hero class pointer is
     // a Hero object's klass field (offset 0), i.e. an object base. Read + range-check
     // its fields; dedup by Id (the unique inventory hero id).
-    private static List<OwnedHero> ScanHeroes(ProcessMemory mem, long heroClass, ParityOffsets px, Dictionary<int, int> skillMax)
+    private static List<OwnedHero> ScanHeroes(ProcessMemory mem, long heroClass, ParityOffsets px, Dictionary<int, int> skillMax, Dictionary<int, BaseCoeffs> baseCoeffs)
     {
         var byId = new Dictionary<int, OwnedHero>();
         const int chunk = 0x100000;
@@ -157,9 +186,11 @@ internal static class RosterReader
                     int baseTypeId = typeId - (typeId % 10);
 
                     bool stored = mem.ReadBool(obj + Hero_InStorage) || mem.ReadBool(obj + Hero_InBathhouse);
+                    baseCoeffs.TryGetValue(baseTypeId, out var coeff);
                     byId[id] = new OwnedHero(id, typeId, baseTypeId, grade, level,
                         mem.ReadInt32(obj + Hero_EmpowerLevel), stored,
-                        ReadMasteries(mem, obj, px), ReadSkills(mem, obj, px, skillMax));
+                        ReadMasteries(mem, obj, px), ReadSkills(mem, obj, px, skillMax),
+                        ComputeBaseStats(coeff, grade, level));
                 }
             }
         }
@@ -251,6 +282,138 @@ internal static class RosterReader
             if (p.Length > 0) return p[0];
         }
         return null;
+    }
+
+    // Resolve the live StaticData singleton: AppModel -> StaticDataManager -> StaticData.
+    private static nint ResolveStaticData(ProcessMemory mem, nint moduleBase)
+    {
+        var nav = new Il2CppNavigator(mem, moduleBase);
+        var appModel = nav.ResolveAppModelInstance();
+        var appClass = Il2CppClassResolver.ResolveByNameAny(mem, "AppModel", out _);
+        if (appModel == nint.Zero || appClass == nint.Zero) return nint.Zero;
+        int oSDM = Il2CppFieldResolver.OffsetOf(mem, appClass, "<StaticDataManager>k__BackingField");
+        var sdm = oSDM >= 0 ? mem.ReadPointer(appModel + oSDM) : nint.Zero;
+        if (!ProcessMemory.IsValidPointer(sdm)) return nint.Zero;
+        int oSD = Il2CppFieldResolver.OffsetOf(mem, mem.ReadPointer(sdm), "<StaticData>k__BackingField");
+        return oSD >= 0 ? mem.ReadPointer(sdm + oSD) : nint.Zero;
+    }
+
+    public record BaseCoeffs(long Hp, long Atk, long Def, int Spd, int Res, int Acc, int Crate, int Cdmg);
+
+    // Build baseTypeId -> base-stat coefficients from static HeroData.HeroTypes[].Forms[0].BaseStats.
+    // Flat stats (SPD/RES/ACC/CRATE/CDMG) are the real values; HP/ATK/DEF are coefficients that scale
+    // with level+stars (see the scaling analysis). BattleStats: HP@0x10 ATK@0x18 DEF@0x20 SPD@0x28
+    // RES@0x30 ACC@0x38 CRATE@0x40 CDMG@0x48, each Fixed int64 / 2^32.
+    public static Dictionary<int, BaseCoeffs> BuildBaseStatsMap(ProcessMemory mem, nint moduleBase)
+    {
+        var map = new Dictionary<int, BaseCoeffs>();
+        var sd = ResolveStaticData(mem, moduleBase);
+        var sdClass = Il2CppClassResolver.ResolveByNameAny(mem, "StaticData", out _);
+        var htClass = Il2CppClassResolver.ResolveByNameAny(mem, "HeroType", out _);
+        var hfClass = Il2CppClassResolver.ResolveByNameAny(mem, "HeroForm", out _);
+        if (sd == nint.Zero || sdClass == nint.Zero || htClass == nint.Zero || hfClass == nint.Zero) return map;
+        var hd = mem.ReadPointer(sd + Il2CppFieldResolver.OffsetOf(mem, sdClass, "HeroData"));
+        if (!ProcessMemory.IsValidPointer(hd)) return map;
+        int oHeroTypes = Il2CppFieldResolver.OffsetOf(mem, mem.ReadPointer(hd), "HeroTypes");
+        int oHtId = Il2CppFieldResolver.OffsetOf(mem, htClass, "Id");
+        int oForms = Il2CppFieldResolver.OffsetOf(mem, htClass, "Forms");
+        int oBaseStats = Il2CppFieldResolver.OffsetOf(mem, hfClass, "BaseStats");
+        if (oHeroTypes < 0 || oHtId < 0 || oForms < 0 || oBaseStats < 0) return map;
+        var hts = mem.ReadPointer(hd + oHeroTypes);
+        var arr = mem.ReadPointer(hts + List_BackingArray);
+        int sz = mem.ReadInt32(hts + List_Size);
+        if (!ProcessMemory.IsValidPointer(arr) || sz <= 0 || sz > 200_000) return map;
+        double F = 4294967296.0;
+        for (int i = 0; i < sz; i++)
+        {
+            var ht = mem.ReadPointer(arr + Array_DataOffset + (nint)i * 8);
+            if (!ProcessMemory.IsValidPointer(ht)) continue;
+            int id = mem.ReadInt32(ht + oHtId);
+            if (id <= 0 || map.ContainsKey(id)) continue;
+            var forms = mem.ReadPointer(ht + oForms);
+            if (!ProcessMemory.IsValidPointer(forms)) continue;
+            var hf = mem.ReadPointer(forms + Array_DataOffset);   // HeroForm[0]
+            if (!ProcessMemory.IsValidPointer(hf)) continue;
+            var bs = mem.ReadPointer(hf + oBaseStats);
+            if (!ProcessMemory.IsValidPointer(bs)) continue;
+            map[id] = new BaseCoeffs(
+                mem.ReadInt64(bs + 0x10), mem.ReadInt64(bs + 0x18), mem.ReadInt64(bs + 0x20),
+                (int)(mem.ReadInt64(bs + 0x28) / F), (int)(mem.ReadInt64(bs + 0x30) / F),
+                (int)(mem.ReadInt64(bs + 0x38) / F), (int)(mem.ReadInt64(bs + 0x40) / F),
+                (int)(mem.ReadInt64(bs + 0x48) / F));
+        }
+        return map;
+    }
+
+    public static void BaseStatsDump()
+    {
+        var proc = FindRaid(); if (proc is null) { Console.WriteLine("[basestats] Raid not running."); return; }
+        using var mem = ProcessMemory.OpenById(proc.Id); if (mem is null) return;
+        var mb = mem.FindModuleBase("GameAssembly.dll"); if (mb == nint.Zero) return;
+        var map = BuildBaseStatsMap(mem, mb);
+        double F = 4294967296.0;
+        var shaped = map.ToDictionary(kv => kv.Key.ToString(), kv => new {
+            hp = kv.Value.Hp / F, atk = kv.Value.Atk / F, def = kv.Value.Def / F,
+            spd = kv.Value.Spd, res = kv.Value.Res, acc = kv.Value.Acc, crate = kv.Value.Crate, cdmg = kv.Value.Cdmg });
+        var outPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "output", "basestats-coeffs.json"));
+        File.WriteAllText(outPath, System.Text.Json.JsonSerializer.Serialize(shaped));
+        Console.WriteLine($"[basestats] wrote {map.Count} HeroType base coefficients → {outPath}");
+    }
+
+    // Probe: navigate static HeroData -> HeroTypes -> the HeroType with Id==baseTypeId -> Forms ->
+    // BaseStats, to locate the leveled base stats (match Gestal, e.g. Coldheart hp 12885/atk 1189/def 705/spd 94).
+    public static void BaseStatsProbe(int baseTypeId)
+    {
+        var proc = FindRaid(); if (proc is null) { Console.WriteLine("[basestats] Raid not running."); return; }
+        using var mem = ProcessMemory.OpenById(proc.Id); if (mem is null) return;
+        var mb = mem.FindModuleBase("GameAssembly.dll"); if (mb == nint.Zero) return;
+
+        string cname(nint o) { if (!ProcessMemory.IsValidPointer(o) || !mem.IsReadable(o)) return "-"; var k = mem.ReadPointer(o); return ProcessMemory.IsValidPointer(k) ? (mem.ReadCString(mem.ReadPointer(k + 0x10)) ?? "?") : "?"; }
+
+        var sd = ResolveStaticData(mem, mb);
+        var sdClass = Il2CppClassResolver.ResolveByNameAny(mem, "StaticData", out _);
+        int oHeroData = Il2CppFieldResolver.OffsetOf(mem, sdClass, "HeroData");
+        var hd = mem.ReadPointer(sd + oHeroData);
+        var hdClass = mem.ReadPointer(hd);
+        Console.WriteLine($"[basestats] StaticData=0x{sd:X} HeroData@{oHeroData}=0x{hd:X} ({cname(hd)})");
+        int oHeroTypes = Il2CppFieldResolver.OffsetOf(mem, hdClass, "HeroTypes");
+        var hts = mem.ReadPointer(hd + oHeroTypes);
+        Console.WriteLine($"[basestats] HeroTypes@{oHeroTypes}=0x{hts:X} ({cname(hts)}) listSize={mem.ReadInt32(hts + List_Size)}");
+
+        var htClass = Il2CppClassResolver.ResolveByNameAny(mem, "HeroType", out _);
+        var hfClass = Il2CppClassResolver.ResolveByNameAny(mem, "HeroForm", out _);
+        int oHtId = Il2CppFieldResolver.OffsetOf(mem, htClass, "Id");
+        int oForms = Il2CppFieldResolver.OffsetOf(mem, htClass, "Forms");
+        int oBaseStats = Il2CppFieldResolver.OffsetOf(mem, hfClass, "BaseStats");
+
+        // HeroTypes: List<HeroType>. Find the one with Id == baseTypeId.
+        var arr = mem.ReadPointer(hts + List_BackingArray);
+        int sz = mem.ReadInt32(hts + List_Size);
+        for (int i = 0; i < sz; i++)
+        {
+            var ht = mem.ReadPointer(arr + Array_DataOffset + (nint)i * 8);
+            if (!ProcessMemory.IsValidPointer(ht) || mem.ReadInt32(ht + oHtId) != baseTypeId) continue;
+            Console.WriteLine($"[basestats] found HeroType Id={baseTypeId} @0x{ht:X}; Forms@{oForms} BaseStats@{oBaseStats}");
+            // Forms is a HeroForm[] ARRAY (not a List) — elements start at +0x20, count @ +0x18.
+            var forms = mem.ReadPointer(ht + oForms);
+            int fsz = mem.ReadInt32(forms + Array_MaxLength);
+            Console.WriteLine($"  Forms=0x{forms:X} ({cname(forms)}) count={fsz}");
+            for (int f = 0; f < fsz && f < 8; f++)
+            {
+                var hf = mem.ReadPointer(forms + Array_DataOffset + (nint)f * 8);
+                if (!ProcessMemory.IsValidPointer(hf)) continue;
+                var bs = mem.ReadPointer(hf + oBaseStats);
+                if (!ProcessMemory.IsValidPointer(bs)) { Console.WriteLine($"    form[{f}] BaseStats null"); continue; }
+                Console.WriteLine($"    form[{f}] BaseStats@0x{bs:X} ({cname(bs)}) — hunting for hp 12885 / atk 1189 / def 705:");
+                for (int off = 0x10; off <= 0x60; off += 8)
+                {
+                    long v = mem.ReadInt64(bs + off);
+                    Console.WriteLine($"      +0x{off:X2}: int64={v} /2^32={v / 4294967296.0:0.##}  int32=({mem.ReadInt32(bs + off)},{mem.ReadInt32(bs + off + 4)})");
+                }
+            }
+            return;
+        }
+        Console.WriteLine($"[basestats] HeroType Id={baseTypeId} not found in {sz} types.");
     }
 
     // First heap object whose klass == the given class (singletons like StaticData).
