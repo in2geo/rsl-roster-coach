@@ -20,6 +20,9 @@
  *        [--url https://app/api/import] [--account <id>] [--dry-run]
  *   (or set IMPORT_TOKEN and IMPORT_URL in the environment)
  */
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import { readGestalRoster } from '../lib/gestal-context.js';
 import { readMemoryRoster } from '../lib/memory-roster.js';
 
@@ -27,6 +30,12 @@ const args = process.argv.slice(2);
 const flag = (k) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : undefined; };
 const has  = (k) => args.includes(k);
 
+// AUTH — prefer a long-lived import key (never expires) over the ~1h access token, so
+// unattended `--watch -> upload` runs don't need a fresh token each hour. Key sources, in
+// order: --key, IMPORT_KEY env, then a key file (~/.rsl-import-key, override IMPORT_KEY_FILE).
+const keyFile = process.env.IMPORT_KEY_FILE ?? path.join(os.homedir(), '.rsl-import-key');
+const fileKey = (() => { try { return fs.readFileSync(keyFile, 'utf8').trim() || undefined; } catch { return undefined; } })();
+const importKey = flag('--key') ?? process.env.IMPORT_KEY ?? fileKey;
 const token   = flag('--token')   ?? process.env.IMPORT_TOKEN;
 const url     = flag('--url')     ?? process.env.IMPORT_URL ?? 'http://localhost:3000/api/import';
 const account = flag('--account') ?? null;
@@ -37,9 +46,9 @@ if (!['memory', 'gestal'].includes(source)) {
   console.error(`Invalid --source "${source}". Use "memory" (live game memory) or "gestal".`);
   process.exit(1);
 }
-if (!token && !dryRun) {
-  console.error('Missing upload token. Pass --token <accessToken> or set IMPORT_TOKEN (or use --dry-run).');
-  console.error('Get it from the website PC-import page after signing in.');
+if (!importKey && !token && !dryRun) {
+  console.error('Missing credentials. Use a long-lived import key (--key / IMPORT_KEY / ~/.rsl-import-key)');
+  console.error('or a one-hour token (--token / IMPORT_TOKEN). Generate either on the PC-import page after signing in.');
   process.exit(1);
 }
 
@@ -83,7 +92,8 @@ const body = {
 };
 
 const equipped = body.roster.artifacts.filter((a) => a.equippedOnHeroId != null).length;
-console.log(`Source: ${source}. ${body.roster.champions.length} champions / ${body.roster.artifacts.length} artifacts (${equipped} equipped).`);
+console.log(`Source: ${source}. Auth: ${importKey ? 'long-lived key' : 'access token'}. ` +
+            `${body.roster.champions.length} champions / ${body.roster.artifacts.length} artifacts (${equipped} equipped).`);
 console.log(`  account: ${roster.displayName} (${roster.accountId})  →  ${dryRun ? '(dry run, not sending)' : url}`);
 
 if (!body.account.accountId) {
@@ -97,9 +107,13 @@ if (dryRun) {
   process.exit(0);
 }
 
+// Prefer the long-lived key header; fall back to the ~1h Bearer token.
+const authHeaders = importKey
+  ? { 'X-Import-Key': importKey }
+  : { Authorization: `Bearer ${token}` };
 const res = await fetch(url, {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+  headers: { 'Content-Type': 'application/json', ...authHeaders },
   body: JSON.stringify(body),
 });
 

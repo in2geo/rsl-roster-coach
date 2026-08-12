@@ -61,17 +61,42 @@
         <div class="row"><button class="copy" id="copy-cmd">Copy command</button></div>
         <p class="note">Keep this token private — it can write to your account. It expires automatically.</p>
       </div>
+
+      <div class="imp-card">
+        <h2>Unattended sync (long-lived key)</h2>
+        <p>For <strong>automatic</strong> syncing (the reader captures and uploads on its own), generate a
+           long-lived import key. Unlike the token above, it doesn't expire — so a background sync never
+           has to grab a fresh one.</p>
+        <div class="row" style="margin:0.75rem 0;">
+          <button class="copy" id="gen-key">Generate a key</button>
+          <span id="gen-status" style="font-size:0.82rem;color:var(--muted);"></span>
+        </div>
+        <div id="key-out" class="hidden">
+          <div class="row">
+            <div class="token" id="key-val">…</div>
+            <button class="copy" id="copy-key">Copy</button>
+          </div>
+          <p class="note">⚠ Shown ONCE — copy it now. Store it at <code>~/.rsl-import-key</code> (or set
+             <code>IMPORT_KEY</code>). Then the uploader needs no token:</p>
+          <pre id="key-cmd">…</pre>
+          <div class="row"><button class="copy" id="copy-key-cmd">Copy command</button></div>
+        </div>
+        <p class="note" style="color:var(--muted);">A key can write to your account (roster import only).
+           Generate a new one and stop using the old if it ever leaks.</p>
+      </div>
     </div>
   </div>
 
   <script type="module">
     import { getSession, onAuthChange } from './auth.js';
     const $ = (id) => document.getElementById(id);
+    let currentToken = null;   // session access token, for authing key generation
 
     function renderSignedIn(session) {
       $('signed-out').classList.add('hidden');
       $('signed-in').classList.remove('hidden');
       const token = session.access_token;
+      currentToken = token;
       $('token').textContent = token;
       const origin = window.location.origin;
       $('cmd').textContent =
@@ -101,6 +126,31 @@
     function copy(text, btn) { navigator.clipboard.writeText(text).then(() => { const t = btn.textContent; btn.textContent = 'Copied'; setTimeout(() => btn.textContent = t, 1200); }); }
     $('copy-token').addEventListener('click', () => copy($('token').textContent, $('copy-token')));
     $('copy-cmd').addEventListener('click', () => copy($('cmd').textContent, $('copy-cmd')));
+
+    // Generate a long-lived import key (returned once). Uses the session token to authorize.
+    $('gen-key').addEventListener('click', async () => {
+      if (!currentToken) { $('gen-status').textContent = 'Sign in first.'; return; }
+      const btn = $('gen-key'); btn.disabled = true; $('gen-status').textContent = 'Generating…';
+      try {
+        const res = await fetch('/api/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${currentToken}` },
+          body: JSON.stringify({ action: 'create-key', label: 'PC companion' }),
+        });
+        const d = await res.json();
+        if (!res.ok || !d.key) { $('gen-status').textContent = d.error || 'Could not generate a key.'; return; }
+        $('gen-status').textContent = '';
+        $('key-out').classList.remove('hidden');
+        $('key-val').textContent = d.key;
+        const origin = window.location.origin;
+        $('key-cmd').textContent =
+          `setx IMPORT_KEY "${d.key}"   (Windows — new terminal after)\n` +
+          `node tools/import-upload.js --url ${origin}/api/import --source memory`;
+      } catch { $('gen-status').textContent = 'Could not reach the server.'; }
+      finally { btn.disabled = false; }
+    });
+    $('copy-key').addEventListener('click', () => copy($('key-val').textContent, $('copy-key')));
+    $('copy-key-cmd').addEventListener('click', () => copy($('key-cmd').textContent, $('copy-key-cmd')));
 
     (async () => {
       try {
