@@ -46,6 +46,28 @@ if (args.Contains("--artdata"))
     return;
 }
 
+// Probe: champion-parity containers (masteries + skills). Usage: --parityprobe <heroId>
+{
+    int pp = Array.IndexOf(args, "--parityprobe");
+    if (pp >= 0 && pp + 1 < args.Length && int.TryParse(args[pp + 1], out var hid))
+    {
+        RslBattleReader.RosterReader.ParityProbe(hid);
+        return;
+    }
+}
+
+// Probe: static skill maxLevel lookup. Usage: --skillmax 401,402,403
+{
+    int sm = Array.IndexOf(args, "--skillmax");
+    if (sm >= 0 && sm + 1 < args.Length)
+    {
+        var ids = args[sm + 1].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => int.TryParse(s, out var v) ? v : 0).Where(v => v != 0).ToArray();
+        RslBattleReader.RosterReader.SkillMaxProbe(ids);
+        return;
+    }
+}
+
 // Debug: dump Hero objects matching a heroId. Usage: --hero 11
 {
     int hi = Array.IndexOf(args, "--hero");
