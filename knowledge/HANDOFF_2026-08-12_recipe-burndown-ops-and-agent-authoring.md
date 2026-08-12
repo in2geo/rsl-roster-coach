@@ -81,6 +81,11 @@ enemy_frozen`. Anything else → defer + newOpsNeeded (do NOT invent trigger eve
 
 ## HOW TO RUN THE NEXT LAP (concrete)
 
+> **This is now committed, push-button tooling** — see `knowledge/RECIPE_AUTHORING_RUNBOOK.md`.
+> `tools/recipe-authoring-fetch.mjs` → `Workflow({name:'recipe-authoring', args:[…]})` →
+> `tools/recipe-authoring-integrate.mjs` → `tools/recipe-authoring-smoke.mjs` + the ladder.
+> The manual detail below is the same thing, expanded, for when you need to reason about a step.
+
 ### A) Build the next ops (from batch-3 `newOpsNeeded`, ranked)
 Highest-value / cleanest first:
 - `HEAL` with `pctOfTargetMaxHp` (Klodd, Stonebound, Bad-el) — extend `doHeal` to read the target's
