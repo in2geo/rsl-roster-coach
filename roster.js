@@ -298,7 +298,15 @@ async function fetchAutoRoster() {
 async function loadGestalContext() {
   try {
     const body = await fetchAutoRoster();
-    if (!body) return false;
+    if (!body) {
+      // The selected profile has no roster (empty manual profile, or the fetch
+      // returned nothing). REFLECT that — clear the previous profile's state so a
+      // profile switch never leaves the prior account's champions/cards on screen.
+      gestalUserChampions = [];
+      gestalContext       = null;
+      roster              = {};
+      return false;
+    }
 
     gestalUserChampions = body.userChampions;
     gestalContext       = body.context ?? null;
@@ -316,6 +324,14 @@ async function loadGestalContext() {
           mastery_tier:    uc.mastery_tier ?? 'None',
           is_booked:       uc.is_booked ?? false,
         };
+        // Keep card identity (name / rarity / portrait) in sync with the loaded
+        // profile. Without this, switching to a profile with champions not in the
+        // initial catalog load renders them as "Unknown champion" with no portrait.
+        championDetails.set(uc.champion.id, {
+          name:         uc.champion.name,
+          rarity:       uc.champion.rarity,
+          portrait_url: uc.champion.portrait_url ?? null,
+        });
       }
     }
     return true;
