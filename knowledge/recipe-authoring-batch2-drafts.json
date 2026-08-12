@@ -1,0 +1,2446 @@
+[
+ {
+  "champion": "Underpriest Brogni",
+  "recipeKey": "UNDERPRIEST",
+  "formulas": [
+   {
+    "id": "F_UNDERPRIEST_A1",
+    "scalingStat": "ATK",
+    "multiplier": 6.5,
+    "hitCount": 1,
+    "terms": null,
+    "flags": "{ ...DMG_FLAGS }",
+    "note": "Deepcrystal Scourge — attacks 1 enemy (DB multiplier 6.5, multiplierType ATK)"
+   },
+   {
+    "id": "F_UNDERPRIEST_A2",
+    "scalingStat": "ATK",
+    "multiplier": 6.6,
+    "hitCount": 1,
+    "terms": null,
+    "flags": "{ ...DMG_FLAGS }",
+    "note": "Cavern's Grasp — attacks all enemies, single AoE hit (DB multiplier 6.6, multiplierType ATK); pair with target all_enemies + hitCount 1"
+   }
+  ],
+  "recipes": [
+   {
+    "key": "UNDERPRIEST-A1",
+    "slot": "A1",
+    "name": "Deepcrystal Scourge",
+    "type": "active",
+    "cooldown": 0,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_UNDERPRIEST_A1"
+     },
+     {
+      "seq": 30,
+      "phase": "after_hit",
+      "op": "PLACE_DEBUFF",
+      "target": "intended_set",
+      "repeat": "per_target",
+      "effect": {
+       "type": "HP Burn",
+       "duration": 2,
+       "chance": 0.45,
+       "accuracy_check": true
+      }
+     }
+    ],
+    "covers": [
+     "HP Burn (45% 2t)"
+    ],
+    "deferred": []
+   },
+   {
+    "key": "UNDERPRIEST-A2",
+    "slot": "A2",
+    "name": "Cavern's Grasp",
+    "type": "active",
+    "cooldown": 4,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "all_enemies"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_UNDERPRIEST_A2"
+     },
+     {
+      "seq": 30,
+      "phase": "after_skill",
+      "op": "BUFF_STRIP",
+      "target": "intended_set",
+      "repeat": "once",
+      "effect": {
+       "count": 1,
+       "chance": 0.75
+      }
+     },
+     {
+      "seq": 40,
+      "phase": "after_skill",
+      "op": "CLEANSE",
+      "target": "all_allies",
+      "repeat": "once",
+      "effect": {
+       "count": 1,
+       "chance": 0.75
+      }
+     }
+    ],
+    "covers": [
+     "removes 1 random buff from all enemies @75% (BUFF_STRIP)",
+     "removes 1 random debuff from all allies @75% (CLEANSE)"
+    ],
+    "deferred": [
+     "increases the value of [Shield] buffs on all allies by 30% of the damage inflicted — BOOST_SHIELD only scales off caster MAX HP (pctOfCasterMaxHp), not a %-of-damage-inflicted source, so this cannot be modelled faithfully (self-combo with his own A3 Shield); deferred pending a damage-scaled BOOST_SHIELD input",
+     "BUFF_STRIP/CLEANSE 75% chance passed in effect.chance but the ops may treat the removal as guaranteed — chance-gating of strip/cleanse not confirmed in the interpreter"
+    ]
+   },
+   {
+    "key": "UNDERPRIEST-A3",
+    "slot": "A3",
+    "name": "Resilient Glow",
+    "type": "active",
+    "cooldown": 5,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "PLACE_BUFF",
+      "target": "all_allies",
+      "repeat": "once",
+      "effect": {
+       "type": "Increase ATK",
+       "magnitude": 50,
+       "duration": 2
+      }
+     },
+     {
+      "seq": 20,
+      "phase": "after_skill",
+      "op": "PLACE_BUFF",
+      "target": "all_allies",
+      "repeat": "once",
+      "effect": {
+       "type": "Shield",
+       "pctOfCasterMaxHp": 0.3,
+       "duration": 2
+      }
+     }
+    ],
+    "covers": [
+     "50% Increase ATK on all allies 2t",
+     "Shield = 30% of caster MAX HP on all allies 2t"
+    ],
+    "deferred": [
+     "[Block Debuffs] buff on all allies 2t — [Block Debuffs] has no engine consumer (not in CONSUMED_EFFECTS/consumer registry); placing it would be inert",
+     "the [Shield] buff cannot be removed — 'unremovable' flag not modelled (Shield still placed normally; only its immunity-to-strip is dropped)"
+    ]
+   },
+   {
+    "key": "UNDERPRIEST-PASSIVE",
+    "slot": "Passive",
+    "name": "Redoubt",
+    "type": "passive",
+    "cooldown": null,
+    "covers": [],
+    "deferred": [
+     "whenever an ally under a [Shield] buff is attacked, reflects 25% of the damage inflicted on the [Shield] back to the attacker AND heals that ally by 25% of the damage inflicted on the [Shield] — needs op: REFLECT_SHIELD_DAMAGE (reactive reflect-of-shield-absorbed-damage + ally self-heal) fired on a new 'ally_under_shield_attacked' trigger event; neither the op nor the event exists (REDIRECT_DAMAGE/reflect is implemented:false)",
+     "'if multiple Champions have this Skill, only one activates' — single-copy dedup not modelled (single Brogni on a team → no-op)"
+    ]
+   }
+  ],
+  "newOpsNeeded": [
+   {
+    "op": "BOOST_SHIELD (extend: pctOfDamageInflicted source)",
+    "why": "A2 Cavern's Grasp increases ally [Shield] value by 30% of the DAMAGE INFLICTED; the existing BOOST_SHIELD op only supports pctOfCasterMaxHp × count, so a damage-scaled shield-boost input is missing. Self-combo with his A3 Shield makes this real (not inert)."
+   },
+   {
+    "op": "REFLECT_SHIELD_DAMAGE + trigger event 'ally_under_shield_attacked'",
+    "why": "Redoubt [P]: when a Shield-buffed ally is attacked, reflect 25% of the shield-absorbed damage to the attacker and heal that ally 25% of it. No reflect/redirect op is implemented and there is no 'ally attacked while under Shield' trigger event."
+   }
+  ],
+  "notes": "Source of truth: step2-champions.json \"Underpriest Brogni\" (Legendary/Magic/Support/Dwarves; base HP 22965, ATK 782, DEF 1266, SPD 100, RES 90, ACC 0, C.RATE 0.15, C.DMG 0.5). recipeKey = first word of name = UNDERPRIEST (keys UNDERPRIEST-A1/A2/A3/PASSIVE), matching how UUGO/FAHRAKIN/HILVI derive theirs. Damage formulas taken verbatim from DB multiplier fields (A1 6.5 ATK x1, A2 6.6 ATK x1). A3's DB multiplier '0.3' multiplierType 'HP' is the SHIELD value (30% of MAX HP), NOT an attack — A3 deals no damage, so no A3 formula. Passive's '0.25 (Shield reflection)' is the reflect ratio, not an attack. All clauses accounted: A1 = 2 (attack + HP Burn, both modelled); A2 = 4 clauses (attack + buff-strip + cleanse modelled, shield-boost deferred); A3 = 3 clauses (Increase ATK + Shield modelled, Block Debuffs deferred inert; 'cannot be removed' noted); Passive = 1 reactive mechanic deferred (+ single-copy note). HP Burn kept as MAX-HP-scaling, DEF-independent DoT (no DEF-shred credit). Removals handled as BUFF_STRIP (enemy buffs) and CLEANSE (ally debuffs) per strip-not-place / cleanse rules, not placements. File to paste into: lib/sim/recipes.js (formulas block near F_UUGO_* ; recipe objects near UUGO-*)."
+ },
+ {
+  "champion": "Thor",
+  "recipeKey": "THOR",
+  "formulas": [
+   {
+    "id": "F_THOR_A1",
+    "scalingStat": "ATK",
+    "multiplier": 1.9,
+    "terms": null,
+    "flags": {
+     "crit": true,
+     "affinity": true,
+     "def_mitigation": true,
+     "variance": false,
+     "ignore_def": 0,
+     "damage_cap": false
+    },
+    "hitCount": 2
+   },
+   {
+    "id": "F_THOR_A2",
+    "scalingStat": "ATK",
+    "multiplier": 5,
+    "terms": null,
+    "flags": {
+     "crit": true,
+     "affinity": true,
+     "def_mitigation": true,
+     "variance": false,
+     "ignore_def": 0,
+     "damage_cap": false,
+     "ignore_block_damage": true,
+     "ignore_unkillable": true
+    },
+    "hitCount": 1
+   },
+   {
+    "id": "F_THOR_A3",
+    "scalingStat": "ATK",
+    "multiplier": 4,
+    "terms": null,
+    "flags": {
+     "crit": true,
+     "affinity": true,
+     "def_mitigation": true,
+     "variance": false,
+     "ignore_def": 0,
+     "damage_cap": false
+    },
+    "hitCount": 1
+   }
+  ],
+  "recipes": [
+   {
+    "key": "THOR-A1",
+    "slot": "A1",
+    "name": "Wrath of Mjolnir",
+    "type": "active",
+    "cooldown": 0,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_THOR_A1"
+     },
+     {
+      "seq": 30,
+      "phase": "after_hit",
+      "op": "REDUCE_TURN_METER",
+      "target": "intended_set",
+      "repeat": "once",
+      "effect": {
+       "pct": 0.2
+      }
+     }
+    ],
+    "covers": [
+     "decreases target Turn Meter by 10% per hit (2 hits → −20%, REDUCE_TURN_METER)"
+    ],
+    "deferred": [
+     "20% chance of repeating the whole 2-hit attack — no full-attack repeat op (extraHitChance is a per-hit proc, not a repeat of the multi-hit sequence); when it procs it would add 2 more hits and 2 more −10% TM decreases, not modelled"
+    ]
+   },
+   {
+    "key": "THOR-A2",
+    "slot": "A2",
+    "name": "Fulminous Ricochet",
+    "type": "active",
+    "cooldown": 4,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "all_enemies"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_THOR_A2"
+     }
+    ],
+    "covers": [
+     "AoE 5×ATK; ignores [Block Damage] (interpreter honours ignore_block_damage) and [Unkillable] (ignore_unkillable flag set)"
+    ],
+    "deferred": [
+     "each subsequent enemy hit after the initial one increases damage inflicted by 25%, stacks up to +100% — sequential AoE damage ramp has no op/field (flat 5×ATK per enemy used)",
+     "enemies after the initial target are hit in a random order — hit-ordering not modelled (no damage impact under the flat model)",
+     "the [Block Damage]/[Unkillable] ignore does not work against Bosses — per-target boss exception on the ignore flags not modelled",
+     "ignore_unkillable is a registered-but-not-yet-honoured formula flag (operations.MODIFIERS status ○) — ignore_block_damage IS honoured"
+    ]
+   },
+   {
+    "key": "THOR-A3",
+    "slot": "A3",
+    "name": "Hammer of Heaven",
+    "type": "active",
+    "cooldown": 4,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "PLACE_BUFF",
+      "target": "self",
+      "repeat": "once",
+      "effect": {
+       "type": "Increase ATK",
+       "magnitude": 50,
+       "duration": 2
+      }
+     },
+     {
+      "seq": 15,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "all_enemies"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_THOR_A3"
+     },
+     {
+      "seq": 30,
+      "phase": "after_hit",
+      "op": "PLACE_DEBUFF",
+      "target": "intended_set",
+      "repeat": "per_target",
+      "effect": {
+       "type": "Decrease Speed",
+       "magnitude": 30,
+       "duration": 2,
+       "chance": 0.75,
+       "accuracy_check": true
+      }
+     }
+    ],
+    "covers": [
+     "self [Increase ATK] 50% 2t placed before the attack (boosts this hit; consumed by engine statFactor)",
+     "75% chance of 30% [Decrease SPD] 2t on all enemies"
+    ],
+    "deferred": [
+     "self [Increase C.DMG] 30% 2t — C.DMG has no engine consumer (not in STAT_MODS/CONSUMED_EFFECTS); placing it would be inert",
+     "75% chance to PERMANENTLY decrease each enemy's RES by 10% (stacks up to 50%) — Decrease RES has no engine consumer (no res in STAT_MODS) and permanent-stacking stat-shred has no op; inert"
+    ]
+   },
+   {
+    "key": "THOR-A4",
+    "slot": "A4",
+    "name": "Sky Rupture [P]",
+    "type": "passive",
+    "cooldown": null,
+    "actions": [],
+    "triggers": [],
+    "covers": [],
+    "deferred": [
+     "[Thunder] counter +1 every time this Champion deals damage (stacks up to 10) — on-damage-dealt self counter has no op (trigger event 'damage_dealt' not supported)",
+     "each [Thunder] stack increases this Champion's DMG by 3% (stacks up to +30%) — self DMG% ramp tied to the counter has no consumer/op",
+     "once [Thunder] reaches 10: attacks all enemies and places [Stun] 1t, then resets the counter to 0 — threshold-triggered AoE + Stun has no damage-dealt-counter trigger op AND no DB damage multiplier for the attack (null; cannot fabricate)"
+    ]
+   }
+  ],
+  "newOpsNeeded": [
+   {
+    "op": "REPEAT_ATTACK",
+    "why": "Thor A1 'Has a 20% chance of repeating the attack' — repeats the entire multi-hit sequence (all hits + their riders), distinct from extraHitChance which procs a single extra hit. Recurs on chance-to-repeat kits."
+   },
+   {
+    "op": "AOE_SEQUENTIAL_DAMAGE_RAMP",
+    "why": "Thor A2: each subsequent enemy hit after the initial deals +25% damage, stacking up to +100% across the AoE sweep — a per-target escalating damage multiplier within one skill; no field represents intra-skill AoE ramp."
+   },
+   {
+    "op": "CONSUME_DECREASE_RES",
+    "why": "Thor A3 permanently decreases enemy RES by 10% (stacks to 50%). Decrease RES is not in the consumer registry (no res in STAT_MODS), so it lands inert; a RES-shred consumer (affects ally debuff land chance) plus a permanent-stacking stat-shred mechanic are both needed."
+   },
+   {
+    "op": "ON_DAMAGE_DEALT_COUNTER",
+    "why": "Thor A4 [Thunder]: increment a self counter each time damage is dealt (cap 10), grant a self DMG% buff per stack, and at the cap fire a threshold AoE attack + [Stun] then reset. Needs a 'damage_dealt' trigger event, a stacking counter with threshold action, and a DMG% self-buff consumer."
+   }
+  ],
+  "notes": "Thor (Legendary, Magic, Attack, Barbarians). Base ATK 1553. All three active damage skills scale off ATK (DB multiplier_type). A4 has null multiplier — no formula fabricated. Consumer-registry check: A3 self [Increase ATK] is consumed (kept); self [Increase C.DMG], the permanent Decrease RES, and the A4 DMG% ramp are all inert (deferred). Modelled ops: DEAL_DAMAGE (A1/A2/A3), REDUCE_TURN_METER (A1), PLACE_BUFF Increase ATK (A3), PLACE_DEBUFF Decrease Speed (A3). A3 buff placed at skill_start (card says 'Before attacking') so Increase ATK boosts the same hit. A2 ignore_block_damage is honoured by the interpreter; ignore_unkillable is set but currently registered-not-honoured (○). Every clause of all 4 skills is accounted for as an action or a deferred entry."
+ },
+ {
+  "champion": "Donatello",
+  "recipeKey": "DONATELLO",
+  "formulas": [
+   {
+    "id": "F_DONATELLO_A1",
+    "scalingStat": "HP",
+    "multiplier": 0.2,
+    "terms": null,
+    "flags": "DMG_FLAGS",
+    "hitCount": 1,
+    "note": "\"Attacks 1 enemy\"; DB multiplier 0.2, multiplierType *HP -> scales off caster MAX HP"
+   },
+   {
+    "id": "F_DONATELLO_A2",
+    "scalingStat": "HP",
+    "multiplier": 0.24,
+    "terms": null,
+    "flags": "DMG_FLAGS",
+    "hitCount": 1,
+    "note": "\"Attacks all enemies\" (AoE, single hit each); DB multiplier 0.24, multiplierType HP -> scales off caster MAX HP"
+   }
+  ],
+  "recipes": [
+   {
+    "key": "DONATELLO-A1",
+    "slot": "A1",
+    "name": "Bo-dacious Bash",
+    "type": "active",
+    "cooldown": 0,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_DONATELLO_A1"
+     },
+     {
+      "seq": 30,
+      "phase": "after_skill",
+      "op": "HEAL",
+      "target": "all_allies",
+      "repeat": "once",
+      "effect": {
+       "pctOfCasterMaxHp": 0.05
+      }
+     }
+    ],
+    "covers": [
+     "heals all allies 5% of caster MAX HP"
+    ],
+    "deferred": [
+     "\"Instantly activates one random [Continuous Heal] buff on all allies\" -- buff ACTIVATION (force an existing ally [Continuous Heal] to tick now), not a placement (policy #12). No BUFF_ACTIVATION op (DEBUFF_ACTIVATION is enemy-DoT only) -- needs op: BUFF_ACTIVATION"
+    ]
+   },
+   {
+    "key": "DONATELLO-A2",
+    "slot": "A2",
+    "name": "Shellshocker",
+    "type": "active",
+    "cooldown": 6,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "all_enemies"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_DONATELLO_A2"
+     },
+     {
+      "seq": 30,
+      "phase": "after_skill",
+      "op": "DECREASE_COOLDOWN",
+      "target": "allies",
+      "repeat": "once",
+      "effect": {
+       "turns": 2
+      }
+     },
+     {
+      "seq": 40,
+      "phase": "after_skill",
+      "op": "PLACE_BUFF",
+      "target": "all_allies",
+      "repeat": "once",
+      "effect": {
+       "type": "Increase SPD",
+       "magnitude": 30,
+       "duration": 2
+      }
+     }
+    ],
+    "covers": [
+     "decreases the cooldowns of all allies' skills except self by 2 turns (DECREASE_COOLDOWN skips the actor)",
+     "30% [Increase SPD] on all allies 2t (consumed by engine speed mods)"
+    ],
+    "deferred": [
+     "\"This skill's cooldown cannot be decreased or reset\" -- self-restriction on cooldown manipulation, not an action; no negative effect to model"
+    ]
+   },
+   {
+    "key": "DONATELLO-A3",
+    "slot": "A3",
+    "name": "Secret of the Ooze",
+    "type": "active",
+    "cooldown": 6,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "CLEANSE",
+      "target": "all_allies",
+      "repeat": "once"
+     },
+     {
+      "seq": 20,
+      "phase": "after_skill",
+      "op": "PLACE_BUFF",
+      "target": "all_allies",
+      "repeat": "once",
+      "effect": {
+       "type": "Continuous Heal",
+       "magnitude": 15,
+       "duration": 2
+      }
+     },
+     {
+      "seq": 30,
+      "phase": "after_skill",
+      "op": "PLACE_BUFF",
+      "target": "all_allies",
+      "repeat": "once",
+      "effect": {
+       "type": "Strengthen",
+       "magnitude": 25,
+       "duration": 2
+      }
+     },
+     {
+      "seq": 40,
+      "phase": "after_skill",
+      "op": "FILL_TURN_METER",
+      "target": "all_allies",
+      "repeat": "once",
+      "effect": {
+       "pct": 0.2
+      }
+     }
+    ],
+    "covers": [
+     "removes all debuffs from all allies (CLEANSE)",
+     "15% [Continuous Heal] on all allies 2t (sustain, consumed)",
+     "25% [Strengthen] on all allies 2t (consumed)",
+     "fills all allies' Turn Meters by 20% (FILL_TURN_METER; pct is a fraction -> x100 = 20 pts)"
+    ],
+    "deferred": []
+   },
+   {
+    "key": "DONATELLO-A4",
+    "slot": "A4",
+    "name": "I Got You Bro! [P]",
+    "type": "passive",
+    "cooldown": 6,
+    "triggers": [
+     {
+      "on": "self_attack",
+      "note": "Whenever THIS Champion attacks, ally Leonardos/Donatellos/Michelangelos/Raphaels (TMNT-named) join that attack",
+      "actions": [
+       {
+        "op": "ALLY_ATTACK",
+        "who": "named_allies",
+        "names": [
+         "Leonardo",
+         "Donatello",
+         "Michelangelo",
+         "Raphael"
+        ],
+        "slot": "default"
+       }
+      ]
+     }
+    ],
+    "covers": [],
+    "deferred": [
+     "[Passive] TMNT join-attack: fires on THIS Champion's own attacks and only specific NAMED allies join -- the 'self_attack' trigger event is not in the engine trigger set, and there is no named-ally recipient. Left inert (no over-credit): needs op: self_attack trigger event + name-gated ALLY_ATTACK recipient",
+     "[Active, cd6] on an ally's fatal hit, prevent death (keep at 1 HP) then raise that ally to the team's AVERAGE HP -- no fatal-hit reactive-save trigger, and EQUALIZE_HP raises to the HIGHEST ally (not the average). needs op: fatal-hit prevention trigger + equalize-to-average",
+     "\"only one activates if multiple copies have this skill\" / \"will not activate on duplicate copies if this Champion is dead\" -- de-dupe/self-death restrictions on the active effect; not modellable until the save op exists"
+    ]
+   }
+  ],
+  "newOpsNeeded": [
+   {
+    "op": "BUFF_ACTIVATION",
+    "why": "Donatello A1 \"instantly activates one random [Continuous Heal] buff on all allies\" -- forces an existing ally buff to tick NOW (sustain acceleration). DEBUFF_ACTIVATION only handles enemy DoTs; there is no ally-side buff-activation op, so this clause is currently inert."
+   },
+   {
+    "op": "self_attack trigger + name-gated ALLY_ATTACK",
+    "why": "Donatello A4 [P] join-attack fires on THIS champion's own attacks and only TMNT-named allies (Leonardo/Donatello/Michelangelo/Raphael) join. No 'self_attack' reactive trigger event exists and ALLY_ATTACK has no named-ally recipient (only faction/all_allies). Modelling it ungated would over-credit every ally joining every attack."
+   },
+   {
+    "op": "FATAL_HIT_SAVE + equalize-to-average",
+    "why": "Donatello A4 [P] active (cd6): on an ally's fatal hit, prevent death (keep at 1 HP) then bring that ally up to the team's AVERAGE HP. Needs a fatal-hit reactive-save trigger; EQUALIZE_HP raises to the HIGHEST ally, not the average, so a mean-based variant is required."
+   }
+  ],
+  "notes": "recipeKey prefix DONATELLO (first word of name). Base: Legendary/Magic/Lizardmen/Support, HP 21810 (high-HP support -> both attacks scale off MAX HP). Formulas F_DONATELLO_A1 (0.2*HP, 1 hit, single) and F_DONATELLO_A2 (0.24*HP, 1 hit, AoE) use scalingStat 'HP' per DB multiplierType '*HP'/'HP'; flags should be spread as { ...DMG_FLAGS } when pasted into recipes.js (matching F_ARTAK_*/F_PELOPS_* HP-scaling formulas). All clauses accounted for: A1=3 (attack+heal modelled, activation deferred), A2=4 (attack+cooldown+SPD modelled, cannot-be-reset noted), A3=4 (all modelled), A4 passive=3 clauses (TMNT join, fatal-save/equalize-average, de-dupe rule) all deferred with newOpsNeeded. No inert buff placed: [Increase SPD]/[Continuous Heal]/[Strengthen] are all in the Consumer Registry; the A1 [Continuous Heal] activation is NOT placed (it is activation, and its op is missing). Donatello's real value is team sustain + turn-economy (cooldown reduction, TM fill, SPD, heals), most of which is now modelled; the two missing ops are his signature TMNT-synergy join and his fatal-save -- both deferred faithfully rather than approximated to avoid over-crediting non-TMNT teams."
+ },
+ {
+  "champion": "Morag Bronzelock",
+  "recipeKey": "MORAG",
+  "formulas": [
+   {
+    "id": "F_MORAG_A1",
+    "scalingStat": "ATK",
+    "multiplier": null,
+    "terms": null,
+    "hitCount": 2,
+    "flags": {
+     "crit": true,
+     "affinity": true,
+     "def_mitigation": true,
+     "variance": false,
+     "ignore_def": 0,
+     "damage_cap": false,
+     "ignore_shield": true
+    }
+   },
+   {
+    "id": "F_MORAG_A2",
+    "scalingStat": "ATK",
+    "multiplier": null,
+    "terms": null,
+    "hitCount": 1,
+    "flags": {
+     "crit": true,
+     "affinity": true,
+     "def_mitigation": true,
+     "variance": false,
+     "ignore_def": 0,
+     "damage_cap": false
+    }
+   },
+   {
+    "id": "F_MORAG_A3",
+    "scalingStat": "ATK",
+    "multiplier": null,
+    "terms": null,
+    "hitCount": 1,
+    "flags": {
+     "crit": true,
+     "affinity": true,
+     "def_mitigation": true,
+     "variance": false,
+     "ignore_def": 0,
+     "damage_cap": false
+    }
+   }
+  ],
+  "recipes": [
+   {
+    "key": "MORAG-A1",
+    "slot": "A1",
+    "name": "Raw Iron Slab",
+    "type": "active",
+    "cooldown": 0,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_MORAG_A1"
+     }
+    ],
+    "covers": [
+     "attacks 1 enemy 2 times; each hit ignores [Shield] buffs (formula flag ignore_shield)"
+    ],
+    "deferred": [
+     "damage multiplier not in DB (multiplier + multiplierType both null) — F_MORAG_A1 multiplier:null, scalingStat defaulted to ATK; no damage computed until a real multiplier is captured"
+    ]
+   },
+   {
+    "key": "MORAG-A2",
+    "slot": "A2",
+    "name": "Outrage",
+    "type": "active",
+    "cooldown": 4,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "all_enemies"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_MORAG_A2"
+     },
+     {
+      "seq": 30,
+      "phase": "after_skill",
+      "op": "PLACE_BUFF",
+      "target": "all_allies",
+      "repeat": "once",
+      "effect": {
+       "type": "Strengthen",
+       "magnitude": 25,
+       "duration": 2
+      }
+     }
+    ],
+    "covers": [
+     "25% [Strengthen] on all allies 2t (consumed by engine.strengthenFactor — −25% incoming damage)"
+    ],
+    "deferred": [
+     "damage multiplier not in DB (multiplier + multiplierType both null) — F_MORAG_A2 multiplier:null, scalingStat defaulted to ATK; no damage computed until a real multiplier is captured"
+    ]
+   },
+   {
+    "key": "MORAG-A3",
+    "slot": "A3",
+    "name": "Raider Captain",
+    "type": "active",
+    "cooldown": 6,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_MORAG_A3"
+     },
+     {
+      "seq": 25,
+      "phase": "per_target",
+      "op": "ALLY_ATTACK",
+      "who": "random_ally_except_self",
+      "slot": "A1",
+      "repeat": "once"
+     },
+     {
+      "seq": 30,
+      "phase": "after_skill",
+      "op": "EXTRA_TURN",
+      "onKill": true,
+      "repeat": "once"
+     }
+    ],
+    "covers": [
+     "Morag + random ally join-attack a single enemy with default skills (ALLY_ATTACK)",
+     "grants an Extra Turn if any enemy is killed (EXTRA_TURN onKill)"
+    ],
+    "deferred": [
+     "damage multiplier not in DB (multiplier + multiplierType both null) — F_MORAG_A3 multiplier:null, scalingStat defaulted to ATK; no damage computed until a real multiplier is captured",
+     "skill teams with TWO random allies but ALLY_ATTACK 'who' only supports a single random_ally_except_self — the SECOND joiner is not fired (count>1 unsupported by the op)"
+    ]
+   },
+   {
+    "key": "MORAG-A4",
+    "slot": "A4",
+    "name": "Test This Might",
+    "type": "passive",
+    "triggers": [
+     {
+      "on": "attacked",
+      "when": {
+       "left": "self_has_buff",
+       "cmp": "==",
+       "right": "Strengthen"
+      },
+      "actions": [
+       {
+        "op": "COUNTERATTACK",
+        "slot": "A1"
+       }
+      ]
+     }
+    ],
+    "covers": [
+     "counterattacks (re-runs A1 at the attacker) when hit while under a self-[Strengthen] buff (attacked trigger → COUNTERATTACK)"
+    ],
+    "deferred": [
+     "gate 'under a [Strengthen] buff placed by THIS Champion' is approximated as self-has-[Strengthen] — the placed-by-self provenance of the buff is not tracked, so the counterattack may fire under a [Strengthen] granted by an ally; if the 'self_has_buff' condition key is not honoured by the interpreter the counterattack would fire unconditionally (over-credit risk)"
+    ]
+   }
+  ],
+  "newOpsNeeded": [
+   {
+    "op": "ALLY_ATTACK count>1 (random_ally set)",
+    "why": "Morag A3 'Teams up with 2 random allies to attack a single enemy'; the ALLY_ATTACK op's 'who' enum only exposes a SINGLE random_ally_except_self (or whole-team / faction sets), with no count parameter — so only one of the two random joiners can be modelled, understating A3's join-attack damage."
+   },
+   {
+    "op": "self-buff-presence trigger gate (placed-by-self provenance)",
+    "why": "Morag A4 counterattacks ONLY while under a [Strengthen] buff PLACED BY HER — needs (a) a reliable 'self has buff X' condition on triggers and (b) provenance tracking of which champion placed a buff, so the counterattack does not fire under an ally-granted [Strengthen]."
+   }
+  ],
+  "notes": "Morag Bronzelock — Epic / Spirit / Dwarves / Defense. base ATK 804, DEF 1288 (DEF > ATK, but multiplierType is null on every skill so scaling is NOT fabricated — all three formulas carry multiplier:null and default scalingStat:'ATK'; no damage is computed until real multipliers are captured, per the CRITICAL RULE). All four skills fully accounted (no orphan clauses). A1: 2-hit single attack, each hit ignores [Shield] (formula flag ignore_shield modelled). A2: AoE attack + 25% [Strengthen] all allies 2t (real consumer). A3: Morag + 2 random allies pile on one enemy (ALLY_ATTACK models only ONE joiner — op limitation flagged) + EXTRA_TURN on kill (op is implemented:true; wired with onKill:true rather than deferred). A4 [P]: on-attacked COUNTERATTACK re-running A1, gated on self-[Strengthen] (attacked trigger already used by Ezio P2; the self-buff gate + placed-by-self provenance are the uncertain parts, flagged in deferred + newOpsNeeded). No Poison/HP-Burn/Decrease-DEF here, so no DEF-independence concerns. Two newOps flagged: ALLY_ATTACK multi-random-ally count, and a self-buff-presence/provenance trigger gate."
+ },
+ {
+  "champion": "Deacon Armstrong",
+  "recipeKey": "DEACON",
+  "formulas": [
+   {
+    "id": "F_DEACON_A1",
+    "scalingStat": "ATK",
+    "multiplier": 1.8,
+    "terms": null,
+    "hitCount": 2,
+    "flags": "DMG_FLAGS",
+    "note": "A1 Mace of Contempt: attacks 1 enemy 2 times (hitCount 2)"
+   },
+   {
+    "id": "F_DEACON_A2",
+    "scalingStat": "ATK",
+    "multiplier": 4,
+    "terms": null,
+    "hitCount": 1,
+    "flags": "DMG_FLAGS",
+    "note": "A2 Sweeping Retribution: AoE single hit"
+   }
+  ],
+  "recipes": [
+   {
+    "key": "DEACON-A1",
+    "slot": "A1",
+    "name": "Mace of Contempt",
+    "type": "active",
+    "cooldown": 0,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_DEACON_A1"
+     },
+     {
+      "seq": 30,
+      "phase": "after_hit",
+      "op": "PLACE_DEBUFF",
+      "target": "intended_set",
+      "repeat": "per_target",
+      "effect": {
+       "type": "Leech",
+       "duration": 2,
+       "chance": 0.3,
+       "accuracy_check": true
+      }
+     }
+    ],
+    "covers": [
+     "Leech"
+    ],
+    "deferred": [
+     "each of the 2 hits rolls [Leech] independently at 30% — modelled as one 30% placement roll (Hilvi-A1 pattern); slightly understates net land chance"
+    ]
+   },
+   {
+    "key": "DEACON-A2",
+    "slot": "A2",
+    "name": "Sweeping Retribution",
+    "type": "active",
+    "cooldown": 4,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "all_enemies"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_DEACON_A2"
+     },
+     {
+      "seq": 30,
+      "phase": "after_hit",
+      "op": "PLACE_DEBUFF",
+      "target": "intended_set",
+      "repeat": "per_target",
+      "effect": {
+       "type": "Decrease Defense",
+       "magnitude": 60,
+       "duration": 2,
+       "chance": 0.8,
+       "accuracy_check": true
+      }
+     }
+    ],
+    "covers": [
+     "Decrease DEF (AoE)"
+    ],
+    "deferred": []
+   },
+   {
+    "key": "DEACON-A3",
+    "slot": "A3",
+    "name": "Time Compression",
+    "type": "active",
+    "cooldown": 5,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "all_enemies"
+     },
+     {
+      "seq": 20,
+      "phase": "skill_start",
+      "op": "FILL_TURN_METER",
+      "target": "all_allies",
+      "repeat": "once",
+      "effect": {
+       "pct": 0.15
+      }
+     },
+     {
+      "seq": 30,
+      "phase": "after_skill",
+      "op": "REDUCE_TURN_METER",
+      "target": "intended_set",
+      "repeat": "once",
+      "effect": {
+       "pct": 0.15,
+       "accuracy_check": true
+      }
+     },
+     {
+      "seq": 40,
+      "phase": "after_skill",
+      "op": "EXTRA_TURN",
+      "repeat": "once"
+     }
+    ],
+    "covers": [
+     "fills all allies Turn Meter 15% (FILL_TURN_METER)",
+     "decreases all enemies Turn Meter 15% (REDUCE_TURN_METER over acquired all_enemies)",
+     "grants self an Extra Turn (EXTRA_TURN)"
+    ],
+    "deferred": []
+   }
+  ],
+  "newOpsNeeded": [],
+  "notes": "Deacon Armstrong (Epic / Spirit / Sacred Order / Support). recipeKey prefix DEACON; recipe keys DEACON-A1/A2/A3. Canonical champion name 'Deacon Armstrong'. Every clause of all 3 skills maps to an implemented op — no deferred-for-missing-op items, newOpsNeeded empty.\n\nFormulas: F_DEACON_A1 (ATK ×1.8, hitCount 2), F_DEACON_A2 (ATK ×4, hitCount 1). A3 deals no damage (DB multiplier null) so no formula. When pasted into recipes.js FORMULAS, both take flags: { ...DMG_FLAGS } (shown as string 'DMG_FLAGS' here). Each recipe object should also carry champion:'Deacon Armstrong' inline when pasted into recipes.js (omitted here because the output schema forbids extra props).\n\nA1 [Leech] and A2 [Decrease DEF] are both Consumer Registry effects (Leech → team heal off the leeched enemy; Decrease Defense → statFactor DEF shred), so both are real PLACE_DEBUFF actions, not inert. Used type 'Decrease Defense' (engine STAT_MODS accepts both 'Decrease Defense' and 'Decrease DEF'; matches Hilvi-A1).\n\nA3 implementation detail: the interpreter's REDUCE_TURN_METER handler operates on ctx.intended (the acquired set), NOT act.target — so ACQUIRE_TARGETS all_enemies (seq 10) is REQUIRED before the -15% enemy TM decrease. FILL_TURN_METER reads act.target ('all_allies') directly and needs no acquire. EXTRA_TURN is unconditional (no onKill). accuracy_check:true on the enemy TM decrease mirrors the auto-parser's turnMeterEnemy handling.\n\nA1 per-hit fidelity: the card gives each of the 2 hits its own 30% [Leech] roll; modelled as a single 30% placement (Hilvi-A1 precedent) — the only fidelity gap, recorded in deferred."
+ },
+ {
+  "champion": "Duchess Lilitu",
+  "recipeKey": "DUCHESS",
+  "formulas": [
+   {
+    "id": "F_DUCHESS_A1",
+    "scalingStat": "DEF",
+    "multiplier": 1.7,
+    "terms": null,
+    "flags": "{ ...DMG_FLAGS }",
+    "hitCount": 2
+   }
+  ],
+  "recipes": [
+   {
+    "key": "DUCHESS-A1",
+    "slot": "A1",
+    "name": "Abyssal Invocation",
+    "type": "active",
+    "cooldown": 0,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_DUCHESS_A1"
+     },
+     {
+      "seq": 30,
+      "phase": "after_skill",
+      "op": "PLACE_BUFF",
+      "target": "self",
+      "repeat": "once",
+      "effect": {
+       "type": "Shield",
+       "pctOfCasterMaxHp": 0.1,
+       "duration": 2
+      }
+     },
+     {
+      "seq": 40,
+      "phase": "after_skill",
+      "op": "PLACE_BUFF",
+      "target": "lowest_hp_ally",
+      "repeat": "once",
+      "effect": {
+       "type": "Shield",
+       "pctOfCasterMaxHp": 0.1,
+       "duration": 2
+      }
+     }
+    ],
+    "covers": [
+     "attacks 1 enemy 2 times (DEF-scaling)",
+     "[Shield] 10% caster MAX HP 2t on self",
+     "[Shield] 10% caster MAX HP 2t on lowest-HP ally"
+    ],
+    "deferred": []
+   },
+   {
+    "key": "DUCHESS-A2",
+    "slot": "A2",
+    "name": "Shroud of Souls",
+    "type": "active",
+    "cooldown": 5,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "PLACE_BUFF",
+      "target": "all_allies",
+      "repeat": "once",
+      "effect": {
+       "type": "Increase ATK",
+       "magnitude": 50,
+       "duration": 2
+      }
+     },
+     {
+      "seq": 20,
+      "phase": "after_skill",
+      "op": "PLACE_BUFF",
+      "target": "all_allies_except_self",
+      "repeat": "once",
+      "effect": {
+       "type": "Perfect Veil",
+       "duration": 2
+      }
+     }
+    ],
+    "covers": [
+     "50% [Increase ATK] on all allies 2t",
+     "[Perfect Veil] on all allies except self 2t"
+    ],
+    "deferred": [
+     "[Block Debuffs] buff on all allies 2t — [Block Debuffs] has no engine consumer (not in CONSUMED_EFFECTS); placing it would be inert"
+    ]
+   },
+   {
+    "key": "DUCHESS-A3",
+    "slot": "A3",
+    "name": "Spectral Rebirth",
+    "type": "active",
+    "cooldown": 6,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "REVIVE",
+      "target": "all_dead_allies",
+      "repeat": "once",
+      "effect": {
+       "hpPct": 0.7
+      }
+     },
+     {
+      "seq": 20,
+      "phase": "after_skill",
+      "op": "PLACE_BUFF",
+      "target": "all_allies_except_self",
+      "repeat": "once",
+      "effect": {
+       "type": "Veil",
+       "duration": 1
+      }
+     },
+     {
+      "seq": 30,
+      "phase": "after_skill",
+      "op": "PLACE_BUFF",
+      "target": "all_allies",
+      "repeat": "once",
+      "effect": {
+       "type": "Continuous Heal",
+       "magnitude": 15,
+       "duration": 2
+      }
+     }
+    ],
+    "covers": [
+     "revives all dead allies at 70% HP",
+     "[Veil] on all allies except self 1t",
+     "15% [Continuous Heal] on all allies 2t"
+    ],
+    "deferred": []
+   },
+   {
+    "key": "DUCHESS-PASSIVE",
+    "slot": "Passive",
+    "name": "Ethereal Ways [P]",
+    "type": "passive",
+    "cooldown": null,
+    "actions": [],
+    "covers": [],
+    "deferred": [
+     "Decreases damage taken by all allies from AoE attacks by 25% (15% from Bosses) — static always-on damage-reduction aura scoped to AoE hits; no op/flag for a party-wide conditional incoming-damage multiplier — needs op: AOE_DAMAGE_REDUCTION_AURA"
+    ]
+   }
+  ],
+  "newOpsNeeded": [
+   {
+    "op": "AOE_DAMAGE_REDUCTION_AURA",
+    "why": "Duchess Lilitu passive Ethereal Ways [P] reduces damage all allies take from AoE attacks by 25% (15% from Bosses). No engine primitive applies a party-wide incoming-damage multiplier gated on the attack being AoE / the attacker being a boss."
+   }
+  ],
+  "notes": "Duchess Lilitu (Legendary / Spirit / Demonspawn / Support) — pure sustain/support enabler; only A1 deals damage.\n\nFORMULAS: F_DUCHESS_A1 scales off DEF (multiplierType=DEF, DB multiplier 1.7, \"Attacks 1 enemy 2 times\" -> hitCount 2). Target DEF-shred still boosts these (ATK/DEF-vs-DEF attack). A2/A3 have null DB multiplier and place no damage, so no DEAL_DAMAGE for them — nothing fabricated.\n\nA1: 3 accounted clauses — 2-hit attack; [Shield]=10% caster MAX HP 2t split into TWO PLACE_BUFF actions (self + lowest_hp_ally) since the card places on both and there is no combined self+lowest recipient enum. Shield IS in the consumer registry (pctOfCasterMaxHp shape matches Bad-el/Rae A2 recipes).\n\nA2: 3 accounted clauses — [Increase ATK] 50% and [Perfect Veil] both modelled (both in registry; Perfect Veil on all_allies_except_self makes dealers untargetable-by-single, mirroring MAVARA-A3). [Block Debuffs] DEFERRED as inert (not in CONSUMED_EFFECTS).\n\nA3: 3 accounted clauses — REVIVE all_dead_allies at 70% HP (hpPct 0.70; no TM clause on the card so no tmPct); [Veil] 1t on all_allies_except_self (Veil in registry); 15% [Continuous Heal] on all allies (in registry). All modelled.\n\nPASSIVE: static AoE damage-reduction aura -> 1 deferred clause + 1 newOpsNeeded. Not a reactive trigger (no on-hit/on-death event) — an always-on incoming-damage multiplier — so no triggers[] block.\n\nVerification: every clause of all 4 skills lands in actions or deferred (A1 3/3, A2 3/3 with 1 inert-deferred, A3 3/3, Passive 1 deferred). No orphan clauses. Every PLACE_BUFF effect (Shield, Increase ATK, Perfect Veil, Veil, Continuous Heal) is in the consumer registry. No fabricated multipliers. recipeKey=DUCHESS (first word of name).\n\nPASTE NOTE: formulas[].flags is the literal spread \"{ ...DMG_FLAGS }\" to match existing F_* entries; when pasted into recipes.js it is the object spread, not a string."
+ },
+ {
+  "champion": "Lord Entertainer Fabian",
+  "recipeKey": "LORD",
+  "formulas": [],
+  "recipes": [
+   {
+    "key": "LORD-A1",
+    "slot": "A1",
+    "name": "Service In Death",
+    "type": "active",
+    "cooldown": 0,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 30,
+      "phase": "after_hit",
+      "op": "REDUCE_TURN_METER",
+      "target": "intended_set",
+      "repeat": "once",
+      "effect": {
+       "pct": 0.1
+      }
+     },
+     {
+      "seq": 32,
+      "phase": "after_hit",
+      "op": "REDUCE_TURN_METER",
+      "target": "intended_set",
+      "repeat": "once",
+      "effect": {
+       "pct": 0.1
+      }
+     },
+     {
+      "seq": 40,
+      "phase": "after_skill",
+      "op": "PLACE_DEBUFF",
+      "target": "intended_set",
+      "repeat": "per_target",
+      "condition": {
+       "kind": "tm_depleted"
+      },
+      "effect": {
+       "type": "True Fear",
+       "duration": 2,
+       "guaranteed": true,
+       "accuracy_check": true
+      }
+     }
+    ],
+    "covers": [
+     "steals 10% Turn Meter per hit (REDUCE_TURN_METER x2 hits)",
+     "[True Fear] 2t if target Turn Meter fully depleted (consumer: CC guaranteed-misfire; condition tm_depleted)"
+    ],
+    "deferred": [
+     "damage multiplier not in DB (multiplier=null) — 'Attacks 1 enemy 2 times' modelled with no DEAL_DAMAGE (no multiplier to fabricate)",
+     "each hit STEALS the drained Turn Meter to Fabian (self-fill) — STEAL_TURN_METER is implemented:false; modelled as an enemy drain only (REDUCE_TURN_METER), the self-fill half is omitted"
+    ]
+   },
+   {
+    "key": "LORD-A2",
+    "slot": "A2",
+    "name": "Unwelcome Guest",
+    "type": "active",
+    "cooldown": null,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 30,
+      "phase": "after_hit",
+      "op": "PLACE_DEBUFF",
+      "target": "intended_set",
+      "repeat": "per_target",
+      "effect": {
+       "type": "Petrification",
+       "duration": 1,
+       "guaranteed": true,
+       "accuracy_check": true
+      }
+     },
+     {
+      "seq": 40,
+      "phase": "after_skill",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "all_enemies"
+     },
+     {
+      "seq": 50,
+      "phase": "after_skill",
+      "op": "PLACE_DEBUFF",
+      "target": "intended_set",
+      "repeat": "per_target",
+      "effect": {
+       "type": "True Fear",
+       "duration": 2,
+       "chance": 0.75,
+       "accuracy_check": true
+      }
+     }
+    ],
+    "covers": [
+     "[Petrification] 1t on the primary target (consumer: hard CC)",
+     "75% [True Fear] 2t on the other enemies (consumer: CC guaranteed-misfire)"
+    ],
+    "deferred": [
+     "damage multiplier not in DB (multiplier=null) — 'Attacks 1 enemy' modelled with no DEAL_DAMAGE",
+     "cooldown not in DB (cooldown=null) — left null rather than fabricated; a null cd risks the engine firing this every turn (over-CC) until captured",
+     "the 75% [True Fear] should hit all OTHER enemies (exclude the primary [Petrification] target) AND skip enemies already under [Fear]/[True Fear] — modelled on all_enemies via a mid-skill re-ACQUIRE (no other_enemies recipient enum, no compound not-under-[Fear]/[True Fear] condition); minor over-credit re-Fearing the already-Petrified primary",
+     "[Passive Effect] re-activates this skill whenever an enemy under a [Fear]/[True Fear] debuff successfully uses a skill; 'only one copy activates' if multiple champions share it — needs op: 'enemy_skill_used_under_fear' reactive trigger event"
+    ]
+   },
+   {
+    "key": "LORD-A3",
+    "slot": "A3",
+    "name": "Spectral Flourish",
+    "type": "active",
+    "cooldown": null,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "all_enemies"
+     },
+     {
+      "seq": 15,
+      "phase": "before_attack",
+      "op": "REDUCE_EFFECT_DURATION",
+      "target": "intended_set",
+      "repeat": "once",
+      "effect": {
+       "turns": 3,
+       "chance": 0.75
+      }
+     },
+     {
+      "seq": 30,
+      "phase": "after_hit",
+      "op": "INCREASE_COOLDOWN",
+      "target": "intended_set",
+      "repeat": "once",
+      "effect": {
+       "chance": 0.75
+      }
+     }
+    ],
+    "covers": [
+     "75% decrease duration of all enemy buffs by 3t (REDUCE_EFFECT_DURATION — buff-strip-by-duration)",
+     "75% increase cooldowns of all enemy skills (INCREASE_COOLDOWN)"
+    ],
+    "deferred": [
+     "damage multiplier not in DB (multiplier=null) — 'Attacks all enemies' modelled with no DEAL_DAMAGE",
+     "cooldown not in DB (cooldown=null) — left null rather than fabricated",
+     "INCREASE_COOLDOWN sets each enemy skill to its FULL cooldown; the card adds +3 turns specifically (op sets cdLeft = cooldown, not +3)",
+     "grants an Extra Turn if there are NO buffs on the enemy team after this attack — EXTRA_TURN exists but has no 'if no enemy buffs remain' conditional gate (only onKill/unconditional) — needs op: conditional extra-turn gate"
+    ]
+   },
+   {
+    "key": "LORD-PASSIVE",
+    "slot": "PASSIVE",
+    "name": "Ghost With The Most",
+    "type": "passive",
+    "cooldown": null,
+    "covers": [],
+    "deferred": [
+     "whenever an enemy is REVIVED → place [True Fear] 2t on that enemy; 'only one copy activates' if multiple champions share it — needs op: 'enemy_revived' reactive trigger event (no such event exists)",
+     "before the start of his turn, removes [Stun]/[Freeze]/[Provoke]/[Fear]/[True Fear]/[Petrification] from HIMSELF (self-cleanse of hard CC) — CLEANSE is not in the passive TRIGGER_OP_HANDLERS surface (only PLACE_BUFF/PLACE_DEBUFF/HEAL/WAKE_FROM_SLEEP/COUNTERATTACK/STEAL_BUFF/REDUCE_TURN_METER), so a start_of_turn self-cleanse cannot dispatch — needs op: CLEANSE (or a WAKE_FROM_SLEEP-style self-deCC) on the trigger surface"
+    ]
+   }
+  ],
+  "newOpsNeeded": [
+   {
+    "op": "enemy_skill_used_under_fear (reactive trigger event)",
+    "why": "A2 [Passive Effect] re-casts Unwelcome Guest whenever an enemy under [Fear]/[True Fear] successfully uses a skill — no reactive event fires when a feared enemy acts. This is Fabian's core engine (each time a fear-misfire enemy still acts, he re-Petrifies + spreads True Fear)."
+   },
+   {
+    "op": "enemy_revived (reactive trigger event)",
+    "why": "Passive Ghost With The Most places [True Fear] 2t on any enemy that is revived — no enemy_revived event exists (current events: attacked, hit_taken, hp_below, start_of_turn, round_start, ally_death, enemy_frozen)."
+   },
+   {
+    "op": "CLEANSE on the passive trigger surface (self-deCC)",
+    "why": "Passive removes hard CC ([Stun]/[Freeze]/[Provoke]/[Fear]/[True Fear]/[Petrification]) from Fabian himself before the start of his turn; CLEANSE lives only in the active OP_HANDLERS, not TRIGGER_OP_HANDLERS, so a start_of_turn self-cleanse cannot be wired (Fabian's own anti-CC durability is dropped)."
+   },
+   {
+    "op": "conditional EXTRA_TURN gate (if no enemy buffs remain)",
+    "why": "A3 Spectral Flourish grants an Extra Turn only when the enemy team has no buffs after the attack; doExtraTurn supports only onKill or unconditional, so this stronghold-clear extra turn cannot be gated faithfully."
+   },
+   {
+    "op": "STEAL_TURN_METER",
+    "why": "A1 STEALS 10% TM per hit to Fabian (self-fill); registered implemented:false. Only REDUCE_TURN_METER (enemy drain) exists, so the beneficial self-fill half of the steal is dropped."
+   }
+  ],
+  "notes": "Lord Entertainer Fabian (Legendary / Spirit / Support / Undead Hordes) is a pure CC/control champion — ALL FOUR skills have multiplier=null AND multiplierType=null in the DB, so there are ZERO damage formulas and no DEAL_DAMAGE actions (nothing to fabricate); each attacking clause is recorded as a deferred 'damage multiplier not in DB'. recipeKey=LORD because champKey('Lord Entertainer Fabian') = first word uppercased = 'LORD' (same convention as Underpriest Brogni -> UNDERPRIEST), which is what recipeFor() looks up. Fear/True Fear/Petrification are all valid CC consumers (turn-denial), so the placements are modelled, not inert. A1 uses the existing condition:{kind:'tm_depleted'} for its 'if TM fully depleted' True Fear. A2 places True Fear on all_enemies via a mid-skill re-ACQUIRE (ACQUIRE_TARGETS resets ctx.intended and PLACE_DEBUFF reads ctx.intended); the 'other enemies only' + 'not already feared' refinements are deferred (no other_enemies enum, no compound not-under-debuff condition). A3's buff removal is REDUCE_EFFECT_DURATION turns:3 (strip-by-duration) + INCREASE_COOLDOWN. All of Fabian's most distinctive mechanics live in the passive/reactive layer and are unbuildable today: the A2 auto-recast when a feared enemy acts, the passive True-Fear-on-enemy-revive, and his own start-of-turn hard-CC self-cleanse — 3 of the 5 newOpsNeeded. Cooldowns for A2/A3 are null in the DB and left null rather than fabricated (flagged as a data-capture gap and an over-CC risk)."
+ },
+ {
+  "champion": "Vallaryn the Equalizer",
+  "recipeKey": "VALLARYN",
+  "formulas": [
+   {
+    "id": "F_VALLARYN_A1",
+    "scalingStat": "ATK",
+    "multiplier": 1.9,
+    "terms": null,
+    "flags": {
+     "crit": true,
+     "affinity": true,
+     "def_mitigation": true,
+     "variance": false,
+     "ignore_def": 0,
+     "damage_cap": false
+    },
+    "hitCount": 2,
+    "selfHealPctOfDamage": 0.2,
+    "onHitPlaceDebuff": {
+     "type": "Heal Reduction",
+     "magnitude": 100,
+     "duration": 2,
+     "chance": 0.5,
+     "accuracy_check": true
+    }
+   },
+   {
+    "id": "F_VALLARYN_A2",
+    "scalingStat": "ATK",
+    "multiplier": 3.9,
+    "terms": null,
+    "flags": {
+     "crit": true,
+     "affinity": true,
+     "def_mitigation": true,
+     "variance": false,
+     "ignore_def": 0,
+     "damage_cap": false
+    },
+    "hitCount": 1
+   },
+   {
+    "id": "F_VALLARYN_A3",
+    "scalingStat": "ATK",
+    "multiplier": 2.8,
+    "terms": null,
+    "flags": {
+     "crit": true,
+     "affinity": true,
+     "def_mitigation": true,
+     "variance": false,
+     "ignore_def": 0.15,
+     "damage_cap": false
+    },
+    "hitCount": 2
+   }
+  ],
+  "recipes": [
+   {
+    "key": "VALLARYN-A1",
+    "slot": "A1",
+    "name": "Violent Harmony",
+    "type": "active",
+    "cooldown": 0,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_VALLARYN_A1"
+     }
+    ],
+    "covers": [
+     "attacks 1 enemy 2 times (F_VALLARYN_A1)",
+     "self-heal 20% of damage inflicted per hit via F_VALLARYN_A1.selfHealPctOfDamage",
+     "per-hit 50% chance of 100% [Heal Reduction] 2t via F_VALLARYN_A1.onHitPlaceDebuff (Heal Reduction consumed by engine)"
+    ],
+    "deferred": []
+   },
+   {
+    "key": "VALLARYN-A2",
+    "slot": "A2",
+    "name": "Precise Intervention",
+    "type": "active",
+    "cooldown": 4,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "all_enemies"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_VALLARYN_A2"
+     },
+     {
+      "seq": 30,
+      "phase": "after_hit",
+      "op": "PLACE_DEBUFF",
+      "target": "intended_set",
+      "repeat": "per_target",
+      "effect": {
+       "type": "Leech",
+       "duration": 2,
+       "chance": 0.75,
+       "accuracy_check": true
+      }
+     }
+    ],
+    "covers": [
+     "attacks all enemies (F_VALLARYN_A2)",
+     "[Leech] 2t @75% on all enemies (Leech consumed by engine)"
+    ],
+    "deferred": [
+     "25% [Weaken] 2t on all enemies — [Weaken] has no engine consumer (not in CONSUMED_EFFECTS); placing it would be inert",
+     "in-game the [Weaken] + [Leech] share ONE 75% placement roll; modelled as an independent 75% Leech roll (identical in EV)"
+    ]
+   },
+   {
+    "key": "VALLARYN-A3",
+    "slot": "A3",
+    "name": "Outcome Assured",
+    "type": "active",
+    "cooldown": 5,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "CLEANSE",
+      "target": "self",
+      "repeat": "once",
+      "effect": {
+       "count": 99
+      }
+     },
+     {
+      "seq": 20,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 30,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_VALLARYN_A3"
+     }
+    ],
+    "covers": [
+     "before attacking, removes all debuffs from this Champion (CLEANSE self)",
+     "attacks 1 enemy 2 times, ignoring 15% of the target's DEF (F_VALLARYN_A3 flags.ignore_def 0.15)"
+    ],
+    "deferred": [
+     "'swaps HP with the target' before attacking — needs op: SWAP_HP (implemented:false); EQUALIZE_HP is an ally-side raise-to-highest, not a caster<->enemy HP exchange, so it does not apply",
+     "conditional upgrade: ignore 30% of the target's DEF AND any [Shield] buffs INSTEAD, if this Champion's current HP > the target's — dynamic HP comparison / ignore-DEF+ignore-shield swap not modelled (base 15% ignore_def applied)"
+    ]
+   },
+   {
+    "key": "VALLARYN-PASSIVE",
+    "slot": "Passive",
+    "name": "My True Purpose [P]",
+    "type": "passive",
+    "cooldown": 3,
+    "actions": [],
+    "triggers": [
+     {
+      "on": "hp_loss_threshold",
+      "when": {
+       "left": "hp_lost_frac_this_turn_from_enemy_skill",
+       "cmp": ">=",
+       "right": 0.3
+      },
+      "cooldown": 3,
+      "actions": [
+       {
+        "op": "DECREASE_COOLDOWN",
+        "target": "self",
+        "effect": {
+         "turns": 2,
+         "scope": "one_skill"
+        }
+       }
+      ]
+     },
+     {
+      "on": "enemy_healed",
+      "oncePerTurn": true,
+      "actions": [
+       {
+        "op": "COUNTERATTACK",
+        "slot": "A1"
+       }
+      ]
+     }
+    ],
+    "covers": [
+     "[Active Effect] decreases the cooldown of one of this Champion's skills by 2 turns when she loses >=30% HP from an enemy skill in a single turn (DECREASE_COOLDOWN self, gated by the new hp_loss_threshold trigger)",
+     "[Passive Effect] counterattacks with default skill each time an enemy is healed by a skill, once per turn (COUNTERATTACK, gated by the new enemy_healed trigger)"
+    ],
+    "deferred": []
+   }
+  ],
+  "newOpsNeeded": [
+   {
+    "op": "SWAP_HP",
+    "why": "A3 Outcome Assured 'swaps HP with the target' before attacking — a caster<->enemy HP-fraction exchange. Registered in operations.js as implemented:false; distinct from EQUALIZE_HP (ally-side raise-to-highest). Without it, A3's core equalizer identity (the reason she is 'the Equalizer') is unmodelled."
+   },
+   {
+    "op": "trigger:hp_loss_threshold",
+    "why": "Passive [Active Effect] fires when this Champion loses >=30% MAX HP from an enemy skill in a single turn (cd 3). No existing trigger event covers a single-turn cumulative HP-loss-fraction threshold — examples only expose attacked, hit_taken, hp_below (a static HP level), start_of_turn, round_start, ally_death, enemy_frozen. hp_below tests a standing HP level, not damage-taken this turn."
+   },
+   {
+    "op": "trigger:enemy_healed",
+    "why": "Passive [Passive Effect] counterattacks each time an enemy is healed by a skill (once per turn). No enemy-heal event exists in the trigger vocabulary; needed to fire the COUNTERATTACK."
+   }
+  ],
+  "notes": "Magic / Legendary / Attack, Undead Hordes. Base stats hp 14865 atk 1531 def 1057 spd 99 res 30 acc 10 crR 15 crD 63. All 4 skills fully accounted (no orphan clauses).\n\nA1 Violent Harmony (cd0, 1.9 ATK x2): two independent per-hit riders both modelled ON the formula, matching the F_STAG_A1 / F_NINJA_A2 per-hit pattern — selfHealPctOfDamage 0.20 (lifesteal-style, like F_GNUT_A3/F_HORDIN_A2) and onHitPlaceDebuff [Heal Reduction] 100% 2t @50% (Heal Reduction IS in the consumer registry). Nothing deferred.\n\nA2 Precise Intervention (cd4, 3.9 ATK AoE): Leech modelled (consumed); Weaken deferred as inert (not in CONSUMED_EFFECTS). The card places both under one shared 75% roll — modelled as an independent 75% Leech, EV-identical (same convention as FAHRAKIN-A2's shared-roll note).\n\nA3 Outcome Assured (cd5, 2.8 ATK x2): 'removes all debuffs from this Champion' => CLEANSE target self (count 99 = 'all'; engine CLEANSE is untyped so this removes all self debuffs, exactly the intent). Base ignore 15% DEF => flags.ignore_def 0.15 (like F_ALICE_A3 0.2, F_EZIO_A3 0.35). Two A3 clauses deferred: the HP swap (needs SWAP_HP op — her signature mechanic) and the HP-conditional upgrade to 30% ignore + [Shield] ignore (runtime caster-vs-target HP compare that swaps formula flags — not statically expressible; base 15% used).\n\nPassive My True Purpose [P] (cd3): correctly slotted type:'passive' with reactive triggers (NOT an active A-slot — avoids the INERT-CHAMPION mis-slot). Both halves need NEW trigger events (hp_loss_threshold, enemy_healed); the ops they fire (DECREASE_COOLDOWN self, COUNTERATTACK A1) already exist. Counterattack shape mirrors EZIO-PASSIVE2. Once-per-turn cadence flagged oncePerTurn:true; the active effect's cd3 gate via trigger cooldown:3.\n\nFormulas paste into FORMULAS; recipes keyed VALLARYN-A1/A2/A3/PASSIVE. Field shapes copied from FAHRAKIN/UUGO/HILVI/GNUT/EZIO entries."
+ },
+ {
+  "champion": "Sun Wukong",
+  "recipeKey": "SUN",
+  "formulas": [
+   {
+    "id": "F_SUN_A1",
+    "scalingStat": "ATK",
+    "multiplier": 3.5,
+    "terms": null,
+    "hitCount": 1,
+    "flags": {
+     "crit": true,
+     "affinity": true,
+     "def_mitigation": true,
+     "variance": false,
+     "ignore_def": 0,
+     "damage_cap": false
+    }
+   },
+   {
+    "id": "F_SUN_A2",
+    "scalingStat": "ATK",
+    "multiplier": 5,
+    "terms": null,
+    "hitCount": 1,
+    "flags": {
+     "crit": true,
+     "affinity": true,
+     "def_mitigation": true,
+     "variance": false,
+     "ignore_def": 0.5,
+     "damage_cap": false
+    }
+   },
+   {
+    "id": "F_SUN_A3",
+    "scalingStat": "ATK",
+    "multiplier": 3.8,
+    "terms": null,
+    "hitCount": 1,
+    "flags": {
+     "crit": true,
+     "affinity": true,
+     "def_mitigation": true,
+     "variance": false,
+     "ignore_def": 0,
+     "damage_cap": false
+    }
+   }
+  ],
+  "recipes": [
+   {
+    "key": "SUN-A1",
+    "slot": "A1",
+    "name": "Gotcha!",
+    "type": "active",
+    "cooldown": 0,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_SUN_A1"
+     },
+     {
+      "seq": 30,
+      "phase": "after_hit",
+      "op": "PLACE_DEBUFF",
+      "target": "intended_set",
+      "repeat": "per_target",
+      "effect": {
+       "type": "Stun",
+       "duration": 1,
+       "chance": 0.25,
+       "accuracy_check": true
+      }
+     }
+    ],
+    "covers": [
+     "Stun 1t @25%"
+    ],
+    "deferred": [
+     "Stun chance rises to 50% if the target has any buffs — dynamic conditional chance not modelled (base 25% used)"
+    ]
+   },
+   {
+    "key": "SUN-A2",
+    "slot": "A2",
+    "name": "Staff of Wonder",
+    "type": "active",
+    "cooldown": 4,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_SUN_A2"
+     }
+    ],
+    "covers": [
+     "ignore 50% of target DEF (F_SUN_A2 flags.ignore_def 0.5)"
+    ],
+    "deferred": [
+     "on killing the target, attacks all remaining enemies with any surplus/overkill damage (also ignoring 50% DEF; this splash cannot be critical) — needs op: SURPLUS_DAMAGE_SPLASH (overkill carry-over), not built",
+     "if the initial target SURVIVES, places a [Sheep] debuff 1t (cannot be blocked) — [Sheep] has no engine consumer (not in the consumer registry); placing it would be inert. Functionally turn-denial CC but no consumer exists"
+    ]
+   },
+   {
+    "key": "SUN-A3",
+    "slot": "A3",
+    "name": "Now You See Us",
+    "type": "active",
+    "cooldown": 4,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "all_enemies"
+     },
+     {
+      "seq": 15,
+      "phase": "before_attack",
+      "op": "STEAL_BUFF",
+      "target": "intended_set",
+      "repeat": "once"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_SUN_A3"
+     }
+    ],
+    "covers": [
+     "steals all buffs from all enemies before attacking (STEAL_BUFF)"
+    ],
+    "deferred": [
+     "places [Block Buffs] 2t on all enemies (after the steal, before the attack) — [Block Buffs] has no engine consumer (not in CONSUMED_EFFECTS); placing it would be inert"
+    ]
+   },
+   {
+    "key": "SUN-A4",
+    "slot": "A4",
+    "name": "Unbeatable Wukong [P]",
+    "type": "passive",
+    "cooldown": null,
+    "actions": [],
+    "covers": [],
+    "deferred": [
+     "revives THIS Champion at 100% HP + 100% Turn Meter exactly 3 turns after being killed (timed self-revive) — needs op: TIMED_SELF_REVIVE (on_death trigger + turn-countdown self-revive). The REVIVE op targets dead ALLIES with no delay and is not a self-revive (Tag policy #21: self-revive is personal durability, not team recovery), so it cannot express this"
+    ]
+   }
+  ],
+  "newOpsNeeded": [
+   {
+    "op": "SURPLUS_DAMAGE_SPLASH",
+    "why": "Sun Wukong A2 Staff of Wonder: when the single target is killed, the surplus/overkill damage is dealt to all remaining enemies (also ignoring 50% DEF, and this splash cannot crit). No overkill/surplus carry-over op exists."
+   },
+   {
+    "op": "TIMED_SELF_REVIVE",
+    "why": "Sun Wukong A4 [P] Unbeatable Wukong: revives self at 100% HP + 100% Turn Meter 3 turns after death — an on_death trigger with a turn-countdown self-revive. REVIVE only targets dead allies immediately with no delay and no self recipient."
+   }
+  ],
+  "notes": "Key = SUN (first word of \"Sun Wukong\", uppercased) → SUN-A1..A4. Legendary / Spirit / Skinwalkers / Attack. All three actives are ATK-scaling single/AoE nukes; multipliers verbatim from DB (A1 3.5, A2 5, A3 3.8); A4 has no multiplier (passive).\n\nConsumer-registry rulings (the historical miss class): A1 [Stun] IS consumed (turn-denial CC) → placed. A2 [Sheep] and A3 [Block Buffs] are NOT in the consumer registry → both deferred as inert (Sheep is functionally CC but has no consumer; Block Buffs likewise). A3 STEAL_BUFF is the modelled paired op for 'steals all buffs from all enemies' (prefer STEAL_BUFF over a placement, per ruleset).\n\nDamage-flag handling: A2 'ignore 50% DEF' is on the initial hit → F_SUN_A2.flags.ignore_def = 0.5, crit kept true (only the deferred kill-surplus splash 'cannot be critical'). A2's surplus-on-kill splash is a genuine missing op (SURPLUS_DAMAGE_SPLASH), not a debuff.\n\nA4 is a reactive on-death passive with no engine consumer/op → left as an empty-actions passive with a deferred reason + newOp (TIMED_SELF_REVIVE) rather than a half-wired trigger; modelling it as REVIVE would be wrong (REVIVE = ally recovery, not personal durability; Tag policy #21). Every clause of all 4 skills is accounted for: A1 = attack + Stun modelled + dynamic-chance deferred; A2 = attack modelled, surplus + Sheep deferred; A3 = steal + attack modelled, Block Buffs deferred; A4 = self-revive deferred."
+ },
+ {
+  "champion": "Tuhanarak",
+  "recipeKey": "TUHANARAK",
+  "formulas": [
+   {
+    "id": "F_TUHANARAK_A1",
+    "scalingStat": "DEF",
+    "multiplier": 4.1,
+    "terms": null,
+    "flags": "DMG_FLAGS",
+    "hitCount": 1
+   },
+   {
+    "id": "F_TUHANARAK_A2",
+    "scalingStat": "DEF",
+    "multiplier": 5.6,
+    "terms": null,
+    "flags": "DMG_FLAGS",
+    "hitCount": 1
+   }
+  ],
+  "recipes": [
+   {
+    "key": "TUHANARAK-A1",
+    "slot": "A1",
+    "name": "Sun's Kiss",
+    "type": "active",
+    "cooldown": 0,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_TUHANARAK_A1"
+     },
+     {
+      "seq": 30,
+      "phase": "after_hit",
+      "op": "PLACE_DEBUFF",
+      "target": "intended_set",
+      "repeat": "per_target",
+      "effect": {
+       "type": "Decrease Speed",
+       "magnitude": 30,
+       "duration": 2,
+       "chance": 0.3,
+       "accuracy_check": true
+      }
+     },
+     {
+      "seq": 40,
+      "phase": "after_skill",
+      "op": "PLACE_BUFF",
+      "target": "self",
+      "repeat": "once",
+      "effect": {
+       "type": "Continuous Heal",
+       "magnitude": 15,
+       "duration": 1
+      }
+     },
+     {
+      "seq": 50,
+      "phase": "after_skill",
+      "op": "PLACE_BUFF",
+      "target": "lowest_hp_ally",
+      "repeat": "once",
+      "effect": {
+       "type": "Continuous Heal",
+       "magnitude": 15,
+       "duration": 1
+      }
+     }
+    ],
+    "covers": [
+     "30% Decrease SPD 2t @30%",
+     "15% Continuous Heal on self 1t",
+     "15% Continuous Heal on lowest-HP ally 1t"
+    ],
+    "deferred": []
+   },
+   {
+    "key": "TUHANARAK-A2",
+    "slot": "A2",
+    "name": "Radiant Suffering",
+    "type": "active",
+    "cooldown": 4,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_TUHANARAK_A2"
+     },
+     {
+      "seq": 30,
+      "phase": "after_hit",
+      "op": "PLACE_DEBUFF",
+      "target": "intended_set",
+      "repeat": "per_target",
+      "effect": {
+       "type": "Decrease Attack",
+       "magnitude": 50,
+       "duration": 2,
+       "chance": 0.75,
+       "accuracy_check": true
+      }
+     },
+     {
+      "seq": 50,
+      "phase": "after_hit",
+      "op": "SPREAD_DEBUFFS",
+      "target": "intended_set",
+      "repeat": "once"
+     }
+    ],
+    "covers": [
+     "50% Decrease ATK 2t @75%",
+     "Debuff Spread: copy debuffs from the target onto all enemies (SPREAD_DEBUFFS)"
+    ],
+    "deferred": [
+     "[Block Buffs] debuff 2t @75% — no engine consumer (not in CONSUMED_EFFECTS); placing it would be inert",
+     "Debuff Spread takes 2 RANDOM debuffs from the target; engine SPREAD_DEBUFFS copies ALL of the target's debuffs onto every other enemy (superset when the target has >2 debuffs)"
+    ]
+   },
+   {
+    "key": "TUHANARAK-A3",
+    "slot": "A3",
+    "name": "Desert Fitness",
+    "type": "active",
+    "cooldown": 5,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "PLACE_BUFF",
+      "target": "all_allies",
+      "repeat": "once",
+      "effect": {
+       "type": "Increase DEF",
+       "magnitude": 60,
+       "duration": 2
+      }
+     },
+     {
+      "seq": 20,
+      "phase": "skill_start",
+      "op": "PLACE_BUFF",
+      "target": "all_allies",
+      "repeat": "once",
+      "effect": {
+       "type": "Increase SPD",
+       "magnitude": 30,
+       "duration": 2
+      }
+     }
+    ],
+    "covers": [
+     "60% Increase DEF on all allies 2t",
+     "30% Increase SPD on all allies 2t"
+    ],
+    "deferred": []
+   },
+   {
+    "key": "TUHANARAK-PASSIVE",
+    "slot": "Passive",
+    "name": "Inviolable [P]",
+    "type": "passive",
+    "cooldown": null,
+    "triggers": [
+     {
+      "on": "start_of_turn",
+      "actions": [
+       {
+        "op": "CLEANSE",
+        "target": "all_allies",
+        "effect": {
+         "count": 1
+        }
+       }
+      ]
+     }
+    ],
+    "actions": [],
+    "covers": [
+     "removes 1 random debuff from all allies at the start of each turn (start_of_turn CLEANSE count 1)"
+    ],
+    "deferred": [
+     "removes 2 random debuffs INSTEAD from allies currently under a [Continuous Heal] buff — per-ally conditional cleanse count not expressible (engine CLEANSE is untyped + one count across all recipients); modelled as flat count 1"
+    ]
+   }
+  ],
+  "newOpsNeeded": [],
+  "notes": "Tuhanarak (Void / Legendary / Support / Barbarians). A1 and A2 are DEF-scaling attacks (multiplierType 'DEF', base DEF 1277) — DEF shred against the target still boosts these (ATK/DEF-vs-DEF attacks), matching Gnut's F_GNUT_* pattern. All placed effects map to consumed types except one: A2's [Block Buffs] is inert (no consumer) and is deferred. A2's [Debuff Spread] is modelled with the implemented SPREAD_DEBUFFS op; the only fidelity gap is 2-random vs all-debuffs (noted). The passive is a start_of_turn CLEANSE (count 1); the '2 instead under [Continuous Heal]' enhancement is a per-ally conditional the untyped/flat-count CLEANSE cannot express — deferred, not dropped. Every clause of all 4 skills is accounted for as an action or a deferred entry. No new ops needed — SPREAD_DEBUFFS, CLEANSE, PLACE_BUFF, PLACE_DEBUFF, DEAL_DAMAGE, ACQUIRE_TARGETS all implemented. formulas[].flags should be spread as { ...DMG_FLAGS } in recipes.js (shown as the string 'DMG_FLAGS' placeholder here). Effect-type strings use the canonical engine spellings ('Decrease Speed', 'Decrease Attack', 'Increase DEF', 'Increase SPD', 'Continuous Heal')."
+ },
+ {
+  "champion": "Tholin Foulbeard",
+  "recipeKey": "THOLIN",
+  "formulas": [
+   {
+    "id": "F_THOLIN_A1",
+    "scalingStat": "ATK",
+    "multiplier": 2.5,
+    "terms": null,
+    "flags": {
+     "crit": true,
+     "affinity": true,
+     "def_mitigation": true,
+     "variance": false,
+     "ignore_def": 0,
+     "damage_cap": false
+    },
+    "hitCount": 1
+   },
+   {
+    "id": "F_THOLIN_A2",
+    "scalingStat": "ATK",
+    "multiplier": 2.4,
+    "terms": null,
+    "flags": {
+     "crit": true,
+     "affinity": true,
+     "def_mitigation": true,
+     "variance": false,
+     "ignore_def": 0.25,
+     "damage_cap": false
+    },
+    "hitCount": 2,
+    "ignoreDefIfBoss": 0.5
+   },
+   {
+    "id": "F_THOLIN_A3",
+    "scalingStat": "ATK",
+    "multiplier": 2,
+    "terms": null,
+    "flags": {
+     "crit": true,
+     "affinity": true,
+     "def_mitigation": true,
+     "variance": false,
+     "ignore_def": 0,
+     "damage_cap": false,
+     "ignore_shield": true,
+     "ignore_unkillable": true
+    },
+    "hitCount": 2
+   }
+  ],
+  "recipes": [
+   {
+    "key": "THOLIN-A1",
+    "slot": "A1",
+    "name": "Demonbreaker",
+    "type": "active",
+    "cooldown": 0,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "all_enemies"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_THOLIN_A1"
+     }
+    ],
+    "covers": [
+     "AoE ATK attack (all enemies)"
+    ],
+    "deferred": [
+     "before attacking, 25% chance of a 25% [Weaken] 2t on all enemies — [Weaken] has no engine consumer (not in consumer registry); placing it would be inert",
+     "50% chance of a 25% [Weaken] 2t if target is Corrupted Alliance/Boss/minion, unresistable by them — [Weaken] inert (no consumer); resistance-bypass moot",
+     "grants an Extra Turn if a [Weaken] was placed on ALL enemies — EXTRA_TURN op exists but the gate depends on [Weaken] (unmodelled), so it is not wired"
+    ]
+   },
+   {
+    "key": "THOLIN-A2",
+    "slot": "A2",
+    "name": "Back to the Abyss",
+    "type": "active",
+    "cooldown": 4,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_THOLIN_A2"
+     }
+    ],
+    "covers": [
+     "single-target 2-hit attack; each hit ignores 25% of the target's DEF (50% vs a Boss via ignoreDefIfBoss)"
+    ],
+    "deferred": [
+     "each hit −5% [Decrease Attack] stacking up to 25% — per-hit small-magnitude stacking; the statFactor consumer takes the MAX magnitude, not a stack-sum (identical to the Kael-line ~621 per-hit Decrease DEF precedent) → deferred rather than placing a max-5% debuff",
+     "each hit +5% [Increase ATK] on self stacking up to 50% — dynamic accumulating self-buff with no stated duration; per-hit stack-sum magnitude unsupported → deferred",
+     "50% DEF-ignore also applies vs Corrupted Alliance & minions; modelled as Boss-only (ignoreDefIfBoss:0.5) — the faction/minion branch is not available to the formula"
+    ]
+   },
+   {
+    "key": "THOLIN-A3",
+    "slot": "A3",
+    "name": "Rabid Fury",
+    "type": "active",
+    "cooldown": 4,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "all_enemies"
+     },
+     {
+      "seq": 20,
+      "phase": "before_attack",
+      "op": "PLACE_BUFF",
+      "target": "self",
+      "repeat": "once",
+      "effect": {
+       "type": "Increase ATK",
+       "magnitude": 50,
+       "duration": 2
+      }
+     },
+     {
+      "seq": 30,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_THOLIN_A3"
+     }
+    ],
+    "covers": [
+     "AoE 2-hit attack that ignores [Unkillable] and [Shield] (formula ignore_unkillable + ignore_shield)",
+     "self 50% [Increase ATK] 2t placed before attacking"
+    ],
+    "deferred": [
+     "for each critical hit landed on the FIRST hit, increases the damage dealt on the SECOND hit by 10% — dynamic inter-hit crit-count damage scaler, no op"
+    ]
+   },
+   {
+    "key": "THOLIN-PASSIVE",
+    "slot": "Passive",
+    "name": "Evil's Nightmare",
+    "type": "passive",
+    "cooldown": 0,
+    "actions": [],
+    "covers": [],
+    "deferred": [
+     "activates the Demonbreaker (A1) skill every fifth turn this Champion takes — periodic self-skill activation (every_nth_own_turn trigger / ACTIVATE_SKILL op) not built",
+     "enemies from the Corrupted Alliance, Bosses and minions cannot land critical hits on this Champion — static conditional crit-immunity, no engine expression"
+    ]
+   }
+  ],
+  "newOpsNeeded": [
+   {
+    "op": "CONSUME_WEAKEN",
+    "why": "[Weaken] (amplifies damage the target takes) has no engine consumer; Tholin's A1 places it twice and it also gates his Extra Turn, so the entire A1 control/burst payload is currently inert"
+   },
+   {
+    "op": "ACTIVATE_SKILL / every_nth_own_turn trigger",
+    "why": "Tholin's passive re-casts Demonbreaker (A1) every 5th turn this Champion takes — no op or trigger event exists for periodic self-skill activation counted by the caster's own turns"
+   },
+   {
+    "op": "CRIT_COUNT_DAMAGE_SCALER",
+    "why": "Tholin A3's second hit gains +10% damage per critical hit landed on the first hit — a dynamic between-hit damage scaler driven by first-hit crit count"
+   },
+   {
+    "op": "STACKING_MAGNITUDE",
+    "why": "A2 needs per-hit stack-sum magnitude: self [Increase ATK] +5%/hit to 50% and target [Decrease Attack] -5%/hit to 25%; the statFactor consumer takes MAX magnitude, not a sum (recurring gap, see Kael line ~621)"
+   }
+  ],
+  "notes": "Key derived from first word \"Tholin\" → THOLIN. Legendary / Force / Attack / Dwarves; base ATK 1674. All three actives are ATK-scaled (DB multipliers 2.5 / 2.4 / 2.0) — formulas F_THOLIN_A1/A2/A3 use scalingStat ATK verbatim, no fabricated values. A1 AoE (2.5×1), A2 single 2-hit (2.4×2), A3 AoE 2-hit (2.0×2). Modelled cleanly: all three attacks, A2 DEF-ignore (0.25 base + 0.5 vs Boss via ignoreDefIfBoss, Ninja pattern), A3 self 50% Increase ATK 2t (real duration, consumer-registry buff), A3 ignore [Unkillable]/[Shield] flags. Deferred with reasons: both A1 [Weaken] placements + the Weaken-gated Extra Turn (Weaken has no consumer → inert), A2's two per-hit small-magnitude stacking riders (statFactor MAX-not-sum gap, matching the existing line-621 decision to defer rather than place a misleading 5% debuff), A3's inter-hit crit-count damage scaler, and both passive clauses. Every clause is accounted for as an action or a deferred entry. ignore_shield/ignore_unkillable are MODIFIERS status '○' (registered, not fully honoured) but are already used by F_LUA_A3/F_FACELESS_A3 so kept in flags."
+ },
+ {
+  "champion": "Fayne",
+  "recipeKey": "FAYNE",
+  "formulas": [
+   {
+    "id": "F_FAYNE_A1",
+    "scalingStat": "ATK",
+    "multiplier": 1.55,
+    "terms": null,
+    "flags": {
+     "crit": true,
+     "affinity": true,
+     "def_mitigation": true,
+     "variance": false,
+     "ignore_def": 0,
+     "damage_cap": false
+    },
+    "hitCount": 2
+   },
+   {
+    "id": "F_FAYNE_A2",
+    "scalingStat": "ATK",
+    "multiplier": 4.8,
+    "terms": null,
+    "flags": {
+     "crit": true,
+     "affinity": true,
+     "def_mitigation": true,
+     "variance": false,
+     "ignore_def": 0,
+     "damage_cap": false
+    },
+    "hitCount": 1
+   },
+   {
+    "id": "F_FAYNE_A3",
+    "scalingStat": "ATK",
+    "multiplier": 1.8,
+    "terms": null,
+    "flags": {
+     "crit": true,
+     "affinity": true,
+     "def_mitigation": true,
+     "variance": false,
+     "ignore_def": 0,
+     "damage_cap": false
+    },
+    "hitCount": 3
+   }
+  ],
+  "recipes": [
+   {
+    "key": "FAYNE-A1",
+    "slot": "A1",
+    "name": "Exotic Blades",
+    "type": "active",
+    "cooldown": 0,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_FAYNE_A1"
+     },
+     {
+      "seq": 30,
+      "phase": "after_hit",
+      "op": "REDUCE_TURN_METER",
+      "target": "current_target",
+      "repeat": "once",
+      "effect": {
+       "pct": 0.05,
+       "chance": 0.35,
+       "accuracy_check": false
+      }
+     }
+    ],
+    "covers": [
+     "drains 5% of target current Turn Meter (REDUCE_TURN_METER)"
+    ],
+    "deferred": [
+     "Turn Meter steal is per-HIT (2 hits, each an independent 35% roll of 5% of the target's CURRENT TM) — modelled as a single once-per-skill 35% x 5% drain; per-hit cadence not honoured (MODIFIERS.per_hit is ○) and drain uses a flat 5% rather than 5% of live current TM",
+     "the STOLEN 5% is added to Fayne's OWN Turn Meter — needs op: STEAL_TURN_METER (drain half modelled via REDUCE_TURN_METER; the self-gain half is dropped)"
+    ]
+   },
+   {
+    "key": "FAYNE-A2",
+    "slot": "A2",
+    "name": "Flower's Tears",
+    "type": "active",
+    "cooldown": 4,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_FAYNE_A2"
+     },
+     {
+      "seq": 30,
+      "phase": "after_hit",
+      "op": "PLACE_DEBUFF",
+      "target": "intended_set",
+      "repeat": "per_target",
+      "effect": {
+       "type": "Poison",
+       "pct": 0.05,
+       "count": 2,
+       "duration": 2,
+       "chance": 0.75,
+       "accuracy_check": true,
+       "stacking": true,
+       "maxStacks": 10
+      }
+     },
+     {
+      "seq": 40,
+      "phase": "after_hit",
+      "op": "PLACE_DEBUFF",
+      "target": "intended_set",
+      "repeat": "per_target",
+      "effect": {
+       "type": "Decrease Attack",
+       "magnitude": 50,
+       "duration": 2,
+       "chance": 0.75,
+       "accuracy_check": true
+      }
+     }
+    ],
+    "covers": [
+     "Poison (two 5% stacks)",
+     "Decrease Attack 50%"
+    ],
+    "deferred": [
+     "in-game the two [Poison] + the [Decrease ATK] share ONE 75% placement roll; modelled as two independent 75% rolls (identical in EV). [Decrease ATK] is ascension-gated (ar=3) — recipe assumes fully-ascended/booked"
+    ]
+   },
+   {
+    "key": "FAYNE-A3",
+    "slot": "A3",
+    "name": "Flowing Style",
+    "type": "active",
+    "cooldown": 5,
+    "actions": [
+     {
+      "seq": 10,
+      "phase": "skill_start",
+      "op": "ACQUIRE_TARGETS",
+      "repeat": "once",
+      "target": "single"
+     },
+     {
+      "seq": 20,
+      "phase": "per_target",
+      "op": "DEAL_DAMAGE",
+      "target": "current_target",
+      "repeat": "once",
+      "formulaId": "F_FAYNE_A3"
+     },
+     {
+      "seq": 30,
+      "phase": "after_hit",
+      "op": "PLACE_DEBUFF",
+      "target": "intended_set",
+      "repeat": "once",
+      "effect": {
+       "type": "Decrease DEF",
+       "magnitude": 60,
+       "duration": 3,
+       "chance": 0.75,
+       "accuracy_check": true
+      }
+     },
+     {
+      "seq": 40,
+      "phase": "after_skill",
+      "op": "HEAL",
+      "target": "self",
+      "repeat": "once",
+      "effect": {
+       "pctOfCasterMaxHp": 0.04
+      }
+     }
+    ],
+    "covers": [
+     "Decrease DEF 60% 3t (first hit)",
+     "self-heal 4% caster MAX HP (per debuff on target — floor only)"
+    ],
+    "deferred": [
+     "second hit: 75% 25% [Weaken] 3t — [Weaken] has no engine consumer (not in CONSUMED_EFFECTS); placing it would be inert",
+     "third-hit heal scales x(number of debuffs on the target); the engine HEAL takes a fixed pctOfCasterMaxHp, so only a single-debuff 4% floor is applied — the per-debuff multiplier is not modelled (undercredit) — needs op: HEAL_PER_DEBUFF (dynamic heal = 4% MaxHP x target debuff count)",
+     "per-hit placement cadence (which of the 3 hits carries each debuff) not honoured — modelled once-per-skill; irrelevant to EV since all land on the same single target"
+    ]
+   }
+  ],
+  "newOpsNeeded": [
+   {
+    "op": "STEAL_TURN_METER",
+    "why": "Fayne A1 'steals 5% of the target's current Turn Meter' per hit — the drain half maps to REDUCE_TURN_METER but the stolen amount is added to the caster's OWN Turn Meter, which no implemented op does. Registered in operations.js as implemented:false."
+   },
+   {
+    "op": "HEAL_PER_DEBUFF",
+    "why": "Fayne A3 third hit 'heals this Champion by 4% of their MAX HP for every debuff on the target' — HEAL takes a fixed pctOfCasterMaxHp with no dynamic multiplier by target debuff count, so the heal is undercredited to a single-debuff floor. Recurs with Narma-style per-Poison dynamic heals."
+   }
+  ],
+  "notes": "Source: step2-champions.json Fayne (Epic/Spirit/Attack/Skinwalkers, base ATK 1344, MaxHP 17835). recipeKey FAYNE (first word). All multipliers/multiplierType transcribed verbatim from DB (A1 1.55 ATK x2, A2 4.8 ATK x1, A3 1.8 ATK x3); none fabricated. Every clause accounted: A1 = attack + TM-drain (modelled) + TM self-gain (deferred, needs STEAL_TURN_METER). A2 = attack + 2x5% Poison + 50% Decrease ATK (all modelled; both are registry consumers). A3 = attack + Decrease DEF (modelled) + Weaken (deferred INERT, not a registry consumer) + per-debuff self-heal (floor modelled, dynamic scaling deferred). Decrease ATK on A2 is ascension-gated per project notes but recipe assumes fully-skilled. No passive/aura on this champion. Poison/Decrease-ATK share one placement roll in-game; modelled as independent 75% rolls (same EV), consistent with the FAHRAKIN-A2 precedent. Formula objects mirror the FORMULAS map shape in recipes.js (F_FAYNE_A1/A2/A3)."
+ }
+]
