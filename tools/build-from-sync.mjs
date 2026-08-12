@@ -25,8 +25,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, '..');
 const OUT_DIR = path.join(REPO, 'gestal-sync', 'output');
 
-const ACCOUNT = process.argv[2] || '9d30ab7d99fdf3c3';   // DonBambus
-const TEAM = (process.argv[3] || 'Ezio Auditore,Pelops the Victor,Bambus Fourleaf,Tagoar,Vergis').split(',').map(s => s.trim());
+// --memory sources CURRENT gear/stats straight from the live game via the direct
+// memory reader (Gestal-free); default reads the Gestal sync file for <accountId>.
+const ARGS = process.argv.slice(2);
+const USE_MEMORY = ARGS.includes('--memory');
+const POS = ARGS.filter(a => !a.startsWith('--'));
+// Gestal: [accountId] [team]. Memory: [team] (no account — the live client IS the account).
+const ACCOUNT = USE_MEMORY ? null : (POS[0] || '9d30ab7d99fdf3c3');   // DonBambus (Gestal path only)
+const TEAM = ((USE_MEMORY ? POS[0] : POS[1]) || 'Ezio Auditore,Pelops the Victor,Bambus Fourleaf,Tagoar,Vergis').split(',').map(s => s.trim());
 
 // Lifesteal is a 4-piece set (stable game fact) — the ONE set effect the sim consumes (30% of dmg dealt).
 const LIFESTEAL_PIECES_REQUIRED = 4;
@@ -44,9 +50,20 @@ function skillLevels(skills) {
   return out;
 }
 
-const files = fs.readdirSync(OUT_DIR).filter(f => f === `${ACCOUNT}.json` || f.endsWith(`_${ACCOUNT}.json`));
-if (!files.length) { console.error(`no Gestal export for account ${ACCOUNT} in ${OUT_DIR}`); process.exit(1); }
-const sync = JSON.parse(fs.readFileSync(path.join(OUT_DIR, files[0]), 'utf8'));
+// Roster source: live game memory (--memory) or the Gestal sync file. Both yield the same
+// champion shape (name, level, stars, baseStats, equippedArtifacts with labels, masteryIds, skills).
+let sync, sourceLabel;
+if (USE_MEMORY) {
+  const { readMemoryRoster } = await import('../lib/memory-roster.js');
+  sync = readMemoryRoster({ run: false });
+  if (!sync) { console.error('no memory roster output — run RslBattleReader --roster and --gear first (or drop --memory)'); process.exit(1); }
+  sourceLabel = `live game memory (${sync.displayName ?? sync.accountId ?? '?'}, ${sync.champions.length} champions)`;
+} else {
+  const files = fs.readdirSync(OUT_DIR).filter(f => f === `${ACCOUNT}.json` || f.endsWith(`_${ACCOUNT}.json`));
+  if (!files.length) { console.error(`no Gestal export for account ${ACCOUNT} in ${OUT_DIR}`); process.exit(1); }
+  sync = JSON.parse(fs.readFileSync(path.join(OUT_DIR, files[0]), 'utf8'));
+  sourceLabel = `Gestal sync ${files[0]} (syncedAt ${sync.syncedAt ?? sync.lastSnapshotAt ?? '?'})`;
+}
 
 // CHAMPION IDENTITY — resolve every name (both the TEAM argument and the Gestal sync's display name) to
 // champions.id via the ONE registry, then match on the id. An operator can type any alias ('Artor', 'Iudex',
@@ -91,7 +108,7 @@ for (const nm of TEAM) {
 }
 
 const out = {
-  _source: `regenerated from Gestal sync ${files[0]} (syncedAt ${sync.syncedAt ?? sync.lastSnapshotAt ?? '?'})`,
+  _source: `regenerated from ${sourceLabel}`,
   _note: 'total_stats = effectiveStats(base+gear), ROSTER screen (no aura/arena — the fixture harness layers those). lifesteal = 0.30 iff the Lifesteal 4-set is COMPLETE. gear_sets = piece counts (factual); only the Lifesteal set effect is consumed by the sim.',
   _generator: 'tools/build-from-sync.mjs',
   champions,
