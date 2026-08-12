@@ -126,7 +126,8 @@ function allyCombatant(champ, lsById = {}) {
   return makeCombatant({ name: champ.name, side: 'ally',
     maxHp: es.hp, atk: es.atk, def: es.def, spd: es.spd, acc: es.acc, res: es.res,
     critRate: es.crit_rate ?? es.crate, critDmg: es.crit_dmg ?? es.cdmg,
-    affinity: champ.affinity, lifesteal: lsById[champ.id] ?? 0,      // Lifesteal/Bloodthirst gear -> 30% heal of damage dealt
+    affinity: champ.affinity, faction: champ.faction,               // faction gates faction-restricted ally-attacks (Pallas A1 Argonites join)
+    lifesteal: lsById[champ.id] ?? 0,                               // Lifesteal/Bloodthirst gear -> 30% heal of damage dealt
     bossMastery: !!champ.has_boss_mastery,                           // real Warmaster flag from masteryIds
     skillOrder: CONFIRMED_SKILL_ORDER[champ.name] ?? null,
     skills: readSkillKit(byId[champ.id]?.champion_skills ?? []) });

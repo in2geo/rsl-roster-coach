@@ -59,6 +59,29 @@ console.log('\n=== ALLY_ATTACK — the join-attack op fires allies onto the acqu
   check('the single joiner hit the target', boss.hp < hp0, `boss took ${Math.round(hp0 - boss.hp)}`);
 }
 
+// 3b — random_faction_ally: only allies OF THE NAMED FACTION join; no eligible ally → no join (Pallas A1 gate).
+{
+  const cap = makeCombatant({ name: 'Glorious Pallas', side: 'ally', faction: 'Argonites', atk: 2400, maxHp: 30000, affinity: 'Void', critRate: 0 });
+  const argo = makeCombatant({ name: 'Pelops', side: 'ally', faction: 'Argonites', atk: 2200, maxHp: 20000, affinity: 'Void', critRate: 0 });
+  const other = makeCombatant({ name: 'Kael', side: 'ally', faction: 'Knights Revenant', atk: 5000, maxHp: 14000, affinity: 'Void', critRate: 0 });
+  const boss = bigEnemy();
+  const facRecipe = { slot: 'X', name: 'probe', type: 'active', actions: [
+    { seq: 10, op: 'ACQUIRE_TARGETS', target: 'single' },
+    { seq: 20, op: 'ALLY_ATTACK', who: 'random_faction_ally', faction: 'Argonites', slot: 'A1' },
+  ] };
+  // (a) with an eligible Argonites ally present, exactly it joins (never the non-Argonites, higher-ATK Kael)
+  const s1 = makeState({ allies: [cap, argo, other], enemies: [boss], seed: null });
+  applyRecipe(s1, cap, facRecipe);
+  check('random_faction_ally → the Argonites ally joins (not the off-faction one)',
+    joins(s1).length === 1 && joins(s1)[0].source === 'Pelops', `${joins(s1).length} join(s), source ${joins(s1)[0]?.source}`);
+  // (b) no eligible faction ally on the team → NO join fires (the real Pallas gate)
+  const boss2 = bigEnemy();
+  const s2 = makeState({ allies: [cap, other], enemies: [boss2], seed: null });
+  const hp0 = boss2.hp;
+  applyRecipe(s2, cap, facRecipe);
+  check('no eligible faction ally → no join fires', joins(s2).length === 0 && boss2.hp === hp0, `${joins(s2).length} join(s)`);
+}
+
 // 4 — edge: no living target → op is a benign non-consumption, no crash.
 {
   const fah = makeCombatant({ name: 'Fahrakin', side: 'ally', atk: 2500, maxHp: 15000, affinity: 'Void', critRate: 0 });
