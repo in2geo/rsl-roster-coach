@@ -1,0 +1,1971 @@
+{
+ "clauseStats": {
+  "totalClauses": 110,
+  "modelled": 62,
+  "deferred": 48
+ },
+ "perChamp": [
+  {
+   "champion": "Uugo",
+   "clauses": 12,
+   "modelled": 9,
+   "deferred": 3,
+   "needsOps": [
+    "ON_ALLY_DEATH_REACTIVE"
+   ]
+  },
+  {
+   "champion": "Thor",
+   "clauses": 17,
+   "modelled": 9,
+   "deferred": 8,
+   "needsOps": [
+    "REPEAT_ATTACK",
+    "IGNORE_UNKILLABLE (DEAL_DAMAGE flag)",
+    "THUNDER_COUNTER (accumulating per-champion counter system)",
+    "DECREASE_RES_CONSUMER"
+   ]
+  },
+  {
+   "champion": "Underpriest Brogni",
+   "clauses": 13,
+   "modelled": 7,
+   "deferred": 6,
+   "needsOps": [
+    "BUFF_STRIP",
+    "REFLECT_SHIELD_DAMAGE",
+    "SHIELD_DAMAGE_HEAL"
+   ]
+  },
+  {
+   "champion": "Fahrakin the Fat",
+   "clauses": 10,
+   "modelled": 6,
+   "deferred": 4,
+   "needsOps": [
+    "JOIN_ATTACK",
+    "DAMAGE_DEFLECT"
+   ]
+  },
+  {
+   "champion": "Vallaryn the Equalizer",
+   "clauses": 13,
+   "modelled": 8,
+   "deferred": 5,
+   "needsOps": [
+    "SELF_HEAL_FROM_DAMAGE",
+    "SWAP_HP",
+    "ON_HP_LOSS_TRIGGER",
+    "COUNTERATTACK_ON_ENEMY_HEALED"
+   ]
+  },
+  {
+   "champion": "Donatello",
+   "clauses": 16,
+   "modelled": 8,
+   "deferred": 8,
+   "needsOps": [
+    "BUFF_ACTIVATION",
+    "DECREASE_COOLDOWN_ALLY",
+    "JOIN_ATTACK",
+    "PREVENT_DEATH",
+    "EQUALIZE_HP"
+   ]
+  },
+  {
+   "champion": "Sun Wukong",
+   "clauses": 14,
+   "modelled": 6,
+   "deferred": 8,
+   "needsOps": [
+    "SURPLUS_DAMAGE",
+    "SELF_REVIVE",
+    "CANNOT_CRIT"
+   ]
+  },
+  {
+   "champion": "Lord Entertainer Fabian",
+   "clauses": 15,
+   "modelled": 9,
+   "deferred": 6,
+   "needsOps": [
+    "CONSUME_FEAR",
+    "STEAL_TURN_METER",
+    "REACT_ON_ENEMY_SKILL_USE",
+    "REACT_ON_ENEMY_REVIVE"
+   ]
+  }
+ ],
+ "missingOpsRanked": [
+  {
+   "op": "JOIN_ATTACK",
+   "count": 2,
+   "champs": [
+    "Fahrakin the Fat",
+    "Donatello"
+   ],
+   "desc": "All allies except the caster each attack one chosen enemy with their default skill (team-wide beatdown). A2 A3 clause 3. Recurs across Glorious Pallas A1, Mavara A1, Michelangelo A4 — build once."
+  },
+  {
+   "op": "ON_ALLY_DEATH_REACTIVE",
+   "count": 1,
+   "champs": [
+    "Uugo"
+   ],
+   "desc": "A passive reactive trigger that fires when an ally dies — here specifically when the champion's LAST living ally is killed (champion becomes sole survivor), placing self-buffs in response. Same missing class as the on-kill / on-resist reactive triggers noted in the guide. Both Passive clauses' PLACE_BUFF payloads are expressible and have valid consumers (Increase SPD, Block Damage) but cannot fire without this trigger op."
+  },
+  {
+   "op": "REPEAT_ATTACK",
+   "count": 1,
+   "champs": [
+    "Thor"
+   ],
+   "desc": "Probabilistically re-executes an entire attack sequence (all hits + per-hit riders such as Turn Meter drain), and can chain. Thor A1 = 20% chance. Distinct from the existing extraHitChance flag, which adds a single bare hit and does not re-apply riders."
+  },
+  {
+   "op": "IGNORE_UNKILLABLE (DEAL_DAMAGE FLAG)",
+   "count": 1,
+   "champs": [
+    "Thor"
+   ],
+   "desc": "Attack damage bypasses the enemy's [Unkillable] buff (can bring a target below 1 HP / kill through it). The ignore_block_damage and ignore_shield flags already exist; an ignore_unkillable flag does not. Thor A2 needs it (paired with Block-Damage ignore)."
+  },
+  {
+   "op": "THUNDER_COUNTER (ACCUMULATING PER-CHAMPION COUNTER SYSTEM)",
+   "count": 1,
+   "champs": [
+    "Thor"
+   ],
+   "desc": "A named self counter that (1) increments on every damage instance dealt (cap 10), (2) drives a counter-scaled self DMG% bonus (+3% per stack, max +30%), (3) fires a reactive AoE attack + [Stun] when it reaches the cap, and (4) resets to 0 afterward. Covers all four Thor A4 clauses; a general counter/threshold-reactive primitive reusable by other counter-passive champions."
+  },
+  {
+   "op": "DECREASE_RES_CONSUMER",
+   "count": 1,
+   "champs": [
+    "Thor"
+   ],
+   "desc": "Model [Decrease RES] / permanent RES reduction so it lowers the target's effective RES and thus raises the attacking team's debuff-land chance. Currently RES reduction has no consumer, so Thor A3's permanent -10%→-50% RES shred is inert (and likely other champions' too)."
+  },
+  {
+   "op": "BUFF_STRIP",
+   "count": 1,
+   "champs": [
+    "Underpriest Brogni"
+   ],
+   "desc": "Remove N random buff(s) from enemies at a chance; no side gains them — distinct from STEAL_BUFF (caster takes them) and CLEANSE (ally-side debuff removal). A2 removes 1 random buff from all enemies @75%."
+  },
+  {
+   "op": "REFLECT_SHIELD_DAMAGE",
+   "count": 1,
+   "champs": [
+    "Underpriest Brogni"
+   ],
+   "desc": "Reactive: when an ally under a [Shield] is attacked, reflect a % of the damage absorbed by that Shield back to the attacker. Passive-triggered per hit; not the placed [Reflect Damage] buff."
+  },
+  {
+   "op": "SHIELD_DAMAGE_HEAL",
+   "count": 1,
+   "champs": [
+    "Underpriest Brogni"
+   ],
+   "desc": "Reactive: heal the attacked shielded ally by a % of the damage absorbed by their [Shield]. Damage-based reactive heal (sibling of Hordin-style damage-based self-heal), gated to Shield-damage events."
+  },
+  {
+   "op": "DAMAGE_DEFLECT",
+   "count": 1,
+   "champs": [
+    "Fahrakin the Fat"
+   ],
+   "desc": "Passive: redirect a fixed % (20%) of all incoming damage the caster receives onto allies, spread equally across them. A damage-share/redistribution mechanic with no existing op."
+  },
+  {
+   "op": "SELF_HEAL_FROM_DAMAGE",
+   "count": 1,
+   "champs": [
+    "Vallaryn the Equalizer"
+   ],
+   "desc": "Self-heal scaled off damage inflicted (not caster MaxHP/flat). A1 heals 20% of each hit's damage; HEAL op only supports pct-of-MaxHP/flat. Recurs: Hordin."
+  },
+  {
+   "op": "SWAP_HP",
+   "count": 1,
+   "champs": [
+    "Vallaryn the Equalizer"
+   ],
+   "desc": "Exchange current HP values between caster and target (A3). Distinct from Mavara equalize-HP (swap vs average-to-midpoint); also gates the A3 DEF-ignore branch."
+  },
+  {
+   "op": "ON_HP_LOSS_TRIGGER",
+   "count": 1,
+   "champs": [
+    "Vallaryn the Equalizer"
+   ],
+   "desc": "Reactive trigger firing when the champion loses >=30% MaxHP from an enemy skill within a single turn (passive Active Effect); would drive an existing DECREASE_COOLDOWN."
+  },
+  {
+   "op": "COUNTERATTACK_ON_ENEMY_HEALED",
+   "count": 1,
+   "champs": [
+    "Vallaryn the Equalizer"
+   ],
+   "desc": "Reactive counterattack with default skill triggered each time an enemy is healed by a skill, capped once per turn (passive Passive Effect)."
+  },
+  {
+   "op": "BUFF_ACTIVATION",
+   "count": 1,
+   "champs": [
+    "Donatello"
+   ],
+   "desc": "Force an existing ally buff (here one random [Continuous Heal]) to tick immediately — sustain acceleration. Mirror of DEBUFF_ACTIVATION but for ally buffs; DEBUFF_ACTIVATION is enemy-DoT-only. (A1)"
+  },
+  {
+   "op": "DECREASE_COOLDOWN_ALLY",
+   "count": 1,
+   "champs": [
+    "Donatello"
+   ],
+   "desc": "Decrease ALL allies' skill cooldowns by N turns (optionally excluding the caster). Existing DECREASE_COOLDOWN op targets the caster's own skills only; the ally-facing recipient is unmodelled. (A2)"
+  },
+  {
+   "op": "PREVENT_DEATH",
+   "count": 1,
+   "champs": [
+    "Donatello"
+   ],
+   "desc": "Reactive passive that intercepts a fatal hit on any ally and keeps them alive at 1 HP, with de-dup and dead-caster guards. Distinct from the pre-placed [Unkillable] buff. (A4)"
+  },
+  {
+   "op": "EQUALIZE_HP",
+   "count": 1,
+   "champs": [
+    "Donatello"
+   ],
+   "desc": "Set a champion's HP to the team's average HP level (chained after PREVENT_DEATH here). Recurs: Mavara. (A4)"
+  },
+  {
+   "op": "SURPLUS_DAMAGE",
+   "count": 1,
+   "champs": [
+    "Sun Wukong"
+   ],
+   "desc": "When a single-target hit kills its target, route the overkill (surplus) damage onto all remaining enemies as a follow-up attack (A2 Staff of Wonder; the splash also carries the skill's 50% DEF-ignore)."
+  },
+  {
+   "op": "SELF_REVIVE",
+   "count": 1,
+   "champs": [
+    "Sun Wukong"
+   ],
+   "desc": "Champion revives ITSELF a fixed number of turns after being killed, restoring a set HP% and Turn Meter% (A4). Distinct from REVIVE, which brings back dead ALLIES; requires a delayed on-death reactive-trigger scheduler."
+  },
+  {
+   "op": "CANNOT_CRIT",
+   "count": 1,
+   "champs": [
+    "Sun Wukong"
+   ],
+   "desc": "Per-skill flag that forces an attack's damage to be non-critical regardless of C.RATE (A2 'This attack cannot be critical')."
+  },
+  {
+   "op": "CONSUME_FEAR",
+   "count": 1,
+   "champs": [
+    "Lord Entertainer Fabian"
+   ],
+   "desc": "Consumer for [Fear]/[True Fear]: a Feared enemy has a chance to fail its turn/action ([True Fear] = always fails). Absent from the Consumer Registry, so EVERY [True Fear] Fabian places (A1, A2, passive) is currently inert — this is his entire kit identity and the single highest-value gap."
+  },
+  {
+   "op": "STEAL_TURN_METER",
+   "count": 1,
+   "champs": [
+    "Lord Entertainer Fabian"
+   ],
+   "desc": "Turn Meter steal: drain the enemy's TM AND grant the drained amount to the caster. REDUCE_TURN_METER only drains, so the self-gain half of A1's per-hit 10% steal is unmodelled."
+  },
+  {
+   "op": "REACT_ON_ENEMY_SKILL_USE",
+   "count": 1,
+   "champs": [
+    "Lord Entertainer Fabian"
+   ],
+   "desc": "Reactive trigger that re-activates one of the caster's skills whenever an enemy under a specified debuff ([Fear]/[True Fear]) successfully uses a skill — with a team-level once-per-activation dedup (A2 [Passive Effect])."
+  },
+  {
+   "op": "REACT_ON_ENEMY_REVIVE",
+   "count": 1,
+   "champs": [
+    "Lord Entertainer Fabian"
+   ],
+   "desc": "Reactive trigger that fires an effect whenever an enemy is revived — with a team-level once-per dedup across multiple copies (Ghost With The Most passive)."
+  }
+ ],
+ "drafts": [
+  {
+   "champion": "Uugo",
+   "summary": "Uugo (Epic, Magic) decomposed into 4 recipes / 9 clauses. 7 clauses are modelled to existing ops (ACQUIRE_TARGETS+DEAL_DAMAGE on A1/A2, PLACE_DEBUFF Leech on A1, PLACE_DEBUFF Decrease Defense on A2, and the A3 CLEANSE/CLEANSE/HEAL else-branch plus REVIVE/FILL_TURN_METER if-branch). 2 clauses are deferred: A2 [Block Buffs] is INERT (no engine consumer in the Consumer Registry), and the Passive's two self-buffs are gated by an on-last-ally-death reactive trigger the engine has no op for (needsOps). All 4 damage/heal rows name their scalingSource; no leaks. One needsOp flagged: ON_ALLY_DEATH_REACTIVE.",
+   "recipes": [
+    {
+     "slot": "A1",
+     "name": "Black Hand",
+     "skillType": "active",
+     "cooldown": 0,
+     "clauses": [
+      {
+       "text": "Attacks 1 enemy.",
+       "op": "ACQUIRE_TARGETS + DEAL_DAMAGE",
+       "recipient": "one enemy",
+       "target": "single",
+       "effect": "single hit, ATK-based (formulaId F_UUGO_A1)",
+       "scalingSource": "ATK",
+       "consumer": "damage formula",
+       "condition": "none",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Has a 35% chance of placing a [Leech] debuff for 2 turns. The chance increases by 5% for each alive enemy.",
+       "op": "PLACE_DEBUFF",
+       "recipient": "one enemy",
+       "target": "current_target",
+       "effect": "[Leech] 2t @35% acc-check, chance +5% per alive enemy",
+       "scalingSource": "n-a (chance scales with alive-enemy count; Leech heal on the attacker is DEF-independent, off damage dealt to the leeched target)",
+       "consumer": "Leech (in Consumer Registry — engine consumes Leech)",
+       "condition": "accuracy-checked (ACC vs RES); chance scales +5% per alive enemy",
+       "coverage": "modelled"
+      }
+     ]
+    },
+    {
+     "slot": "A2",
+     "name": "Maelstrom Wrack",
+     "skillType": "active",
+     "cooldown": 4,
+     "clauses": [
+      {
+       "text": "Attacks all enemies.",
+       "op": "ACQUIRE_TARGETS + DEAL_DAMAGE",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "single hit each, ATK-based (formulaId F_UUGO_A2)",
+       "scalingSource": "ATK",
+       "consumer": "damage formula",
+       "condition": "none",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Has a 75% chance of placing a 60% [Decrease DEF] debuff for 2 turns.",
+       "op": "PLACE_DEBUFF",
+       "recipient": "all enemies",
+       "target": "intended_set",
+       "effect": "[Decrease Defense] 60% 2t @75% acc-check",
+       "scalingSource": "n-a (Decrease DEF is a stat debuff; it multiplies ATK-vs-DEF attack damage, never DoTs)",
+       "consumer": "Decrease Defense (in Consumer Registry — statFactor)",
+       "condition": "accuracy-checked (ACC vs RES)",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Also has a 50% chance of placing a [Block Buffs] debuff for 2 turns. The chance of placing the [Block Buffs] debuff increases by 5% for each alive enemy.",
+       "op": "DEFERRED",
+       "recipient": "all enemies",
+       "target": "intended_set",
+       "effect": "[Block Buffs] 2t @50% acc-check, chance +5% per alive enemy",
+       "scalingSource": "n-a",
+       "consumer": "none (inert)",
+       "condition": "accuracy-checked; chance scales +5% per alive enemy",
+       "coverage": "deferred",
+       "deferReason": "[Block Buffs] is NOT in the Consumer Registry — no engine consumer reads it, so placing it is INERT. Recorded, not modelled as if it works."
+      }
+     ]
+    },
+    {
+     "slot": "A3",
+     "name": "Uugo's Brew",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Removes all [Heal Reduction] debuffs from all allies,",
+       "op": "CLEANSE",
+       "recipient": "all allies",
+       "target": "all_allies",
+       "effect": "remove all [Heal Reduction] (type-targeted cleanse); no accuracy check (ally-side)",
+       "scalingSource": "n-a",
+       "consumer": "Heal Reduction (cleanse of a registry debuff — removal, not placement)",
+       "condition": "else-branch (runs only if NOT all allies dead)",
+       "coverage": "modelled"
+      },
+      {
+       "text": "then removes 1 random debuff from all allies,",
+       "op": "CLEANSE",
+       "recipient": "all allies",
+       "target": "all_allies",
+       "effect": "remove 1 random debuff each; no accuracy check (ally-side)",
+       "scalingSource": "n-a",
+       "consumer": "cleanse (removes debuffs from allies)",
+       "condition": "else-branch (runs only if NOT all allies dead); ordered after the Heal Reduction strip",
+       "coverage": "modelled"
+      },
+      {
+       "text": "then heals all allies by 20% of this Champion’s MAX HP.",
+       "op": "HEAL",
+       "recipient": "all allies",
+       "target": "all_allies",
+       "effect": "heal 20% of caster MAX HP; no accuracy check (ally-side)",
+       "scalingSource": "caster MaxHP",
+       "consumer": "heal",
+       "condition": "else-branch (runs only if NOT all allies dead)",
+       "coverage": "modelled"
+      },
+      {
+       "text": "If all allies are dead, revives them with 50% HP,",
+       "op": "REVIVE",
+       "recipient": "all allies",
+       "target": "all_dead_allies",
+       "effect": "revive at 50% HP; no accuracy check",
+       "scalingSource": "revived-ally MaxHP (50% of each revived ally's own MAX HP)",
+       "consumer": "revive",
+       "condition": "if-branch: 'if all allies are dead' — REPLACES the three else-branch clauses above (mutually exclusive)",
+       "coverage": "modelled"
+      },
+      {
+       "text": "then fills their Turn Meters by 50% instead.",
+       "op": "FILL_TURN_METER",
+       "recipient": "all allies",
+       "target": "all_dead_allies",
+       "effect": "fill revived allies' Turn Meters +50%",
+       "scalingSource": "flat",
+       "consumer": "turn meter",
+       "condition": "if-branch: only on the revive path ('instead' = replaces the heal); applies to the just-revived allies",
+       "coverage": "modelled"
+      }
+     ]
+    },
+    {
+     "slot": "Passive",
+     "name": "Final Spite [P]",
+     "skillType": "passive",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Places a 30% [Increase SPD] buff ... on this Champion for 1 turn whenever this Champion’s last living ally is killed.",
+       "op": "PLACE_BUFF",
+       "recipient": "self",
+       "target": "self",
+       "effect": "[Increase SPD] 30% 1t; no accuracy check (self-buff)",
+       "scalingSource": "n-a",
+       "consumer": "Increase SPD (in Consumer Registry)",
+       "condition": "reactive trigger: fires ONLY when this Champion's last living ally is killed (Uugo becomes the sole survivor)",
+       "coverage": "deferred",
+       "deferReason": "Payload PLACE_BUFF [Increase SPD] is an expressible op with a valid consumer, but it is gated by an on-last-ally-death reactive trigger the engine has no op to fire — so it never activates. needs op: ON_ALLY_DEATH_REACTIVE."
+      },
+      {
+       "text": "Places a ... [Block Damage] buff on this Champion for 1 turn whenever this Champion’s last living ally is killed.",
+       "op": "PLACE_BUFF",
+       "recipient": "self",
+       "target": "self",
+       "effect": "[Block Damage] 1t; no accuracy check (self-buff)",
+       "scalingSource": "n-a",
+       "consumer": "Block Damage (in Consumer Registry)",
+       "condition": "reactive trigger: fires ONLY when this Champion's last living ally is killed",
+       "coverage": "deferred",
+       "deferReason": "Payload PLACE_BUFF [Block Damage] is an expressible op with a valid consumer, but it is gated by the same on-last-ally-death reactive trigger with no engine op to fire it. needs op: ON_ALLY_DEATH_REACTIVE."
+      }
+     ]
+    }
+   ],
+   "needsOps": [
+    {
+     "op": "ON_ALLY_DEATH_REACTIVE",
+     "whatItDoes": "A passive reactive trigger that fires when an ally dies — here specifically when the champion's LAST living ally is killed (champion becomes sole survivor), placing self-buffs in response. Same missing class as the on-kill / on-resist reactive triggers noted in the guide. Both Passive clauses' PLACE_BUFF payloads are expressible and have valid consumers (Increase SPD, Block Damage) but cannot fire without this trigger op."
+    }
+   ]
+  },
+  {
+   "champion": "Thor",
+   "summary": "Decomposed Thor (Legendary, Magic) into 4 recipes / 15 clauses. MODELLED: A1 2-hit ATK attack + per-hit -10% Turn Meter drain; A2 AoE ricochet with +25%/hit escalating damage (dynamicScaler) and [Block Damage] ignore; A3 AoE ATK + self [Increase ATK] 50% + AoE [Decrease Speed] 30% @75%. INERT/DEFERRED leaks caught: A3 self [Increase C.DMG] (no consumer), A3 permanent -10% Decrease RES (no consumer — RES reduction not modelled). NEEDS-OP mechanics: A1 20% full-attack repeat (REPEAT_ATTACK, re-applies riders — distinct from extraHitChance); A2 [Unkillable]-ignore flag (Block-Damage ignore exists, Unkillable does not); and the entire A4 Thunder-counter passive (accumulate on damage, counter-scaled self DMG%, threshold reactive AoE+Stun at 10, reset). A2 ricochet bonus + ignores are boss-excluded (condition modelled). A4 [Stun] payload is registry-consumable but gated on the unmodelled counter trigger.",
+   "recipes": [
+    {
+     "slot": "A1",
+     "name": "Wrath of Mjolnir",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Attacks 1 enemy 2 times.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "one enemy",
+       "target": "single",
+       "effect": "2 hits, ATK-scaled (ACQUIRE_TARGETS single + DEAL_DAMAGE hitCount 2)",
+       "scalingSource": "ATK",
+       "consumer": "n-a (direct attack)",
+       "condition": "none",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Has a 20% chance of repeating the attack.",
+       "op": "DEFERRED",
+       "recipient": "one enemy",
+       "target": "single",
+       "effect": "20% chance to re-run the entire attack (both hits + the -10% TM drain), can chain",
+       "scalingSource": "ATK",
+       "consumer": "n-a",
+       "condition": "20% proc after the base attack resolves",
+       "coverage": "deferred",
+       "deferReason": "needs op: REPEAT_ATTACK — probabilistically re-executes the full attack sequence including riders (TM drain). Distinct from the existing extraHitChance flag, which adds ONE bare hit and does not re-apply per-hit riders."
+      },
+      {
+       "text": "Each hit decreases the target's Turn Meter by 10%.",
+       "op": "REDUCE_TURN_METER",
+       "recipient": "one enemy",
+       "target": "single",
+       "effect": "-10% Turn Meter per hit (2 hits base, more if the attack repeats)",
+       "scalingSource": "flat",
+       "consumer": "engine Turn Meter (REDUCE_TURN_METER) — read ✓",
+       "condition": "per hit (fires on each of the 2 hits; not a debuff, no ACC check)",
+       "coverage": "modelled"
+      }
+     ]
+    },
+    {
+     "slot": "A2",
+     "name": "Fulminous Ricochet",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Attacks all enemies. After hitting the initially selected enemy, all other enemies will be hit in a random order.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "AoE: initial selected target first, then remaining enemies hit sequentially in random order, ATK-scaled",
+       "scalingSource": "ATK",
+       "consumer": "n-a (direct attack)",
+       "condition": "none",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Each subsequent hit following the initial hit will increase the damage inflicted by 25% (stacks up to 100%).",
+       "op": "DEAL_DAMAGE",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "+25% damage per subsequent hit after the first, capped at +100% (escalating per-hit rider / dynamicScaler on the ricochet)",
+       "scalingSource": "ATK",
+       "consumer": "n-a",
+       "condition": "applies only to hits after the initial hit; disabled vs Bosses (see boss-exclusion clause)",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Will ignore [Block Damage] and [Unkillable] buffs.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "damage bypasses [Block Damage] (ignore_block_damage flag exists) and [Unkillable] (flag gap)",
+       "scalingSource": "n-a",
+       "consumer": "n-a (ignore/bypass, NOT a placement)",
+       "condition": "ignore-only; disabled vs Bosses",
+       "coverage": "modelled",
+       "deferReason": "Block-Damage ignore is a supported DEAL_DAMAGE flag; [Unkillable]-ignore has no flag yet (see needsOps IGNORE_UNKILLABLE) — the Block-Damage half is modelled."
+      },
+      {
+       "text": "This effect does not work against Bosses.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "boss-exclusion gate: the +25%/hit ricochet escalation and the [Block Damage]/[Unkillable] ignores are disabled when the target is a Boss (base AoE damage still lands)",
+       "scalingSource": "n-a",
+       "consumer": "n-a",
+       "condition": "except bosses",
+       "coverage": "modelled"
+      }
+     ]
+    },
+    {
+     "slot": "A3",
+     "name": "Hammer of Heaven",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Attacks all enemies.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "AoE ATK-scaled attack, resolved AFTER the two self-buffs are placed",
+       "scalingSource": "ATK",
+       "consumer": "n-a (direct attack)",
+       "condition": "self [Increase ATK]/[Increase C.DMG] applied before this hit (before_attack phase)",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Before attacking, places a 50% [Increase ATK] buff ... on this Champion for 2 turns.",
+       "op": "PLACE_BUFF",
+       "recipient": "self",
+       "target": "self",
+       "effect": "[Increase ATK] 50% 2t (no ACC check — self buff)",
+       "scalingSource": "n-a",
+       "consumer": "Increase ATK — read ✓ (boosts this same skill's AoE hit)",
+       "condition": "placed before the attack (before_attack phase)",
+       "coverage": "modelled"
+      },
+      {
+       "text": "and a 30% [Increase C. DMG] buff on this Champion for 2 turns.",
+       "op": "DEFERRED",
+       "recipient": "self",
+       "target": "self",
+       "effect": "[Increase C.DMG] 30% 2t (self buff)",
+       "scalingSource": "n-a",
+       "consumer": "none (inert)",
+       "condition": "before_attack phase",
+       "coverage": "deferred",
+       "deferReason": "[Increase C.DMG] is explicitly NOT in the Consumer Registry (listed as a no-consumer buff) — placing it is inert."
+      },
+      {
+       "text": "Has a 75% chance of permanently decreasing the RES of each enemy by 10% (stacks up to 50%).",
+       "op": "DEFERRED",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "[Decrease RES] permanent -10% per application, stacks up to -50%, @75% (ACC-checked enemy debuff)",
+       "scalingSource": "n-a",
+       "consumer": "none (inert)",
+       "condition": "permanent (no duration); stacks to 50%",
+       "coverage": "deferred",
+       "deferReason": "RES reduction / [Decrease RES] is not in the Consumer Registry — the engine has no consumer for RES, so it does not affect debuff-land chance. Inert (see needsOps DECREASE_RES_CONSUMER)."
+      },
+      {
+       "text": "Also has a 75% chance of placing a 30% [Decrease SPD] debuff on all enemies for 2 turns.",
+       "op": "PLACE_DEBUFF",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "[Decrease Speed] 30% 2t @75% acc-check",
+       "scalingSource": "n-a",
+       "consumer": "Decrease Speed — read ✓",
+       "condition": "none",
+       "coverage": "modelled"
+      }
+     ]
+    },
+    {
+     "slot": "A4",
+     "name": "Sky Rupture",
+     "skillType": "passive",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Every time this Champion deals damage, increases the Thunder counter by 1 (stacks up to 10).",
+       "op": "DEFERRED",
+       "recipient": "self",
+       "target": "self",
+       "effect": "Thunder counter +1 per damage instance, capped at 10",
+       "scalingSource": "n-a",
+       "consumer": "n-a (custom counter)",
+       "condition": "trigger = whenever this champion deals damage (per damage instance / per hit)",
+       "coverage": "deferred",
+       "deferReason": "needs op: THUNDER_COUNTER — a per-champion accumulating counter incremented on every damage dealt, cap 10."
+      },
+      {
+       "text": "Each Thunder stack increases this Champion's DMG by 3% (stacks up to 30%).",
+       "op": "DEFERRED",
+       "recipient": "self",
+       "target": "self",
+       "effect": "+3% DMG per Thunder stack, max +30% (self damage multiplier scaled by the counter)",
+       "scalingSource": "n-a",
+       "consumer": "none (inert)",
+       "condition": "scales with the current Thunder counter value",
+       "coverage": "deferred",
+       "deferReason": "needs op: counter-scaled self DMG% bonus. No consumer exists for a counter-driven flat DMG% amplifier (part of the THUNDER_COUNTER system)."
+      },
+      {
+       "text": "Once the Thunder counter reaches 10, attacks all enemies and places a [Stun] debuff for 1 turn. (attack portion)",
+       "op": "DEFERRED",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "AoE ATK-scaled attack fired reactively when Thunder counter == 10",
+       "scalingSource": "ATK",
+       "consumer": "n-a (direct attack)",
+       "condition": "fires when Thunder counter reaches 10",
+       "coverage": "deferred",
+       "deferReason": "needs op: counter-threshold reactive trigger — fire an AoE attack when an internal counter hits its cap (part of the THUNDER_COUNTER system). No damage multiplier is given in the source text."
+      },
+      {
+       "text": "Once the Thunder counter reaches 10, attacks all enemies and places a [Stun] debuff for 1 turn. (stun portion)",
+       "op": "PLACE_DEBUFF",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "[Stun] 1t (acc-checked)",
+       "scalingSource": "n-a",
+       "consumer": "Stun — read ✓",
+       "condition": "fires only when Thunder counter reaches 10",
+       "coverage": "deferred",
+       "deferReason": "Payload IS registry-consumable (Stun), but it is gated on the unmodelled Thunder-counter threshold trigger, so it cannot fire until THUNDER_COUNTER exists. Records the pairing: build the trigger and this PLACE_DEBUFF activates."
+      },
+      {
+       "text": "After the attack, the Thunder counter resets to 0.",
+       "op": "DEFERRED",
+       "recipient": "self",
+       "target": "self",
+       "effect": "reset Thunder counter to 0 after the counter-triggered AoE",
+       "scalingSource": "n-a",
+       "consumer": "n-a (custom counter)",
+       "condition": "immediately after the counter==10 attack resolves",
+       "coverage": "deferred",
+       "deferReason": "needs op: counter reset — part of the THUNDER_COUNTER system."
+      }
+     ]
+    }
+   ],
+   "needsOps": [
+    {
+     "op": "REPEAT_ATTACK",
+     "whatItDoes": "Probabilistically re-executes an entire attack sequence (all hits + per-hit riders such as Turn Meter drain), and can chain. Thor A1 = 20% chance. Distinct from the existing extraHitChance flag, which adds a single bare hit and does not re-apply riders."
+    },
+    {
+     "op": "IGNORE_UNKILLABLE (DEAL_DAMAGE flag)",
+     "whatItDoes": "Attack damage bypasses the enemy's [Unkillable] buff (can bring a target below 1 HP / kill through it). The ignore_block_damage and ignore_shield flags already exist; an ignore_unkillable flag does not. Thor A2 needs it (paired with Block-Damage ignore)."
+    },
+    {
+     "op": "THUNDER_COUNTER (accumulating per-champion counter system)",
+     "whatItDoes": "A named self counter that (1) increments on every damage instance dealt (cap 10), (2) drives a counter-scaled self DMG% bonus (+3% per stack, max +30%), (3) fires a reactive AoE attack + [Stun] when it reaches the cap, and (4) resets to 0 afterward. Covers all four Thor A4 clauses; a general counter/threshold-reactive primitive reusable by other counter-passive champions."
+    },
+    {
+     "op": "DECREASE_RES_CONSUMER",
+     "whatItDoes": "Model [Decrease RES] / permanent RES reduction so it lowers the target's effective RES and thus raises the attacking team's debuff-land chance. Currently RES reduction has no consumer, so Thor A3's permanent -10%→-50% RES shred is inert (and likely other champions' too)."
+    }
+   ]
+  },
+  {
+   "champion": "Underpriest Brogni",
+   "summary": "Underpriest Brogni is a Shield-centric support. Two clauses are cleanly modelled by existing ops (A1 HP Burn, A3 Increase ATK + Shield, A2 Cleanse), and BOOST_SHIELD covers both the A3 grant (caster-MaxHP-scaled) and the A2 augment (damage-scaled). Three mechanics have no op: enemy buff-strip (A2), and the passive's paired reactive Shield-damage reflect + reactive Shield-damage heal. [Block Debuffs] (A3) is placed but INERT — not in the Consumer Registry. The 'Shield cannot be removed' flag and the passive's single-activation dedup are attribute/gate clauses with no op. Nothing was dropped: 12 clauses across 4 skills, each either modelled or deferred with a reason.",
+   "recipes": [
+    {
+     "slot": "A1",
+     "name": "Deepcrystal Scourge",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Attacks 1 enemy.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "one enemy",
+       "target": "single",
+       "effect": "single hit",
+       "scalingSource": "ATK",
+       "consumer": "n-a (direct damage)",
+       "condition": "none",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Has a 45% chance of placing a [HP Burn] debuff for 2 turns.",
+       "op": "PLACE_DEBUFF",
+       "recipient": "the attack target",
+       "target": "single",
+       "effect": "[HP Burn] 2t @45% acc-check",
+       "scalingSource": "target MaxHP (DEF-independent)",
+       "consumer": "HP Burn (DoT tick) — in registry",
+       "condition": "accuracy-checked (ACC vs RES)",
+       "coverage": "modelled"
+      }
+     ]
+    },
+    {
+     "slot": "A2",
+     "name": "Cavern's Grasp",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Attacks all enemies.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "single hit each",
+       "scalingSource": "ATK",
+       "consumer": "n-a (direct damage)",
+       "condition": "none",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Has a 75% chance of removing 1 random buff from all enemies.",
+       "op": "DEFERRED",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "remove 1 random buff @75% (per enemy)",
+       "scalingSource": "n-a",
+       "consumer": "n-a (removal, not placement)",
+       "condition": "chance-based, not RES-resisted",
+       "coverage": "deferred",
+       "deferReason": "needs op: BUFF_STRIP — remove N random buff(s) from enemies; no side gains them (distinct from STEAL_BUFF and from CLEANSE which is ally-side)"
+      },
+      {
+       "text": "Has a 75% chance of removing 1 random debuff from all allies.",
+       "op": "CLEANSE",
+       "recipient": "all allies",
+       "target": "all_allies",
+       "effect": "remove 1 random debuff @75%",
+       "scalingSource": "n-a",
+       "consumer": "cleanse — in registry",
+       "condition": "ally-side, no accuracy check",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Increases the value of [Shield] buffs on all allies by 30% of the damage inflicted.",
+       "op": "BOOST_SHIELD",
+       "recipient": "all allies",
+       "target": "all_allies",
+       "effect": "augment existing [Shield] value by +30% of damage inflicted",
+       "scalingSource": "damage inflicted (ATK-derived, this skill's AoE hit)",
+       "consumer": "Shield — in registry",
+       "condition": "only affects allies ALREADY under a [Shield]; his own A3 self-provides the Shield (self-combo)",
+       "coverage": "modelled"
+      }
+     ]
+    },
+    {
+     "slot": "A3",
+     "name": "Resilient Glow",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Places a [Block Debuffs] buff ... on all allies for 2 turns.",
+       "op": "DEFERRED",
+       "recipient": "all allies",
+       "target": "all_allies",
+       "effect": "[Block Debuffs] 2t",
+       "scalingSource": "n-a",
+       "consumer": "none (inert)",
+       "condition": "none",
+       "coverage": "deferred",
+       "deferReason": "[Block Debuffs] placed, no engine consumer — inert (not in Consumer Registry)"
+      },
+      {
+       "text": "... and a 50% [Increase ATK] on all allies for 2 turns.",
+       "op": "PLACE_BUFF",
+       "recipient": "all allies",
+       "target": "all_allies",
+       "effect": "[Increase ATK] 50% 2t",
+       "scalingSource": "n-a (stat buff)",
+       "consumer": "Increase ATK — in registry",
+       "condition": "ally-side, no accuracy check",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Also places a [Shield] buff on all allies for 2 turns equal to 30% of this Champion's MAX HP.",
+       "op": "BOOST_SHIELD",
+       "recipient": "all allies",
+       "target": "all_allies",
+       "effect": "[Shield] 2t = 30% of caster MAX HP",
+       "scalingSource": "caster MaxHP",
+       "consumer": "Shield — in registry",
+       "condition": "ally-side, no accuracy check",
+       "coverage": "modelled"
+      },
+      {
+       "text": "The [Shield] buff cannot be removed.",
+       "op": "DEFERRED",
+       "recipient": "all allies",
+       "target": "all_allies",
+       "effect": "unremovable attribute on the placed [Shield]",
+       "scalingSource": "n-a",
+       "consumer": "n-a (modifier on the Shield, not a placement)",
+       "condition": "none",
+       "coverage": "deferred",
+       "deferReason": "no engine flag models buff-removal immunity; the [Shield] itself is modelled, only its unremovable property is unmodelled"
+      }
+     ]
+    },
+    {
+     "slot": "Passive",
+     "name": "Redoubt [P]",
+     "skillType": "passive",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Whenever an ally under a [Shield] buff is attacked, reflects 25% of the damage inflicted on the [Shield] back to the attacker.",
+       "op": "DEFERRED",
+       "recipient": "the attacker (enemy)",
+       "target": "current_target (the attacking enemy)",
+       "effect": "reflect 25% of the damage absorbed by the [Shield] back to attacker",
+       "scalingSource": "damage inflicted on the [Shield] (flat, not ATK-vs-DEF)",
+       "consumer": "n-a (reactive, not a placed buff)",
+       "condition": "trigger: a shielded ally is attacked; fires per attack/hit",
+       "coverage": "deferred",
+       "deferReason": "needs op: REFLECT_SHIELD_DAMAGE — reactive reflect of % of damage absorbed by a Shield back to the attacker (not the placed [Reflect Damage] buff)"
+      },
+      {
+       "text": "Also heals that ally by 25% of the damage inflicted on the [Shield].",
+       "op": "DEFERRED",
+       "recipient": "the attacked (shielded) ally",
+       "target": "the shielded ally that was hit",
+       "effect": "heal ally for 25% of the damage absorbed by their [Shield]",
+       "scalingSource": "damage inflicted on the [Shield]",
+       "consumer": "n-a (reactive heal)",
+       "condition": "same trigger as reflect; fires per attack/hit",
+       "coverage": "deferred",
+       "deferReason": "needs op: SHIELD_DAMAGE_HEAL — reactive damage-based heal of the shielded ally by % of damage absorbed by their Shield"
+      },
+      {
+       "text": "If there are multiple Champions in the team with this Skill, only one will activate.",
+       "op": "DEFERRED",
+       "recipient": "self / team",
+       "target": "self",
+       "effect": "uniqueness gate — only one copy of Redoubt activates team-wide",
+       "scalingSource": "n-a",
+       "consumer": "n-a (gate, not an effect)",
+       "condition": "restriction on the reactive above; not a separate placement",
+       "coverage": "deferred",
+       "deferReason": "passive de-duplication rule — no op; a gate on the reactive, dropping it does not add or remove a modelled effect"
+      }
+     ]
+    }
+   ],
+   "needsOps": [
+    {
+     "op": "BUFF_STRIP",
+     "whatItDoes": "Remove N random buff(s) from enemies at a chance; no side gains them — distinct from STEAL_BUFF (caster takes them) and CLEANSE (ally-side debuff removal). A2 removes 1 random buff from all enemies @75%."
+    },
+    {
+     "op": "REFLECT_SHIELD_DAMAGE",
+     "whatItDoes": "Reactive: when an ally under a [Shield] is attacked, reflect a % of the damage absorbed by that Shield back to the attacker. Passive-triggered per hit; not the placed [Reflect Damage] buff."
+    },
+    {
+     "op": "SHIELD_DAMAGE_HEAL",
+     "whatItDoes": "Reactive: heal the attacked shielded ally by a % of the damage absorbed by their [Shield]. Damage-based reactive heal (sibling of Hordin-style damage-based self-heal), gated to Shield-damage events."
+    }
+   ]
+  },
+  {
+   "champion": "Fahrakin the Fat",
+   "summary": "Fahrakin the Fat (Epic, Spirit) decomposed across 4 skills / 9 clauses. Fully modelled: A1 attack + Decrease DEF, A2 attack + HP Burn + two Poisons (both DoTs scale off TARGET MaxHP, DEF-independent, in registry), A3 Increase C.RATE. Deferred: A3 Increase C.DMG (placed but NOT in Consumer Registry — inert), A3 team beatdown (needs op JOIN_ATTACK — all allies except caster attack one enemy), and the entire Passive (needs op DAMAGE_DEFLECT — 20% incoming-damage redirect spread equally across allies). Nothing dropped. 2 op gaps flagged.",
+   "recipes": [
+    {
+     "slot": "A1",
+     "name": "Sizzling Strike",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Attacks 1 enemy.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "one enemy",
+       "target": "single",
+       "effect": "single ATK-based hit",
+       "scalingSource": "ATK",
+       "consumer": "damage formula (ATK-vs-DEF); boosted by Decrease DEF",
+       "condition": "none",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Has a 40% chance of placing a 60% [Decrease DEF] debuff for 2 turns.",
+       "op": "PLACE_DEBUFF",
+       "recipient": "the attack target",
+       "target": "single",
+       "effect": "[Decrease Defense] 60% 2t @40% acc-check",
+       "scalingSource": "n-a",
+       "consumer": "Decrease Defense (statFactor) — in registry",
+       "condition": "40% placement chance, accuracy-checked (ACC vs RES)",
+       "coverage": "modelled"
+      }
+     ]
+    },
+    {
+     "slot": "A2",
+     "name": "Brand of Shame",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Attacks 1 enemy.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "one enemy",
+       "target": "single",
+       "effect": "single ATK-based hit",
+       "scalingSource": "ATK",
+       "consumer": "damage formula (ATK-vs-DEF)",
+       "condition": "none",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Has a 75% chance of placing a [HP Burn] debuff ... for 2 turns.",
+       "op": "PLACE_DEBUFF",
+       "recipient": "the attack target",
+       "target": "single",
+       "effect": "[HP Burn] 2t @75% acc-check",
+       "scalingSource": "target MaxHP",
+       "consumer": "HP Burn — in registry; DEF-INDEPENDENT (DEF shred does nothing)",
+       "condition": "75% placement chance, accuracy-checked; same roll gates the two Poisons",
+       "coverage": "modelled"
+      },
+      {
+       "text": "... and two 5% [Poison] debuffs for 2 turns.",
+       "op": "PLACE_DEBUFF",
+       "recipient": "the attack target",
+       "target": "single",
+       "effect": "[Poison] 5% x2 stacks, 2t @75% acc-check",
+       "scalingSource": "target MaxHP",
+       "consumer": "Poison — in registry; DEF-INDEPENDENT (DEF shred does nothing)",
+       "condition": "75% placement chance (shared with HP Burn), accuracy-checked; places 2 separate 5% Poison stacks",
+       "coverage": "modelled"
+      }
+     ]
+    },
+    {
+     "slot": "A3",
+     "name": "Beatdown",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Places a 30% [Increase C. RATE] buff ... on all allies except this Champion for 3 turns.",
+       "op": "PLACE_BUFF",
+       "recipient": "all allies except self",
+       "target": "all_allies_except_self",
+       "effect": "[Increase C.RATE] 30% 3t (no acc-check)",
+       "scalingSource": "n-a",
+       "consumer": "Increase C.RATE — in registry",
+       "condition": "excludes the caster",
+       "coverage": "modelled"
+      },
+      {
+       "text": "... and a 30% [Increase C. DMG] buff on all allies except this Champion for 3 turns.",
+       "op": "DEFERRED",
+       "recipient": "all allies except self",
+       "target": "all_allies_except_self",
+       "effect": "[Increase C.DMG] 30% 3t",
+       "scalingSource": "n-a",
+       "consumer": "none (inert)",
+       "condition": "excludes the caster",
+       "coverage": "deferred",
+       "deferReason": "[Increase C.DMG] placed but NOT in Consumer Registry (explicitly listed as no-consumer) — inert; engine does not read it"
+      },
+      {
+       "text": "Then, all allies except this Champion will attack 1 target enemy.",
+       "op": "DEFERRED",
+       "recipient": "all allies except self",
+       "target": "single",
+       "effect": "each non-caster ally makes a default-skill attack on 1 chosen enemy",
+       "scalingSource": "ATK (each joining ally)",
+       "consumer": "none",
+       "condition": "order-dependent ('Then'); fires after the two buffs; excludes caster",
+       "coverage": "deferred",
+       "deferReason": "needs op: JOIN_ATTACK — team-wide ally join-attack (all allies except caster attack one target with their default skill). Recurs: Glorious Pallas A1, Mavara A1, Michelangelo A4."
+      }
+     ]
+    },
+    {
+     "slot": "Passive",
+     "name": "Body Block",
+     "skillType": "passive",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Deflects 20% of all incoming damage this Champion receives onto all allies.",
+       "op": "DEFERRED",
+       "recipient": "all allies",
+       "target": "all_allies",
+       "effect": "redirect 20% of damage dealt to caster onto allies",
+       "scalingSource": "incoming damage received by caster",
+       "consumer": "none",
+       "condition": "triggers whenever the caster takes damage; ascension_required default 3 for passives",
+       "coverage": "deferred",
+       "deferReason": "needs op: DAMAGE_DEFLECT — redirect a % of incoming damage the caster receives onto allies (a damage-share/deflect mechanic; no existing op)"
+      },
+      {
+       "text": "The damage will be spread equally across all allies.",
+       "op": "DEFERRED",
+       "recipient": "all allies",
+       "target": "all_allies",
+       "effect": "the deflected 20% is divided evenly among all living allies",
+       "scalingSource": "incoming damage received by caster",
+       "consumer": "none",
+       "condition": "spread equally across allies (per-ally share = deflected amount / ally count)",
+       "coverage": "deferred",
+       "deferReason": "needs op: DAMAGE_DEFLECT (spread half) — even split of the deflected damage across allies; part of the same unmodelled deflect mechanic"
+      }
+     ]
+    }
+   ],
+   "needsOps": [
+    {
+     "op": "JOIN_ATTACK",
+     "whatItDoes": "All allies except the caster each attack one chosen enemy with their default skill (team-wide beatdown). A2 A3 clause 3. Recurs across Glorious Pallas A1, Mavara A1, Michelangelo A4 — build once."
+    },
+    {
+     "op": "DAMAGE_DEFLECT",
+     "whatItDoes": "Passive: redirect a fixed % (20%) of all incoming damage the caster receives onto allies, spread equally across them. A damage-share/redistribution mechanic with no existing op."
+    }
+   ]
+  },
+  {
+   "champion": "Vallaryn the Equalizer",
+   "summary": "Vallaryn the Equalizer (Legendary, Magic) decomposed into 4 recipes / 12 clauses. Modelled: A1 attack + Heal Reduction placement, A2 attack + Leech placement, A3 self-cleanse + attack with DEF-ignore formula branch. Deferred (inert/no-op): A1 damage-based self-heal, A2 [Weaken] (no engine consumer), A3 swap-HP, and the entire passive (reactive on-HP-loss cooldown trigger + counterattack-on-enemy-healed). 4 new ops flagged. Biggest sim gaps are the two reactive-trigger passives and the HP-swap, which are her signature \"Equalizer\" identity and currently unmodellable.",
+   "recipes": [
+    {
+     "slot": "A1",
+     "name": "Violent Harmony",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Attacks 1 enemy 2 times.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "one enemy",
+       "target": "single",
+       "effect": "2 hits, single target",
+       "scalingSource": "ATK",
+       "consumer": "n-a (direct attack damage)",
+       "condition": "none",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Each hit heals this Champion by 20% of the damage inflicted.",
+       "op": "DEFERRED",
+       "recipient": "self",
+       "target": "self",
+       "effect": "self-heal = 20% of damage inflicted, per hit (x2)",
+       "scalingSource": "damage dealt (ATK-based, not caster MaxHP)",
+       "consumer": "n-a (heal)",
+       "condition": "per-hit cadence (fires on each of the 2 hits)",
+       "coverage": "deferred",
+       "deferReason": "needs op: SELF_HEAL_FROM_DAMAGE — self-heal scaled off damage inflicted, not caster MaxHP; HEAL op only supports pct-of-MaxHP/flat (recurs: Hordin)"
+      },
+      {
+       "text": "Each hit also has a 50% chance of placing a 100% [Heal Reduction] debuff for 2 turns.",
+       "op": "PLACE_DEBUFF",
+       "recipient": "one enemy",
+       "target": "current_target",
+       "effect": "[Heal Reduction] 100% 2t @50% per hit, acc-check",
+       "scalingSource": "n-a",
+       "consumer": "Heal Reduction (in registry) ✓",
+       "condition": "rolled independently on each of the 2 hits",
+       "coverage": "modelled"
+      }
+     ]
+    },
+    {
+     "slot": "A2",
+     "name": "Precise Intervention",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Attacks all enemies.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "single hit each, AoE",
+       "scalingSource": "ATK",
+       "consumer": "n-a (direct attack damage)",
+       "condition": "none",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Has a 75% chance of placing a 25% [Weaken] debuff ... on all enemies for 2 turns.",
+       "op": "DEFERRED",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "[Weaken] 25% 2t @75%, acc-check",
+       "scalingSource": "n-a",
+       "consumer": "none (inert)",
+       "condition": "none",
+       "coverage": "deferred",
+       "deferReason": "[Weaken] 25% 2t placed, no engine consumer (explicitly listed as inert in Consumer Registry) — placement inert"
+      },
+      {
+       "text": "... and a [Leech] debuff on all enemies for 2 turns.",
+       "op": "PLACE_DEBUFF",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "[Leech] 2t @75%, acc-check",
+       "scalingSource": "n-a",
+       "consumer": "Leech (in registry) ✓",
+       "condition": "shares the single 75% roll with the [Weaken] clause",
+       "coverage": "modelled"
+      }
+     ]
+    },
+    {
+     "slot": "A3",
+     "name": "Outcome Assured",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Before attacking, removes all debuffs from this Champion",
+       "op": "CLEANSE",
+       "recipient": "self",
+       "target": "self",
+       "effect": "remove ALL debuffs from self (phase before_attack)",
+       "scalingSource": "n-a",
+       "consumer": "n-a (removal, not placement)",
+       "condition": "occurs before the attack hits",
+       "coverage": "modelled"
+      },
+      {
+       "text": "and swaps HP with the target.",
+       "op": "DEFERRED",
+       "recipient": "self and one enemy",
+       "target": "current_target",
+       "effect": "exchange current HP values between caster and target (swap, not equalize)",
+       "scalingSource": "n-a (HP pool manipulation)",
+       "consumer": "n-a",
+       "condition": "occurs before the attack; also feeds the current-HP comparison in the DEF-ignore branch below",
+       "coverage": "deferred",
+       "deferReason": "needs op: SWAP_HP — exchange caster/target current HP; distinct from Mavara equalize-HP (swap vs average). Core to her 'Equalizer' identity"
+      },
+      {
+       "text": "Attacks 1 enemy 2 times.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "one enemy",
+       "target": "single",
+       "effect": "2 hits, single target",
+       "scalingSource": "ATK",
+       "consumer": "n-a (direct attack damage)",
+       "condition": "fires after the cleanse + HP swap",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Will ignore 15% of the target's DEF.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "one enemy",
+       "target": "current_target",
+       "effect": "ignoreDefPct = 15% applied to the A3 attack formula",
+       "scalingSource": "ATK (DEF-ignore boosts ATK-vs-DEF damage only)",
+       "consumer": "n-a (damage-formula modifier, not a placement)",
+       "condition": "default branch (applies when caster HP <= target HP)",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Will ignore 30% of the target's DEF and any [Shield] buffs instead, if this Champion's current HP is greater than the target's.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "one enemy",
+       "target": "current_target",
+       "effect": "ignoreDefPct = 30% AND bypass target [Shield]; REPLACES the 15% branch",
+       "scalingSource": "ATK (DEF-ignore boosts ATK-vs-DEF damage only)",
+       "consumer": "n-a (damage-formula modifier + bypass; ignore [Shield] is not a placement)",
+       "condition": "branch: only if caster current HP > target current HP (evaluated AFTER the HP swap above)",
+       "coverage": "modelled"
+      }
+     ]
+    },
+    {
+     "slot": "Passive",
+     "name": "My True Purpose",
+     "skillType": "passive",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "[Active Effect] Decreases the cooldown of one of this Champion's skills by 2 turns whenever this Champion loses 30% or more HP from an enemy skill in a single turn.",
+       "op": "DEFERRED",
+       "recipient": "self",
+       "target": "self",
+       "effect": "DECREASE_COOLDOWN own skill by 2 (op exists); trigger is the gap",
+       "scalingSource": "n-a",
+       "consumer": "n-a",
+       "condition": "reactive: triggers when caster loses >=30% MaxHP from an enemy SKILL within a single turn",
+       "coverage": "deferred",
+       "deferReason": "needs op: ON_HP_LOSS_TRIGGER — reactive fire on losing >=30% HP from an enemy skill in one turn. DECREASE_COOLDOWN(own,-2) itself is in-vocab, but without the trigger the effect never fires (inert)"
+      },
+      {
+       "text": "[Passive Effect] This Champion counterattacks with their default skill each time an enemy is healed by a skill. Occurs once per turn.",
+       "op": "DEFERRED",
+       "recipient": "one enemy",
+       "target": "single",
+       "effect": "counterattack with default skill (A1) when an enemy is healed by a skill",
+       "scalingSource": "ATK (via A1 default skill)",
+       "consumer": "n-a",
+       "condition": "reactive: fires when an ENEMY is healed by a skill; capped once per turn",
+       "coverage": "deferred",
+       "deferReason": "needs op: COUNTERATTACK_ON_ENEMY_HEALED — reactive counterattack triggered by an enemy being healed by a skill, once-per-turn cadence. No counterattack/on-heal-trigger op exists"
+      }
+     ]
+    }
+   ],
+   "needsOps": [
+    {
+     "op": "SELF_HEAL_FROM_DAMAGE",
+     "whatItDoes": "Self-heal scaled off damage inflicted (not caster MaxHP/flat). A1 heals 20% of each hit's damage; HEAL op only supports pct-of-MaxHP/flat. Recurs: Hordin."
+    },
+    {
+     "op": "SWAP_HP",
+     "whatItDoes": "Exchange current HP values between caster and target (A3). Distinct from Mavara equalize-HP (swap vs average-to-midpoint); also gates the A3 DEF-ignore branch."
+    },
+    {
+     "op": "ON_HP_LOSS_TRIGGER",
+     "whatItDoes": "Reactive trigger firing when the champion loses >=30% MaxHP from an enemy skill within a single turn (passive Active Effect); would drive an existing DECREASE_COOLDOWN."
+    },
+    {
+     "op": "COUNTERATTACK_ON_ENEMY_HEALED",
+     "whatItDoes": "Reactive counterattack with default skill triggered each time an enemy is healed by a skill, capped once per turn (passive Passive Effect)."
+    }
+   ]
+  },
+  {
+   "champion": "Donatello",
+   "summary": "Donatello is a Magic Legendary SUPPORT/sustain enabler — no debuffs, all value is ally-facing (heal, cleanse, Increase SPD, Continuous Heal, Strengthen, TM fill, cooldown reduction) plus a TMNT-faction passive (join-attack + team-wide death-prevention/HP-equalize). Of 18 clauses: 10 are modelled ops (2 attacks, 1 HEAL, 1 CLEANSE, 1 FILL_TURN_METER, 3 PLACE_BUFF of registry-read buffs, plus the two ACQUIRE targets folded into the attacks); 8 are deferred. The deferred set drives 5 op gaps: BUFF_ACTIVATION (A1 Continuous-Heal early tick), ally-facing cooldown reduction (A2 — existing DECREASE_COOLDOWN is own-only), and the whole A4 passive trio JOIN_ATTACK / PREVENT_DEATH-keep-at-1HP / EQUALIZE_HP. Every placed buff (Increase SPD, Continuous Heal, Strengthen) IS in the Consumer Registry, so none are inert — the leaks here are missing OPS, not inert buffs. Critical decomposition note: A1's \"instantly activates one random [Continuous Heal]\" is activation, NOT a Continuous Heal placement (he places CH on A3, not A1).",
+   "recipes": [
+    {
+     "slot": "A1",
+     "name": "Bo-dacious Bash",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Attacks 1 enemy.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "one enemy",
+       "target": "single",
+       "effect": "single attack hit (ACQUIRE_TARGETS single, then one hit)",
+       "scalingSource": "ATK",
+       "consumer": "damage ✓ (attack, DEF-dependent)",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Heals all allies by 5% of this Champion’s MAX HP.",
+       "op": "HEAL",
+       "recipient": "all allies",
+       "target": "all_allies",
+       "effect": "heal 5% of caster MAX HP (no acc-check)",
+       "scalingSource": "caster MaxHP",
+       "consumer": "heal ✓",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Instantly activates one random [Continuous Heal] buff on all allies.",
+       "op": "DEFERRED",
+       "recipient": "all allies",
+       "target": "all_allies",
+       "effect": "force one random already-present [Continuous Heal] buff to tick immediately (sustain acceleration)",
+       "scalingSource": "n-a",
+       "consumer": "none (no op) — Continuous Heal itself IS a registry buff, but this clause consumes/accelerates an existing one, it does not place it",
+       "condition": "only fires on allies who already carry a [Continuous Heal] buff",
+       "coverage": "deferred",
+       "deferReason": "needs op: BUFF_ACTIVATION — force an existing ally [Continuous Heal] to tick now. Activation ≠ placement (Policy #12): Donatello does NOT place Continuous Heal on A1 (he places it on A3). DEBUFF_ACTIVATION is enemy-DoT-only, so this ally-buff activation has no op."
+      }
+     ]
+    },
+    {
+     "slot": "A2",
+     "name": "Shellshocker",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Attacks all enemies.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "AoE attack hit (ACQUIRE_TARGETS all_enemies, then one hit each)",
+       "scalingSource": "ATK",
+       "consumer": "damage ✓ (attack, DEF-dependent)",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Decreases the cooldowns of all allies' skills, except this Champion's, by 2 turns.",
+       "op": "DECREASE_COOLDOWN",
+       "recipient": "all allies except self",
+       "target": "all_allies_except_self",
+       "effect": "-2 turns on every skill cooldown of each ally (excludes caster)",
+       "scalingSource": "n-a",
+       "consumer": "cooldown state (ally-facing — NOT covered by current op)",
+       "condition": "excludes this Champion's own skills",
+       "coverage": "deferred",
+       "deferReason": "needs op: ally-facing cooldown reduction. The existing DECREASE_COOLDOWN op is scoped to the caster's OWN skills; decreasing ALL allies' cooldowns by N (except caster) is a different recipient the current op does not model — crediting it as modelled would over-credit."
+      },
+      {
+       "text": "This skill's cooldown cannot be decreased or reset.",
+       "op": "DEFERRED",
+       "recipient": "self",
+       "target": "self",
+       "effect": "marks A2's own cooldown immune to reduction/reset",
+       "scalingSource": "n-a",
+       "consumer": "none",
+       "condition": "self-property guard",
+       "coverage": "deferred",
+       "deferReason": "skill-property guard, not a placement — no op. Prevents this A2 from being sped up by any cooldown-reduction/reset source. Low sim impact (a self-limiter, not a delivered effect)."
+      },
+      {
+       "text": "Places a 30% [Increase SPD] buff on all allies for 2 turns.",
+       "op": "PLACE_BUFF",
+       "recipient": "all allies",
+       "target": "all_allies",
+       "effect": "[Increase SPD] 30% 2t (no acc-check)",
+       "scalingSource": "n-a",
+       "consumer": "Increase SPD ✓ (Consumer Registry: Increase ATK/DEF/SPD)",
+       "coverage": "modelled"
+      }
+     ]
+    },
+    {
+     "slot": "A3",
+     "name": "Secret of the Ooze",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Removes all debuffs from all allies.",
+       "op": "CLEANSE",
+       "recipient": "all allies",
+       "target": "all_allies",
+       "effect": "remove ALL debuffs from each ally",
+       "scalingSource": "n-a",
+       "consumer": "cleanse ✓",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Places a 15% [Continuous Heal] buff ... on all allies for 2 turns.",
+       "op": "PLACE_BUFF",
+       "recipient": "all allies",
+       "target": "all_allies",
+       "effect": "[Continuous Heal] 15% 2t (heals bearer 15% of ITS OWN MaxHP per turn) (no acc-check)",
+       "scalingSource": "n-a (per-tick heal scales off each bearer's MaxHP, not caster's)",
+       "consumer": "Continuous Heal ✓ (Consumer Registry)",
+       "coverage": "modelled"
+      },
+      {
+       "text": "and a 25% [Strengthen] buff on all allies for 2 turns.",
+       "op": "PLACE_BUFF",
+       "recipient": "all allies",
+       "target": "all_allies",
+       "effect": "[Strengthen] 25% 2t (25% damage reduction) (no acc-check)",
+       "scalingSource": "n-a",
+       "consumer": "Strengthen ✓ (Consumer Registry)",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Also fills the Turn Meters of all allies by 20%.",
+       "op": "FILL_TURN_METER",
+       "recipient": "all allies",
+       "target": "all_allies",
+       "effect": "+20% Turn Meter to each ally",
+       "scalingSource": "n-a",
+       "consumer": "turn meter ✓",
+       "coverage": "modelled"
+      }
+     ]
+    },
+    {
+     "slot": "A4",
+     "name": "I Got You Bro!",
+     "skillType": "passive",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "[Passive Effect] Whenever this Champion attacks, any ally Leonardos, Donatellos, Michelangelos, and Raphaels will join in that attack.",
+       "op": "DEFERRED",
+       "recipient": "the attack target",
+       "target": "current_target",
+       "effect": "named TMNT allies each perform an extra attack (their default skill) joining Donatello's attack",
+       "scalingSource": "ATK (of each joining ally)",
+       "consumer": "none (no op)",
+       "condition": "fires whenever this Champion attacks; only ally Leonardo / Donatello / Michelangelo / Raphael join (faction/name-gated)",
+       "coverage": "deferred",
+       "deferReason": "needs op: JOIN_ATTACK (recurs: Glorious Pallas A1, Mavara A1, Michelangelo A4). Trigger cadence = per Donatello attack."
+      },
+      {
+       "text": "[Active Effect] Whenever an ally is about to receive a fatal hit, this Champion prevents that ally’s death and keeps them alive with 1 HP.",
+       "op": "DEFERRED",
+       "recipient": "one ally",
+       "target": "lowest_hp_ally",
+       "effect": "intercept a fatal hit on any ally; survivor left at 1 HP (Unkillable-like, but reactive/passive and applied to the struck ally, not pre-placed)",
+       "scalingSource": "n-a",
+       "consumer": "none (no op)",
+       "condition": "triggers only when an ally is about to take a lethal hit",
+       "coverage": "deferred",
+       "deferReason": "needs op: PREVENT_DEATH — reactive fatal-hit interception keeping the ally at 1 HP. Distinct from the [Unkillable] buff (which is a pre-placed registry buff); this is an always-on passive with no placed buff to read."
+      },
+      {
+       "text": "Then equalizes that ally’s HP to the average HP level of the team.",
+       "op": "DEFERRED",
+       "recipient": "one ally",
+       "target": "lowest_hp_ally",
+       "effect": "set the rescued ally's HP% to the team's average HP% (chained after the death-prevention)",
+       "scalingSource": "n-a (team-average HP pool)",
+       "consumer": "none (no op)",
+       "condition": "only after the fatal-hit prevention above fires",
+       "coverage": "deferred",
+       "deferReason": "needs op: EQUALIZE_HP (recurs: Mavara). Order-dependent 'Then' — runs immediately after PREVENT_DEATH."
+      },
+      {
+       "text": "If there are multiple Champions on the team with this skill, only one will activate.",
+       "op": "DEFERRED",
+       "recipient": "self",
+       "target": "self",
+       "effect": "de-duplication guard — only one copy of this passive's Active Effect resolves per fatal hit",
+       "scalingSource": "n-a",
+       "consumer": "none",
+       "condition": "multiple team members carry I Got You Bro!",
+       "coverage": "deferred",
+       "deferReason": "meta-restriction on the PREVENT_DEATH op, not a standalone placement — no op. Prevents double-triggering when two TMNT carry the passive."
+      },
+      {
+       "text": "This skill will not activate on duplicate copies of this Champion, if this particular Champion is dead.",
+       "op": "DEFERRED",
+       "recipient": "self",
+       "target": "self",
+       "effect": "the Active Effect is disabled for a dead instance of Donatello (duplicate copies do not proxy for it)",
+       "scalingSource": "n-a",
+       "consumer": "none",
+       "condition": "this particular Champion is dead",
+       "coverage": "deferred",
+       "deferReason": "meta-restriction gating the PREVENT_DEATH op's availability — no op. A dead Donatello grants no protection even if a duplicate is alive."
+      }
+     ]
+    }
+   ],
+   "needsOps": [
+    {
+     "op": "BUFF_ACTIVATION",
+     "whatItDoes": "Force an existing ally buff (here one random [Continuous Heal]) to tick immediately — sustain acceleration. Mirror of DEBUFF_ACTIVATION but for ally buffs; DEBUFF_ACTIVATION is enemy-DoT-only. (A1)"
+    },
+    {
+     "op": "DECREASE_COOLDOWN_ALLY",
+     "whatItDoes": "Decrease ALL allies' skill cooldowns by N turns (optionally excluding the caster). Existing DECREASE_COOLDOWN op targets the caster's own skills only; the ally-facing recipient is unmodelled. (A2)"
+    },
+    {
+     "op": "JOIN_ATTACK",
+     "whatItDoes": "Named/faction-gated allies (Leonardo/Donatello/Michelangelo/Raphael) join the caster's attack with their default skill whenever the caster attacks. Recurs: Glorious Pallas A1, Mavara A1, Michelangelo A4. (A4)"
+    },
+    {
+     "op": "PREVENT_DEATH",
+     "whatItDoes": "Reactive passive that intercepts a fatal hit on any ally and keeps them alive at 1 HP, with de-dup and dead-caster guards. Distinct from the pre-placed [Unkillable] buff. (A4)"
+    },
+    {
+     "op": "EQUALIZE_HP",
+     "whatItDoes": "Set a champion's HP to the team's average HP level (chained after PREVENT_DEATH here). Recurs: Mavara. (A4)"
+    }
+   ]
+  },
+  {
+   "champion": "Sun Wukong",
+   "summary": "Sun Wukong (Legendary, Spirit) decomposed. Modelled: A1 single-target hit + [Stun] (Stun is in the Consumer Registry), A2 single hit with 50% DEF-ignore modifier, A3 AoE hit + STEAL_BUFF. Deferred/inert: A2 surplus-splash on kill (no op), A2 no-crit flag (no op), A2 [Sheep] (not in Consumer Registry — inert), A3 [Block Buffs] (explicitly no consumer — inert), A4 entire self-revive (REVIVE is ally-only; self-revive is a distinct unbuilt mechanic per policy #21). Three op gaps flagged: SURPLUS_DAMAGE, SELF_REVIVE, CANNOT_CRIT.",
+   "recipes": [
+    {
+     "slot": "A1",
+     "name": "Gotcha!",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Attacks 1 enemy.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "one enemy",
+       "target": "single",
+       "effect": "single ATK-vs-DEF hit",
+       "scalingSource": "ATK",
+       "consumer": "n-a (direct damage)",
+       "condition": "none",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Has a 25% chance of placing a [Stun] debuff for 1 turn. The chance increases to 50% if the target has any buffs.",
+       "op": "PLACE_DEBUFF",
+       "recipient": "one enemy",
+       "target": "current_target",
+       "effect": "[Stun] 1t @25% (50% if target has any buff) acc-check",
+       "scalingSource": "n-a",
+       "consumer": "Stun (CC — engine consumes Stun/Freeze/Sleep/Petrification)",
+       "condition": "base 25% chance; rises to 50% if the target has any buff",
+       "coverage": "modelled"
+      }
+     ]
+    },
+    {
+     "slot": "A2",
+     "name": "Staff of Wonder",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Attacks 1 enemy.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "one enemy",
+       "target": "single",
+       "effect": "single ATK-vs-DEF hit",
+       "scalingSource": "ATK",
+       "consumer": "n-a (direct damage)",
+       "condition": "none",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Will ignore 50% of the target’s DEF.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "one enemy",
+       "target": "current_target",
+       "effect": "DEF-ignore 50% modifier on this attack (ignore/bypass ≠ placement)",
+       "scalingSource": "ATK",
+       "consumer": "n-a (damage-formula modifier; boosts ONLY this ATK-vs-DEF hit, not any DoT)",
+       "condition": "applies to the initial hit",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Will attack all remaining enemies with any surplus damage if the target is killed.",
+       "op": "DEFERRED",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "overkill/surplus damage splashes to all remaining enemies",
+       "scalingSource": "ATK",
+       "condition": "only if the initial target is killed by the first hit",
+       "coverage": "deferred",
+       "deferReason": "needs op: SURPLUS_DAMAGE — no op exists for routing overkill (surplus) damage onto the remaining enemies when the primary target dies"
+      },
+      {
+       "text": "This attack will also ignore 50% of the target’s DEF.",
+       "op": "DEFERRED",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "the surplus splash attack also ignores 50% DEF",
+       "scalingSource": "ATK",
+       "condition": "modifies the deferred surplus splash attack",
+       "coverage": "deferred",
+       "deferReason": "part of the deferred SURPLUS_DAMAGE mechanic — the splash hit carries the same 50% DEF-ignore; inert until SURPLUS_DAMAGE exists"
+      },
+      {
+       "text": "This attack cannot be critical.",
+       "op": "DEFERRED",
+       "recipient": "one enemy",
+       "target": "current_target",
+       "effect": "disables critical hits on this attack",
+       "scalingSource": "ATK",
+       "condition": "applies to the Staff of Wonder hit(s)",
+       "coverage": "deferred",
+       "deferReason": "needs op: CANNOT_CRIT — no per-skill flag to force non-crit damage in the formula path"
+      },
+      {
+       "text": "If the initial target survives, places a [Sheep] debuff on them for 1 turn. This debuff cannot be blocked.",
+       "op": "DEFERRED",
+       "recipient": "one enemy",
+       "target": "current_target",
+       "effect": "[Sheep] 1t, cannot be blocked (bypasses [Block Debuffs]/RES) — would be PLACE_DEBUFF",
+       "scalingSource": "n-a",
+       "consumer": "none (inert)",
+       "condition": "only if the initial target survives the hit; unblockable/unresistable",
+       "coverage": "deferred",
+       "deferReason": "[Sheep] is NOT in the Consumer Registry (engine reads only Stun/Freeze/Sleep/Petrification for CC) — placement is inert; the 'cannot be blocked' resistance-bypass rider is moot while the debuff has no consumer"
+      }
+     ]
+    },
+    {
+     "slot": "A3",
+     "name": "Now You See Us",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Attacks all enemies.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "AoE ATK-vs-DEF hit",
+       "scalingSource": "ATK",
+       "consumer": "n-a (direct damage)",
+       "condition": "none",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Before attacking, steals all buffs from all enemies",
+       "op": "STEAL_BUFF",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "steal ALL buffs from every enemy to the caster's side (removal/steal ≠ placement)",
+       "scalingSource": "n-a",
+       "consumer": "STEAL_BUFF (engine op)",
+       "condition": "resolves before the attack (phase before_attack)",
+       "coverage": "modelled"
+      },
+      {
+       "text": "and then places a [Block Buffs] debuff on them for 2 turns.",
+       "op": "DEFERRED",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "[Block Buffs] 2t acc-check — would be PLACE_DEBUFF",
+       "scalingSource": "n-a",
+       "consumer": "none (inert)",
+       "condition": "after the buff steal",
+       "coverage": "deferred",
+       "deferReason": "[Block Buffs] is explicitly listed in the Consumer Registry as having NO engine consumer — placement is inert"
+      }
+     ]
+    },
+    {
+     "slot": "A4",
+     "name": "Unbeatable Wukong",
+     "skillType": "passive",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Revives this Champion with 100% HP",
+       "op": "DEFERRED",
+       "recipient": "self",
+       "target": "self",
+       "effect": "self-revive at 100% HP",
+       "scalingSource": "caster MaxHP",
+       "condition": "after this Champion has been killed",
+       "coverage": "deferred",
+       "deferReason": "needs op: SELF_REVIVE — REVIVE targets DEAD ALLIES only; a champion reviving ITSELF is a distinct mechanic (policy #21 self-revive ≠ ally-revive) with no op"
+      },
+      {
+       "text": "and 100% Turn Meter",
+       "op": "DEFERRED",
+       "recipient": "self",
+       "target": "self",
+       "effect": "fill own Turn Meter to 100% on self-revive (FILL_TURN_METER)",
+       "scalingSource": "n-a",
+       "condition": "fires as part of the self-revive",
+       "coverage": "deferred",
+       "deferReason": "FILL_TURN_METER op exists, but this instance only triggers inside the unbuilt SELF_REVIVE reactive — inert until SELF_REVIVE lands"
+      },
+      {
+       "text": "3 turns after they were killed.",
+       "op": "DEFERRED",
+       "recipient": "self",
+       "target": "self",
+       "effect": "delayed on-death timer — self-revive fires 3 turns after death",
+       "scalingSource": "n-a",
+       "condition": "3-turn delay measured from this Champion's death",
+       "coverage": "deferred",
+       "deferReason": "part of SELF_REVIVE — requires a delayed on-death reactive-trigger scheduler (fire N turns after death); no reactive-timer op exists"
+      }
+     ]
+    }
+   ],
+   "needsOps": [
+    {
+     "op": "SURPLUS_DAMAGE",
+     "whatItDoes": "When a single-target hit kills its target, route the overkill (surplus) damage onto all remaining enemies as a follow-up attack (A2 Staff of Wonder; the splash also carries the skill's 50% DEF-ignore)."
+    },
+    {
+     "op": "SELF_REVIVE",
+     "whatItDoes": "Champion revives ITSELF a fixed number of turns after being killed, restoring a set HP% and Turn Meter% (A4). Distinct from REVIVE, which brings back dead ALLIES; requires a delayed on-death reactive-trigger scheduler."
+    },
+    {
+     "op": "CANNOT_CRIT",
+     "whatItDoes": "Per-skill flag that forces an attack's damage to be non-critical regardless of C.RATE (A2 'This attack cannot be critical')."
+    }
+   ]
+  },
+  {
+   "champion": "Lord Entertainer Fabian",
+   "summary": "Lord Entertainer Fabian is a Spirit Legendary whose entire identity is [Fear]/[True Fear] control — and [Fear]/[True Fear] are NOT in the Consumer Registry, so nearly all of his debuff output is currently INERT/deferred. Of his 4 skills: A1 lands damage + Turn Meter steal (drain modelled; self-gain half needs a STEAL_TURN_METER op) with a conditional [True Fear] that is inert. A2 lands damage + a real [Petrification] (consumed) plus an inert [True Fear] AoE, and its [Passive Effect] re-cast is a reactive-on-enemy-skill-use trigger with no op. A3 is the strongest for the engine: AoE damage + decrease-buff-duration (REDUCE_EFFECT_DURATION) + increase-cooldown, plus a conditional Extra Turn. The Ghost With The Most passive is an on-enemy-revive reactive (no op) placing inert [True Fear], plus a modelled self-CLEANSE of hard-CC. Four needsOps flagged, the load-bearing one being a consumer for [Fear]/[True Fear] itself.",
+   "recipes": [
+    {
+     "slot": "A1",
+     "name": "Service In Death",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Attacks 1 enemy 2 times.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "one enemy",
+       "target": "single",
+       "effect": "2 hits, ATK-based attack damage",
+       "scalingSource": "ATK",
+       "consumer": "n-a (damage)",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Each hit steals 10% of the target's Turn Meter.",
+       "op": "REDUCE_TURN_METER",
+       "recipient": "one enemy",
+       "target": "single",
+       "effect": "-10% Turn Meter per hit (x2 hits = -20%), no acc-check (TM manipulation, not a debuff)",
+       "scalingSource": "flat",
+       "consumer": "engine Turn Meter",
+       "condition": "per hit",
+       "coverage": "modelled",
+       "deferReason": "drain half is modelled; the STEAL (caster gains the drained amount) has no op — see needsOps STEAL_TURN_METER"
+      },
+      {
+       "text": "Places a [True Fear] debuff for 2 turns if the target's Turn Meter is fully depleted.",
+       "op": "DEFERRED",
+       "recipient": "one enemy",
+       "target": "single",
+       "effect": "[True Fear] 2t @100% acc-check",
+       "scalingSource": "n-a",
+       "consumer": "none (inert)",
+       "condition": "only if the target's Turn Meter is fully depleted",
+       "coverage": "deferred",
+       "deferReason": "[True Fear] not in Consumer Registry — no engine consumer, inert"
+      }
+     ]
+    },
+    {
+     "slot": "A2",
+     "name": "Unwelcome Guest",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Attacks 1 enemy.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "one enemy",
+       "target": "single",
+       "effect": "1 hit, ATK-based attack damage",
+       "scalingSource": "ATK",
+       "consumer": "n-a (damage)",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Places a [Petrification] debuff for 1 turn.",
+       "op": "PLACE_DEBUFF",
+       "recipient": "the attack target",
+       "target": "current_target",
+       "effect": "[Petrification] 1t acc-check",
+       "scalingSource": "n-a",
+       "consumer": "Petrification (hard-CC — engine reads Stun/Freeze/Sleep/Petrification)",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Has a 75% chance of placing a [True Fear] debuff for 2 turns on all other enemies who are not under a [Fear] or [True Fear] debuff.",
+       "op": "DEFERRED",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "[True Fear] 2t @75% acc-check on all OTHER enemies",
+       "scalingSource": "n-a",
+       "consumer": "none (inert)",
+       "condition": "excludes the A2 attack target; only enemies not already under [Fear] or [True Fear]",
+       "coverage": "deferred",
+       "deferReason": "[True Fear] not in Consumer Registry — no engine consumer, inert"
+      },
+      {
+       "text": "[Passive Effect] Activates this skill whenever an enemy under a [Fear] or [True Fear] debuff successfully uses a skill.",
+       "op": "DEFERRED",
+       "recipient": "self",
+       "target": "self",
+       "effect": "reactive re-cast of A2 (Unwelcome Guest)",
+       "scalingSource": "n-a",
+       "consumer": "n-a",
+       "condition": "fires when an enemy under [Fear]/[True Fear] successfully uses a skill",
+       "coverage": "deferred",
+       "deferReason": "needs op: reactive trigger on enemy-skill-use while under [Fear]/[True Fear]; also gated on the inert Fear/True Fear effects — see needsOps REACT_ON_ENEMY_SKILL_USE"
+      },
+      {
+       "text": "If there are multiple Champions on the team with this skill, only one will activate.",
+       "op": "DEFERRED",
+       "recipient": "self",
+       "target": "self",
+       "effect": "team-level dedup — only one copy of the A2 passive fires",
+       "scalingSource": "n-a",
+       "consumer": "n-a",
+       "condition": "multiple champions on the team carry this skill",
+       "coverage": "deferred",
+       "deferReason": "dedup limiter riding on an already-deferred reactive trigger — no op"
+      }
+     ]
+    },
+    {
+     "slot": "A3",
+     "name": "Spectral Flourish",
+     "skillType": "active",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Attacks all enemies.",
+       "op": "DEAL_DAMAGE",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "1 hit each, ATK-based attack damage",
+       "scalingSource": "ATK",
+       "consumer": "n-a (damage)",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Before attacking, has a 75% chance of decreasing the duration of all enemy buffs by 3 turns.",
+       "op": "REDUCE_EFFECT_DURATION",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "-3 turns to duration of ALL enemy buffs @75%, phase before_attack, no acc-check",
+       "scalingSource": "n-a",
+       "consumer": "engine buff-duration timers",
+       "condition": "resolves before the attack (feeds the Extra Turn check below)",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Has a 75% chance of increasing the cooldowns of all enemy skills by 3 turns.",
+       "op": "INCREASE_COOLDOWN",
+       "recipient": "all enemies",
+       "target": "all_enemies",
+       "effect": "+3 turns to ALL enemy skill cooldowns @75%, no acc-check",
+       "scalingSource": "n-a",
+       "consumer": "engine enemy skill cooldowns",
+       "coverage": "modelled"
+      },
+      {
+       "text": "Grants an Extra Turn if there are no buffs on the enemy team after this attack.",
+       "op": "EXTRA_TURN",
+       "recipient": "self",
+       "target": "self",
+       "effect": "1 Extra Turn",
+       "scalingSource": "n-a",
+       "consumer": "engine turn scheduler",
+       "condition": "only if zero buffs remain on the enemy team after the A3 attack resolves",
+       "coverage": "modelled",
+       "deferReason": "extra-turn op exists but is unwired in several recipes (per vocabulary note) — verify it fires before relying on it"
+      }
+     ]
+    },
+    {
+     "slot": "Passive",
+     "name": "Ghost With The Most",
+     "skillType": "passive",
+     "cooldown": null,
+     "clauses": [
+      {
+       "text": "Whenever an enemy is revived, places a [True Fear] debuff on that enemy for 2 turns.",
+       "op": "DEFERRED",
+       "recipient": "one enemy",
+       "target": "current_target",
+       "effect": "[True Fear] 2t on the revived enemy",
+       "scalingSource": "n-a",
+       "consumer": "none (inert)",
+       "condition": "fires when an enemy is revived",
+       "coverage": "deferred",
+       "deferReason": "doubly blocked: needs op REACT_ON_ENEMY_REVIVE (no on-enemy-revive trigger), AND [True Fear] has no engine consumer (inert)"
+      },
+      {
+       "text": "If there are multiple Champions on the team with this skill, this effect will only activate once.",
+       "op": "DEFERRED",
+       "recipient": "self",
+       "target": "self",
+       "effect": "team-level once-per dedup on the on-revive trigger",
+       "scalingSource": "n-a",
+       "consumer": "n-a",
+       "condition": "multiple champions on the team carry this passive",
+       "coverage": "deferred",
+       "deferReason": "dedup limiter riding on an already-deferred reactive trigger — no op"
+      },
+      {
+       "text": "Removes any [Stun], [Freeze], [Provoke], [Fear], [True Fear], and [Petrification] debuffs from this Champion before the start of their turn.",
+       "op": "CLEANSE",
+       "recipient": "self",
+       "target": "self",
+       "effect": "remove [Stun],[Freeze],[Provoke],[Fear],[True Fear],[Petrification] from self",
+       "scalingSource": "n-a",
+       "consumer": "self debuff slots (CLEANSE by type)",
+       "condition": "cadence: before the start of the caster's turn",
+       "coverage": "modelled",
+       "deferReason": "CLEANSE covers the removal; note [Provoke]/[Fear]/[True Fear] are not themselves engine-consumed, so cleansing them only matters for [Stun]/[Freeze]/[Petrification] under the current registry"
+      }
+     ]
+    }
+   ],
+   "needsOps": [
+    {
+     "op": "CONSUME_FEAR",
+     "whatItDoes": "Consumer for [Fear]/[True Fear]: a Feared enemy has a chance to fail its turn/action ([True Fear] = always fails). Absent from the Consumer Registry, so EVERY [True Fear] Fabian places (A1, A2, passive) is currently inert — this is his entire kit identity and the single highest-value gap."
+    },
+    {
+     "op": "STEAL_TURN_METER",
+     "whatItDoes": "Turn Meter steal: drain the enemy's TM AND grant the drained amount to the caster. REDUCE_TURN_METER only drains, so the self-gain half of A1's per-hit 10% steal is unmodelled."
+    },
+    {
+     "op": "REACT_ON_ENEMY_SKILL_USE",
+     "whatItDoes": "Reactive trigger that re-activates one of the caster's skills whenever an enemy under a specified debuff ([Fear]/[True Fear]) successfully uses a skill — with a team-level once-per-activation dedup (A2 [Passive Effect])."
+    },
+    {
+     "op": "REACT_ON_ENEMY_REVIVE",
+     "whatItDoes": "Reactive trigger that fires an effect whenever an enemy is revived — with a team-level once-per dedup across multiple copies (Ghost With The Most passive)."
+    }
+   ]
+  }
+ ]
+}
