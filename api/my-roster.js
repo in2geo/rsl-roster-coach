@@ -93,13 +93,23 @@ export default async function handler(req, res) {
   const acct = rows?.[0];
   if (!acct) return json(res, 404, { error: 'No imported roster yet. Use the PC companion to import.' });
 
+  // Normalise champions: DERIVE baseTypeId from typeId when absent. The game encodes
+  // ascension as the ones digit of typeId (baseTypeId = typeId - typeId%10), and the DB
+  // joins on the BASE type_id. Rosters imported before the reader emitted baseTypeId (and
+  // with null names) otherwise drop every ASCENDED champion — the type_id leg looks up the
+  // ascension-inclusive id, which isn't the base in the DB, and the name fallback is dead.
+  const champions = (acct.roster_json?.champions ?? []).map(c => ({
+    ...c,
+    baseTypeId: c.baseTypeId ?? (typeof c.typeId === 'number' && c.typeId > 0 ? c.typeId - (c.typeId % 10) : null),
+  }));
+
   // Reconstruct the gestalRoster shape buildContext expects.
   const gestalRoster = {
     accountId:      acct.account_id,
     displayName:    acct.display_name,
     raidPlayerId:   acct.raid_player_id,
     lastSnapshotAt: acct.extracted_at,
-    champions:      acct.roster_json?.champions ?? [],
+    champions,
     artifacts:      acct.roster_json?.artifacts ?? [],
   };
 
