@@ -56,6 +56,7 @@ const CONTENTS = [
   { fixture: 'spider-donahilvi-artor-current.json', dungeon: "Spider's Den", stage: 13, account: 'DonaHilvi', teamVariant: 'Artor-for-Alice' },
   { fixture: 'spider-donahilvi-artak-current.json', dungeon: "Spider's Den", stage: 13, account: 'DonaHilvi', teamVariant: 'Artak+Ninja (Artor out)' },
   { fixture: 'dragon-donahilvi-pool-current.json', dungeon: "Dragon's Lair", stage: 16, account: 'DonaHilvi', teamVariant: 'Artor (Dragon pool team)' },
+  { fixture: 'dragon-donahilvi-ezio-xeno-st20-current.json', dungeon: "Dragon's Lair", stage: 20, account: 'DonaHilvi' },   // fresh per-hero captures (dialog-nav fix 2026-08-13)
 ];
 
 // kinds that count as DAMAGE the source dealt to a victim. NB: 'activate' is EXCLUDED — activatePoisons already

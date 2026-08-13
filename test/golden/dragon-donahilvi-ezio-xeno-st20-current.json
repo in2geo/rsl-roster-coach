@@ -1,0 +1,32 @@
+{
+  "id": "dragon-donahilvi-ezio-xeno-st20-current",
+  "_source": "RUNTIME calibration fixture (NOT golden). DonaHilvi Dragon's Lair Stage 20, Ezio-Xeno variant: Michelangelo (lead, ACC aura) / Xenomorph / Ezio Auditore / Hilve the Rime-called / Iudex Artor. Stats from data/observed-builds/donahilvi-dragon-ezio-xeno.json. Built 2026-08-13 to dial the sim in against the FRESH per-hero captures the reader now produces (battle-log.json 2616/2618, st20 wins).",
+  "content": { "dungeon": "Dragon's Lair", "difficulty": "Normal", "stage": 20, "mode": "Full Auto", "speed": "1x" },
+  "reality_notes": "DonaHilvi Dragon st20 Ezio-Xeno team, from reader battle-log per-hero captures (dialog-nav capture, 2026-08-13). Two st20 WINS: 111t and 121t. Per-hero DEALT (the two wins): Xenomorph 2.86M/2.70M (the poison carry), Ezio 426k/386k, Hilvi 350k/440k, Michelangelo 297k/468k, Iudex Artor 41k/40k. Team total ~3.7-4.0M. TAKEN med ~20-60k; HEALING: Iudex 85k/99k (support), Xeno/Hilvi/Mikey 30-82k.",
+  "battle_layers": {
+    "_note": "auraSpdPct 0 = Michelangelo is an ACC leader (no SPD aura). accAura 70 = Michelangelo 'Increase ally ACC in All Battles' +70. arenaPct 0.06 = measured account HP/ATK/DEF bonus (same account as the pool fixture).",
+    "auraSpdPct": 0,
+    "accAura": 70,
+    "arenaPct": 0.06
+  },
+  "_names": "team = canonical names; each maps to the same name in the ezio-xeno build + the capture.",
+  "team": ["Michelangelo", "Xenomorph", "Ezio Auditore", "Hilve the Rime-called", "Iudex Artor"],
+  "roster": {
+    "Michelangelo": "Michelangelo",
+    "Xenomorph": "Xenomorph",
+    "Ezio Auditore": "Ezio Auditore",
+    "Hilve the Rime-called": "Hilve the Rime-called",
+    "Iudex Artor": "Iudex Artor"
+  },
+  "inputs": {
+    "Michelangelo": { "build": "data/observed-builds/donahilvi-dragon-ezio-xeno.json" },
+    "Xenomorph": { "build": "data/observed-builds/donahilvi-dragon-ezio-xeno.json" },
+    "Ezio Auditore": { "build": "data/observed-builds/donahilvi-dragon-ezio-xeno.json" },
+    "Hilve the Rime-called": { "build": "data/observed-builds/donahilvi-dragon-ezio-xeno.json" },
+    "Iudex Artor": { "build": "data/observed-builds/donahilvi-dragon-ezio-xeno.json" }
+  },
+  "qa_notes": [
+    "Calibration fixture for the DonaHilvi Dragon st20 Ezio-Xeno team — NOT a golden assertion.",
+    "Reality bands come from the reader battle-log st20 DonaHilvi WINS (per-hero via the 2026-08-13 dialog-nav capture fix)."
+  ]
+}
