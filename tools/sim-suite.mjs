@@ -128,7 +128,8 @@ function allyCombatant(champ, lsById = {}) {
     critRate: es.crit_rate ?? es.crate, critDmg: es.crit_dmg ?? es.cdmg,
     affinity: champ.affinity, faction: champ.faction,               // faction gates faction-restricted ally-attacks (Pallas A1 Argonites join)
     lifesteal: lsById[champ.id] ?? 0,                               // Lifesteal/Bloodthirst gear -> 30% heal of damage dealt
-    bossMastery: !!champ.has_boss_mastery,                           // real Warmaster flag from masteryIds
+    bossMastery: !!champ.has_boss_mastery,                           // legacy Warmaster flag (fallback when masteries[] is empty — manual rosters)
+    masteries: champ.masteries ?? [],                                // full decoded mastery NAMES → target-type-aware Warmaster/Giant Slayer boss bonus + offense-proc damage masteries (was: only the boolean above; the montecarlo/fixture path already passed this)
     skillOrder: CONFIRMED_SKILL_ORDER[champ.name] ?? null,
     skills: readSkillKit(byId[champ.id]?.champion_skills ?? []) });
 }
