@@ -361,6 +361,12 @@ if (DIAGNOSE) {
     console.log(`   aggregate loss-seeds across these cases: WIPE ${wipeN} · TIMEOUT ${toN}`);
     console.log(`   aggregate per-battle avg across ${fw.length} cases: revives ${revN.toFixed(1)} · deaths ${deathN.toFixed(1)}  (ratio ${deathN ? (revN / deathN * 100).toFixed(0) : 0}% of deaths reversed)`);
     for (const c of fw) console.log(fmt(c));
+
+    // FALSE CLEARS (lost in reality, sim predicts WIN) — the over-survive failure; the bigger Dragon problem.
+    const fc = cases.filter(c => c.dungeon === d && !c.actualWin && c.predWin).sort((a, b) => a.stage - b.stage);
+    console.log(`\n══ ${d} — ${fc.length} FALSE CLEARS (lost in reality, sim predicts win) ══`);
+    console.log(`   the sim over-SURVIVES: it wins seeds a real team loses. surv = avg ally survivors; WR = sim win-rate.`);
+    for (const c of fc) console.log(fmt(c));
   }
   process.exit(0);
 }
