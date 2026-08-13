@@ -127,7 +127,8 @@ for (const r of runs) {
 
 console.log(`\n══ DRAGON TURN-LOOP SIM ══  ${cases.length} captured battles rebuilt\n`);
 if (!hasWaveRows) console.log('  ⚠ UNMODELLED: Dragon has NO wave enemies in dungeon_stage_enemies (25 rows, all boss).');
-console.log('  ✅ MODELLED: purple bar = 20% of Hellrazor MAX HP (Mike/Fandom 2026-07-22), drained by team damage.');
+console.log('  ✅ MODELLED: Inhale purple bar ESCALATES per Inhale — 10% of Hellrazor MAX HP on the 1st, +5%/Inhale (15%, 20%, …),');
+console.log('              never resets on clear (dragon.js PURPLE_BAR_PCT/STEP, user replay 2026-08-04). Drained by team damage; fail it → escalating Scorch.');
 console.log('  ⚠ UNDER-MODELLED: bar-CLEARING damage — Ezio/Pelops/Tagoar/Bambus/Vergis coeffs APPLIED (seeds 206/207,');
 console.log('                  Pelops HP-scaled, Vergis DEF-scaled); %maxHP nukes + other champs (e.g. Xenomorph) still 0. Bambus ~506k unreconciled.');
 console.log('  ⚠ TODO stage 21+/Hard: %maxHP damage skills capped at 10% of boss HP per hit (2 hits to break bar).');
@@ -138,8 +139,8 @@ console.log('                  in the damage path. Enemy stats themselves are tr
 const rows = [];
 for (const c of cases) {
   const allies = c.team.map(buildAlly);
-  // Purple bar = 20% of Hellrazor's Max HP (Mike, verified 2026-07-22) — a REAL threshold, no longer
-  // the null-driven never/always bracket. Interrupting it is a team-DAMAGE check, so this number now
+  // Purple bar ESCALATES per Inhale (10% + 5%×(N-1) of boss Max HP, never resets — dragon.js, user replay
+  // 2026-08-04), superseding the old flat-20% threshold. Interrupting it is a team-DAMAGE check, so this
   // inherits the placeholder-damage error (DEF_K nominal, damage_multiplier 38% populated).
   const content = makeDragonContent({ stageNumber: c.stage, waves: dragonWavesFor(c.stage), boss: c.boss });
   const state = makeState({ allies, enemies: [] });
