@@ -147,13 +147,48 @@ internal static class CbDamageReader
     {
         var gameAsm = mem.FindModuleBase("GameAssembly.dll");
         if (gameAsm == nint.Zero) return null;
-        // Gate: a dungeon result dialog must be live (else we'd read stale contexts between battles).
         var dlgKlass = Il2CppClassResolver.Resolve(mem, gameAsm, 0, DungeonDialog, Ns);
-        if (dlgKlass == nint.Zero || !AnyInstanceExists(mem, dlgKlass)) return null;
-
+        if (dlgKlass == nint.Zero) return null;
         var heroKlass = Il2CppClassResolver.Resolve(mem, gameAsm, 0, "HeroBattleStatsContext", Ns);
         if (heroKlass == nint.Zero) return null;
 
+        // Gate: a dungeon result dialog must be live (else we'd read stale contexts between battles).
+        var dialogs = EnumerateInstances(mem, dlgKlass);
+        if (dialogs.Count == 0) return null;
+
+        // ── PRIMARY (2026-08-13): navigate from the live dialog to ITS OWN hero list. ────────────────
+        // The dialog holds exactly the 5 heroes the game just showed, so the stale-context problem the
+        // heap scan fights (a PREVIOUS battle's HeroBattleStatsContext lingering in the heap and breaking
+        // the "contiguous run of N" test — e.g. a Rathalos from a prior fight) simply cannot occur here.
+        // Self-calibrating: the hero list is found by STRUCTURE (a List<HeroBattleStatsContext> of the
+        // file's team size, either wrapped in a UserContextList — the CB shape — or a direct List at a
+        // dialog slot) rather than a hardcoded offset, so a patch that moves the field does not break it.
+        // The dungeon dialog nests its list at a DIFFERENT slot than CB (which is why the older code
+        // heap-scanned); scanning the dialog's own pointer slots finds it without knowing that slot.
+        foreach (var dialog in dialogs)
+        {
+            for (int o = 0x10; o <= 0x400; o += 8)
+            {
+                var p = mem.ReadPointer(dialog + o);
+                if (!ProcessMemory.IsValidPointer(p)) continue;
+                var addrs = TryHeroList(mem, mem.ReadPointer(p + UCL_List), heroKlass, expectedTeam)   // UserContextList wrapper (CB shape)
+                         ?? TryHeroList(mem, p, heroKlass, expectedTeam);                              // p is itself a List<>
+                if (addrs is null) continue;
+                var found = new List<HeroDamage>(addrs.Count);
+                long tot = 0;
+                for (int i = 0; i < addrs.Count; i++)   // list order == screen order == the file's hero slots
+                {
+                    long dd = ReadStat(mem, addrs[i], HBSC_Damage), dff = ReadStat(mem, addrs[i], HBSC_Defense), hll = ReadStat(mem, addrs[i], HBSC_Healing);
+                    found.Add(new HeroDamage(i, dd, dff, hll));
+                    if (dd > 0) tot += dd;
+                }
+                Console.WriteLine($"[dungeondamage] dialog-nav read {found.Count} hero(es) from the live dialog (dialog+0x{o:X}) — stale-context-proof.");
+                return new CbResult(found, tot);
+            }
+        }
+
+        // ── FALLBACK: the legacy heap scan + contiguous-run guard (fragile vs stale objects; kept as a
+        // net for the rare case the dialog nav finds no matching list). ─────────────────────────────
         // Collect all HeroBattleStatsContext instances whose 3 stats are all in a sane range.
         var valid = new List<(nint addr, long dmg, long def, long heal)>();
         var buf = new byte[8 * 1024 * 1024];
@@ -246,6 +281,49 @@ internal static class CbDamageReader
                     if (BitConverter.ToInt64(view, i) == (long)klass) return true;
             }
         return false;
+    }
+
+    /// <summary>All live instance addresses of <paramref name="klass"/> (object header @+0 == klass ptr).
+    /// The dungeon dialog is normally one instance, but a torn-down stale dialog can coexist — the hero-list
+    /// validation in <see cref="TryHeroList"/> rejects the stale one (empty/gone list).</summary>
+    private static List<nint> EnumerateInstances(ProcessMemory mem, nint klass)
+    {
+        var found = new List<nint>();
+        var buf = new byte[8 * 1024 * 1024];
+        foreach (var (baseAddr, size) in mem.EnumerateReadableRegions())
+            for (long off = 0; off < size; off += buf.Length)
+            {
+                int chunk = (int)Math.Min(buf.Length, size - off);
+                var view = chunk == buf.Length ? buf : new byte[chunk];
+                if (!mem.TryReadBytes((nint)((long)baseAddr + off), view)) continue;
+                for (int i = 0; i + 8 <= chunk; i += 8)
+                    if (BitConverter.ToInt64(view, i) == (long)klass)
+                        found.Add((nint)((long)baseAddr + off + i));
+            }
+        return found;
+    }
+
+    /// <summary>If <paramref name="listPtr"/> is a C# List&lt;HeroBattleStatsContext&gt; whose element count
+    /// equals the team (or 2..8 when unknown) and every element is a HeroBattleStatsContext (klass check),
+    /// return the element addresses in list order (screen order); else null. The klass check is what makes
+    /// this immune to a random same-size list elsewhere in the dialog.</summary>
+    private static List<nint>? TryHeroList(ProcessMemory mem, nint listPtr, nint heroKlass, int expectedTeam)
+    {
+        if (!ProcessMemory.IsValidPointer(listPtr)) return null;
+        int sz = mem.ReadInt32(listPtr + List_Size);
+        if (sz < 2 || sz > 8) return null;
+        if (expectedTeam > 0 && sz != expectedTeam) return null;
+        var items = mem.ReadPointer(listPtr + List_Items);
+        if (!ProcessMemory.IsValidPointer(items)) return null;
+        var addrs = new List<nint>(sz);
+        for (int i = 0; i < sz; i++)
+        {
+            var e = mem.ReadPointer(items + Array_Data + i * 8);
+            if (!ProcessMemory.IsValidPointer(e)) return null;
+            if (mem.ReadPointer(e) != heroKlass) return null;   // every element must be a HeroBattleStatsContext
+            addrs.Add(e);
+        }
+        return addrs;
     }
 
     /// <summary>Generalized capture: anchor on <paramref name="dialogClass"/>, walk the hero list at
