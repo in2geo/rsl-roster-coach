@@ -325,7 +325,19 @@ internal static class BattleSampler
             var sv = tr.FirstHp(); if (sv is null) continue;
             long start = sv.Value, end = tr.LastHp() ?? start, min = start; double? death = null;
             for (int k = 0; k < tr.Hp.Count; k++) { if (tr.Hp[k] > 0) min = Math.Min(min, tr.Hp[k]); if (death is null && tr.Hp[k] == 0) death = tr.T[k] / 1000.0; }
-            allies.Add(new Models.TimelineHero { Slot = slot, TypeId = tr.TypeId, StartHp = start, EndHp = end, MinHp = min, DeathSec = death });
+            // Fine-resolution HP trace: one point per CHANGE (compress unchanged runs). A single boss AoE hit
+            // shows up as all five allies dropping at the same TSec; the per-ally drop (hp_before - hp_after),
+            // with the ally's known DEF/affinity/level, gives the real DEF→mitigation curve read off the game.
+            var atrace = new List<Models.TimelinePoint>();
+            long lastHp = long.MinValue;
+            for (int k = 0; k < tr.Hp.Count; k++)
+            {
+                long hp = tr.Hp[k];
+                if (hp < 0 || hp == lastHp) continue;   // skip freed/stale reads and unchanged frames
+                atrace.Add(new Models.TimelinePoint { TSec = tr.T[k] / 1000.0, Hp = hp, Debuffs = k < tr.Debuffs.Count ? tr.Debuffs[k] : 0, ByProducer = null });
+                lastHp = hp;
+            }
+            allies.Add(new Models.TimelineHero { Slot = slot, TypeId = tr.TypeId, StartHp = start, EndHp = end, MinHp = min, DeathSec = death, Trace = atrace });
         }
 
         var enemies = tracks.Where(t => t.Slot > 4 && t.RangeVal() > 0 && t.FirstHp() is not null).ToList();

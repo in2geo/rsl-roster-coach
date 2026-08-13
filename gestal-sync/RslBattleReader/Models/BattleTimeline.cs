@@ -23,6 +23,10 @@ internal sealed class TimelineHero
     public long    EndHp    { get; init; }
     public long    MinHp    { get; init; }   // lowest HP reached — the near-death / phase-at-death signal
     public double? DeathSec { get; init; }   // when HP first hit 0, else null (survived)
+    // Fine-resolution HP CHANGE-points (not downsampled like the boss): every frame where this ally's HP
+    // moved, so a single boss AoE hit (all allies dropping at the same TSec) is recoverable for deriving the
+    // real DEF→mitigation curve first-party. Compact (only changes are stored, not every frame).
+    public List<TimelinePoint> Trace { get; init; } = [];
 }
 
 internal sealed class TimelineBoss
