@@ -50,6 +50,7 @@ const NOTE       = (i => i > -1 ? process.argv[i + 1] ?? null : null)(process.ar
 const ALL_DUNGEONS = ["Dragon's Lair", "Spider's Den"];
 const DUNGEON_ARG = (i => i > -1 ? process.argv[i + 1] : null)(process.argv.indexOf('--dungeon'));
 const DUNGEONS = DUNGEON_ARG ? ALL_DUNGEONS.filter(d => d.toLowerCase().includes(DUNGEON_ARG.toLowerCase())) : ALL_DUNGEONS;
+const ACCT_ARG = (i => i > -1 ? process.argv[i + 1] : null)(process.argv.indexOf('--acct'));   // narrow the case set to one account (display_name substring)
 
 if (!process.env.SUPABASE_URL) { console.log('sim-suite needs the DB. Run with --env-file=.env.local'); process.exit(2); }
 const BASE = process.env.SUPABASE_URL.replace(/\/rest\/v1\/?$/, '');
@@ -264,6 +265,7 @@ const runs = await rest('run_reconciliations?select=account_id,display_name,cont
 const cases = [], leaderTally = {}; let lifestealHits = 0;
 const skipped = { no_outcome: 0, not_supported: 0, no_stage: 0, no_enemies: 0, no_roster: 0, partial_team: 0 };
 for (const r of runs) {
+  if (ACCT_ARG && !String(r.display_name ?? r.account_id ?? '').toLowerCase().includes(ACCT_ARG.toLowerCase())) continue;   // --acct: narrow to one account
   if (r.successful !== true && r.successful !== false) { skipped.no_outcome++; continue; }
   const m = String(r.content ?? '').match(/^(.*?)\s+Stage\s+(\d+)/i);
   if (!m) { skipped.no_stage++; continue; }
