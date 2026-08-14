@@ -98,7 +98,11 @@ function mobDirect(mob, c, coeff, hits, statMult) {
   const scaleStat = (statMult==='DEF' ? mob.def * (1 - (mob.buffs.decDef?0.60:0)) : mob.atk);
   const base = scaleStat * coeff;
   const decAtk = mob.buffs.decAtk ? 0.50 : 1;
-  const raw = base * defMit(c.defv, mob.level) * (1 + (mob.buffs.incAtk?0.5:0)) * decAtk;
+  // ⭐ DEF mitigation keys on the DEFENDER champ's level (60), NOT the mob's real L280 (derived first-party
+  // 2026-08-14: Crossbowman A3 ATK7168×5.5 → 12,810 @L60 ≈ reality 13,200; @L280 = 23,061, 1.8× over. The mob
+  // IS L280 — its stage power rides its ATK, not extra DEF penetration). ENEMYLVL overrides for A/B only.
+  const mitLvl = process.env.ENEMYLVL ? MOB_LVL : c.level;
+  const raw = base * defMit(c.defv, mitLvl) * (1 + (mob.buffs.incAtk?0.5:0)) * decAtk;
   const critMult = 1 + (mob.cr/100)*(mob.cdmg/100);   // EV crit
   let total=0; for(let i=0;i<hits;i++){ const d=dealToAlly(mob, c, raw*critMult, `${mob._skill||mob.name}`); total+=d;
     const k=`${(mob._skill||mob.name).replace(/ .*/,'')}#${mob.name.replace(/.*#/,'')}→${c.name}`; (HITLOG[`${(mob.name.replace(/#\d/,''))} ${statMult}x${coeff}→${c.aff}`] ??= []).push(Math.round(d)); }
