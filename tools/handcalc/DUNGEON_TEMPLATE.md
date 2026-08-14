@@ -94,8 +94,16 @@ everywhere. Only the enemy side is per-dungeon.
 - `tools/handcalc/stats.mjs` — reusable effective-stats.
 - `tools/handcalc/KITS.md` — kit-spec format.
 
-## Not built yet (the code half of the template)
+## The code half of the template — BUILT (2026-08-14)
 
-Extract `cb.mjs`'s **shared core** (stats, scheduler, champion kit library, DoT/damage, TRACE, report) from its
-**per-dungeon plug-in** (enemy block, kit, rotation, waves) so a new dungeon is a plug-in, not a rewrite. Do this
-during/after Dragon (the second dungeon is where the right seams reveal themselves).
+The shared core is extracted and the workflow is one command:
+- **`tools/handcalc/engine.mjs`** — the reusable engine (formulas, TM scheduler, capped/per-placer DoT +
+  detonation, champ→enemy `hit` + enemy→champ `dealToAlly` with per-champ survival config, targeting, report).
+- **`tools/handcalc/scaffold.mjs`** — `node --env-file=.env.local tools/handcalc/scaffold.mjs "<Dungeon>" <stage>
+  "Name1,..."` pulls the kits VERBATIM + enemy blocks + affinity → writes `KITS-<slug>-<stage>.md` + a runnable
+  `<slug>-<stage>.mjs` starter on the engine (unknowns as `⚙` questions, not knobs).
+- **`.claude/skills/handcalc/SKILL.md`** — `/handcalc` loads this playbook + the hard bans (no lib/sim, no
+  patching an existing file, no knobs-as-facts, no inference-as-fact) every time it's invoked.
+
+So a new dungeon is: `/handcalc` (or run the scaffold) → fill confirmed gear → author kits from the spec → walk
+the video. `cb.mjs` and `dragon.mjs` remain the worked reference instances the engine was extracted from.
