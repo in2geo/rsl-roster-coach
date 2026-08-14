@@ -1,5 +1,5 @@
 {
- "_source": "regenerated from Gestal sync DonaHilvi_a6261acc35588c94.json (syncedAt 2026-08-02T15:44:01.007Z)",
+ "_source": "regenerated from live game memory (DonaHilvi, 336 champions)",
  "_note": "total_stats = effectiveStats(base+gear), ROSTER screen (no aura/arena — the fixture harness layers those). lifesteal = 0.30 iff the Lifesteal 4-set is COMPLETE. gear_sets = piece counts (factual); only the Lifesteal set effect is consumed by the sim.",
  "_generator": "tools/build-from-sync.mjs",
  "champions": [
@@ -7,144 +7,296 @@
    "name": "Michelangelo",
    "level": 60,
    "stars": 6,
-   "rarity": "Legendary",
-   "affinity": "Spirit",
    "gear_sets": [
     "Perception×4",
-    "Speed×2",
-    "null×1"
+    "null×1",
+    "Divine Critical Rate×1",
+    "Offense×1"
    ],
    "lifesteal": 0,
+   "has_boss_mastery": true,
+   "mastery_count": 15,
+   "masteries": [
+    "Deadly Precision",
+    "Pinpoint Accuracy",
+    "Charged Focus",
+    "Keen Strike",
+    "Heart of Glory",
+    "Single Out",
+    "Bring It Down",
+    "Swarm Smiter",
+    "Lore of Steel",
+    "Arcane Celerity",
+    "Cycle of Magic",
+    "Methodical",
+    "Warmaster",
+    "Master Hexer",
+    "Sniper"
+   ],
    "base_spd": 99,
-   "base_hp": 14535,
-   "base_atk": 1421,
-   "base_def": 1002,
+   "base_hp": 14040,
+   "base_atk": 1376,
+   "base_def": 991,
+   "skill_levels": {
+    "A1": {
+     "level": 5,
+     "maxLevel": 5,
+     "maxed": true
+    },
+    "A2": {
+     "level": 4,
+     "maxLevel": 4,
+     "maxed": true
+    },
+    "A3": {
+     "level": 4,
+     "maxLevel": 4,
+     "maxed": true
+    }
+   },
    "total_stats": {
-    "hp": 21102,
-    "atk": 2546,
-    "def": 1405,
-    "spd": 196,
-    "crit_rate": 59,
-    "crit_dmg": 71,
-    "res": 84,
-    "acc": 237
-   }
-  },
-  {
-   "name": "Ezio Auditore",
-   "level": 50,
-   "stars": 5,
-   "rarity": "Legendary",
-   "affinity": "Spirit",
-   "gear_sets": [
-    "Lifesteal×4",
-    "Perception×2",
-    "null×1"
-   ],
-   "lifesteal": 0.3,
-   "base_spd": 94,
-   "base_hp": 11175,
-   "base_atk": 1012,
-   "base_def": 721,
-   "total_stats": {
-    "hp": 19271,
-    "atk": 1813,
-    "def": 970,
-    "spd": 161,
-    "crit_rate": 74,
-    "crit_dmg": 56,
-    "res": 78,
-    "acc": 60
-   }
-  },
-  {
-   "name": "Hilve the Rime-called",
-   "level": 50,
-   "stars": 5,
-   "rarity": "Legendary",
-   "affinity": "Force",
-   "gear_sets": [
-    "Relentless×2",
-    "Immortal×1",
-    "null×1",
-    "Perception×1",
-    "Retaliation×1",
-    "Destroy×1"
-   ],
-   "lifesteal": 0,
-   "base_spd": 105,
-   "base_hp": 14460,
-   "base_atk": 575,
-   "base_def": 972,
-   "total_stats": {
-    "hp": 33425,
-    "atk": 1076,
-    "def": 1305,
-    "spd": 165,
-    "crit_rate": 57,
-    "crit_dmg": 65,
-    "res": 37,
-    "acc": 51
-   }
-  },
-  {
-   "name": "Iudex Artor",
-   "level": 36,
-   "stars": 5,
-   "rarity": "Legendary",
-   "affinity": "Spirit",
-   "gear_sets": [
-    "null×1",
-    "Life×1",
-    "Perception×1",
-    "Immortal×1",
-    "Savage×1",
-    "Offense×1",
-    "Cursed×1"
-   ],
-   "lifesteal": 0,
-   "base_spd": 97,
-   "base_hp": 11790,
-   "base_atk": 564,
-   "base_def": 738,
-   "total_stats": {
-    "hp": 28922,
-    "atk": 730,
-    "def": 1195,
-    "spd": 148,
-    "crit_rate": 15,
-    "crit_dmg": 61,
-    "res": 30,
-    "acc": 35
+    "hp": 26231,
+    "atk": 1946,
+    "def": 1472,
+    "spd": 180,
+    "crit_rate": 30,
+    "crit_dmg": 50,
+    "res": 92,
+    "acc": 110
    }
   },
   {
    "name": "Xenomorph",
-   "level": 50,
-   "stars": 5,
-   "rarity": "Legendary",
-   "affinity": "Magic",
+   "level": 60,
+   "stars": 6,
    "gear_sets": [
-    "Perception×3",
-    "Offense×1",
-    "Divine Critical Rate×1",
-    "null×1",
-    "Speed×1"
+    "Perception×4",
+    "Deflection×2",
+    "null×1"
    ],
    "lifesteal": 0,
+   "has_boss_mastery": true,
+   "mastery_count": 13,
+   "masteries": [
+    "Deadly Precision",
+    "Pinpoint Accuracy",
+    "Keen Strike",
+    "Heart of Glory",
+    "Charged Focus",
+    "Swarm Smiter",
+    "Lore of Steel",
+    "Single Out",
+    "Bring It Down",
+    "Life Drinker",
+    "Wrath of the Slain",
+    "Methodical",
+    "Warmaster"
+   ],
    "base_spd": 102,
-   "base_hp": 12030,
-   "base_atk": 891,
-   "base_def": 737,
+   "base_hp": 16353,
+   "base_atk": 1211,
+   "base_def": 1002,
+   "skill_levels": {
+    "A1": {
+     "level": 1,
+     "maxLevel": 3,
+     "maxed": false
+    },
+    "A2": {
+     "level": 1,
+     "maxLevel": 4,
+     "maxed": false
+    },
+    "A3": {
+     "level": 1,
+     "maxLevel": 4,
+     "maxed": false
+    }
+   },
    "total_stats": {
-    "hp": 17882,
-    "atk": 1341,
-    "def": 1231,
-    "spd": 160,
-    "crit_rate": 63,
-    "crit_dmg": 60,
-    "res": 72,
-    "acc": 170
+    "hp": 22876,
+    "atk": 2814,
+    "def": 1694,
+    "spd": 167,
+    "crit_rate": 87,
+    "crit_dmg": 78,
+    "res": 53,
+    "acc": 121
+   }
+  },
+  {
+   "name": "Ezio Auditore",
+   "level": 49,
+   "stars": 6,
+   "gear_sets": [
+    "Perception×2",
+    "Accuracy×2",
+    "null×1",
+    "Lifesteal×1",
+    "CriticalHeal×1"
+   ],
+   "lifesteal": 0,
+   "has_boss_mastery": false,
+   "mastery_count": 14,
+   "masteries": [
+    "Deadly Precision",
+    "Keen Strike",
+    "Heart of Glory",
+    "Single Out",
+    "Pinpoint Accuracy",
+    "Charged Focus",
+    "Swarm Smiter",
+    "Lore of Steel",
+    "Bring It Down",
+    "Whirlwind of Death",
+    "Cycle of Violence",
+    "Master Hexer",
+    "Methodical",
+    "Kill Streak"
+   ],
+   "base_spd": 94,
+   "base_hp": 14010,
+   "base_atk": 1242,
+   "base_def": 903,
+   "skill_levels": {
+    "A1": {
+     "level": 1,
+     "maxLevel": 5,
+     "maxed": false
+    },
+    "A2": {
+     "level": 1,
+     "maxLevel": 6,
+     "maxed": false
+    },
+    "A3": {
+     "level": 1,
+     "maxLevel": 4,
+     "maxed": false
+    }
+   },
+   "total_stats": {
+    "hp": 30436,
+    "atk": 1472,
+    "def": 1324,
+    "spd": 161,
+    "crit_rate": 74,
+    "crit_dmg": 99,
+    "res": 30,
+    "acc": 87
+   }
+  },
+  {
+   "name": "Hilvi",
+   "level": 60,
+   "stars": 6,
+   "gear_sets": [
+    "Relentless×2",
+    "Perception×1",
+    "null×1",
+    "Immortal×1",
+    "Retaliation×1",
+    "Destroy×1"
+   ],
+   "lifesteal": 0,
+   "has_boss_mastery": true,
+   "mastery_count": 15,
+   "masteries": [
+    "Deadly Precision",
+    "Keen Strike",
+    "Single Out",
+    "Bring It Down",
+    "Methodical",
+    "Pinpoint Accuracy",
+    "Exalt in Death",
+    "Charged Focus",
+    "Swarm Smiter",
+    "Arcane Celerity",
+    "Lore of Steel",
+    "Cycle of Magic",
+    "Lasting Gifts",
+    "Master Hexer",
+    "Warmaster"
+   ],
+   "base_spd": 105,
+   "base_hp": 19161,
+   "base_atk": 749,
+   "base_def": 1277,
+   "skill_levels": {
+    "A1": {
+     "level": 1,
+     "maxLevel": 5,
+     "maxed": false
+    },
+    "A2": {
+     "level": 2,
+     "maxLevel": 3,
+     "maxed": false
+    },
+    "A3": {
+     "level": 2,
+     "maxLevel": 3,
+     "maxed": false
+    }
+   },
+   "total_stats": {
+    "hp": 42021,
+    "atk": 1323,
+    "def": 1625,
+    "spd": 165,
+    "crit_rate": 52,
+    "crit_dmg": 55,
+    "res": 37,
+    "acc": 41
+   }
+  },
+  {
+   "name": "Iudex Artor",
+   "level": 46,
+   "stars": 5,
+   "gear_sets": [
+    "Offense×1",
+    "Savage×1",
+    "Immortal×1",
+    "Perception×1",
+    "Accuracy×1",
+    "null×1",
+    "Cursed×1"
+   ],
+   "lifesteal": 0,
+   "has_boss_mastery": false,
+   "mastery_count": 0,
+   "masteries": [],
+   "base_spd": 97,
+   "base_hp": 12984,
+   "base_atk": 620,
+   "base_def": 812,
+   "skill_levels": {
+    "A1": {
+     "level": 1,
+     "maxLevel": 5,
+     "maxed": false
+    },
+    "A2": {
+     "level": 1,
+     "maxLevel": 3,
+     "maxed": false
+    },
+    "A3": {
+     "level": 1,
+     "maxLevel": 3,
+     "maxed": false
+    }
+   },
+   "total_stats": {
+    "hp": 27946,
+    "atk": 910,
+    "def": 1273,
+    "spd": 145,
+    "crit_rate": 15,
+    "crit_dmg": 61,
+    "res": 37,
+    "acc": 43
    }
   }
  ]
