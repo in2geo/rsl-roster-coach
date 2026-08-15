@@ -263,7 +263,7 @@ async function main() {
     console.log(`  NOTES:`);
     console.log(`    · DEALT excludes REFLECT (~${fmt(sim.reflectPerFight)}/fight, unattributed in the ledger) → Pelops/Vergis dealt reads low by that much.`);
     console.log(`    · HEALING is report-only: excludes [Continuous Heal] (~${fmt(sim.chHealPerFight)}/fight, sourced to the string not the caster) and magma-reflection lifesteal (not ledgered).`);
-    console.log(`    · TAKEN uses combatant.taken (authoritative). The ledger alone captured incoming damage on only ${(sim.takenLedgerVsField?.length || 0) - badTaken}/${sim.takenLedgerVsField?.length || 0} champ-fights — scripted enemies (${dungeon} boss/adds) deal damage WITHOUT a ledger event, so state.effects is incomplete for incoming damage.`);
+    console.log(`    · TAKEN uses combatant.taken (the survival-oracle field = victory-screen blue bar). Ledger cross-check: ${(sim.takenLedgerVsField?.length || 0) - badTaken}/${sim.takenLedgerVsField?.length || 0} champ-fights AGREE with the field (boss hits now emit a 'damage' ledger event via dragon.js strike/scorchStrike). A gap here would mean a scripted-enemy path still bypasses recordEffect.`);
     perContentJson.push({ dungeon, stage, gated: gatedHere, capturedWins: real.n, simWinRate: sim.winRate });
   }
 
