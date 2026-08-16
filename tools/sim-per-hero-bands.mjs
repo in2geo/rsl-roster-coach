@@ -146,6 +146,11 @@ async function simBands(rest, fixtureFile) {
     installRecipeRun(st);
     const res = simulate(st, built.content, { turnCap: 400 });
     if (res.won) wins++;
+    // VICTORY-ONLY aggregation for DEALT/TAKEN/HEALING/turns: the captured reality bands are victory-only
+    // (capturedBands filters result==='Victory'), so mixing SIM LOSSES here would be apples-to-oranges — a
+    // losing seed drags longer (higher taken, different dealt/turns) and would skew the medians vs a victory
+    // baseline. Win rate is still counted over ALL N seeds above; only the per-hero bands use victories.
+    if (!res.won) continue;
     turnsArr.push(res.turns || 0);
 
     const dealt = {}, taken = {}, healing = {};
@@ -178,7 +183,8 @@ async function simBands(rest, fixtureFile) {
   }
   const out = {};
   for (const [k, v] of Object.entries(per)) out[k] = { name: v.name, dealt: band(v.dealt), taken: band(v.taken), healing: band(v.healing) };
-  return { bands: out, deferred, winRate: Math.round((100 * wins) / N), simTurnsMedian: pctile(turnsArr, 0.5), reflectPerFight: Math.round(reflectPerFight / N), chHealPerFight: Math.round(chHealPerFight / N), takenLedgerVsField };
+  const nAgg = Math.max(1, wins);   // reflect/chHeal are report-only per-fight averages, now over VICTORIES only
+  return { bands: out, deferred, winRate: Math.round((100 * wins) / N), simVictories: wins, simTurnsMedian: pctile(turnsArr, 0.5), reflectPerFight: Math.round(reflectPerFight / nAgg), chHealPerFight: Math.round(chHealPerFight / nAgg), takenLedgerVsField };
 }
 
 // ── comparison + gate ──────────────────────────────────────────────────────────────────────────────────

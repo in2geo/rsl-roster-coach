@@ -3,6 +3,15 @@
   "_source": "RUNTIME calibration fixture (NOT golden). DonaHilvi Dragon's Lair Stage 20, Ezio-Xeno variant: Michelangelo (lead, ACC aura) / Xenomorph / Ezio Auditore / Hilve the Rime-called / Iudex Artor. Stats from data/observed-builds/donahilvi-dragon-ezio-xeno.json. Built 2026-08-13 to dial the sim in against the FRESH per-hero captures the reader now produces (battle-log.json 2616/2618, st20 wins).",
   "content": { "dungeon": "Dragon's Lair", "difficulty": "Normal", "stage": 20, "mode": "Full Auto", "speed": "1x" },
   "reality_notes": "DonaHilvi Dragon st20 Ezio-Xeno team, from reader battle-log per-hero captures (dialog-nav capture, 2026-08-13). Two st20 WINS: 111t and 121t. Per-hero DEALT (the two wins): Xenomorph 2.86M/2.70M (the poison carry), Ezio 426k/386k, Hilvi 350k/440k, Michelangelo 297k/468k, Iudex Artor 41k/40k. Team total ~3.7-4.0M. TAKEN med ~20-60k; HEALING: Iudex 85k/99k (support), Xeno/Hilvi/Mikey 30-82k.",
+  "michelangelo_a1_anchor": {
+    "_source": "First-party screenshot, turn 108 (Mike, 2026-08-16). Michelangelo A1 shows TWO separate per-hit numbers + a separate Warmaster proc.",
+    "normal_hit": 2393,
+    "weak_hit": 1940,
+    "warmaster_proc": 47542,
+    "terms": { "live_atk": 2029, "coefficient": 2.0, "book_multiplier": 1.20, "affinity_mult": 0.80, "effective_def": 1274.24, "def_state": "60% Decrease DEF x Xenomorph -20% passive", "mastery": "captured state (~1.196, within the 1.113-1.202 conditional band)", "crit": false },
+    "regression": "RANGE / decomposition check — NOT a deterministic point-match. 2,393 is ONE observed hit that may include game damage variance and a specific conditional-mastery state, so the model must NOT be forced to output exactly 2,393. The check is: the BOOKED normal-hit prediction interval (per hit) = 2.0xATK x 0.80(aff) x 1.20(book) x mastery(1.113-1.202) x defM(0.5135) = [2226, 2405] must CONTAIN 2,393, and each term of the decomposition must match its source value.",
+    "weak_note": "1940/2393 = 0.81 vs the sim's 0.70 weak-hit ratio. The cause is NOT yet determined — it could be damage variance, hit order, OR mastery state. Retained as a paired soft observation only; NOT required to match until real per-hit variance + the exact per-hit state are reproduced. Do not name the cause."
+  },
   "battle_layers": {
     "_note": "auraSpdPct 0 = Michelangelo is an ACC leader (no SPD aura). accAura 70 = Michelangelo 'Increase ally ACC in All Battles' +70. arenaPct 0.06 = measured account HP/ATK/DEF bonus (same account as the pool fixture).",
     "auraSpdPct": 0,

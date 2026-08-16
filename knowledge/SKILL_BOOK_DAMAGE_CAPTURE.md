@@ -58,7 +58,23 @@ per skill (`skill_levels[slot].maxed`):
 - Scale note: ~934 champions × ~2–3 damage skills, but most single skills have modest or zero damage books, so the
   populated rows are far fewer than the row count suggests.
 
+## Current implementation (2026-08-16)
+
+A first slice is wired for **Michelangelo A1 only**: `F_MICHELANGELO_A1.bookDamage = 0.20` (four sequential
+Damage +5% upgrades), applied as a flat ×(1+B) on the **direct skill hit only** (interpreter `DEAL_DAMAGE` →
+`dealOneHit`), gated on the champion's real booked state (`bookedSlots`). Verified: it does NOT touch Warmaster,
+Poison, HP Burn, shields, healing, or poison activation (those are separate paths). Reproduces the 2,393 anchor
+(as a RANGE, not a point-match).
+
+⚠ **Two known limitations of this slice:**
+- **Binary booked gate.** `bookedSlots` is fully-booked-or-nothing. It does NOT model **partial** booking
+  (e.g. Hilvi A2/A3 at 2/3) — that needs ordered per-level upgrade data. Harmless today (only Mikey A1 has
+  `bookDamage`, and he is fully booked), but must be fixed before adding `bookDamage` to a skill that captured
+  accounts run partially booked.
+- **Per-skill, hand-entered.** `bookDamage` currently lives on the formula literal, not the DB. Roster-wide it
+  should move to `champion_skills.damage_book_pct` (above).
+
 ## Status
 
-- BLOCKED on the capture above. Everything downstream (data model, sim wiring) is ~1–2h once `B` values exist.
+- Michelangelo A1: DONE (slice). The rest is BLOCKED on the capture above; data model + wiring ~1–2h once `B` values exist.
 - Related: `[[skill-book-data-model-2026-08-05]]` (books ≠ masteries; sim = fully-booked for chances/cooldowns).
