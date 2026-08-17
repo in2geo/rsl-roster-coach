@@ -77,6 +77,20 @@ const INVARIANT = (name, d) => ok(`invariant sourcesSum===stacks===stackList.len
   tickDots(st, t);
   INVARIANT('after natural tick', poison(t)); }
 
+// 9 (Mike 2026-08-16): Ezio explosion cashes in FULL REMAINING DURATION, not one tick. Dragon st20 anchor —
+// 5 fresh 5% Poisons, 2 turns each, 25% [Poison Sensitivity], boss factor 0.40 → 578,666 (boss 100%→75%).
+// The old one-tick model produced exactly half (289,333 / 12.5%).
+{ const HP = 2_314_665;
+  const t = boss({ maxHp: HP });
+  const st = makeState({ allies: [], enemies: [t], seed: 1 });
+  st.poisonDamageFactorVsBoss = 0.40;
+  for (let i = 0; i < 5; i++) place(t, 'Xenomorph', 2);       // 5 fresh 5% Poisons, 2 turns remaining each
+  applyDebuff(t, { type: 'Poison Sensitivity', value: 25, turns: 2 });
+  const dealt = activatePoisons(st, t);
+  ok('Ezio explosion = full duration: 5×2t×2%×1.25×0.40 = 578,666', Math.round(dealt) === 578_666, `dealt ${Math.round(dealt)}`);
+  ok('boss left at 75% after the explosion', Math.abs(t.hp / HP - 0.75) < 1e-6, `hp% ${(100 * t.hp / HP).toFixed(2)}`);
+  ok('explosion attributed to the placer (Xenomorph)', st.effects.some((e) => e.kind === 'dot' && e.source === 'Xenomorph' && e.amount > 0)); }
+
 console.log(`\n══ POISON OWNERSHIP TESTS ══  ${pass} passed, ${fail} failed`);
 for (const f of failures) console.log('   ❌ ' + f);
 console.log('\nQA_JSON ' + JSON.stringify({ rung: 'poison-ownership', pass: fail === 0 ? 1 : 0, tests: pass + fail, fail }));

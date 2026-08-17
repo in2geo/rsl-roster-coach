@@ -14,14 +14,19 @@ Immune to **Stun / Freeze / Sleep / Provoke / Fear / True Fear + Decrease TM / D
 below is INERT vs the boss.
 
 **Kit (DRAGON_REVIEW):**
+- **FIXED ROTATION CYCLE** (Mike first-party 2026-08-16): **Inhale → Scorch → Wall of Fire → Swipe**, repeating.
+  The turn after Inhale is the Scorch check (Scorch if bar up, else Wall of Fire). Modeled with cooldowns ticking
+  once per boss turn and Inhale at cd 4 (= card CD3 + the inserted Scorch turn) so Swipe lands as the 4th beat.
 - **Swipe** — AoE 3×ATK + 50% [Decrease ATK] 2t on all allies.
 - **Wall of Fire** (cd3) — AoE 3.4×ATK + two 5% [Poison] 3t + 25% [Weaken] 2t on all allies.
-- **Inhale** (cd3) — drains own Turn Meter, arms **Scorch**, turns part of HP purple (the "purple bar").
-- **Scorch** (fires next boss turn IF the purple bar was NOT cleared) — %MaxHP AoE + 1-turn [Stun]; clearing the
-  bar first → Scorch interrupted, boss turn WASTED (TM→0). ⭐ Scorch pierces [Veil] (it's AoE/%MaxHP).
-- ⚙ **OPEN (confirm w/ Mike as we walk):** (1) rotation order Swipe/WoF/Inhale; (2) **purple-bar SIZE** (reality
-  Scorches 3-4× → NOT cleared each cycle); (3) Scorch escalation (0.25→0.5→0.75×maxHP or flat 0.25×?);
-  (4) # Scorches / boss-phase length.
+- **Inhale** (cd3 card; cd4 effective) — drains own Turn Meter, arms **Scorch**, turns part of HP purple (the "purple bar").
+- **Scorch** (fires next boss turn IF the purple bar was NOT cleared) — %MaxHP AoE + 1-turn [Stun]. Clearing the
+  bar is **NOT a wasted turn** (CORRECTED 2026-08-16, Mike): the boss drops Scorch and takes a normal skill that
+  turn — Wall of Fire if available, else Swipe. So clearing only saves the %MaxHP nuke + its [Stun], not the hit.
+  ⭐ Scorch pierces [Veil] (it's AoE/%MaxHP).
+- ⚙ **OPEN (confirm w/ Mike as we walk):** (1) **purple-bar SIZE** (his st20 oracle: bar #1 NOT cleared → Scorch
+  fires; bar #2 cleared by 7 natural Poisons → WoF); (2) Scorch escalation (0.25→0.5→0.75×maxHP or flat 0.25×?);
+  (3) # Scorches / boss-phase length (oracle: ~1 Scorch + 1 cleared, boss dies from Poison t143).
 - **ANCHOR:** Scorch on Ezio (Strengthen up, veil DOWN) = **5,841** = 0.25·maxHP·0.75 ✓.
 
 ---

@@ -62,20 +62,23 @@ console.log('\n=== Hellrazor boss sequence (Model-side fired-and-applied, determ
   check('Scorch logs the event', s.log.some(e => /SCORCH/i.test(e.event || '')));
 }
 
-// ── Scorch INTERRUPTED when the bar is cleared before he acts — no strike, no [Stun] ──
+// ── Bar CLEARED before he acts → no Scorch/[Stun], but NOT a wasted turn: he throws Wall of Fire instead ──
 {
   const boss = mkBoss(); const content = makeDragonContent({ stageNumber: 16, purpleBarHp: 500000, boss });
   const act = content.phases.find(p => p.name === 'boss').actEnemy;
   const a = ally(); const s = makeState({ allies: [a], enemies: [boss], seed: null });
-  act(s, boss);                          // Inhale
+  act(s, boss);                          // Inhale (arms Scorch)
   content.onDamageToBoss(s, 999999);     // team clears the bar
-  act(s, boss);                          // Scorch attempt → interrupted → turn WASTED
-  check('Scorch interrupted (bar cleared) → no [Stun]', !a.debuffs.some(d => d.type === 'Stun'));   // the DEFINING benefit of clearing the bar (DRAGON_REVIEW.md)
-  // VERIFIED (Mike, in-game 2026-07-26): an interrupted-Scorch turn is WASTED — Hellrazor does NOT fall back on a
-  // normal skill (no Swipe/Wall of Fire), so the team is NOT struck and gets a fresh window. (Was a catalogued
-  // open question last session; now confirmed by Mike and asserted here. The old fall-through was a bug.)
-  check('Scorch interrupted → turn WASTED: team not struck, no fall-back skill', a.hp === a.maxHp && a.debuffs.length === 0, `hp ${Math.round(a.hp)} debuffs ${a.debuffs.length}`);
-  check('Scorch interrupted → logged as turn wasted', s.log.some(e => /interrupted/i.test(e.event || '')));
+  act(s, boss);                          // Scorch disarmed → boss takes a normal skill (Wall of Fire is available)
+  check('Bar cleared → no [Stun]', !a.debuffs.some(d => d.type === 'Stun'));   // the DEFINING benefit of clearing the bar: no Scorch nuke + no Stun
+  // CORRECTED (Mike, first-party 2026-08-16): clearing the bar is NOT a wasted turn — Hellrazor drops Scorch and
+  // takes a normal skill THIS turn (Wall of Fire if available, else Swipe). So the team IS struck and takes WoF's
+  // [Poison]/[Weaken], just not the %maxHP Scorch nuke or its [Stun]. (Retires the earlier "turn WASTED / TM reset"
+  // note that stood on a 2026-07-26 observation; the fixed rotation is Inhale → Scorch|WoF → WoF → Swipe.)
+  check('Bar cleared → boss still strikes (Wall of Fire, not a wasted turn)', a.hp < a.maxHp, `hp ${Math.round(a.hp)}`);
+  check('Bar cleared → team takes Wall of Fire [Poison] + [Weaken]',
+    a.debuffs.some(d => d.type === 'Poison') && a.debuffs.some(d => d.type === 'Weaken'));
+  check('Bar cleared → logged as Wall of Fire', s.log.some(e => /wall of fire/i.test(e.event || '')));
 }
 
 // ── Wall of Fire (turn 3): AoE + 2×[Poison] + [Weaken] ──

@@ -179,8 +179,8 @@ function actChamp(c){
         // "Instantly activates all [Poison] on enemies under 4+ debuffs" → DETONATE each poison for its FULL
         // remaining duration (all remaining ticks at once), THEN the poisons are CONSUMED. Mike first-party:
         // 5 poisons detonated = 462,931 = 5 × 2t × 46,293 (2 ticks each). Bursty, not persist. (Dragon-specific.)
-        if (dotWeight(e) >= 4 && e.poison.length){ const psens=e.psens>0?1.25:1;
-          let burst=0; for(const d of e.poison){ const b=(e.isBoss?POISON_TICK_BOSS*d.w:0.05*e.maxHp*d.w*psens)*d.turns; burst+=b; if(d.by) d.by.dealt+=b; }   // credit each stack's PLACER
+        if (dotWeight(e) >= 4 && e.poison.length){ const psens=e.psens>0?1.25:1;   // Ezio applies 25% Poison Sensitivity, active at detonation (Mike anchor: 5×2t×2%×1.25 = 25% maxHP)
+          let burst=0; for(const d of e.poison){ const b=(e.isBoss?POISON_TICK_BOSS*d.w:0.05*e.maxHp*d.w)*psens*d.turns; burst+=b; if(d.by) d.by.dealt+=b; }   // credit each stack's PLACER; psens now applies on the boss branch too
           const nStacks=e.poison.reduce((s,d)=>s+d.w,0);
           e.hp-=burst; e.poison=[];   // consumed
           if(e.isBoss){ DOT.bossPoisonDmg+=burst; if(e.purpleBar>0) e.purpleBar=Math.max(0,e.purpleBar-burst); }
@@ -245,25 +245,32 @@ function actMob(m){
     m._skill=(forceA1?'[TF] ':'')+'A1 Scatterbolt 3xrand x1.4'; for(let i=0;i<3;i++){ const rt=enemyTarget(m); if(rt) mobDirect(m,rt,1.4,1,'ATK'); } return; }
 }
 
-// ═══ BOSS KIT — Swipe / Wall of Fire (cd3) / Inhale (cd3) → purple bar → Scorch ═══
+// ═══ BOSS KIT — FIXED CYCLE Inhale → Scorch → Wall of Fire → Swipe (Mike first-party 2026-08-16) ═══
+// Cooldowns tick once per boss turn (top of actBoss). Inhale carries cd 4 = its card CD3 + the one
+// inserted Scorch-resolution turn that sits inside its period, so Swipe re-enters the rotation as the
+// 4th beat. A cleared purple bar is NOT a wasted turn: the boss drops Scorch and takes a normal skill
+// (Wall of Fire if available, else Swipe) — clearing only saves you the %MaxHP Scorch nuke + its Stun.
 function bossAoE(boss, mult){ for (const c of aliveT()){ const raw = boss.atk*mult*defMit(c.defv,60)*(boss.decAtk>0?0.5:1); dealToAlly(boss,c,raw,false,boss._skill); } }
 function scorchAoE(boss){ for (const c of aliveT()){ const raw = c.maxHp*0.25*(SCORCH_ESC?(boss.scorchFires+1):1); dealToAlly(boss,c,raw,true,'Scorch'); c.buffs.stun={turns:1}; } boss.scorchFires++; }
+function doWoF(boss, bs, label='Wall of Fire 3.4×'){ boss.cd.wof=3; bs.wof++; boss._skill=label; bossAoE(boss,3.4); for (const c of aliveT()) c.buffs.weaken={turns:2}; }
+function doSwipe(boss, bs, label='Swipe 3×'){ bs.swipe++; boss._skill=label; bossAoE(boss,3); for (const c of aliveT()) c.buffs.decAttack={turns:2}; }
 function actBoss(boss, bs){
   boss.cd.wof=Math.max(0,(boss.cd.wof||0)-1); boss.cd.inhale=Math.max(0,(boss.cd.inhale||0)-1);
   for (const k of ['decAtk','decDef','weaken','leech','psens']) if(boss[k]>0) boss[k]--;
-  // resolve an ARMED Scorch first
+  // resolve an ARMED Scorch first — fires only if the bar is still up
   if (boss.scorchArmed){ boss.scorchArmed=false;
     if (boss.purpleBar>0){ boss._skill='SCORCH #'+(boss.scorchFires+1); bs.scorch++; scorchAoE(boss); return; }
-    else { boss._skill='(purple bar cleared — Scorch interrupted, turn WASTED)'; bs.interrupted++; boss.tm=0; return; } }
-  // Inhale (cd3): drain own TM, arm Scorch, raise the purple bar
-  if ((boss.cd.inhale||0)<=0){ boss.cd.inhale=3; boss.scorchArmed=true; bs.inhale++;
+    // bar cleared → NOT wasted: normal skill this turn (WoF if available, else Swipe)
+    bs.interrupted++;
+    if ((boss.cd.wof||0)<=0){ doWoF(boss,bs,'Wall of Fire 3.4× (bar cleared)'); return; }
+    doSwipe(boss,bs,'Swipe 3× (bar cleared)'); return; }
+  // Inhale (cd4): drain own TM, arm Scorch, raise the purple bar
+  if ((boss.cd.inhale||0)<=0){ boss.cd.inhale=4; boss.scorchArmed=true; bs.inhale++;
     boss.purpleBar=PURPLE_PCT*boss.maxHp; boss.tm=0; boss._skill='INHALE — bar '+Math.round(boss.purpleBar); return; }
-  // Wall of Fire (cd3): AoE 3.4× + two 5% Poison (on allies) + Weaken
-  if ((boss.cd.wof||0)<=0){ boss.cd.wof=3; bs.wof++; boss._skill='Wall of Fire 3.4×'; bossAoE(boss,3.4);
-    for (const c of aliveT()) c.buffs.weaken={turns:2}; return; }
+  // Wall of Fire (cd3): AoE 3.4× + Weaken
+  if ((boss.cd.wof||0)<=0){ doWoF(boss,bs); return; }
   // Swipe: AoE 3× + 50% Dec-ATK on allies
-  bs.swipe++; boss._skill='Swipe 3×'; bossAoE(boss,3);
-  for (const c of aliveT()) c.buffs.decAttack={turns:2};
+  doSwipe(boss,bs);
 }
 
 // ═══ DoT TICKS on the enemy's turn. Boss poison CAPPED (46,293/stack); mob poison = 5%·maxHP (uncapped). ═══
@@ -321,9 +328,10 @@ function runPhase(enemyList, label, isBoss){
 
 // ═══ RUN ═══
 // Victory screen for the walked battle (143 turns; Ezio L49, Iudex/Artor L46 — under-leveled). died = to the
-// Swipe at turn 119 (Ezio/Iudex/Mikey), Hilvi AoE-revived them next turn; Xeno/Hilvi never died.
+// Swipe at turn 119 (Ezio + Iudex/Artor ONLY — Mikey did NOT die, corrected by Mike 2026-08-16); Hilvi
+// AoE-revived the two next turn; Michelangelo/Xeno/Hilvi never died.
 const REAL = {
-  Michelangelo:{ taken:77095, dealt:513634,  healed:47744,  died:true },
+  Michelangelo:{ taken:77095, dealt:513634,  healed:47744,  died:false },
   Xenomorph:   { taken:41363, dealt:2661117, healed:68810,  died:false },
   Ezio:        { taken:59920, dealt:316531,  healed:11196,  died:true },
   Hilvi:       { taken:49471, dealt:434430,  healed:69237,  died:false },
@@ -341,7 +349,7 @@ console.log(`  WAVE 2: ${w2?(w2.cleared?'CLEARED':'WIPED')+' in '+w2.turns+'t (a
 if (bp) console.log(`  BOSS:   ${bp.cleared?'KILLED':'TEAM WIPED ('+Math.round(100*Math.max(0,enemies[0].hp)/enemies[0].maxHp)+'% left)'} in ${bp.turns}t (ally ${bp.allyTurns}/boss ${bp.enemyTurns})`);
 if (bp) console.log(`          Swipe ${bp.swipe} · Wall of Fire ${bp.wof} · Inhale ${bp.inhale} · SCORCH ${bp.scorch} (interrupted ${bp.interrupted})   [reality Scorches ~3-4]`);
 console.log(`\n  TOTAL: ${bp?.cleared?'WIN':'LOSS'} in ${turn} turns   [reality ~121 turns, ~91% WR]`);
-console.log(`  deaths: ${team.filter(c=>c.deaths>0).map(c=>c.name+'×'+c.deaths).join(', ')||'none'}   [reality: Mikey/Ezio/Iudex die once]`);
+console.log(`  deaths: ${team.filter(c=>c.deaths>0).map(c=>c.name+'×'+c.deaths).join(', ')||'none'}   [reality: Ezio + Iudex die once (both revived); Mikey/Xeno/Hilvi survive]`);
 console.log(`  boss poison: ${DOT.bossPoisonTicks} ticks, ${fmt(DOT.bossPoisonDmg)} dmg (${POISON_TICK_BOSS}/stack)   ·   Infest waves: ${INF.explosions} explosions ${fmt(INF.dmg)}`);
 console.log('\nchamp          taken     dealt      | REALITY taken / dealt / died');
 for (const c of team){ const r=REAL[c.name]||{};
